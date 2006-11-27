@@ -6,7 +6,7 @@ For users
 You need to have Erlang installed.
 
 To use an ejabberd module coming from this repository:
- - Run "erl -make" in the root (usually trunk directory) of the wanted module.
+ - Run "erl -pa ../../ejabberd-dev/trunk/ebin -make" in the root (usually trunk directory) of the wanted module.
  - Copy generated .beam files from the ebin directory to the directory where your ejabberd .beam files are.
  - Use the configuration file examples provided in the conf dir to update your ejabberd.cfg configuration file.
 
