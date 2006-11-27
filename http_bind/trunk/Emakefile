@@ -1,0 +1,5 @@
+{'src/ejabberd_http',     [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
+{'src/ejabberd_http_bind',     [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
+{'src/ejabberd_web',     [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
+{'src/ejabberd_sup',     [{outdir, "ebin"}]}.
+{'src/xml',     [{outdir, "ebin"}]}.
