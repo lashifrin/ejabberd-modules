@@ -18,6 +18,7 @@
 	 bounce_offline_message/3,
 	 disconnect_removed_user/2,
 	 get_user_resources/2,
+	 get_session_pid/3,
 	 set_presence/5,
 	 unset_presence/5,
 	 close_session_unset_presence/5,
@@ -99,6 +100,18 @@ get_user_resources(User, Server) ->
 	    [];
 	Ss ->
 	    [element(3, S#session.usr) || S <- clean_session_list(Ss)]
+    end.
+
+get_session_pid(User, Server, Resource) ->
+    LUser = jlib:nodeprep(User),
+    LServer = jlib:nameprep(Server),
+    LResource = jlib:resourceprep(Resource),
+    USR = {LUser, LServer, LResource},
+    case catch mnesia:dirty_index_read(session, USR, #session.usr) of
+	[#session{sid = {_, Pid}}] ->
+	    Pid;
+	_ ->
+	    none
     end.
 
 set_presence(SID, User, Server, Resource, Priority) ->
@@ -353,7 +366,9 @@ do_route(From, To, Packet) ->
 					 true ->
 					      ok
 				      end
-			      end, PResources);
+			      end, PResources),
+			    ejabberd_hooks:run(incoming_presence_hook, LServer,
+					       [From, To, Packet]);
 		       true ->
 			    ok
 		    end;

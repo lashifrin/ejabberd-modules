@@ -18,13 +18,13 @@
 	 start/2,
 	 stop/1]).
 
--export([delete_item/3,
-	 set_entities/4,
-	 delete_node/2,
-	 create_new_node/2,
-	 subscribe_node/3,
-	 get_node_config/4,
-	 set_node_config/4]).
+-export([incoming_presence/3]).
+
+-export([disco_local_identity/5,
+	 disco_sm_identity/5,
+	 iq_pep_local/3,
+	 iq_pep_sm/3,
+	 pep_disco_items/5]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -32,14 +32,18 @@
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
+-include("jlib-pep.hrl").
 
 -record(state, {host, server_host, access}).
 
 -define(DICT, dict).
+%% XXX: this is currently a hard limit.  Would be nice to have it
+%% configurable in certain cases.
 -define(MAXITEMS, 20).
 -define(MAX_PAYLOAD_SIZE, 100000).
 
 -record(pubsub_node, {host_node, host_parent, info}).
+-record(pep_node, {owner_node, info}).		%owner is {luser, lserver, ""}
 -record(nodeinfo, {items = [],
 		   options = [],
 		   entities = ?DICT:new()
@@ -48,9 +52,23 @@
 		 subscription = none}).
 -record(item, {id, publisher, payload}).
 
+-record(pubsub_presence, {to_from, resource}).
+%% to_from is {ToLUser, ToLServer, FromLUser, FromLServer}.
+
+get_node_info(#pubsub_node{info = Info}) -> Info;
+get_node_info(#pep_node{info = Info}) -> Info.
+
+set_node_info(#pubsub_node{} = N, NewInfo) -> N#pubsub_node{info = NewInfo};
+set_node_info(#pep_node{} = N, NewInfo) -> N#pep_node{info = NewInfo}.
+
+get_node_name(#pubsub_node{host_node = {_Host, Node}}) -> Node;
+get_node_name(#pep_node{owner_node = {_Owner, Node}}) -> Node.
+
 -define(PROCNAME, ejabberd_mod_pubsub).
 -define(MYJID, #jid{user = "", server = Host, resource = "",
 		    luser = "", lserver = Host, lresource = ""}).
+
+-define(NS_PUBSUB_SUB_AUTH, "http://jabber.org/protocol/pubsub#subscribe_authorization").
 
 %%====================================================================
 %% API
@@ -68,7 +86,7 @@ start(Host, Opts) ->
     ChildSpec =
 	{Proc,
 	 {?MODULE, start_link, [Host, Opts]},
-	 temporary,
+	 transient,
 	 1000,
 	 worker,
 	 [?MODULE]},
@@ -79,29 +97,9 @@ stop(Host) ->
     gen_server:call(Proc, stop),
     supervisor:stop_child(ejabberd_sup, Proc).
 
-delete_item(From, Node, ItemID) ->
-    delete_item(get_host(), From, Node, ItemID).
-
-delete_node(From, Node) ->
-    delete_node(get_host(), From, Node).
-
-create_new_node(Node, From) ->
-    create_new_node(get_host(), Node, From).
-
-subscribe_node(From, JID, Node) ->
-    subscribe_node(get_host(), From, JID, Node).
-
-set_node_config(From, Node, Els, Lang) ->
-    set_node_config(get_host(), From, Node, Els, Lang).
-
-get_host() ->
-    ejabberd_mod_pubsub ! {get_host, self()},
-    receive
-	{pubsub_host, Host} ->
-	    Host
-    after 5000 ->
-	    timeout
-    end.
+incoming_presence(From, #jid{lserver = Host} = To, Packet) ->
+    Proc = gen_mod:get_module_proc(Host, ?PROCNAME),
+    gen_server:cast(Proc, {presence, From, To, Packet}).
 
 %%====================================================================
 %% gen_server callbacks
@@ -118,11 +116,36 @@ init([ServerHost, Opts]) ->
     mnesia:create_table(pubsub_node,
 			[{disc_only_copies, [node()]},
 			 {attributes, record_info(fields, pubsub_node)}]),
+    mnesia:create_table(pep_node,
+			[{disc_only_copies, [node()]},
+			 {attributes, record_info(fields, pep_node)}]),
+    mnesia:create_table(pubsub_presence,
+			[{ram_copies, [node()]},
+			 {attributes, record_info(fields, pubsub_presence)},
+			 {type, bag}]),
+
     Host = gen_mod:get_opt(host, Opts, "pubsub." ++ ServerHost),
     update_table(Host),
     mnesia:add_table_index(pubsub_node, host_parent),
     ServedHosts = gen_mod:get_opt(served_hosts, Opts, []),
     Access = gen_mod:get_opt(access_createnode, Opts, all),
+
+    mod_disco:register_feature(ServerHost, ?NS_PUBSUB),
+    ejabberd_hooks:add(disco_local_identity, ServerHost, ?MODULE, disco_local_identity, 75),
+    ejabberd_hooks:add(disco_sm_identity, ServerHost, ?MODULE, disco_sm_identity, 75),
+    ejabberd_hooks:add(disco_sm_items, ServerHost, ?MODULE, pep_disco_items, 50),
+
+    IQDisc = gen_mod:get_opt(iqdisc, Opts, one_queue),
+    gen_iq_handler:add_iq_handler(ejabberd_local, ServerHost, ?NS_PUBSUB,
+				  ?MODULE, iq_pep_local, IQDisc),
+    gen_iq_handler:add_iq_handler(ejabberd_local, ServerHost, ?NS_PUBSUB_OWNER,
+				  ?MODULE, iq_pep_local, IQDisc),
+    gen_iq_handler:add_iq_handler(ejabberd_sm, ServerHost, ?NS_PUBSUB,
+				  ?MODULE, iq_pep_sm, IQDisc),
+    gen_iq_handler:add_iq_handler(ejabberd_sm, ServerHost, ?NS_PUBSUB_OWNER,
+				  ?MODULE, iq_pep_sm, IQDisc),
+
+    ejabberd_hooks:add(incoming_presence_hook, ServerHost, ?MODULE, incoming_presence, 50),
 
     ejabberd_router:register_route(Host),
     create_new_node(Host, ["pubsub"], ?MYJID),
@@ -132,8 +155,6 @@ init([ServerHost, Opts]) ->
     lists:foreach(fun(H) ->
 			  create_new_node(Host, ["home", H], ?MYJID)
 		  end, ServedHosts),
-    ets:new(gen_mod:get_module_proc(Host, pubsub_presence),
-	    [set, named_table]),
     {ok, #state{host = Host, server_host = ServerHost, access = Access}}.
 
 %%--------------------------------------------------------------------
@@ -154,6 +175,107 @@ handle_call(stop, _From, State) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
+handle_cast({presence, From, To, Packet}, State) ->
+    %% When we get available presence from a subscriber, send the last
+    %% published item.
+    Priority = case xml:get_subtag(Packet, "priority") of
+		   false ->
+		       0;
+		   SubEl ->
+		       case catch list_to_integer(xml:get_tag_cdata(SubEl)) of
+			   P when is_integer(P) ->
+			       P;
+			   _ ->
+			       0
+		       end
+	       end,
+    PType = xml:get_tag_attr_s("type", Packet),
+    Type = case PType of
+	       "" -> 
+		   if Priority < 0 ->
+			   unavailable;
+		      true ->
+			   available
+		   end;
+	       "unavailable" -> unavailable;
+	       "error" -> unavailable;
+	       _ -> none
+	   end,
+    LJID = jlib:jid_tolower(jlib:jid_remove_resource(To)),
+    PreviouslyAvailable =
+	lists:member(From#jid.lresource,
+		     get_present_resources(element(1, LJID), element(2, LJID),
+					   From#jid.luser, From#jid.lserver)),
+    Key = {element(1, LJID), element(2, LJID), From#jid.luser, From#jid.lserver},
+    Record = #pubsub_presence{to_from = Key, resource = From#jid.lresource},
+    Host = case LJID of
+	       {"", LServer, ""} ->
+		   LServer;
+	       _ ->
+		   LJID
+	   end,
+    case Type of
+	available ->
+	    mnesia:dirty_write(Record);
+	unavailable ->
+	    mnesia:dirty_delete_object(Record);
+	_ ->
+	    ok
+    end,
+    if PreviouslyAvailable == false, Type == available ->
+	    %% A new resource is available.  Loop through all nodes
+	    %% and see if the contact is subscribed, and if so, and if
+	    %% the node is so configured, send the last item.
+	    Match = case Host of
+			{_, _, _} ->
+			    #pep_node{owner_node = {LJID, '_'}, _ = '_'};
+			_ ->
+			    #pubsub_node{host_node = {LJID, '_'}, _ = '_'}
+		    end,
+	    case catch mnesia:dirty_match_object(Match) of
+		{'EXIT', Reason} ->
+		    ?ERROR_MSG("~p", [Reason]);
+		Nodes ->
+		    lists:foreach(
+		      fun(N) ->
+			      Node = get_node_name(N),
+			      Info = get_node_info(N),
+			      Subscription = get_subscription(Info, From),
+			      SendWhen = get_node_option(Info, send_last_published_item),
+			      %% If the contact has an explicit
+			      %% subscription to the node, and the
+			      %% node is so configured, send last
+			      %% item.
+			      if Subscription /= none, Subscription /= pending,
+				 SendWhen == on_sub_and_presence ->
+				      send_last_published_item(jlib:jid_tolower(From), Host, Node, Info);
+				 SendWhen == on_sub_and_presence ->
+				      %% Else, if the node is so configured, and the user sends entity
+				      %% capabilities saying that it wants notifications, send last
+				      %% item.
+				      LookingFor = Node++"+notify",
+				      case catch mod_caps:get_features(?MYNAME, 
+								       mod_caps:read_caps(element(4, Packet))) of
+					  Features when is_list(Features) ->
+					      case lists:member(LookingFor, Features) of
+						  true ->
+						      send_last_published_item(jlib:jid_tolower(From), Host, Node, Info);
+						  _ ->
+						      ok
+					      end;
+					  _ ->
+					      ok
+				      end;
+				 true ->
+				      ok
+			      end
+		      end, Nodes)
+	    end,
+	    {noreply, State};
+       true ->
+	    {noreply, State}
+    end;
+
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
@@ -183,7 +305,17 @@ handle_info(_Info, State) ->
 %% The return value is ignored.
 %%--------------------------------------------------------------------
 terminate(_Reason, State) ->
-    ejabberd_router:unregister_route(State#state.host),
+    #state{host = Host, server_host = ServerHost} = State,
+    mod_disco:unregister_feature(ServerHost, ?NS_PUBSUB),
+    ejabberd_hooks:delete(disco_local_identity, ServerHost, ?MODULE, disco_local_identity, 75),
+    ejabberd_hooks:delete(disco_sm_identity, ServerHost, ?MODULE, disco_sm_identity, 75),
+    ejabberd_hooks:delete(disco_sm_items, ServerHost, ?MODULE, pep_disco_items, 50),
+    gen_iq_handler:remove_iq_handler(ejabberd_local, ServerHost, ?NS_PUBSUB),
+    gen_iq_handler:remove_iq_handler(ejabberd_local, ServerHost, ?NS_PUBSUB_OWNER),
+    gen_iq_handler:remove_iq_handler(ejabberd_sm, ServerHost, ?NS_PUBSUB),
+    gen_iq_handler:remove_iq_handler(ejabberd_sm, ServerHost, ?NS_PUBSUB_OWNER),
+    ejabberd_hooks:delete(incoming_presence_hook, ServerHost, ?MODULE, incoming_presence, 50),
+    ejabberd_router:unregister_route(Host),
     ok.
 
 %%--------------------------------------------------------------------
@@ -197,13 +329,13 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%--------------------------------------------------------------------
 do_route(Host, ServerHost, Access, From, To, Packet) ->
-    {xmlelement, Name, Attrs, Els} = Packet,
+    {xmlelement, Name, Attrs, _Els} = Packet,
     case To of
 	#jid{luser = "", lresource = ""} ->
 	    case Name of
 		"iq" ->
 		    case jlib:iq_query_info(Packet) of
-			#iq{type = get, xmlns = ?NS_DISCO_INFO = XMLNS,
+			#iq{type = get, xmlns = ?NS_DISCO_INFO,
 			    sub_el = SubEl} = IQ ->
 			    {xmlelement, _, QAttrs, _} = SubEl,
 			    Node = xml:get_attr_s("node", QAttrs),
@@ -214,7 +346,7 @@ do_route(Host, ServerHost, Access, From, To, Packet) ->
 			    ejabberd_router:route(To,
 						  From,
 						  jlib:iq_to_xml(Res));
-			#iq{type = get, xmlns = ?NS_DISCO_ITEMS = XMLNS,
+			#iq{type = get, xmlns = ?NS_DISCO_ITEMS,
 			    sub_el = SubEl} = IQ ->
 			    {xmlelement, _, QAttrs, _} = SubEl,
 			    Node = xml:get_attr_s("node", QAttrs),
@@ -231,7 +363,7 @@ do_route(Host, ServerHost, Access, From, To, Packet) ->
 					  Packet, Error)
 				end,
 			    ejabberd_router:route(To, From, Res);
-			#iq{type = Type, xmlns = ?NS_PUBSUB = XMLNS,
+			#iq{type = Type, xmlns = ?NS_PUBSUB,
 			    sub_el = SubEl} = IQ ->
 			    Res =
 				case iq_pubsub(Host, ServerHost, From, Type, SubEl, Access) of
@@ -244,7 +376,7 @@ do_route(Host, ServerHost, Access, From, To, Packet) ->
 					  Packet, Error)
 				end,
 			    ejabberd_router:route(To, From, Res);
-			#iq{type = Type, xmlns = ?NS_PUBSUB_OWNER = XMLNS,
+			#iq{type = Type, xmlns = ?NS_PUBSUB_OWNER,
 			    lang = Lang, sub_el = SubEl} = IQ ->
 			    Res =
 				case iq_pubsub_owner(
@@ -259,7 +391,7 @@ do_route(Host, ServerHost, Access, From, To, Packet) ->
 				end,
 			    ejabberd_router:route(To, From, Res);
 			#iq{type = get, xmlns = ?NS_VCARD = XMLNS,
-			    lang = Lang, sub_el = SubEl} = IQ ->
+			    lang = Lang} = IQ ->
 			    Res = IQ#iq{type = result,
 					sub_el = [{xmlelement, "vCard",
 						   [{"xmlns", XMLNS}],
@@ -276,20 +408,27 @@ do_route(Host, ServerHost, Access, From, To, Packet) ->
 			    ok
 		    end;
 		"presence" ->
-		    Type = xml:get_attr_s("type", Attrs),
-		    if
-			(Type == "unavailable") or (Type == "error") ->
-			    ets:delete(
-			      gen_mod:get_module_proc(Host, pubsub_presence),
-			      {From#jid.luser, From#jid.lserver});
-			true ->
-			    ets:insert(
-			      gen_mod:get_module_proc(Host, pubsub_presence),
-			      {{From#jid.luser, From#jid.lserver}, []})
-		    end,
+		    %% XXX: subscriptions?
+		    incoming_presence(From, To, Packet),
 		    ok;
-		_ ->
-		    ok
+		"message" ->
+		    %% So why would anyone want to send messages to a
+		    %% pubsub service?  Subscription authorization
+		    %% (section 8.6).
+		    case xml:get_attr_s("type", Attrs) of
+			"error" ->
+			    ok;
+			_ ->
+			    case find_authorization_response(Packet) of
+				none ->
+				    ok;
+				invalid ->
+				    ejabberd_router:route(To, From,
+							  jlib:make_error_reply(Packet, ?ERR_BAD_REQUEST));
+				XFields ->
+				    handle_authorization_response(From, To, Host, Packet, XFields)
+			    end
+		    end
 	    end;
 	_ ->
 	    case xml:get_attr_s("type", Attrs) of
@@ -307,28 +446,129 @@ do_route(Host, ServerHost, Access, From, To, Packet) ->
 
 
 node_to_string(Node) ->
-    string:strip(lists:flatten(lists:map(fun(S) -> [S, "/"] end, Node)),
-		 right, $/).
+    %% Flat (PEP) or normal node?
+    case Node of
+	[[_ | _] | _] ->
+	    string:strip(lists:flatten(lists:map(fun(S) -> [S, "/"] end, Node)),
+			 right, $/);
+	[Head | _] when is_integer(Head) ->
+	    Node
+    end.
 
+disco_local_identity(Acc, _From, _To, [], _Lang) ->
+    Acc ++
+	[{xmlelement, "identity",
+	  [{"category", "pubsub"},
+	   {"type", "pep"}], []}];
+disco_local_identity(Acc, _From, _To, _Node, _Lang) ->
+    Acc.
+
+disco_sm_identity(Acc, _From, _To, [], _Lang) ->
+    Acc ++
+	[{xmlelement, "identity",
+	  [{"category", "pubsub"},
+	   {"type", "pep"}], []}];
+disco_sm_identity(Acc, _From, _To, _Node, _Lang) ->
+    Acc.
+
+get_table(Host) ->
+    case Host of
+	{_, _, _} -> pep_node;
+	_ -> pubsub_node
+    end.
+
+get_sender(Host) ->
+    case Host of
+	{_, _, _} ->
+	    jlib:make_jid(Host);
+	_ ->
+	    jlib:make_jid("", Host, "")
+    end.
+
+iq_pep_local(From, To, 
+	     #iq{type = Type, sub_el = SubEl, xmlns = XMLNS, lang = Lang} = IQ) ->
+    ServerHost = To#jid.lserver,
+    %% Accept IQs to server only from our own users.
+    if From#jid.lserver /= ServerHost ->
+	    IQ#iq{type = error, sub_el = [?ERR_FORBIDDEN, SubEl]};
+       true ->
+	    LOwner = jlib:jid_tolower(jlib:jid_remove_resource(From)),
+	    Res = case XMLNS of
+		      ?NS_PUBSUB ->
+			  %% XXX: "access all" correct?  it corresponds to access_createnode.
+			  iq_pubsub(LOwner, ServerHost, From, Type, SubEl, all);
+		      ?NS_PUBSUB_OWNER ->
+			  iq_pubsub_owner(LOwner, From, Type, Lang, SubEl)
+		  end,
+	    case Res of
+		{result, IQRes} ->
+		    IQ#iq{type = result, sub_el = IQRes};
+		{error, Error} ->
+		    IQ#iq{type = error, sub_el = [Error, SubEl]}
+	    end
+    end.
+
+iq_pep_sm(From, To, 
+	  #iq{type = Type, sub_el = SubEl, xmlns = XMLNS, lang = Lang} = IQ) ->
+    ServerHost = To#jid.lserver,
+    LOwner = jlib:jid_tolower(jlib:jid_remove_resource(To)),
+    Res = case XMLNS of
+	      ?NS_PUBSUB ->
+		  iq_pubsub(LOwner, ServerHost, From, Type, SubEl, all);
+	      ?NS_PUBSUB_OWNER ->
+		  iq_pubsub_owner(LOwner, From, Type, Lang, SubEl)
+	  end,
+    case Res of
+	{result, IQRes} ->
+	    IQ#iq{type = result, sub_el = IQRes};
+	{error, Error} ->
+	    IQ#iq{type = error, sub_el = [Error, SubEl]}
+    end.
 
 iq_disco_info(SNode) ->
     Node = string:tokens(SNode, "/"),
     case Node of
 	[] ->
+	    PubsubFeatures =
+		["config-node",
+		 "create-and-configure",
+		 "create-nodes",
+		 "delete-nodes",
+		 %% "get-pending",
+		 "instant-nodes",
+		 "item-ids",
+		 %% "manage-subscriptions",
+		 %% "modify-affiliations",
+		 "outcast-affiliation",
+		 "persistent-items",
+		 "presence-notifications",
+		 "publish",
+		 "publisher-affiliation",
+		 "purge-nodes",
+		 "retract-items",
+		 "retrieve-affiliations",
+		 %% "retrieve-default",
+		 "retrieve-items",
+		 "retrieve-subscriptions",
+		 "subscribe"
+		 %% , "subscription-notifications"
+		 ],
 	    [{xmlelement, "identity",
 	      [{"category", "pubsub"},
-	       {"type", "generic"},
+	       {"type", "service"},
 	       {"name", "Publish-Subscribe"}], []},
 	     {xmlelement, "feature", [{"var", ?NS_PUBSUB}], []},
-	     {xmlelement, "feature", [{"var", ?NS_PUBSUB_EVENT}], []},
-	     {xmlelement, "feature", [{"var", ?NS_PUBSUB_OWNER}], []},
-	     {xmlelement, "feature", [{"var", ?NS_VCARD}], []}];
+	     {xmlelement, "feature", [{"var", ?NS_VCARD}], []}] ++
+		lists:map(fun(Feature) ->
+				  {xmlelement, "feature",
+				   [{"var", ?NS_PUBSUB++"#"++Feature}], []}
+			  end, PubsubFeatures);
 	_ ->
 	    % TODO
 	    []
     end.
 
-iq_disco_items(Host, From, SNode) ->
+iq_disco_items(Host, _From, SNode) ->
 	{Node,ItemID} = case SNode of
 	[] ->
 		{[],none};
@@ -341,7 +581,7 @@ iq_disco_items(Host, From, SNode) ->
 		end,
 		{NodeList, ItemName}
 	end,
-	NodeFull = string:tokens(SNode,"/"),
+	%%NodeFull = string:tokens(SNode,"/"),
     F = fun() ->
 		case mnesia:read({pubsub_node, {Host, Node}}) of
 		    [#pubsub_node{info = Info}] ->
@@ -402,6 +642,32 @@ iq_disco_items(Host, From, SNode) ->
 	    {error, ?ERR_INTERNAL_SERVER_ERROR}
     end.
 
+pep_disco_items(Acc, _From, To, "", _Lang) ->
+    LJID = jlib:jid_tolower(jlib:jid_remove_resource(To)),
+    Match = #pep_node{owner_node = {LJID, '_'}, _ = '_'},
+    case catch mnesia:dirty_match_object(Match) of
+	{'EXIT', Reason} ->
+	    ?ERROR_MSG("~p", [Reason]),
+	    Acc;
+	[] ->
+	    Acc;
+	Nodes ->
+	    Items = case Acc of
+			{result, I} -> I;
+			_ -> []
+		    end,
+	    NodeItems = lists:map(
+			  fun(#pep_node{owner_node = {_, Node}}) ->
+				  {xmlelement, "item",
+				   [{"jid", jlib:jid_to_string(LJID)},
+				    {"node", node_to_string(Node)}],
+				   []}
+			  end, Nodes),
+	    {result, NodeItems ++ Items}
+    end;
+pep_disco_items(Acc, _From, _To, _Node, _Lang) ->
+    Acc.
+
 iq_get_vcard(Lang) ->
     [{xmlelement, "FN", [],
       [{xmlcdata, "ejabberd/mod_pubsub"}]},
@@ -416,14 +682,32 @@ iq_get_vcard(Lang) ->
 
 
 iq_pubsub(Host, ServerHost, From, Type, SubEl, Access) ->
+    %% Host may be a jid tuple, in which case we use PEP.
     {xmlelement, _, _, SubEls} = SubEl,
-    case xml:remove_cdata(SubEls) of
+    WithoutCdata = xml:remove_cdata(SubEls),
+    Configuration = lists:filter(fun({xmlelement, Name, _, _}) ->
+					 Name == "configure"
+				 end, WithoutCdata),
+    Action = WithoutCdata -- Configuration,
+    case Action of
 	[{xmlelement, Name, Attrs, Els}] ->
-	    SNode = xml:get_attr_s("node", Attrs),
-	    Node = string:tokens(SNode, "/"),
+	    %% For PEP, there is no node hierarchy.
+	    Node = case Host of
+		       {_, _, _} ->
+			    xml:get_attr_s("node", Attrs);
+		       _ ->
+			   SNode = xml:get_attr_s("node", Attrs),
+			   string:tokens(SNode, "/")
+		   end,
 	    case {Type, Name} of
 		{set, "create"} ->
-		    create_new_node(Host, Node, From, ServerHost, Access);
+		    case Configuration of
+			[{xmlelement, "configure", _, Config}] ->
+			    create_new_node(Host, Node, From, ServerHost, Access, Config);
+			_ ->
+			    ?INFO_MSG("Invalid configuration: ~p", [Configuration]),
+			    {error, ?ERR_BAD_REQUEST}
+		    end;
 		{set, "publish"} ->
 		    case xml:remove_cdata(Els) of
 			[{xmlelement, "item", ItemAttrs, Payload}] ->
@@ -438,7 +722,7 @@ iq_pubsub(Host, ServerHost, From, Type, SubEl, Access) ->
 			    ItemID = xml:get_attr_s("id", ItemAttrs),
 			    delete_item(Host, From, Node, ItemID);
 			_ ->
-			    {error, ?ERR_BAD_REQUEST}
+			    {error, extend_error(?ERR_BAD_REQUEST, "item-required")}
 		    end;
 		{set, "subscribe"} ->
 		    JID = xml:get_attr_s("jid", Attrs),
@@ -449,20 +733,15 @@ iq_pubsub(Host, ServerHost, From, Type, SubEl, Access) ->
 		{get, "items"} ->
 		    MaxItems = xml:get_attr_s("max_items", Attrs),
 		    get_items(Host, From, Node, MaxItems);
-		{set, "delete"} ->
-		    delete_node(Host, From, Node);
-		{set, "purge"} ->
-		    purge_node(Host, From, Node);
-		{get, "entities"} ->
-		    get_entities(Host, From, Node);
-		{set, "entities"} ->
-		    set_entities(Host, From, Node, xml:remove_cdata(Els));
 		{get, "affiliations"} ->
 		    get_affiliations(Host, From);
+		{get, "subscriptions"} ->
+		    get_subscriptions(Host, From);
 		_ ->
 		    {error, ?ERR_FEATURE_NOT_IMPLEMENTED}
 	    end;
 	_ ->
+	    ?INFO_MSG("Too many actions: ~p", [Action]),
 	    {error, ?ERR_BAD_REQUEST}
     end.
 
@@ -504,16 +783,81 @@ iq_pubsub(Host, ServerHost, From, Type, SubEl, Access) ->
 create_new_node(Host, Node, Owner) ->
     %% This is the case use during "bootstrapping to create the initial
     %% hierarchy. Should always be ... undefined,all
-    create_new_node(Host, Node, Owner, undefined, all).
-create_new_node(Host, Node, Owner, ServerHost, Access) ->
-    case Node of
-	[] ->
+    create_new_node(Host, Node, Owner, undefined, all, []).
+create_new_node(Host, Node, Owner, ServerHost, Access, Configuration) ->
+    DefaultSet = get_table(Host),		% get_table happens to DTRT here
+    ConfigOptions = case xml:remove_cdata(Configuration) of
+			[] ->
+			    [];
+			[{xmlelement, "x", _Attrs, _SubEls} = XEl] ->
+			    case jlib:parse_xdata_submit(XEl) of
+				invalid ->
+				    {error, ?ERR_BAD_REQUEST};
+				XData ->
+				    case set_xoption(XData, [{defaults, DefaultSet}]) of
+					NewOpts when is_list(NewOpts) ->
+					    NewOpts;
+					Err ->
+					    Err
+				    end
+			    end;
+			_ ->
+			    ?INFO_MSG("Configuration not understood: ~p", [Configuration]),
+			    {error, ?ERR_BAD_REQUEST}
+		    end,
+    case {Host, Node, ConfigOptions} of
+	{_, _, {error, _} = Error} ->
+	    Error;
+	%% If Host is a jid tuple, we are in PEP.
+	{{_, _, _}, [], _} ->
+	    %% And in PEP, instant nodes are not supported.
+	    {error, extend_error(?ERR_NOT_ACCEPTABLE, "nodeid-required")};
+	{{_, _, _}, _, _} ->
+	    LOwner = Host,
+	    F = fun() ->
+			case mnesia:read({pep_node, {LOwner, Node}}) of
+			    [_] ->
+				{error, ?ERR_CONFLICT};
+			    [] ->
+				Entities =
+				    ?DICT:store(
+				       LOwner,
+				       #entity{affiliation = owner,
+					       subscription = none},
+				       ?DICT:new()),
+				mnesia:write(
+				  #pep_node{owner_node = {LOwner, Node},
+					    info = #nodeinfo{entities = Entities,
+							     options = ConfigOptions}}),
+				ok
+			end
+		end,
+	    case mnesia:transaction(F) of
+		{atomic, ok} ->
+		    {result, []};
+		{atomic, {error, _} = Error} ->
+		    Error;
+		_ ->
+		    {error, ?ERR_INTERNAL_SERVER_ERROR}
+	    end;
+	{_, [], _} ->
 	    {LOU, LOS, _} = jlib:jid_tolower(Owner),
 	    HomeNode = ["home", LOS, LOU],
-	    create_new_node(Host, HomeNode, Owner, ServerHost, Access),
+	    create_new_node(Host, HomeNode, Owner, ServerHost, Access, []),
 	    NewNode = ["home", LOS, LOU, randoms:get_string()],
-	    create_new_node(Host, NewNode, Owner, ServerHost, Access);
-	_ ->
+	    %% When creating an instant node, we need to include the
+	    %% node name in the result.
+	    case create_new_node(Host, NewNode, Owner, ServerHost, Access, []) of
+		{result, []} ->
+		    {result,
+		     [{xmlelement, "pubsub",
+		       [{"xmlns", ?NS_PUBSUB}],
+		       [{xmlelement, "create",
+			 [{"node", node_to_string(Node)}], []}]}]};
+		{error, _} = Error ->
+		    Error
+	    end;
+	{_, _, _} ->
 	    LOwner = jlib:jid_tolower(jlib:jid_remove_resource(Owner)),
 	    Parent = lists:sublist(Node, length(Node) - 1),
 	    F = fun() ->
@@ -542,7 +886,8 @@ create_new_node(Host, Node, Owner, ServerHost, Access) ->
 					  #pubsub_node{host_node = {Host, Node},
 						       host_parent = {Host, Parent},
 						       info = #nodeinfo{
-							 entities = Entities}}),
+							 entities = Entities,
+							 options = ConfigOptions}}),
 					ok
 				end
 			end
@@ -562,11 +907,7 @@ create_new_node(Host, Node, Owner, ServerHost, Access) ->
 				 ?XFIELD("jid-single", "Node Creator",
 					 "creator",
 					 jlib:jid_to_string(LOwner))]}]),
-			    {result,
-			     [{xmlelement, "pubsub",
-				[{"xmlns", ?NS_PUBSUB}],
-				[{xmlelement, "create",
-				  [{"node", node_to_string(Node)}], []}]}]};
+			    {result, []};
 			{atomic, {error, _} = Error} ->
 			    Error;
 			_ ->
@@ -579,33 +920,38 @@ create_new_node(Host, Node, Owner, ServerHost, Access) ->
 
 
 publish_item(Host, JID, Node, ItemID, Payload) ->
+    Publisher = jlib:jid_tolower(jlib:jid_remove_resource(JID)),
+    Table = get_table(Host),
+    %% XXX: Host is not a host if this is PEP.  Good thing that this
+    %% hook isn't added to anywhere yet.
     ejabberd_hooks:run(pubsub_publish_item, Host,
 		       [JID, ?MYJID, Node, ItemID, Payload]),
-    Publisher = jlib:jid_tolower(jlib:jid_remove_resource(JID)),
     F = fun() ->
-		case mnesia:read({pubsub_node, {Host, Node}}) of
-		    [#pubsub_node{info = Info} = N] ->
+		case mnesia:read({Table, {Host, Node}}) of
+		    [N] ->
+			Info = get_node_info(N),
 			Affiliation = get_affiliation(Info, Publisher),
 			Subscription = get_subscription(Info, Publisher),
 			MaxSize = get_node_option(Info, max_payload_size),
 			Model = get_node_option(Info, publish_model),
 			Size = size(term_to_binary(Payload)),
 			if
-			    ((Model == open) or
-			    ((Model == publishers) and
-			     ((Affiliation == owner) or
-			      (Affiliation == publisher))) or
-			    ((Model == subscribers) and
-			     (Subscription == subscribed))) and
-			    (Size =< MaxSize) ->
+			    not ((Model == open) or
+				 ((Model == publishers) and
+				  ((Affiliation == owner) or
+				   (Affiliation == publisher))) or
+				 ((Model == subscribers) and
+				  (Subscription == subscribed))) ->
+				{error, ?ERR_FORBIDDEN};
+			    (Size > MaxSize) ->
+				{error, extend_error(?ERR_NOT_ACCEPTABLE, "payload-too-big")};
+			    true ->
 				NewInfo =
 				    insert_item(Info, ItemID,
 						Publisher, Payload),
-				mnesia:write(
-				  N#pubsub_node{info = NewInfo}),
-				{result, []};
-			    true ->
-				{error, ?ERR_NOT_ALLOWED}
+				NewNode = set_node_info(N, NewInfo),
+				mnesia:write(NewNode),
+				{result, []}
 			end;
 		    [] ->
 			{error, ?ERR_ITEM_NOT_FOUND}
@@ -624,20 +970,27 @@ publish_item(Host, JID, Node, ItemID, Payload) ->
 
 delete_item(Host, JID, Node, ItemID) ->
     Publisher = jlib:jid_tolower(jlib:jid_remove_resource(JID)),
+    Table = get_table(Host),
     F = fun() ->
-		case mnesia:read({pubsub_node, {Host, Node}}) of
-		    [#pubsub_node{info = Info} = N] ->
-			case check_item_publisher(Info, ItemID, Publisher)
+		case mnesia:read({Table, {Host, Node}}) of
+		    [N] ->
+			Info = get_node_info(N),
+			ItemExists = lists:any(fun(I) ->
+						       I#item.id == ItemID
+					       end, Info#nodeinfo.items),
+			Allowed = check_item_publisher(Info, ItemID, Publisher)
 			    orelse
-			    (get_affiliation(Info, Publisher) == owner) of
-			    true ->
+			      (get_affiliation(Info, Publisher) == owner),
+			if not Allowed ->
+				{error, ?ERR_FORBIDDEN};
+			   not ItemExists ->
+				{error, ?ERR_ITEM_NOT_FOUND};
+			   true ->
 				NewInfo =
 				    remove_item(Info, ItemID),
 				mnesia:write(
-				  N#pubsub_node{info = NewInfo}),
-				{result, []};
-			    _ ->
-				{error, ?ERR_NOT_ALLOWED}
+				  set_node_info(N, NewInfo)),
+				{result, []}
 			end;
 		    [] ->
 			{error, ?ERR_ITEM_NOT_FOUND}
@@ -653,6 +1006,17 @@ delete_item(Host, JID, Node, ItemID) ->
 	    {error, ?ERR_INTERNAL_SERVER_ERROR}
     end.
 
+%% Add pubsub-specific error element
+extend_error({xmlelement, "error", Attrs, SubEls}, Error) ->
+    {xmlelement, "error", Attrs,
+     [{xmlelement, Error, [{"xmlns", ?NS_PUBSUB_ERRORS}], []}
+      | SubEls]}.
+
+extend_error({xmlelement, "error", Attrs, SubEls}, unsupported, Feature) ->
+    {xmlelement, "error", Attrs,
+     [{xmlelement, "unsupported", [{"xmlns", ?NS_PUBSUB_ERRORS},
+				   {"feature", Feature}], []}
+      | SubEls]}.
 
 subscribe_node(Host, From, JID, Node) ->
     Sender = jlib:jid_tolower(jlib:jid_remove_resource(From)),
@@ -665,64 +1029,235 @@ subscribe_node(Host, From, JID, Node) ->
 	end,
     Subscriber = jlib:jid_tolower(SubscriberJID),
     SubscriberWithoutResource = jlib:jid_remove_resource(Subscriber),
+    AuthorizedToSubscribe = Sender == SubscriberWithoutResource,
+    Table = get_table(Host),
+    case catch mnesia:dirty_read({Table, {Host, Node}}) of
+	[NodeData] ->
+	    NodeInfo = get_node_info(NodeData),
+	    AllowSubscriptions = get_node_option(NodeInfo, subscribe),
+	    AccessModel = get_node_option(NodeInfo, access_model),
+	    AllowedGroups = get_node_option(NodeInfo, access_roster_groups),
+	    Affiliation = get_affiliation(NodeInfo, Subscriber),
+	    OldSubscription = get_subscription(NodeInfo, Subscriber),
+	    CurrentApprover = get_node_option(NodeInfo, current_approver);
+	[] ->
+	    {AllowSubscriptions,
+	     AccessModel,
+	     AllowedGroups,
+	     Affiliation,
+	     OldSubscription,
+	     CurrentApprover} = {notfound, notfound, notfound, notfound, notfound, notfound};
+	_ ->
+	    {AllowSubscriptions,
+	     AccessModel,
+	     AllowedGroups,
+	     Affiliation,
+	     OldSubscription,
+	     CurrentApprover} = {error, error, error, error, error, error}
+    end,
+    Subscription = if AllowSubscriptions == notfound ->
+			   {error, ?ERR_ITEM_NOT_FOUND};
+		      AllowSubscriptions == error ->
+			   {error, ?ERR_INTERNAL_SERVER_ERROR};
+		      not AuthorizedToSubscribe ->
+			   {error, extend_error(?ERR_BAD_REQUEST, "invalid-jid")};
+		      not AllowSubscriptions ->
+			   {error, extend_error(?ERR_FEATURE_NOT_IMPLEMENTED, unsupported, "subscribe")};
+		      OldSubscription == pending ->
+			   {error, extend_error(?ERR_NOT_AUTHORIZED, "pending-subscription")};
+		      Affiliation == outcast ->
+			   {error, ?ERR_FORBIDDEN};
+		      AccessModel == open; Affiliation == owner; Affiliation == publisher ->
+			   subscribed;
+		      AccessModel == authorize ->
+			   pending;
+		      AccessModel == presence ->
+			    %% XXX: this applies only to PEP
+			   {OUser, OServer, _} = Host,
+			   {Subscription1, _Groups} =
+			       ejabberd_hooks:run_fold(
+				 roster_get_jid_info, OServer,
+				 {none, []}, [OUser, OServer, SubscriberWithoutResource]),
+			   if (Subscription1 == both) or
+			      (Subscription1 == from) ->
+				   subscribed;
+			      true ->
+				   {error, extend_error(?ERR_NOT_AUTHORIZED, "presence-subscription-required")}
+			   end;
+		      AccessModel == roster ->
+			    %% XXX: this applies only to PEP
+			   {OUser, OServer, _} = Host,
+			   {_Subscription, Groups} =
+			       ejabberd_hooks:run_fold(
+				 roster_get_jid_info, OServer,
+				 {none, []}, [OUser, OServer, SubscriberWithoutResource]),
+			   case lists:any(fun(Group) -> lists:member(Group, AllowedGroups) end,
+					  Groups) of
+			       true ->
+				   subscribed;
+			       false ->
+				   {error, extend_error(?ERR_NOT_AUTHORIZED, "not-in-roster-group")}
+			   end;
+		      AccessModel == whitelist ->
+			    %% Subscribers are added by owner (see set_entities)
+			    {error, extend_error(?ERR_NOT_ALLOWED, "closed-node")}
+		   end,
     F = fun() ->
-  		case mnesia:read({pubsub_node, {Host, Node}}) of
-  		    [#pubsub_node{info = Info} = N] ->
-  			Affiliation = get_affiliation(Info, Subscriber),
- 			AllowSubscriptions = get_node_option(Info, subscribe),
- 			if
- 			    AllowSubscriptions and
- 			    (Affiliation /= outcast) ->
- 				NewInfo = add_subscriber(Info, Subscriber),
- 				mnesia:write(N#pubsub_node{info = NewInfo}),
- 				{result, [], Info};
-  			    true ->
-  				{error, ?ERR_NOT_ALLOWED}
-  			end;
-		    [] ->
-			{error, ?ERR_ITEM_NOT_FOUND}
+  		case mnesia:read({Table, {Host, Node}}) of
+  		    [N] ->
+			Info = get_node_info(N),
+			NewInfo = add_subscriber(Info, Subscriber, Subscription),
+			mnesia:write(set_node_info(N, NewInfo)),
+			{result, [{xmlelement, "subscription",
+				   [{"node", Node},
+				    {"jid", jlib:jid_to_string(Subscriber)},
+				    {"subscription", 
+				     subscription_to_string(Subscription)}],
+				   []}],
+			 Info}
 		end
 	end,
-    if
-	Sender == SubscriberWithoutResource ->
+    case Subscription of
+	{error, _} = Error ->
+	    Error;
+	_ ->
 	    case mnesia:transaction(F) of
 		{atomic, {error, _} = Error} ->
 		    Error;
  		{atomic, {result, Res, Info}} ->
- 		    case get_node_option(Info, send_item_subscribe) of
- 			true ->
- 			    ItemsEls =
- 				lists:map(
- 				  fun(#item{id = ItemID,
-					    payload = Payload}) ->
-					  ItemAttrs = case ItemID of
-							  "" -> [];
-							  _ -> [{"id", ItemID}]
-						      end,
- 					  {xmlelement, "item",
- 					   ItemAttrs, Payload}
-				  end, Info#nodeinfo.items),
- 			    Stanza =
- 				{xmlelement, "message",
- 				 [],
- 				 [{xmlelement, "x",
- 				   [{"xmlns", ?NS_PUBSUB_EVENT}],
- 				   [{xmlelement, "items",
- 				     [{"node", node_to_string(Node)}],
- 				     ItemsEls}]}]},
- 			    ejabberd_router:route(
- 			      ?MYJID, jlib:make_jid(Subscriber), Stanza);
- 			false ->
- 			    ok
- 		    end,
+		    if Subscription == subscribed ->
+			    SendLastPublishedItem = get_node_option(Info, send_last_published_item),
+			    if SendLastPublishedItem /= never ->
+				    send_last_published_item(Subscriber, Host, Node, Info);
+				true ->
+				    ok
+			    end;
+		       Subscription == pending ->
+			    %% send authorization request to node owner (section 8.6)
+
+			    %% XXX: fix translation
+			    Lang = "en",
+			    send_authorization_request(Lang, CurrentApprover, Subscriber, Node, Host)
+		    end,
 		    {result, Res};
 		_ ->
 		    {error, ?ERR_INTERNAL_SERVER_ERROR}
-	    end;
-	true ->
-	    {error, ?ERR_NOT_ALLOWED}
+	    end
     end.
 
+send_authorization_request(Lang, Approver, Subscriber, Node, Host) ->
+    Stanza =
+	{xmlelement, "message",
+	 [],
+	 [{xmlelement, "x", [{"xmlns", ?NS_XDATA},
+			     {"type", "form"}],
+	   [{xmlelement, "title", [],
+	     [{xmlcdata, translate:translate(Lang, "PubSub subscriber request")}]},
+	    {xmlelement, "instructions", [],
+	     [{xmlcdata, translate:translate(Lang, "Choose whether to approve this entity's subscription.")}]},
+	    {xmlelement, "field", [{"var", "FORM_TYPE"}, {"type", "hidden"}],
+	     [{xmlelement, "value", [], [{xmlcdata, ?NS_PUBSUB_SUB_AUTH}]}]},
+	    {xmlelement, "field", [{"var", "pubsub#node"}, {"type", "text-single"},
+				   {"label", translate:translate(Lang, "Node ID")}],
+	     [{xmlelement, "value", [], [{xmlcdata, node_to_string(Node)}]}]},
+	    {xmlelement, "field", [{"var", "pubsub#subscriber_jid"},
+				   {"type", "jid-single"},
+				   {"label", translate:translate(Lang, "Subscriber Address")}],
+	     [{xmlelement, "value", [], [{xmlcdata, jlib:jid_to_string(Subscriber)}]}]},
+	    {xmlelement, "field", [{"var", "pubsub#allow"}, {"type", "boolean"},
+				   {"label", translate:translate(Lang, "Allow this JID to subscribe to this pubsub node?")}],
+	     [{xmlelement, "value", [], [{xmlcdata, "false"}]}]}]}]},
+    ejabberd_router:route(get_sender(Host), Approver, Stanza).
+
+find_authorization_response(Packet) ->
+    {xmlelement, _Name, _Attrs, Els} = Packet,
+    XData1 = lists:map(fun({xmlelement, "x", XAttrs, _} = XEl) ->
+			       case xml:get_attr_s("xmlns", XAttrs) of
+				   ?NS_XDATA ->
+				       case xml:get_attr_s("type", XAttrs) of
+					   "cancel" ->
+					       none;
+					   _ ->
+					       jlib:parse_xdata_submit(XEl)
+				       end;
+				   _ ->
+				       none
+			       end;
+			  (_) ->
+			       none
+		       end, xml:remove_cdata(Els)),
+    XData = lists:filter(fun(E) -> E /= none end, XData1),
+    case XData of
+	[invalid] -> invalid;
+	[] -> none;
+	[XFields] when is_list(XFields) ->
+	    case lists:keysearch("FORM_TYPE", 1, XFields) of
+		{value, {_, ?NS_PUBSUB_SUB_AUTH}} ->
+		    XFields;
+		_ ->
+		    invalid
+	    end
+    end.
+
+handle_authorization_response(From, To, Host, Packet, XFields) ->
+    case {lists:keysearch("pubsub#node", 1, XFields),
+	  lists:keysearch("pubsub#subscriber_jid", 1, XFields),
+	  lists:keysearch("pubsub#allow", 1, XFields)} of
+	{{value, {_, SNode}}, {value, {_, SSubscriber}},
+	 {value, {_, SAllow}}} ->
+	    Node = case Host of
+		       {_, _, _} ->
+			   SNode;
+		       _ ->
+			   string:tokens(SNode, "/")
+		   end,
+	    Subscriber = jlib:string_to_jid(SSubscriber),
+	    Allow = case SAllow of
+			"1" -> true;
+			"true" -> true;
+			_ -> false
+		    end,
+	    Table = get_table(Host),
+	    F = fun() ->
+			case mnesia:read({Table, {Host, Node}}) of
+			    [N] ->
+				Info = get_node_info(N),
+				Subscription = get_subscription(Info, Subscriber),
+				Approver = get_node_option(N, current_approver),
+				IsApprover = jlib:jid_tolower(jlib:jid_remove_resource(From)) ==
+				    jlib:jid_tolower(jlib:jid_remove_resource(Approver)),
+				if not IsApprover ->
+					{error, ?ERR_FORBIDDEN};
+				   Subscription /= pending ->
+					{error, ?ERR_UNEXPECTED_REQUEST};
+				   true ->
+					NewSubscription = case Allow of
+							      true -> subscribed;
+							      false -> none
+							  end,
+					NewInfo = add_subscriber(Info, Subscriber, NewSubscription),
+					mnesia:write(set_node_info(N, NewInfo)),
+					NewSubscription
+				end;
+			    [] ->
+				{error, ?ERR_ITEM_NOT_FOUND}
+			end
+		end,
+	    case mnesia:transaction(F) of
+		{atomic, {error, Error}} ->
+		    ejabberd_router:route(To, From,
+					  jlib:make_error_reply(Packet, Error));
+		{atomic, NewSubscription} ->
+		    %% XXX: notify about subscription state change, section 12.11
+		    ok;
+		_ ->
+		    ejabberd_router:route(To, From,
+					  jlib:make_error_reply(Packet, ?ERR_INTERNAL_SERVER_ERROR))
+	    end;
+	_ ->
+	    ejabberd_router:route(To, From,
+				  jlib:make_error_reply(Packet, ?ERR_NOT_ACCEPTABLE))
+    end.
 
 unsubscribe_node(Host, From, JID, Node) ->
     Sender = jlib:jid_tolower(jlib:jid_remove_resource(From)),
@@ -734,19 +1269,21 @@ unsubscribe_node(Host, From, JID, Node) ->
 		J
 	end,
     Subscriber = jlib:jid_tolower(SubscriberJID),
+    Table = get_table(Host),
     F = fun() ->
-		case mnesia:read({pubsub_node, {Host, Node}}) of
-		    [#pubsub_node{info = Info} = N] ->
+		case mnesia:read({Table, {Host, Node}}) of
+		    [N] ->
+			Info = get_node_info(N),
 			Subscription = get_subscription(Info, Subscriber),
 			if
 			    Subscription /= none ->
 				NewInfo =
 				    remove_subscriber(Info, Subscriber),
 				mnesia:write(
-				  N#pubsub_node{info = NewInfo}),
+				  set_node_info(N, NewInfo)),
 				{result, []};
 			    true ->
-				{error, ?ERR_NOT_ALLOWED}
+				{error, extend_error(?ERR_UNEXPECTED_REQUEST, "not-subscribed")}
 			end;
 		    [] ->
 			{error, ?ERR_ITEM_NOT_FOUND}
@@ -763,7 +1300,7 @@ unsubscribe_node(Host, From, JID, Node) ->
 		    {error, ?ERR_INTERNAL_SERVER_ERROR}
 	    end;
 	true ->
-	    {error, ?ERR_NOT_ALLOWED}
+	    {error, ?ERR_FORBIDDEN}
     end.
 
 
@@ -780,12 +1317,14 @@ get_items(Host, JID, Node, SMaxItems) ->
 			Val
 		end
 	end,
+    Table = get_table(Host),
     case MaxItems of
 	{error, _} = Error ->
 	    Error;
 	_ ->
-	    case catch mnesia:dirty_read(pubsub_node, {Host, Node}) of
-		[#pubsub_node{info = Info}] ->
+	    case catch mnesia:dirty_read(Table, {Host, Node}) of
+		[N] ->
+		    Info = get_node_info(N),
 		    Items = lists:sublist(Info#nodeinfo.items, MaxItems),
 		    ItemsEls =
 			lists:map(
@@ -810,30 +1349,39 @@ get_items(Host, JID, Node, SMaxItems) ->
 
 delete_node(Host, JID, Node) ->
     Owner = jlib:jid_tolower(jlib:jid_remove_resource(JID)),
+    Table = get_table(Host),
     F = fun() ->
-		case mnesia:read({pubsub_node, {Host, Node}}) of
-		    [#pubsub_node{info = Info}] ->
+		case mnesia:read({Table, {Host, Node}}) of
+		    [N1] ->
+			Info = get_node_info(N1),
 			case get_affiliation(Info, Owner) of
 			    owner ->
-				% TODO: don't iterate over entire table
-				Removed =
-				    mnesia:foldl(
-				      fun(#pubsub_node{host_node = {_, N},
-						       info = NInfo}, Acc) ->
-					      case lists:prefix(Node, N) of
-						  true ->
-						      [{N, NInfo} | Acc];
-						  _ ->
-						      Acc
-					      end
-				      end, [], pubsub_node),
-				lists:foreach(
-				  fun({N, _}) ->
-					  mnesia:delete({pubsub_node, {Host, N}})
-				  end, Removed),
-				{removed, Removed};
+				%% PEP nodes are not hierarchical, so removal is easier.
+				case Table of
+				    pep_node ->
+					mnesia:delete({Table, {Host, Node}}),
+					{removed, [{N1, Info}]};
+				    pubsub_node ->
+					%% TODO: don't iterate over entire table
+					Removed =
+					    mnesia:foldl(
+					      fun(#pubsub_node{host_node = {_, N},
+							       info = NInfo}, Acc) ->
+						      case lists:prefix(Node, N) of
+							  true ->
+							      [{N, NInfo} | Acc];
+							  _ ->
+							      Acc
+						      end
+					      end, [], pubsub_node),
+					lists:foreach(
+					  fun({N, _}) ->
+						  mnesia:delete({pubsub_node, {Host, N}})
+					  end, Removed),
+					{removed, Removed}
+				end;
 			    _ ->
-				{error, ?ERR_NOT_ALLOWED}
+				{error, ?ERR_FORBIDDEN}
 			end;
 		    [] ->
 			{error, ?ERR_ITEM_NOT_FOUND}
@@ -844,7 +1392,6 @@ delete_node(Host, JID, Node) ->
 	    Error;
 	{atomic, {removed, Removed}} ->
 	    broadcast_removed_node(Host, Removed),
-	    Lang = "",
 	    broadcast_retract_item(
 	      Host, ["pubsub", "nodes"], node_to_string(Node)),
 	    {result, []};
@@ -855,17 +1402,18 @@ delete_node(Host, JID, Node) ->
 
 purge_node(Host, JID, Node) ->
     Owner = jlib:jid_tolower(jlib:jid_remove_resource(JID)),
+    Table = get_table(Host),
     F = fun() ->
-		case mnesia:read({pubsub_node, {Host, Node}}) of
-		    [#pubsub_node{info = Info} = N] ->
+		case mnesia:read({Table, {Host, Node}}) of
+		    [N] ->
+			Info = get_node_info(N),
 			case get_affiliation(Info, Owner) of
 			    owner ->
 				NewInfo = Info#nodeinfo{items = []},
-				mnesia:write(
-				  N#pubsub_node{info = NewInfo}),
-				{result, Info#nodeinfo.items, []};
+				mnesia:write(set_node_info(N, NewInfo)),
+				{result, []};
 			    _ ->
-				{error, ?ERR_NOT_ALLOWED}
+				{error, ?ERR_FORBIDDEN}
 			end;
 		    [] ->
 			{error, ?ERR_ITEM_NOT_FOUND}
@@ -874,52 +1422,170 @@ purge_node(Host, JID, Node) ->
     case mnesia:transaction(F) of
 	{atomic, {error, _} = Error} ->
 	    Error;
-	{atomic, {result, Items, Res}} ->
-	    lists:foreach(
-	      fun(#item{id = ItemID}) ->
-		      broadcast_retract_item(Host, Node, ItemID)
-	      end, Items),
+	{atomic, {result, Res}} ->
+	    broadcast_purge_node(Host, Node),
 	    {result, Res};
 	_ ->
 	    {error, ?ERR_INTERNAL_SERVER_ERROR}
     end.
 
 
-get_entities(Host, OJID, Node) ->
+owner_get_subscriptions(Host, OJID, Node) ->
     Owner = jlib:jid_tolower(jlib:jid_remove_resource(OJID)),
-    case catch mnesia:dirty_read(pubsub_node, {Host, Node}) of
-	[#pubsub_node{info = Info}] ->
+    Table = get_table(Host),
+    case catch mnesia:dirty_read(Table, {Host, Node}) of
+	[N] ->
+	    Info = get_node_info(N),
 	    case get_affiliation(Info, Owner) of
 		owner ->
 		    Entities = Info#nodeinfo.entities,
 		    EntitiesEls =
 			?DICT:fold(
 			  fun(JID,
-			      #entity{affiliation = Affiliation,
-				      subscription = Subscription},
+			      #entity{subscription = Subscription},
 			      Acc) ->
-				  [{xmlelement, "entity",
-				    [{"jid", jlib:jid_to_string(JID)},
-				     {"affiliation",
-				      affiliation_to_string(Affiliation)},
-				     {"subscription",
-				      subscription_to_string(Subscription)}],
-				    []} | Acc]
+				  case Subscription of
+				      none ->
+					  Acc;
+				      _ ->
+					  [{xmlelement, "subscription",
+					    [{"jid", jlib:jid_to_string(JID)},
+					     {"subscription",
+					      subscription_to_string(Subscription)}],
+					    []} | Acc]
+				  end
 			  end, [], Entities),
 		    {result, [{xmlelement, "pubsub",
-			       [{"xmlns", ?NS_PUBSUB_EVENT}],
-			       [{xmlelement, "entities",
+			       [{"xmlns", ?NS_PUBSUB_OWNER}],
+			       [{xmlelement, "subscriptions",
 				 [{"node", node_to_string(Node)}],
 				 EntitiesEls}]}]};
 		_ ->
-		    {error, ?ERR_NOT_ALLOWED}
+		    {error, ?ERR_FORBIDDEN}
 	    end;
 	_ ->
 	    {error, ?ERR_ITEM_NOT_FOUND}
     end.
 
 
-set_entities(Host, OJID, Node, EntitiesEls) ->
+owner_set_subscriptions(Host, OJID, Node, EntitiesEls) ->
+    %% XXX: not updated for PEP and new pubsub revision
+    Owner = jlib:jid_tolower(jlib:jid_remove_resource(OJID)),
+    Entities =
+	lists:foldl(
+	  fun(El, Acc) ->
+		  case Acc of
+		      error ->
+			  error;
+		      _ ->
+			  case El of
+			      {xmlelement, "entity", Attrs, _} ->
+				  JID = jlib:string_to_jid(
+					  xml:get_attr_s("jid", Attrs)),
+				  Affiliation =
+				      case xml:get_attr_s("affiliation",
+							  Attrs) of
+					  "owner" -> owner;
+					  "publisher" -> publisher;
+					  "outcast" -> outcast;
+					  "none" -> none;
+					  _ -> false
+				      end,
+				  Subscription =
+				      case xml:get_attr_s("subscription",
+							  Attrs) of
+					  "subscribed" -> subscribed;
+					  "pending" -> pending;
+					  "unconfigured" -> unconfigured;
+					  "none" -> none;
+					  _ -> false
+				      end,
+				  if
+				      (JID == error) or
+				      (Affiliation == false) or
+				      (Subscription == false) ->
+					  error;
+				      true ->
+					  [{jlib:jid_tolower(JID),
+					    #entity{
+					      affiliation = Affiliation,
+					      subscription = Subscription}} |
+					   Acc]
+				  end
+			  end
+		  end
+	  end, [], EntitiesEls),
+    case Entities of
+	error ->
+	    {error, ?ERR_BAD_REQUEST};
+	_ ->
+	    F = fun() ->
+			case mnesia:read({pubsub_node, {Host, Node}}) of
+			    [#pubsub_node{info = Info} = N] ->
+				case get_affiliation(Info, Owner) of
+				    owner ->
+					NewInfo =
+					    set_info_entities(Info, Entities),
+					mnesia:write(
+					  N#pubsub_node{info = NewInfo}),
+					{result, []};
+				    _ ->
+					{error, ?ERR_NOT_ALLOWED}
+				end;
+			    [] ->
+				{error, ?ERR_ITEM_NOT_FOUND}
+			end
+		end,
+	    case mnesia:transaction(F) of
+		{atomic, {error, _} = Error} ->
+		    Error;
+		{atomic, {result, _}} ->
+		    {result, []};
+		_ ->
+		    {error, ?ERR_INTERNAL_SERVER_ERROR}
+	    end
+    end.
+
+owner_get_affiliations(Host, OJID, Node) ->
+    Owner = jlib:jid_tolower(jlib:jid_remove_resource(OJID)),
+    Table = get_table(Host),
+    case catch mnesia:dirty_read(Table, {Host, Node}) of
+	[N] ->
+	    Info = get_node_info(N),
+	    case get_affiliation(Info, Owner) of
+		owner ->
+		    Entities = Info#nodeinfo.entities,
+		    EntitiesEls =
+			?DICT:fold(
+			  fun(JID,
+			      #entity{affiliation = Affiliation},
+			      Acc) ->
+				  case Affiliation of
+				      none ->
+					  Acc;
+				      _ ->
+					  [{xmlelement, "affiliation",
+					    [{"jid", jlib:jid_to_string(JID)},
+					     {"affiliation",
+					      affiliation_to_string(Affiliation)}],
+					    []} | Acc]
+				  end
+			  end, [], Entities),
+		    {result, [{xmlelement, "pubsub",
+			       [{"xmlns", ?NS_PUBSUB_OWNER}],
+			       [{xmlelement, "affiliations",
+				 [{"node", node_to_string(Node)}],
+				 EntitiesEls}]}]};
+		_ ->
+		    {error, ?ERR_FORBIDDEN}
+	    end;
+	_ ->
+	    {error, ?ERR_ITEM_NOT_FOUND}
+    end.
+
+
+owner_set_affiliations(Host, OJID, Node, EntitiesEls) ->
+    %% XXX: not updated for PEP and new pubsub revision
     Owner = jlib:jid_tolower(jlib:jid_remove_resource(OJID)),
     Entities =
 	lists:foldl(
@@ -999,42 +1665,104 @@ set_entities(Host, OJID, Node, EntitiesEls) ->
 
 get_affiliations(Host, JID) ->
     LJID = jlib:jid_tolower(jlib:jid_remove_resource(JID)),
+    Table = get_table(Host),
+    Template = case Table of
+		   pubsub_node ->
+		       #pubsub_node{_ = '_'};
+		   pep_node ->
+		       #pep_node{_ = '_'}
+	       end,
     case catch mnesia:dirty_select(
-		 pubsub_node,
-		 [{#pubsub_node{_ = '_'},
+		 Table,
+		 [{Template,
 		   [],
 		   ['$_']}]) of
 	{'EXIT', _} ->
-	    {error, ?ERR_INTERNAL_SERVER_ERROR};
+		 {error, ?ERR_INTERNAL_SERVER_ERROR};
 	Nodes ->
-	    Entities =
-		lists:flatmap(
-		  fun(#pubsub_node{host_node = {H, Node}, info = Info})
-		     when H == Host ->
-			  Affiliation = get_affiliation(Info, LJID),
-			  Subscription = get_subscription(Info, LJID),
-			  if
-			      (Affiliation /= none) or
-			      (Subscription /= none) ->
-				  [{xmlelement, "entity",
-				    [{"node", node_to_string(Node)},
-				     {"jid", jlib:jid_to_string(JID)},
-				     {"affiliation",
-				      affiliation_to_string(Affiliation)},
-				     {"subscription",
-				      subscription_to_string(Subscription)}],
-				    []}];
-			      true ->
-				  []
-			  end;
-		     (_) ->
-			  []
-		  end, Nodes),
-	    {result, [{xmlelement, "pubsub",
-		       [{"xmlns", ?NS_PUBSUB_EVENT}],
-		       [{xmlelement, "affiliations", [],
-			 Entities}]}]}
-    end.
+		 Entities =
+		     lists:flatmap(
+		       fun(N) ->
+			       Info = get_node_info(N),
+			       {H, Node} =
+				   case Table of
+				       pubsub_node ->
+					   N#pubsub_node.host_node;
+				       pep_node ->
+					   N#pep_node.owner_node
+				   end,
+			       if Host == H ->
+				       Affiliation = get_affiliation(Info, LJID),
+				       if Affiliation /= none ->
+					       [{xmlelement, "affiliation",
+						 [{"node", node_to_string(Node)},
+						  {"affiliation",
+						   affiliation_to_string(Affiliation)}],
+						 []}];
+					   true ->
+					       []
+				       end;
+				  true ->
+				       []
+			       end
+		       end, 
+		       Nodes),
+		 {result, [{xmlelement, "pubsub",
+			    [{"xmlns", ?NS_PUBSUB}],
+			    [{xmlelement, "affiliations", [],
+			      Entities}]}]}
+	 end.
+
+get_subscriptions(Host, JID) ->
+    LJID = jlib:jid_tolower(jlib:jid_remove_resource(JID)),
+    Table = get_table(Host),
+    Template = case Table of
+		   pubsub_node ->
+		       #pubsub_node{_ = '_'};
+		   pep_node ->
+		       #pep_node{_ = '_'}
+	       end,
+    case catch mnesia:dirty_select(
+		 Table,
+		 [{Template,
+		   [],
+		   ['$_']}]) of
+	{'EXIT', _} ->
+		 {error, ?ERR_INTERNAL_SERVER_ERROR};
+	Nodes ->
+		 Entities =
+		     lists:flatmap(
+		       fun(N) ->
+			       Info = get_node_info(N),
+			       {H, Node} =
+				   case Table of
+				       pubsub_node ->
+					   N#pubsub_node.host_node;
+				       pep_node ->
+					   N#pep_node.owner_node
+				   end,
+			       if Host == H ->
+				       Subscription = get_subscription(Info, LJID),
+				       if Subscription /= none ->
+					       [{xmlelement, "subscription",
+						 [{"node", node_to_string(Node)},
+						  {"jid", jlib:jid_to_string(LJID)}, %XXX: full JID?
+						  {"subscription",
+						   subscription_to_string(Subscription)}],
+						 []}];
+					   true ->
+					       []
+				       end;
+				  true ->
+				       []
+			       end
+		       end, 
+		       Nodes),
+		 {result, [{xmlelement, "pubsub",
+			    [{"xmlns", ?NS_PUBSUB}],
+			    [{xmlelement, "subscriptions", [],
+			      Entities}]}]}
+	 end.
 
 
 
@@ -1123,18 +1851,18 @@ check_item_publisher(Info, ItemID, Publisher) ->
 	    false
     end.
 
-add_subscriber(Info, Subscriber) ->
+add_subscriber(Info, Subscriber, Subscription) ->
     Entities = Info#nodeinfo.entities,
     case ?DICT:find(Subscriber, Entities) of
 	{ok, Entity} ->
 	    Info#nodeinfo{
 	      entities = ?DICT:store(Subscriber,
-				     Entity#entity{subscription = subscribed},
+				     Entity#entity{subscription = Subscription},
 				     Entities)};
 	_ ->
 	    Info#nodeinfo{
 	      entities = ?DICT:store(Subscriber,
-				     #entity{subscription = subscribed},
+				     #entity{subscription = Subscription},
 				     Entities)}
     end.
 
@@ -1167,68 +1895,128 @@ set_info_entities(Info, Entities) ->
 	  end, Info#nodeinfo.entities, Entities),
     Info#nodeinfo{entities = NewEntities}.
 
+send_last_published_item(Subscriber, Host, Node, Info) ->
+    case Info#nodeinfo.items of
+	[] ->
+	    %% No published items - can't send anything.
+	    ok;
+	[#item{id = ItemID, payload = Payload} | _] ->
+	    %% At least one item - send the last one.
+	    ItemAttrs = case ItemID of
+			    "" -> [];
+			    _ -> [{"id", ItemID}]
+			end,
+	    ItemsEl = {xmlelement, "item",
+		       ItemAttrs, Payload},
+	    Stanza =
+		{xmlelement, "message",
+		 [],
+		 [{xmlelement, "event",
+		   [{"xmlns", ?NS_PUBSUB_EVENT}],
+		   [{xmlelement, "items",
+		     [{"node", node_to_string(Node)}],
+	     [ItemsEl]}]}]},
+	    ejabberd_router:route(
+	      get_sender(Host), jlib:make_jid(Subscriber), Stanza)
+    end.
+
 
 
 broadcast_publish_item(Host, Node, ItemID, Payload) ->
-    case catch mnesia:dirty_read(pubsub_node, {Host, Node}) of
-	[#pubsub_node{info = Info}] ->
+    ?DEBUG("broadcasting for ~p / ~p", [Host, Node]),
+    Table = get_table(Host),
+    Sender = get_sender(Host),
+    case catch mnesia:dirty_read(Table, {Host, Node}) of
+	[N] ->
+	    Info = get_node_info(N),
+
+	    ItemAttrs = case ItemID of
+			    "" -> [];
+			    _ -> [{"id", ItemID}]
+			end,
+	    Content = case get_node_option(
+			     Info, deliver_payloads) of
+			  true ->
+			      Payload;
+			  false ->
+			      []
+		      end,
+	    Stanza =
+		{xmlelement, "message", [],
+		 [{xmlelement, "event",
+		   [{"xmlns", ?NS_PUBSUB_EVENT}],
+		   [{xmlelement, "items",
+		     [{"node", node_to_string(Node)}],
+		     [{xmlelement, "item",
+		       ItemAttrs,
+		       Content}]}]}]},
+
 	    ?DICT:fold(
 	       fun(JID, #entity{subscription = Subscription}, _) ->
-		       Present = case get_node_option(
-					Info, presence_based_delivery) of
-				     true ->
-					 case ets:lookup(
-						gen_mod:get_module_proc(Host, pubsub_presence),
-						{element(1, JID),
-						 element(2, JID)}) of
-					     [_] ->
-						 true;
-					     [] ->
-						 false
-					 end;
-				     false ->
-					 true
-				 end,
+		       Resources = get_recipient_resources(Host, JID, Info),
+		       ?DEBUG("subscriber ~p: delivering to resources ~p", [JID, Resources]),
 		       if
-			   (Subscription /= none) and
-			   (Subscription /= pending) and
-			   Present ->
-			       ItemAttrs = case ItemID of
-					       "" -> [];
-					       _ -> [{"id", ItemID}]
-					   end,
-			       Content = case get_node_option(
-						Info, deliver_payloads) of
-					     true ->
-						 Payload;
-					     false ->
-						 []
-					 end,
-			       Stanza =
-				   {xmlelement, "message", [],
-				    [{xmlelement, "event",
-				      [{"xmlns", ?NS_PUBSUB_EVENT}],
-				      [{xmlelement, "items",
-					[{"node", node_to_string(Node)}],
-					[{xmlelement, "item",
-					  ItemAttrs,
-					  Content}]}]}]},
-			       ejabberd_router:route(
-				 ?MYJID, jlib:make_jid(JID), Stanza);
+			   Subscription /= none,
+			   Subscription /= pending,
+			   Resources /= [] ->
+			       TheJID = jlib:make_jid(JID),
+			       lists:foreach(fun(Resource) ->
+						     FullJID = jlib:jid_replace_resource(TheJID, Resource),
+						     ejabberd_router:route(
+						       Sender, FullJID, Stanza)
+					     end, Resources);
 			   true ->
 			       ok
 		       end
-	       end, ok, Info#nodeinfo.entities);
+	       end, ok, Info#nodeinfo.entities),
+
+	    case Info#nodeinfo.options of
+		[{defaults, pep_node} | _] ->
+		    %% If this is PEP, we want to generate
+		    %% notifications based on entity capabilities as
+		    %% well.
+		    case ejabberd_sm:get_session_pid(Sender#jid.luser,
+						     Sender#jid.lserver,
+						     Sender#jid.lresource) of
+			C2SPid when is_pid(C2SPid) ->
+			    case catch ejabberd_c2s:get_subscribed_and_online(C2SPid) of
+				ContactsWithCaps when is_list(ContactsWithCaps) ->
+				    %% We have a list of the form [{JID, Caps}].
+				    lists:foreach(
+				      fun({JID, Caps}) ->
+					      Features = mod_caps:get_features(?MYNAME, Caps),
+					      LookingFor = Node++"+notify",
+					      case lists:member(LookingFor, Features) of
+						  true ->
+						      ejabberd_router:route(
+							Sender, JID, Stanza);
+						  _ ->
+						      ok
+					      end
+				      end, ContactsWithCaps);
+				_ ->
+				    ok
+			    end;
+			_ ->
+			    ok
+		    end;
+		_ ->
+		    ok
+	    end;
 	_ ->
 	    false
     end.
 
 
 broadcast_retract_item(Host, Node, ItemID) ->
-    case catch mnesia:dirty_read(pubsub_node, {Host, Node}) of
-	[#pubsub_node{info = Info}] ->
+    Table = get_table(Host),
+    Sender = get_sender(Host),
+    case catch mnesia:dirty_read(Table, {Host, Node}) of
+	[N] ->
+	    Info = get_node_info(N),
 	    case get_node_option(Info, notify_retract) of
 		true ->
+		    %% XXX: presence-based notifications?
 		    ?DICT:fold(
 		       fun(JID, #entity{subscription = Subscription}, _) ->
 			       if 
@@ -1240,14 +2028,48 @@ broadcast_retract_item(Host, Node, ItemID) ->
 						   end,
 				       Stanza =
 					   {xmlelement, "message", [],
-					    [{xmlelement, "x",
+					    [{xmlelement, "event",
 					      [{"xmlns", ?NS_PUBSUB_EVENT}],
 					      [{xmlelement, "items",
 						[{"node", node_to_string(Node)}],
 						[{xmlelement, "retract",
 						  ItemAttrs, []}]}]}]},
 				       ejabberd_router:route(
-					 ?MYJID, jlib:make_jid(JID), Stanza);
+					 Sender, jlib:make_jid(JID), Stanza);
+				   true ->
+				       ok
+			       end
+		       end, ok, Info#nodeinfo.entities);
+		false ->
+		    ok
+	    end;
+	_ ->
+	    false
+    end.
+
+broadcast_purge_node(Host, Node) ->
+    Table = get_table(Host),
+    Sender = get_sender(Host),
+    case catch mnesia:dirty_read(Table, {Host, Node}) of
+	[N] ->
+	    Info = get_node_info(N),
+	    case get_node_option(Info, notify_retract) of
+		true ->
+		    %% XXX: presence-based notifications?
+		    ?DICT:fold(
+		       fun(JID, #entity{subscription = Subscription}, _) ->
+			       if 
+				   (Subscription /= none) and
+				   (Subscription /= pending) ->
+				       Stanza =
+					   {xmlelement, "message", [],
+					    [{xmlelement, "event",
+					      [{"xmlns", ?NS_PUBSUB_EVENT}],
+					      [{xmlelement, "purge",
+						[{"node", node_to_string(Node)}],
+						[]}]}]},
+				       ejabberd_router:route(
+					 Sender, jlib:make_jid(JID), Stanza);
 				   true ->
 				       ok
 			       end
@@ -1265,6 +2087,7 @@ broadcast_removed_node(Host, Removed) ->
       fun({Node, Info}) ->
 	      case get_node_option(Info, notify_delete) of
 		  true ->
+		      %% XXX: presence-based notifications?
 		      Entities = Info#nodeinfo.entities,
 		      ?DICT:fold(
 			 fun(JID, #entity{subscription = Subscription}, _) ->
@@ -1273,13 +2096,13 @@ broadcast_removed_node(Host, Removed) ->
 				     (Subscription /= pending) ->
 					 Stanza =
 					     {xmlelement, "message", [],
-					      [{xmlelement, "x",
+					      [{xmlelement, "event",
 						[{"xmlns", ?NS_PUBSUB_EVENT}],
 						[{xmlelement, "delete",
 						  [{"node", node_to_string(Node)}],
 						  []}]}]},
 					 ejabberd_router:route(
-					   ?MYJID, jlib:make_jid(JID), Stanza);
+					   get_sender(Host), jlib:make_jid(JID), Stanza);
 				     true ->
 					 ok
 				 end
@@ -1291,31 +2114,19 @@ broadcast_removed_node(Host, Removed) ->
 
 
 broadcast_config_notification(Host, Node, Lang) ->
-    case catch mnesia:dirty_read(pubsub_node, {Host, Node}) of
-	[#pubsub_node{info = Info}] ->
+    Table = get_table(Host),
+    case catch mnesia:dirty_read(Table, {Host, Node}) of
+	[N] ->
+	    Info = get_node_info(N),
 	    case get_node_option(Info, notify_config) of
 		true ->
 		    ?DICT:fold(
 		       fun(JID, #entity{subscription = Subscription}, _) ->
-			       Present = case get_node_option(
-						Info, presence_based_delivery) of
-					     true ->
-						 case ets:lookup(
-							gen_mod:get_module_proc(Host, pubsub_presence),
-							{element(1, JID),
-							 element(2, JID)}) of
-						     [_] ->
-							 true;
-						     [] ->
-							 false
-						 end;
-					     false ->
-						 true
-					 end,
+			       Resources = get_recipient_resources(Host, JID, Info),
 			       if
-				   (Subscription /= none) and
-				   (Subscription /= pending) and
-				   Present ->
+				   Subscription /= none,
+				   Subscription /= pending,
+				   Resources /= [] ->
 				       Fields = get_node_config_xfields(
 						  Node, Info, Lang),
 				       Content = case get_node_option(
@@ -1323,22 +2134,24 @@ broadcast_config_notification(Host, Node, Lang) ->
 						     true ->
 							 [{xmlelement, "x",
 							   [{"xmlns", ?NS_XDATA},
-							    {"type", "form"}],
+							    {"type", "result"}],
 							   Fields}];
 						     false ->
 							 []
 						 end,
 				       Stanza =
 					   {xmlelement, "message", [],
-					    [{xmlelement, "x",
+					    [{xmlelement, "event",
 					      [{"xmlns", ?NS_PUBSUB_EVENT}],
-					      [{xmlelement, "items",
+					      [{xmlelement, "configuration",
 						[{"node", node_to_string(Node)}],
-						[{xmlelement, "item",
-						  [{"id", "configuration"}],
-						  Content}]}]}]},
-				       ejabberd_router:route(
-					 ?MYJID, jlib:make_jid(JID), Stanza);
+						Content}]}]},
+				       TheJID = jlib:make_jid(JID),
+				       lists:foreach(fun(Resource) ->
+							     FullJID = jlib:jid_replace_resource(TheJID, Resource),
+							     ejabberd_router:route(
+							       get_sender(Host), FullJID, Stanza)
+						     end, Resources);
 				   true ->
 				       ok
 			       end
@@ -1350,19 +2163,74 @@ broadcast_config_notification(Host, Node, Lang) ->
 	    false
     end.
 
+get_recipient_resources(Host, JID, Info) ->
+    %% Return a list of resources that are supposed to receive event
+    %% notifications.  An empty string in that list means a bare JID.
+    case get_node_option(Info, presence_based_delivery) of
+	false ->
+	    [""];
+	true ->
+	    To = case Host of
+		     {_, _, _} ->
+			 Host;
+		     _ ->
+			 {"", Host, ""}
+		 end,
+	    Resources = get_present_resources(To, JID),
+	    %% Here, there is a difference between JEP-0060 and
+	    %% JEP-0163.  JEP-0060, section 12.1, says that the
+	    %% service should not attempt to guess the correct
+	    %% resource.  JEP-0163, section 7.1.1.2, says that the
+	    %% service must send a notification to each resource.
+	    case Info#nodeinfo.options of
+		[{defaults, pep_node} | _] ->
+		    Resources;
+		_ ->
+		    %% That means, if noone is online, nothing is
+		    %% sent.  If someone is online, send one
+		    %% notification.
+		    case Resources of
+			[] ->
+			    [];
+			_ ->
+			    [""]
+		    end
+	    end
+    end.
+
 
 
 iq_pubsub_owner(Host, From, Type, Lang, SubEl) ->
     {xmlelement, _, _, SubEls} = SubEl,
     case xml:remove_cdata(SubEls) of
 	[{xmlelement, Name, Attrs, Els}] ->
-	    SNode = xml:get_attr_s("node", Attrs),
-	    Node = string:tokens(SNode, "/"),
+	    %% For PEP, there is no node hierarchy.
+	    Node = case Host of
+		       {_, _, _} ->
+			    xml:get_attr_s("node", Attrs);
+		       _ ->
+			   SNode = xml:get_attr_s("node", Attrs),
+			   string:tokens(SNode, "/")
+		   end,
 	    case {Type, Name} of
 		{get, "configure"} ->
 		    get_node_config(Host, From, Node, Lang);
 		{set, "configure"} ->
 		    set_node_config(Host, From, Node, Els, Lang);
+		{get, "default"} ->
+		    {error, extend_error(?ERR_FEATURE_NOT_IMPLEMENTED, unsupported, "retrieve-default")};
+		{set, "delete"} ->
+		    delete_node(Host, From, Node);
+		{set, "purge"} ->
+		    purge_node(Host, From, Node);
+		{get, "subscriptions"} ->
+		    owner_get_subscriptions(Host, From, Node);
+		{set, "subscriptions"} ->
+		    owner_set_subscriptions(Host, From, Node, xml:remove_cdata(Els));
+		{get, "affiliations"} ->
+		    owner_get_affiliations(Host, From, Node);
+		{set, "affiliations"} ->
+		    owner_set_affiliations(Host, From, Node, xml:remove_cdata(Els));
 		_ ->
 		    {error, ?ERR_FEATURE_NOT_IMPLEMENTED}
 	    end;
@@ -1371,8 +2239,10 @@ iq_pubsub_owner(Host, From, Type, Lang, SubEl) ->
     end.
 
 get_node_config(Host, From, Node, Lang) ->
-    case catch mnesia:dirty_read(pubsub_node, {Host, Node}) of
-	[#pubsub_node{info = Info}] ->
+    Table = get_table(Host),
+    case catch mnesia:dirty_read(Table, {Host, Node}) of
+	[N] ->
+	    Info = get_node_info(N),
 	    case get_affiliation(Info, From) of
 		owner ->
 		    Fields = get_node_config_xfields(Node, Info, Lang),
@@ -1384,7 +2254,7 @@ get_node_config(Host, From, Node, Lang) ->
 						     {"type", "form"}],
 				   Fields}]}]}]};
 		_ ->
-		    {error, ?ERR_NOT_AUTHORIZED}
+		    {error, ?ERR_FORBIDDEN}
 	    end;
 	_ ->
 	    {error, ?ERR_ITEM_NOT_FOUND}
@@ -1416,7 +2286,7 @@ get_node_config(Host, From, Node, Lang) ->
 		    [atom_to_list(O) || O <- Opts])).
 
 
--define(DEFAULT_OPTIONS,
+-define(DEFAULT_PUBSUB_OPTIONS,
 	[{deliver_payloads, true},
 	 {notify_config, false},
 	 {notify_delete, false},
@@ -1424,11 +2294,27 @@ get_node_config(Host, From, Node, Lang) ->
 	 {persist_items, true},
 	 {max_items, ?MAXITEMS div 2},
 	 {subscribe, true},
-	 {subscription_model, open},
+	 {access_model, open},
+	 {access_roster_groups, []},
 	 {publish_model, publishers},
 	 {max_payload_size, ?MAX_PAYLOAD_SIZE},
-	 {send_item_subscribe, false},
+	 {send_last_published_item, never},
 	 {presence_based_delivery, false}]).
+
+-define(DEFAULT_PEP_OPTIONS,
+	[{deliver_payloads, true},
+	 {notify_config, false},
+	 {notify_delete, false},
+	 {notify_retract, false},
+	 {persist_items, false},
+	 {max_items, ?MAXITEMS div 2},
+	 {subscribe, true},
+	 {access_model, presence},
+	 {access_roster_groups, []},
+	 {publish_model, publishers},
+	 {max_payload_size, ?MAX_PAYLOAD_SIZE},
+	 {send_last_published_item, on_sub_and_presence},
+	 {presence_based_delivery, true}]).
 
 get_node_option(Info, current_approver) ->
     Default = hd(get_owners_jids(Info)),
@@ -1438,15 +2324,32 @@ get_node_option(Info, current_approver) ->
 		      current_approver, 1,
 		      Options ++ [{current_approver, Default}])));
 get_node_option(#nodeinfo{options = Options}, Var) ->
+    %% At this level, it's hard to know which set of defaults to
+    %% apply.  Therefore, all newly created nodes have an extra
+    %% "defaults" field.  We assume that all nodes created before this
+    %% change are pubsub nodes.
+    {Defaults, Opts} = case Options of
+			   [{defaults, pubsub_node} | Tail] ->
+			       {?DEFAULT_PUBSUB_OPTIONS, Tail};
+			   [{defaults, pep_node} | Tail] ->
+			       {?DEFAULT_PEP_OPTIONS, Tail};
+			   _ ->
+			       {?DEFAULT_PUBSUB_OPTIONS, Options}
+		       end,
     element(
-      2, element(2, lists:keysearch(Var, 1, Options ++ ?DEFAULT_OPTIONS))).
+      2, element(2, lists:keysearch(Var, 1, Opts ++ Defaults))).
 
 get_max_items(Info) ->
     case get_node_option(Info, persist_items) of
 	true ->
 	    get_node_option(Info, max_items);
 	false ->
-	    0
+	    case get_node_option(Info, send_last_published_item) of
+		never ->
+		    0;
+		_ ->
+		    1
+	    end
     end.
 
 get_owners_jids(Info) ->
@@ -1454,8 +2357,7 @@ get_owners_jids(Info) ->
     Owners =
 	?DICT:fold(
 	   fun(JID,
-	       #entity{affiliation = Affiliation,
-		       subscription = Subscription},
+	       #entity{affiliation = Affiliation},
 	       Acc) ->
 		   case Affiliation of
 		       owner ->
@@ -1467,7 +2369,11 @@ get_owners_jids(Info) ->
     lists:sort(Owners).
 
 
-get_node_config_xfields(Node, Info, Lang) ->
+get_node_config_xfields(_Node, Info, Lang) ->
+    Type = case Info#nodeinfo.options of
+	       [{defaults, D} | _] -> D;
+	       _ -> pubsub_node
+	   end,
     [?XFIELD("hidden", "", "FORM_TYPE", ?NS_PUBSUB_NODE_CONFIG),
      ?BOOL_CONFIG_FIELD("Deliver payloads with event notifications", deliver_payloads),
      ?BOOL_CONFIG_FIELD("Notify subscribers when the node configuration changes", notify_config),
@@ -1476,12 +2382,24 @@ get_node_config_xfields(Node, Info, Lang) ->
      ?BOOL_CONFIG_FIELD("Persist items to storage", persist_items),
      ?INTEGER_CONFIG_FIELD("Max # of items to persist", max_items),
      ?BOOL_CONFIG_FIELD("Whether to allow subscriptions", subscribe),
-     ?ALIST_CONFIG_FIELD("Specify the subscriber model", subscription_model,
-			 [open]),
+     ?ALIST_CONFIG_FIELD("Specify the access model", access_model,
+			 [open, whitelist] ++
+			 case Type of
+			     pep_node -> [presence, roster];
+			     pubsub_node -> [authorize]
+			 end),
+     %% XXX: change to list-multi, include current roster groups as options
+     {xmlelement, "field", [{"type", "text-multi"},
+			    {"label", translate:translate(Lang, "Roster groups that may subscribe (if access model is roster)")},
+			    {"var", "pubsub#access_roster_groups"}],
+      [{xmlelement, "value", [], [{xmlcdata, Value}]} ||
+	  Value <- get_node_option(Info, access_roster_groups)]},
      ?ALIST_CONFIG_FIELD("Specify the publisher model", publish_model,
 			 [publishers, subscribers, open]),
      ?INTEGER_CONFIG_FIELD("Max payload size in bytes", max_payload_size),
-     ?BOOL_CONFIG_FIELD("Send items to new subscribers", send_item_subscribe),
+     %% XXX: fix labels for options
+     ?ALIST_CONFIG_FIELD("When to send the last published item", send_last_published_item,
+			 [never, on_sub, on_sub_and_presence]),
      ?BOOL_CONFIG_FIELD("Only deliver notifications to available users", presence_based_delivery),
      ?JLIST_CONFIG_FIELD("Specify the current subscription approver", current_approver,
 			 get_owners_jids(Info))
@@ -1489,8 +2407,10 @@ get_node_config_xfields(Node, Info, Lang) ->
 
 
 set_node_config(Host, From, Node, Els, Lang) ->
-    case catch mnesia:dirty_read(pubsub_node, {Host, Node}) of
-	[#pubsub_node{info = Info} = N] ->
+    Table = get_table(Host),
+    case catch mnesia:dirty_read(Table, {Host, Node}) of
+	[N] ->
+	    Info = get_node_info(N),
 	    case get_affiliation(Info, From) of
 		owner ->
 		    case xml:remove_cdata(Els) of
@@ -1510,14 +2430,14 @@ set_node_config(Host, From, Node, Els, Lang) ->
 			    {error, ?ERR_BAD_REQUEST}
 		    end;
 		_ ->
-		    {error, ?ERR_NOT_AUTHORIZED}
+		    {error, ?ERR_FORBIDDEN}
 	    end;
 	_ ->
 	    {error, ?ERR_ITEM_NOT_FOUND}
     end.
 
 
-set_node_config1(Host, From, Node, XEl, CurOpts, Lang) ->
+set_node_config1(Host, _From, Node, XEl, CurOpts, Lang) ->
     XData = jlib:parse_xdata_submit(XEl),
     case XData of
 	invalid ->
@@ -1537,78 +2457,104 @@ add_opt(Key, Value, Opts) ->
 
 
 -define(SET_BOOL_XOPT(Opt, Val),
-	case Val of
-	    "0" -> set_xoption(Opts, add_opt(Opt, false, NewOpts));
-	    "1" -> set_xoption(Opts, add_opt(Opt, true, NewOpts));
-	    _ -> {error, ?ERR_BAD_REQUEST}
+	BoolVal = case Val of
+		      "0" -> false;
+		      "1" -> true;
+		      "false" -> false;
+		      "true" -> true;
+		      _ -> error
+		  end,
+	case BoolVal of
+	    error -> {error, ?ERR_NOT_ACCEPTABLE};
+	    _ -> set_xoption(Opts, add_opt(Opt, BoolVal, NewOpts), Type)
 	end).
 
 -define(SET_STRING_XOPT(Opt, Val),
-	set_xoption(Opts, add_opt(Opt, Val, NewOpts))).
+	set_xoption(Opts, add_opt(Opt, Val, NewOpts), Type)).
 
 -define(SET_INTEGER_XOPT(Opt, Val, Min, Max),
 	case catch list_to_integer(Val) of
 	    IVal when is_integer(IVal),
 		      IVal >= Min,
 		      IVal =< Max ->
-		set_xoption(Opts, add_opt(Opt, IVal, NewOpts));
+		set_xoption(Opts, add_opt(Opt, IVal, NewOpts), Type);
 	    _ ->
-		{error, ?ERR_BAD_REQUEST}
+		{error, ?ERR_NOT_ACCEPTABLE}
 	end).
 
 -define(SET_ALIST_XOPT(Opt, Val, Vals),
 	case lists:member(Val, [atom_to_list(V) || V <- Vals]) of
 	    true ->
-		set_xoption(Opts, add_opt(Opt, list_to_atom(Val), NewOpts));
+		set_xoption(Opts, add_opt(Opt, list_to_atom(Val), NewOpts), Type);
 	    false ->
-		{error, ?ERR_BAD_REQUEST}
+		{error, ?ERR_NOT_ACCEPTABLE}
 	end).
 
 
-set_xoption([], NewOpts) ->
+set_xoption(Opts, [{defaults, Type} = Defaults | NewOpts]) ->
+    OtherOpts = set_xoption(Opts, NewOpts, Type),
+    if is_list(OtherOpts) ->
+	    %% Make sure that "defaults" remains at head of option list.
+	    [Defaults | set_xoption(Opts, NewOpts, Type)];
+       true ->
+	    %% If it's not a list, it's an {error, ...} tuple.  Leave
+	    %% it as it is.
+	    OtherOpts
+    end;
+set_xoption(Opts, NewOpts) ->
+    set_xoption(Opts, NewOpts, pubsub_node).
+
+set_xoption([], NewOpts, _Type) ->
     NewOpts;
-set_xoption([{"FORM_TYPE", _} | Opts], NewOpts) ->
-    set_xoption(Opts, NewOpts);
-set_xoption([{"pubsub#deliver_payloads", [Val]} | Opts], NewOpts) ->
+set_xoption([{"FORM_TYPE", _} | Opts], NewOpts, Type) ->
+    set_xoption(Opts, NewOpts, Type);
+set_xoption([{"pubsub#deliver_payloads", [Val]} | Opts], NewOpts, Type) ->
     ?SET_BOOL_XOPT(deliver_payloads, Val);
-set_xoption([{"pubsub#notify_config", [Val]} | Opts], NewOpts) ->
+set_xoption([{"pubsub#notify_config", [Val]} | Opts], NewOpts, Type) ->
     ?SET_BOOL_XOPT(notify_config, Val);
-set_xoption([{"pubsub#notify_delete", [Val]} | Opts], NewOpts) ->
+set_xoption([{"pubsub#notify_delete", [Val]} | Opts], NewOpts, Type) ->
     ?SET_BOOL_XOPT(notify_delete, Val);
-set_xoption([{"pubsub#notify_retract", [Val]} | Opts], NewOpts) ->
+set_xoption([{"pubsub#notify_retract", [Val]} | Opts], NewOpts, Type) ->
     ?SET_BOOL_XOPT(notify_retract, Val);
-set_xoption([{"pubsub#persist_items", [Val]} | Opts], NewOpts) ->
+set_xoption([{"pubsub#persist_items", [Val]} | Opts], NewOpts, Type) ->
     ?SET_BOOL_XOPT(persist_items, Val);
-set_xoption([{"pubsub#max_items", [Val]} | Opts], NewOpts) ->
+set_xoption([{"pubsub#max_items", [Val]} | Opts], NewOpts, Type) ->
     ?SET_INTEGER_XOPT(max_items, Val, 0, ?MAXITEMS);
-set_xoption([{"pubsub#subscribe", [Val]} | Opts], NewOpts) ->
+set_xoption([{"pubsub#subscribe", [Val]} | Opts], NewOpts, Type) ->
     ?SET_BOOL_XOPT(subscribe, Val);
-set_xoption([{"pubsub#subscription_model", [Val]} | Opts], NewOpts) ->
-    ?SET_ALIST_XOPT(subscription_model, Val, [open]);
-set_xoption([{"pubsub#publish_model", [Val]} | Opts], NewOpts) ->
+set_xoption([{"pubsub#access_model", [Val]} | Opts], NewOpts, Type) ->
+    AllowedModels = case Type of
+			pubsub_node -> [open, authorize, whitelist];
+			pep_node -> [open, presence, roster, whitelist]
+		    end,
+    ?SET_ALIST_XOPT(access_model, Val, AllowedModels);
+set_xoption([{"pubsub#access_roster_groups", Values} | Opts], NewOpts, Type) ->
+    set_xoption(Opts, add_opt(access_roster_groups, Values, NewOpts), Type);
+set_xoption([{"pubsub#publish_model", [Val]} | Opts], NewOpts, Type) ->
     ?SET_ALIST_XOPT(publish_model, Val, [publishers, subscribers, open]);
-set_xoption([{"pubsub#max_payload_size", [Val]} | Opts], NewOpts) ->
+set_xoption([{"pubsub#max_payload_size", [Val]} | Opts], NewOpts, Type) ->
     ?SET_INTEGER_XOPT(max_payload_size, Val, 0, ?MAX_PAYLOAD_SIZE);
-set_xoption([{"pubsub#send_item_subscribe", [Val]} | Opts], NewOpts) ->
-    ?SET_BOOL_XOPT(send_item_subscribe, Val);
-set_xoption([{"pubsub#presence_based_delivery", [Val]} | Opts], NewOpts) ->
+set_xoption([{"pubsub#send_last_published_item", [Val]} | Opts], NewOpts, Type) ->
+    ?SET_ALIST_XOPT(send_last_published_item, Val, [never, on_sub, on_sub_and_presence]);
+set_xoption([{"pubsub#presence_based_delivery", [Val]} | Opts], NewOpts, Type) ->
     ?SET_BOOL_XOPT(presence_based_delivery, Val);
-set_xoption([{"pubsub#current_approver", _} | Opts], NewOpts) ->
+set_xoption([{"pubsub#current_approver", _} | Opts], NewOpts, Type) ->
     % TODO
-    set_xoption(Opts, NewOpts);
+    set_xoption(Opts, NewOpts, Type);
 %set_xoption([{"title", [Val]} | Opts], NewOpts) ->
 %    ?SET_STRING_XOPT(title, Val);
-set_xoption([_ | _Opts], _NewOpts) ->
-    {error, ?ERR_BAD_REQUEST}.
+set_xoption([_ | _Opts], _NewOpts, _Type) ->
+    {error, ?ERR_NOT_ACCEPTABLE}.
 
 
 change_node_opts(Host, NewOpts, Node, Lang) ->
+    Table = get_table(Host),
     F = fun() ->
-		case mnesia:read({pubsub_node, {Host, Node}}) of
-		    [#pubsub_node{info = Info} = N] ->
-			NewInfo = Info#nodeinfo{options = NewOpts},
-			mnesia:write(
-			  N#pubsub_node{info = NewInfo}),
+		case mnesia:read({Table, {Host, Node}}) of
+		    [N] ->
+			Info = get_node_info(N),
+			NewInfo = Info#nodeinfo{options = maybe_add_defaults(NewOpts, Table)},
+			mnesia:write(set_node_info(N, NewInfo)),
 			{result, []};
 		    [] ->
 			{error, ?ERR_ITEM_NOT_FOUND}
@@ -1624,28 +2570,32 @@ change_node_opts(Host, NewOpts, Node, Lang) ->
 	    {error, ?ERR_INTERNAL_SERVER_ERROR}
     end.
 
-
-
-
-
-find_my_host(LServer) ->
-    Parts = string:tokens(LServer, "."),
-    find_my_host(Parts, ?MYHOSTS).
-
-find_my_host([], _Hosts) ->
-    ?MYNAME;
-find_my_host([_ | Tail] = Parts, Hosts) ->
-    Domain = parts_to_string(Parts),
-    case lists:member(Domain, Hosts) of
-	true ->
-	    Domain;
-	false ->
-	    find_my_host(Tail, Hosts)
+maybe_add_defaults(NewOpts, Table) ->
+    %% When we change node configuration, we add an explicit default
+    %% marker, pubsub_node or pep_node.
+    case NewOpts of
+	[{defaults, _} | _] ->
+	    NewOpts;
+	_ ->
+	    [{defaults, Table} | NewOpts]
     end.
 
-parts_to_string(Parts) ->
-    string:strip(lists:flatten(lists:map(fun(S) -> [S, $.] end, Parts)),
-		 right, $.).
+
+get_present_resources({ToUser, ToServer, _}, {FromUser, FromServer, _}) ->
+    get_present_resources(ToUser, ToServer, FromUser, FromServer).
+
+get_present_resources(ToUser, ToServer, FromUser, FromServer) ->
+    %% Return a list of resources of FromUser@FromServer that have
+    %% sent presence to ToUser@ToServer.
+    Key = {ToUser, ToServer, FromUser, FromServer},
+    lists:map(fun(#pubsub_presence{resource = Res}) -> Res end,
+	      case catch mnesia:dirty_read(pubsub_presence, Key) of
+		  Result when is_list(Result) ->
+		      Result;
+		  _ ->
+		      []
+	      end).
+
 
 
 

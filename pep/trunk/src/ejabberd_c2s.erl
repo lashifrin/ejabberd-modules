@@ -18,7 +18,8 @@
 	 send_text/2,
 	 send_element/2,
 	 socket_type/0,
-	 get_presence/1]).
+	 get_presence/1,
+	 get_subscribed_and_online/1]).
 
 %% gen_fsm callbacks
 -export([init/1,
@@ -39,6 +40,7 @@
 -include("jlib.hrl").
 
 -define(SETS, gb_sets).
+-define(DICT, dict).
 
 -record(state, {socket,
 		sockmod,
@@ -59,6 +61,7 @@
 		pres_f = ?SETS:new(),
 		pres_a = ?SETS:new(),
 		pres_i = ?SETS:new(),
+		pres_available = ?DICT:new(),
 		pres_last, pres_pri,
 		pres_timestamp,
 		pres_invis = false,
@@ -107,6 +110,11 @@ socket_type() ->
 get_presence(FsmRef) ->
     gen_fsm:sync_send_all_state_event(FsmRef, {get_presence}, 1000).
 
+%% Return list of all available resources of contacts,
+%% in form [{JID, Caps}].
+get_subscribed_and_online(FsmRef) ->
+    gen_fsm:sync_send_all_state_event(FsmRef, {get_subscribed_and_online}, 1000).
+    
 %%%----------------------------------------------------------------------
 %%% Callback functions from gen_fsm
 %%%----------------------------------------------------------------------
@@ -869,6 +877,16 @@ handle_sync_event({get_presence}, _From, StateName, StateData) ->
     Reply = {User, Resource, Show, Status},
     {reply, Reply, StateName, StateData};
 
+handle_sync_event({get_subscribed_and_online}, _From, StateName, StateData) ->
+    Subscribed = StateData#state.pres_f,
+    Online = StateData#state.pres_available,
+    Pred = fun(User, _Caps) ->
+		   ?SETS:is_element(jlib:jid_remove_resource(User), Subscribed) orelse
+		       ?SETS:is_element(User, Subscribed)
+	   end,
+    SubscribedAndOnline = ?DICT:filter(Pred, Online),
+    {reply, ?DICT:to_list(SubscribedAndOnline), StateName, StateData};
+
 handle_sync_event(_Event, _From, StateName, StateData) ->
     Reply = ok,
     {reply, Reply, StateName, StateData}.
@@ -933,9 +951,13 @@ handle_info({route, From, To, Packet}, StateName, StateData) ->
 			process_presence_probe(From, To, NewStateData),
 			{false, Attrs, NewStateData};
 		    "error" ->
-			NewA = remove_element(jlib:jid_tolower(From),
+			LFrom = jlib:jid_tolower(From),
+			NewA = remove_element(LFrom,
 					      StateData#state.pres_a),
-			{true, Attrs, StateData#state{pres_a = NewA}};
+			NewAvailable = ?DICT:erase(LFrom,
+						   StateData#state.pres_available),
+			{true, Attrs, StateData#state{pres_a = NewA,
+						      pres_available = NewAvailable}};
 		    "invisible" ->
 			Attrs1 = lists:keydelete("type", 1, Attrs),
 			{true, [{"type", "unavailable"} | Attrs1], StateData};
@@ -959,32 +981,42 @@ handle_info({route, From, To, Packet}, StateName, StateData) ->
 			    allow ->
 				LFrom = jlib:jid_tolower(From),
 				LBFrom = jlib:jid_remove_resource(LFrom),
+				%% Note contact availability
+				Caps = mod_caps:read_caps(Els),
+				mod_caps:note_caps(StateData#state.server, From, Caps),
+				NewAvailable = case xml:get_attr_s("type", Attrs) of
+						   "unavailable" ->
+						       ?DICT:erase(LFrom, StateData#state.pres_available);
+						   _ ->
+						       ?DICT:store(LFrom, Caps, StateData#state.pres_available)
+					       end,
+				NewStateData = StateData#state{pres_available = NewAvailable},
 				case ?SETS:is_element(
-					LFrom, StateData#state.pres_a) orelse
+					LFrom, NewStateData#state.pres_a) orelse
 				    ?SETS:is_element(
-				       LBFrom, StateData#state.pres_a) of
+				       LBFrom, NewStateData#state.pres_a) of
 				    true ->
-					{true, Attrs, StateData};
+					{true, Attrs, NewStateData};
 				    false ->
 					case ?SETS:is_element(
-						LFrom, StateData#state.pres_f) of
+						LFrom, NewStateData#state.pres_f) of
 					    true ->
 						A = ?SETS:add_element(
 						       LFrom,
-						       StateData#state.pres_a),
+						       NewStateData#state.pres_a),
 						{true, Attrs,
-						 StateData#state{pres_a = A}};
+						 NewStateData#state{pres_a = A}};
 					    false ->
 						case ?SETS:is_element(
-							LBFrom, StateData#state.pres_f) of
+							LBFrom, NewStateData#state.pres_f) of
 						    true ->
 							A = ?SETS:add_element(
 							       LBFrom,
-							       StateData#state.pres_a),
+							       NewStateData#state.pres_a),
 							{true, Attrs,
-							 StateData#state{pres_a = A}};
+							 NewStateData#state{pres_a = A}};
 						    false ->
-							{true, Attrs, StateData}
+							{true, Attrs, NewStateData}
 						end
 					end
 				end;
