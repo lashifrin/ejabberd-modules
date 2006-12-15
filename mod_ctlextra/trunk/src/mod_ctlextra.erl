@@ -428,11 +428,14 @@ vcard_set(User, Server, Data, Content) ->
 
 vcard_set2(User, Server, R, Data) ->
 	% Get old vcard
-    [{_, _, A1}] = mnesia:dirty_read(vcard, {User, Server}),
-	{_, _, _, A2} = A1,
-
-    A3 = lists:keydelete(Data, 2, A2),
-    A4 = [R | A3],
+	A4 = case mnesia:dirty_read(vcard, {User, Server}) of
+		[] -> 
+			[R];
+		[{_, _, A1}] ->
+			{_, _, _, A2} = A1,
+			A3 = lists:keydelete(Data, 2, A2),
+			[R | A3]
+	end,
 
 	% Build new vcard
 	SubEl = {xmlelement, "vCard", [{"xmlns","vcard-temp"}], A4},
@@ -668,7 +671,7 @@ decide({Room_name, Host}, Last_allowed) ->
 	end.
 
 seconds_to_days(S) ->
-	round(S) div 60*60*24
+	round(S) div 60*60*24.
 
 get_room_names(Host) ->
 	Get_room_names = fun(Room_reg, Names) ->
