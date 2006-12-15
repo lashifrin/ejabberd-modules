@@ -313,9 +313,9 @@ get(_, ["vcards", title]) -> "Total vCards published";
 get(N, ["vcards"]) -> rpc:call(N, mnesia, table_info, [vcard, size]);
 get(_, ["vcards", Host]) -> get_vcards(Host);
 
-get(_, ["ircconns", title]) -> "IRC connections";
-get(_, ["ircconns"]) -> ets:info(irc_connection, size);
-get(_, ["ircconns", Host]) -> get_irccons(Host);
+%get(_, ["ircconns", title]) -> "IRC connections";
+%get(_, ["ircconns"]) -> ets:info(irc_connection, size);
+%get(_, ["ircconns", Host]) -> get_irccons(Host); % This seems to crash for some people
 get(_, ["uptime", title]) -> "Uptime";
 get(N, ["uptime"]) -> element(1, rpc:call(N, erlang, statistics, [wall_clock]));
 get(_, ["cputime", title]) -> "CPU Time";

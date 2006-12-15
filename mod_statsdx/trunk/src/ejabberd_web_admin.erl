@@ -1442,12 +1442,12 @@ get_statsdx(global, Lang) ->
 	     do_stat(global, Lang, "regpubsubnodes")
       ])
      ]),
-     ?XC("h3", "IRC"),
-     ?XAE("table", [],
-      [?XE("tbody", [
-	     do_stat(global, Lang, "ircconns")
-      ])
-     ]),
+     %?XC("h3", "IRC"),
+     %?XAE("table", [],
+     % [?XE("tbody", [
+	 %    do_stat(global, Lang, "ircconns")
+     % ])
+     %]),
      ?XC("h3", "Ratios"),
      ?XAE("table", [],
       [?XE("tbody", [
@@ -1518,12 +1518,12 @@ get_statsdx(Host, Lang) ->
 	     do_stat(global, Lang, "regmucrooms", Host)
       ])
      ]),
-     ?XC("h3", "IRC"),
-     ?XAE("table", [],
-      [?XE("tbody", [
-	     do_stat(global, Lang, "ircconns", Host)
-      ])
-     ]),
+     %?XC("h3", "IRC"),
+     %?XAE("table", [],
+     % [?XE("tbody", [
+	 %    do_stat(global, Lang, "ircconns", Host)
+     % ])
+     %]),
      %?XC("h3", "Pub/Sub"),
      %?XAE("table", [],
      % [?XE("tbody", [

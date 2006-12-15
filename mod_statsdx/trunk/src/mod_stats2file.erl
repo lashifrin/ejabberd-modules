@@ -141,10 +141,10 @@ write_stats(I, server, _Name, F, T) ->
 	fwttl(F, "regpubsubnodes", T),
 	fwbl2(F, T),
 
-	fwh(F, "IRC", 2, T),
-	fwbl1(F, T),
-	fwttl(F, "ircconns", T),
-	fwbl2(F, T),
+	%fwh(F, "IRC", 2, T),
+	%fwbl1(F, T),
+	%fwttl(F, "ircconns", T),
+	%fwbl2(F, T),
 
 	fwh(F, "Ratios", 2, T),
 	fwbl1(F, T),
@@ -285,10 +285,10 @@ write_stats(I, vhost, Host, F, T) ->
 	fwttl(F, "regmucrooms", Host, T),
 	fwbl2(F, T),
 
-	fwh(F, "IRC", 2, T),
-	fwbl1(F, T),
-	fwttl(F, "ircconns", Host, T),
-	fwbl2(F, T),
+	%fwh(F, "IRC", 2, T),
+	%fwbl1(F, T),
+	%fwttl(F, "ircconns", Host, T),
+	%fwbl2(F, T),
 
 	fwh(F, "Sessions", 2, T),
 	fwbl1(F, T),
