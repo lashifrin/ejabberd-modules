@@ -19,6 +19,7 @@
 	ctl_process/3
 	]).
 
+-include("ejabberd.hrl").
 -include("ejabberd_ctl.hrl").
 -include("jlib.hrl").
 
@@ -57,7 +58,7 @@ start(Host, _Opts) ->
 		% mod_muc
 		% muc-add room opts
 		% muc-del room
-		% muc-del-older 90 : delete rooms older than X days (with no activity (chat, presence, logins) in 6 months)
+		{"muc-purge days", "destroy rooms with not activity on the last 'days'"},
 
 		% mod_roster
 		{"add-rosteritem user1 server1 user2 server2 nick group subs", "Add user2@server2 to user1@server1"},
@@ -78,6 +79,9 @@ start(Host, _Opts) ->
 		{"killsession user server resource", "kill a user session"}
 	], ?MODULE, ctl_process),
     ejabberd_ctl:register_commands(Host, [
+		% mod_muc
+		{"muc-purge days", "destroy rooms with not activity on the last 'days'"},
+
 		% mod_last
 		{"num-active-users days", "number of users active in the last 'days'"},
 		{"status-list status", "list the logged users with status"},
@@ -163,6 +167,11 @@ ctl_process(_Val, ["srg-user-add", User, Server, Group, Host]) ->
 ctl_process(_Val, ["srg-user-del", User, Server, Group, Host]) ->
 	{atomic, ok} = mod_shared_roster:remove_user_from_group(Host, {User, Server}, Group),
     ?STATUS_SUCCESS;
+
+ctl_process(_Val, ["muc-purge", Days]) ->
+	{purged, Num_total, Num_purged, Names_purged} = muc_purge(list_to_integer(Days)),
+	io:format("Purged ~p chatrooms from a total of ~p on the server:~n~p~n", [Num_purged, Num_total, Names_purged]),
+	?STATUS_SUCCESS;
 
 ctl_process(_Val, ["add-rosteritem", LocalUser, LocalServer, RemoteUser, RemoteServer, Nick, Group, Subs]) ->
     case add_rosteritem(LocalUser, LocalServer, RemoteUser, RemoteServer, Nick, Group, list_to_atom(Subs), []) of
@@ -259,6 +268,10 @@ ctl_process(Val, _Args) ->
 	Val.
 
 
+ctl_process(_Val, Host, ["muc-purge", Days]) ->
+	{purged, Num_total, Num_purged, Names_purged} = muc_purge(Host, list_to_integer(Days)),
+	io:format("Purged ~p chatrooms from a total of ~p on the host ~p:~n~p~n", [Num_purged, Num_total, Host, Names_purged]),
+	?STATUS_SUCCESS;
 
 ctl_process(_Val, Host, ["num-active-users", Days]) ->
 	Number = num_active_users(Host, list_to_integer(Days)),
@@ -539,3 +552,143 @@ histogram([], _Integral, _Current, Count, Hist) ->
 	true ->
 	    lists:reverse(Hist)
     end.
+
+%%----------------------------
+%% Purge MUC
+%%----------------------------
+
+% Required for muc_purge
+% Copied from mod_muc/mod_muc_room.erl
+-define(DICT, dict).
+-record(muc_online_room, {name_host, pid}).
+-record(lqueue, {queue, len, max}).
+-record(config, {title = "",
+		 allow_change_subj = true,
+		 allow_query_users = true,
+		 allow_private_messages = true,
+		 public = true,
+		 public_list = true,
+		 persistent = false,
+		 moderated = false, % TODO
+		 members_by_default = true,
+		 members_only = false,
+		 allow_user_invites = false,
+		 password_protected = false,
+		 password = "",
+		 anonymous = true,
+		 logging = false
+		}).
+-record(state, {room,
+		host,
+		server_host,
+		access,
+		jid,
+		config = #config{},
+		users,
+		affiliations,
+		history,
+		subject = "",
+		subject_author = "",
+		just_created = false}).
+
+muc_purge(Days) ->
+	ServerHost = global,
+	Host = global,
+	muc_purge2(ServerHost, Host, Days).
+
+muc_purge(ServerHost, Days) ->
+	Host = find_host(ServerHost),
+	muc_purge2(ServerHost, Host, Days).
+
+muc_purge2(ServerHost, Host, Last_allowed) ->
+	Room_names = get_room_names(Host),
+
+	Decide = fun(N) -> decide(N, Last_allowed) end,
+	Rooms_to_delete = lists:filter(Decide, Room_names),
+
+	Num_rooms = length(Room_names),
+	Num_rooms_to_delete = length(Rooms_to_delete),
+
+	Rooms_to_delete_full = fill_serverhost(Rooms_to_delete, ServerHost),
+
+	Delete = fun({N, H, SH}) -> 
+		mod_muc:room_destroyed(H, N, SH),
+		mod_muc:forget_room(H, N)
+	end,
+	lists:foreach(Delete, Rooms_to_delete_full),
+	{purged, Num_rooms, Num_rooms_to_delete, Rooms_to_delete}.
+
+fill_serverhost(Rooms_to_delete, global) ->
+	ServerHosts1 = ?MYHOSTS,
+	ServerHosts2 = [ {ServerHost, find_host(ServerHost)} || ServerHost <- ServerHosts1],
+	[ {Name, Host, find_serverhost(Host, ServerHosts2)} || {Name, Host} <- Rooms_to_delete];
+fill_serverhost(Rooms_to_delete, ServerHost) ->
+	[ {Name, Host, ServerHost}|| {Name, Host} <- Rooms_to_delete].
+
+find_serverhost(Host, ServerHosts) ->
+	{value, {ServerHost, Host}} = lists:keysearch(Host, 2, ServerHosts),
+	ServerHost.
+
+find_host(ServerHost) ->
+	gen_mod:get_module_opt(ServerHost, mod_muc, host, "conference." ++ ServerHost).
+
+decide({Room_name, Host}, Last_allowed) ->
+	Room_pid = get_room_pid(Room_name, Host),
+
+	C = get_room_config(Room_pid),
+	Persistent = C#config.persistent,
+
+	S = get_room_state(Room_pid),
+	Just_created = S#state.just_created,
+
+	Room_users = S#state.users,
+	Num_users = length(?DICT:to_list(Room_users)),
+
+	History = (S#state.history)#lqueue.queue,
+	Ts_now = calendar:now_to_universal_time(now()),
+	Ts_uptime = element(1, erlang:statistics(wall_clock))/1000,
+	{Have_history, Last} = case queue:is_empty(History) of
+		true ->
+			{false, Ts_uptime};
+		false ->
+			Last_message = queue:last(History),
+			{_, _, _, Ts_last, _} = Last_message,
+			Ts_diff =
+				calendar:datetime_to_gregorian_seconds(Ts_now)
+				- calendar:datetime_to_gregorian_seconds(Ts_last),
+			{true, Ts_diff}
+	end,
+
+	case {Persistent, Just_created, Num_users, Have_history, seconds_to_days(Last)} of
+		{true, false, 0, _, Last_days} 
+		when Last_days > Last_allowed -> 
+			true;
+		_ ->
+			false
+	end.
+
+seconds_to_days(S) ->
+	round(S) div 60*60*24
+
+get_room_names(Host) ->
+	Get_room_names = fun(Room_reg, Names) ->
+		case {Host, Room_reg#muc_online_room.name_host} of
+			{Host, {Name1, Host}} -> 
+				[{Name1, Host} | Names];
+			{global, {Name1, Host1}} -> 
+				[{Name1, Host1} | Names];
+			_ ->
+				Names
+		end
+	end,
+	ets:foldr(Get_room_names, [], muc_online_room).
+
+get_room_pid(Name, Host) ->
+	[Room_ets] = ets:lookup(muc_online_room, {Name, Host}),
+	Room_ets#muc_online_room.pid.
+
+get_room_config(Room_pid) ->
+	gen_fsm:sync_send_all_state_event(Room_pid, get_config).
+
+get_room_state(Room_pid) ->
+	gen_fsm:sync_send_all_state_event(Room_pid, get_state).
