@@ -36,7 +36,7 @@ start(Host, _Opts) ->
 		{"set-password user server password", "set password to user@server"},
 
 		% ejd2odbc
-		{"export2odbc server output", "export all possible tables on server to output"},
+		{"export2odbc server output", "export Mnesia tables on server to files on output directory"},
 
 		% mod_offline
 		{"delete-older-messages days", "delete offline messages older than 'days'"},
@@ -109,14 +109,21 @@ ctl_process(_Val, ["delete-older-users", Days]) ->
 	io:format("Deleted ~p users: ~p~n", [N, UR]),
 	?STATUS_SUCCESS;
 
-ctl_process(_Val, ["export2odbc", Server, Output1]) ->
-	Output = list_to_atom(Output1),
-	ejd2odbc:export_passwd(Server, Output),
-	ejd2odbc:export_roster(Server, Output),
-	ejd2odbc:export_offline(Server, Output),
-	ejd2odbc:export_last(Server, Output),
-	ejd2odbc:export_vcard(Server, Output),
-	ejd2odbc:export_vcard_search(Server, Output),
+ctl_process(_Val, ["export2odbc", Server, Output]) ->
+	Tables = [
+		{export_last, last},
+		{export_offline, offline},
+		{export_passwd, passwd},
+		{export_private_storage, private_storage},
+		{export_roster, roster},
+		{export_vcard, vcard},
+		{export_vcard_search, vcard_search}],
+	Export = fun({TableFun, Table}) -> 
+		Filename = filename:join([Output, atom_to_list(Table)++".txt"]),
+		io:format("Exporting Mnesia table '~p' on server '~s' to file '~s'~n", [Table, Server, Filename]),
+		ejd2odbc:TableFun(Server, Filename)
+	end,
+	lists:foreach(Export, Tables),
 	?STATUS_SUCCESS;
 
 ctl_process(_Val, ["set-password", User, Server, Password]) ->
