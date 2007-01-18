@@ -237,7 +237,7 @@ template(html, header) ->
 template(html, subject) ->
     "<div class=\"subject\"><span>Subject:</span> ~s</div>";
 template(html, message) ->
-    "<div class=\"message~w\"><span class=\"date\">~~s</span> <span class=\"jid\">~~s</span>/<span class=\"ressource\">~~s</span> -> <span class=\"jid\">~~s</span>/<span class=\"ressource\">~~s</span>~~n<span class=\"messagetext\">~~s</span></div>~~n";
+    "<div class=\"message~w\"><span class=\"date\">~~s</span> <span class=\"jid\">~~s</span>/<span class=\"ressource\">~~s</span> -&gt; <span class=\"jid\">~~s</span>/<span class=\"ressource\">~~s</span>~~n<span class=\"messagetext\">~~s</span></div>~~n";
 template(html, message1) ->
     io_lib:format(template(html, message), [1]);
 template(html, message2) ->
