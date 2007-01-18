@@ -123,7 +123,7 @@ write_packet(From, To, Packet, Host) ->
 		    {{Y, M, D}, {H, Min, S}} ->
 			SortedJid = lists:sort([FromJid, ToJid]),
 			Title = io_lib:format(template(Format, title), [FromJid, ToJid, Y, M, D]),
-			{lists:flatten(io_lib:format("~s/~~p-~~2.2.0w-~~2.2.0w ~s <-> ~s~s",
+			{lists:flatten(io_lib:format("~s/~~p-~~2.2.0w-~~2.2.0w ~s - ~s~s",
 				       [Path | SortedJid]++[template(Format, extension)])),
 			 io_lib:format(template(Format, date), [Y, M, D, H, Min, S]),
 
