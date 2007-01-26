@@ -15,7 +15,7 @@
 %% States:
 -export([wait_open_stream/2,
          wait_handshake/2,
-	 connected/2]).
+   	 connected/2]).
 
 %% TODO: Manage debug mode
 
@@ -25,8 +25,6 @@
          handle_sync_event/4,
          code_change/4,
          handle_info/3,
-         handle_event/3,
-         handle_sync_event/4,
          terminate/3]).
 
 %% Internal:
