@@ -1,0 +1,6 @@
+{release, {"epeios", "1.0.0"},
+ [{kernel,"&kernel_vsn&"},
+  {stdlib,"&stdlib_vsn&"},
+  {sasl, "&sasl_vsn&"},
+  {crypto, "&crypto_vsn&"},
+  {epeios, "&epeios&"}]}.

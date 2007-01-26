@@ -1,0 +1,14 @@
+Build:
+- Generate the priv content automatically, using ejabberd repository.
+- Package the libexpat.so
+
+Documentation:
+- ejabberd module developer's guide
+
+Release:
+- .app and .rel: ssl and inets
+- mnesia is needed but cannot be put in directory set_env => Mnesia must not be started.
+
+Code:
+- Rename xmpp_component -> epeios_component
+
