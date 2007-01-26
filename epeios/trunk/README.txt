@@ -1,4 +1,4 @@
-. epeios has been tested with Erlang R11B-2. We recommanded to use
+. epeios has been tested with Erlang R11B-2. We recommend to use
 this version as precompiled module are provided for Erlang R11B-2.
 
 . extract the archive content. Please keep the root directory name
