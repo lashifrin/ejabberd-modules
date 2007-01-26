@@ -8,7 +8,7 @@
 
 -module(mod_ctlextra).
 -author('').
--vsn('0.2.4').
+-vsn('0.2.5').
 
 -behaviour(gen_mod).
 
@@ -59,6 +59,7 @@ start(Host, _Opts) ->
 		% muc-add room opts
 		% muc-del room
 		{"muc-purge days", "destroy rooms with not activity on the last 'days'"},
+		{"muc-online-rooms", "list existing rooms"},
 
 		% mod_roster
 		{"add-rosteritem user1 server1 user2 server2 nick group subs", "Add user2@server2 to user1@server1"},
@@ -81,6 +82,7 @@ start(Host, _Opts) ->
     ejabberd_ctl:register_commands(Host, [
 		% mod_muc
 		{"muc-purge days", "destroy rooms with not activity on the last 'days'"},
+		{"muc-online-rooms", "list existing rooms"},
 
 		% mod_last
 		{"num-active-users days", "number of users active in the last 'days'"},
@@ -180,6 +182,10 @@ ctl_process(_Val, ["muc-purge", Days]) ->
 	io:format("Purged ~p chatrooms from a total of ~p on the server:~n~p~n", [Num_purged, Num_total, Names_purged]),
 	?STATUS_SUCCESS;
 
+ctl_process(_Val, ["muc-online-rooms"]) ->
+       format_print_room(all, ets:tab2list(muc_online_room)),
+       ?STATUS_SUCCESS;
+
 ctl_process(_Val, ["add-rosteritem", LocalUser, LocalServer, RemoteUser, RemoteServer, Nick, Group, Subs]) ->
     case add_rosteritem(LocalUser, LocalServer, RemoteUser, RemoteServer, Nick, Group, list_to_atom(Subs), []) of
 	{atomic, ok} ->
@@ -278,6 +284,11 @@ ctl_process(Val, _Args) ->
 ctl_process(_Val, Host, ["muc-purge", Days]) ->
 	{purged, Num_total, Num_purged, Names_purged} = muc_purge(Host, list_to_integer(Days)),
 	io:format("Purged ~p chatrooms from a total of ~p on the host ~p:~n~p~n", [Num_purged, Num_total, Host, Names_purged]),
+	?STATUS_SUCCESS;
+
+ctl_process(_Val, ServerHost, ["muc-online-rooms"]) ->
+	MUCHost = find_host(ServerHost),
+	format_print_room(MUCHost, ets:tab2list(muc_online_room)),
 	?STATUS_SUCCESS;
 
 ctl_process(_Val, Host, ["num-active-users", Days]) ->
@@ -562,6 +573,22 @@ histogram([], _Integral, _Current, Count, Hist) ->
 	true ->
 	    lists:reverse(Hist)
     end.
+
+
+format_print_room(Host1, Rooms)->
+	lists:foreach(
+		fun({_, {Roomname, Host},_}) ->
+			case Host1 of
+				all ->
+					io:format("~s ~s ~n", [Roomname, Host]);
+				Host ->
+					io:format("~s ~s ~n", [Roomname, Host]);
+				_ ->
+					ok
+			end
+		end,
+		Rooms).
+
 
 %%----------------------------
 %% Purge MUC

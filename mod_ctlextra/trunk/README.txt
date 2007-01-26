@@ -31,5 +31,8 @@ Example content for the roster file:
 	CHANGELOG
 	=========
 
+0.2.5 - 26/Jan/2007
+  * New command for server and vhosts: muc-online-rooms (thanks to tsventon)
+
 0.2.4 - 22/Sep/2006
   * Added new commands: status-num and status-list
