@@ -13,6 +13,9 @@
 
 %% Component container code.
 start() ->
+    %% Dynamic loglevel
+    ejabberd_loglevel:set(5),
+
     %% For handshake 
     %%crypto:start(),
 
