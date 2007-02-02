@@ -126,16 +126,16 @@ start_link(Host, Port, User, Password, Database, LogFun) when is_list(Host), is_
     post_start(Pid, LogFun).
 
 %% part of start/6 or start_link/6:
-post_start(Pid, LogFun) ->
+post_start(Pid, _LogFun) ->
     receive
 	{mysql_conn, Pid, ok} ->
 	    {ok, Pid};
 	{mysql_conn, Pid, {error, Reason}} ->
-	    {error, Reason};
-	Unknown ->
-	    mysql:log(LogFun, error, "mysql_conn: Received unknown signal, exiting"),
-	    mysql:log(LogFun, debug, "mysql_conn: Unknown signal : ~p", [Unknown]),
-	    {error, "unknown signal received"}
+	    {error, Reason}
+%	Unknown ->
+%	    mysql:log(_LogFun, error, "mysql_conn: Received unknown signal, exiting"),
+%	    mysql:log(_LogFun, debug, "mysql_conn: Unknown signal : ~p", [Unknown]),
+%	    {error, "unknown signal received"}
     after 5000 ->
 	    {error, "timed out"}
     end.
