@@ -233,6 +233,11 @@ handle_cast({presence, From, To, Packet}, State) ->
 			_ ->
 			    mnesia:dirty_match_object(#pubsub_node{host_node = {LJID, '_'}, _ = '_'})
 		    end,
+	    Features = case catch mod_caps:get_features(?MYNAME, 
+							mod_caps:read_caps(element(4, Packet))) of
+			   F when is_list(F) -> F;
+			   _ -> []
+		       end,
 	    lists:foreach(
 	      fun(N) ->
 		      Node = get_node_name(N),
@@ -251,15 +256,9 @@ handle_cast({presence, From, To, Packet}, State) ->
 			      %% capabilities saying that it wants notifications, send last
 			      %% item.
 			      LookingFor = Node++"+notify",
-			      case catch mod_caps:get_features(?MYNAME, 
-							       mod_caps:read_caps(element(4, Packet))) of
-				  Features when is_list(Features) ->
-				      case lists:member(LookingFor, Features) of
-					  true ->
-					      send_last_published_item(jlib:jid_tolower(From), Host, Node, Info);
-					  _ ->
-					      ok
-				      end;
+			      case lists:member(LookingFor, Features) of
+				  true ->
+				      send_last_published_item(jlib:jid_tolower(From), Host, Node, Info);
 				  _ ->
 				      ok
 			      end;
