@@ -30,6 +30,8 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 
+-define(ejabberd_debug, true).
+
 -include("ejabberd.hrl").
 -include("jlib.hrl").
 -include("jlib-pep.hrl").
@@ -786,7 +788,7 @@ create_new_node(Host, Node, Owner, ServerHost, Access, Configuration) ->
     DefaultSet = get_table(Host),		% get_table happens to DTRT here
     ConfigOptions = case xml:remove_cdata(Configuration) of
 			[] ->
-			    [];
+			    [{defaults, DefaultSet}];
 			[{xmlelement, "x", _Attrs, _SubEls} = XEl] ->
 			    case jlib:parse_xdata_submit(XEl) of
 				invalid ->
@@ -925,7 +927,23 @@ publish_item(Host, JID, Node, ItemID, Payload) ->
     ejabberd_hooks:run(pubsub_publish_item, Host,
 		       [JID, ?MYJID, Node, ItemID, Payload]),
     F = fun() ->
-		case mnesia:read({Table, {Host, Node}}) of
+		NodeData =
+		    case {Table, mnesia:read({Table, {Host, Node}})} of
+			{_, [ND]} ->
+			    [ND];
+			{pubsub_node, []} ->
+			    {error, ?ERR_ITEM_NOT_FOUND};
+			{pep_node, []} ->
+			    %% In PEP, nodes are created automatically
+			    %% on publishing.
+			    case create_new_node(Host, Node, Host) of
+				{error, _} = E ->
+				    E;
+				{result, _} ->
+				    mnesia:read({Table, {Host, Node}})
+			    end
+		    end,
+		case NodeData of
 		    [N] ->
 			Info = get_node_info(N),
 			Affiliation = get_affiliation(Info, Publisher),
@@ -951,8 +969,8 @@ publish_item(Host, JID, Node, ItemID, Payload) ->
 				mnesia:write(NewNode),
 				{result, []}
 			end;
-		    [] ->
-			{error, ?ERR_ITEM_NOT_FOUND}
+		    {error, _} = Error ->
+			Error
 		end
 	end,
     case mnesia:transaction(F) of
@@ -961,7 +979,8 @@ publish_item(Host, JID, Node, ItemID, Payload) ->
 	{atomic, {result, Res}} ->
 	    broadcast_publish_item(Host, Node, ItemID, Payload),
 	    {result, Res};
-	_ ->
+	OtherError ->
+	    ?ERROR_MSG("~p", [OtherError]),
 	    {error, ?ERR_INTERNAL_SERVER_ERROR}
     end.
 
@@ -1973,12 +1992,15 @@ broadcast_publish_item(Host, Node, ItemID, Payload) ->
 		    %% If this is PEP, we want to generate
 		    %% notifications based on entity capabilities as
 		    %% well.
+		    ?DEBUG("looking for pid of sender's session", []),
 		    case ejabberd_sm:get_session_pid(Sender#jid.luser,
 						     Sender#jid.lserver,
 						     Sender#jid.lresource) of
 			C2SPid when is_pid(C2SPid) ->
+			    ?DEBUG("found it", []),
 			    case catch ejabberd_c2s:get_subscribed_and_online(C2SPid) of
 				ContactsWithCaps when is_list(ContactsWithCaps) ->
+				    ?DEBUG("found contacts with caps: ~p", [ContactsWithCaps]),
 				    %% We have a list of the form [{JID, Caps}].
 				    lists:foreach(
 				      fun({JID, Caps}) ->
