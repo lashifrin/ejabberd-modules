@@ -2009,7 +2009,7 @@ broadcast_publish_item(Host, Node, ItemID, Payload, From) ->
 					      case lists:member(LookingFor, Features) of
 						  true ->
 						      ejabberd_router:route(
-							Sender, JID, Stanza);
+							Sender, jlib:make_jid(JID), Stanza);
 						  _ ->
 						      ok
 					      end
