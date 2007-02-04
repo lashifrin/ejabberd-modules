@@ -1,8 +1,8 @@
-{'../../ejabberd-dev/trunk/src/gen_mod', [{outdir, "../../ejabberd-dev/trunk/ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
-{'src/mod_caps',     [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"},{i,"include"}]}.
-{'src/mod_pubsub',   [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"},{i,"include"}]}.
-{'src/ejabberd_c2s', [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
-{'src/ejabberd_local', [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
-{'src/ejabberd_sm', [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
-{'src/jlib', [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
-{'src/mod_disco',     [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
+{'../../../ejabberd-dev/trunk/src/gen_mod', [{outdir, "../../../ejabberd-dev/trunk/ebin"},{i,"../../../ejabberd-dev/trunk/include"}]}.
+{'src/mod_caps',     [{outdir, "ebin"},{i,"../../../ejabberd-dev/trunk/include"},{i,"include"}]}.
+{'src/mod_pubsub',   [{outdir, "ebin"},{i,"../../../ejabberd-dev/trunk/include"},{i,"include"}]}.
+{'src/ejabberd_c2s', [{outdir, "ebin"},{i,"../../../ejabberd-dev/trunk/include"}]}.
+{'src/ejabberd_local', [{outdir, "ebin"},{i,"../../../ejabberd-dev/trunk/include"}]}.
+{'src/ejabberd_sm', [{outdir, "ebin"},{i,"../../../ejabberd-dev/trunk/include"}]}.
+{'src/jlib', [{outdir, "ebin"},{i,"../../../ejabberd-dev/trunk/include"}]}.
+{'src/mod_disco',     [{outdir, "ebin"},{i,"../../../ejabberd-dev/trunk/include"}]}.
