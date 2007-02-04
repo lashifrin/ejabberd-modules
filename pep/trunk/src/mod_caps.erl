@@ -40,7 +40,8 @@
 -record(caps, {node, version, exts}).
 -record(caps_features, {node_pair, features}).
 -record(state, {host,
-		requests = ?DICT:new()}).
+		disco_requests = ?DICT:new(),
+		feature_queries = []}).
 
 %% read_caps takes a list of XML elements (the child elements of a
 %% <presence/> stanza) and returns an opaque value representing the
@@ -76,8 +77,12 @@ note_caps(Host, From, Caps) ->
 %% record (as extracted by read_caps).  It may block, and may signal a
 %% timeout error.
 get_features(Host, Caps) ->
-    Proc = gen_mod:get_module_proc(Host, ?PROCNAME),
-    gen_server:call(Proc, {get_features, Caps}).
+    case Caps of
+	nothing -> [];
+	#caps{} ->
+	    Proc = gen_mod:get_module_proc(Host, ?PROCNAME),
+	    gen_server:call(Proc, {get_features, Caps})
+    end.
 
 start_link(Host, Opts) ->
     Proc = gen_mod:get_module_proc(Host, ?PROCNAME),
@@ -109,18 +114,47 @@ init([Host, _Opts]) ->
 			 {attributes, record_info(fields, caps_features)}]),
     {ok, #state{host = Host}}.
 
+maybe_get_features(#caps{node = Node, version = Version, exts = Exts}) ->
+    SubNodes = [Version | Exts],
+    F = fun() ->
+		%% Make sure that we have all nodes we need to know.
+		%% If a single one is missing, we wait for more disco
+		%% responses.
+		lists:foldl(fun(SubNode, Acc) ->
+				    case Acc of
+					fail -> fail;
+					_ ->
+					    case mnesia:read({caps_features, {Node, SubNode}}) of
+						[] -> fail;
+						[#caps_features{features = Features}] -> Features ++ Acc
+					    end
+				    end
+			    end, [], SubNodes)
+	end,
+    case mnesia:transaction(F) of
+	{atomic, fail} ->
+	    wait;
+	{atomic, Features} ->
+	    {ok, Features}
+    end.
 
-%% XXX: implement get_features here
-handle_call({get_features, _}, _From, State) ->
-    %% Fake a timeout
-    {noreply, State};
+handle_call({get_features, Caps}, From, State) ->
+    case maybe_get_features(Caps) of
+	{ok, Features} -> 
+	    {reply, Features, State};
+	wait ->
+	    FeatureQueries = State#state.feature_queries,
+	    NewFeatureQueries = [{From, Caps} | FeatureQueries],
+	    NewState = State#state{feature_queries = NewFeatureQueries},
+	    {noreply, NewState}
+    end;
 
 handle_call(stop, _From, State) ->
     {stop, normal, ok, State}.
 
 handle_cast({note_caps, From, 
 	     #caps{node = Node, version = Version, exts = Exts}}, 
-	    #state{host = Host, requests = Requests} = State) ->
+	    #state{host = Host, disco_requests = Requests} = State) ->
     %% XXX: this leads to race conditions where ejabberd will send
     %% lots of caps disco requests.
     SubNodes = [Version | Exts],
@@ -137,6 +171,8 @@ handle_cast({note_caps, From,
 	  end,
     case mnesia:transaction(Fun) of
 	{atomic, Missing} ->
+	    %% For each unknown caps "subnode", we send a disco
+	    %% request.
 	    NewRequests =
 		lists:foldl(
 		  fun(SubNode, Dict) ->
@@ -154,7 +190,7 @@ handle_cast({note_caps, From,
 			  ejabberd_router:route(jlib:make_jid("", Host, ""), From, Stanza),
 			  ?DICT:store(ID, {Node, SubNode}, Dict)
 		  end, Requests, Missing),
-	    {noreply, State#state{requests = NewRequests}};
+	    {noreply, State#state{disco_requests = NewRequests}};
 	Error ->
 	    ?ERROR_MSG("Transaction failed: ~p", [Error]),
 	    {noreply, State}
@@ -162,7 +198,7 @@ handle_cast({note_caps, From,
 handle_cast({disco_response, From, _To, 
 	     #iq{type = Type, id = ID,
 		 sub_el = SubEls}},
-	    #state{requests = Requests} = State) ->
+	    #state{disco_requests = Requests} = State) ->
     case {Type, SubEls} of
 	{result, [{xmlelement, "query", Attrs, Els}]} ->
 	    %% Did we get the correct node?
@@ -181,7 +217,8 @@ handle_cast({disco_response, From, _To,
 			      fun() ->
 				      mnesia:write(#caps_features{node_pair = {Node, SubNode},
 								  features = Features})
-			      end);
+			      end),
+			    gen_server:cast(self(), visit_feature_queries);
 			_ ->
 			    ?ERROR_MSG("We asked for ~s#~s, but got ~s", [Node, SubNode, ResultNode])
 		    end;
@@ -195,17 +232,29 @@ handle_cast({disco_response, From, _To,
 	    ok
     end,
     NewRequests = ?DICT:erase(ID, Requests),
-    {noreply, State#state{requests = NewRequests}}.
+    {noreply, State#state{disco_requests = NewRequests}};
+handle_cast(visit_feature_queries, #state{feature_queries = FeatureQueries} = State) ->
+    %% XXX: expire old requests that never get any answer?
+    NewFeatureQueries =
+	lists:foldl(fun({From, Caps}, Acc) ->
+			    case maybe_get_features(Caps) of
+				wait -> [{From, Caps} | Acc];
+				{ok, Features} ->
+				    gen_server:reply(From, Features),
+				    Acc
+			    end
+		    end, [], FeatureQueries),
+    {noreply, State#state{feature_queries = NewFeatureQueries}}.
 
 handle_disco_response(From, To, IQ) ->
     #jid{lserver = Host} = To,
     Proc = gen_mod:get_module_proc(Host, ?PROCNAME),
     gen_server:cast(Proc, {disco_response, From, To, IQ}).
 
-handle_info(Info, State) ->
+handle_info(_Info, State) ->
     {noreply, State}.
 
-terminate(Reason, State) ->
+terminate(_Reason, _State) ->
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
