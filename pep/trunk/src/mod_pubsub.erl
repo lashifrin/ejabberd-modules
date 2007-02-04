@@ -43,6 +43,7 @@
 -define(MAX_PAYLOAD_SIZE, 100000).
 
 -record(pubsub_node, {host_node, host_parent, info}).
+-record(pubsub_presence, {key, resource}).	%key is {host, luser, lserver}
 -record(pep_node, {owner_node, info}).		%owner is {luser, lserver, ""}
 -record(nodeinfo, {items = [],
 		   options = [],
@@ -51,9 +52,6 @@
 -record(entity, {affiliation = none,
 		 subscription = none}).
 -record(item, {id, publisher, payload}).
-
--record(pubsub_presence, {to_from, resource}).
-%% to_from is {ToLUser, ToLServer, FromLUser, FromLServer}.
 
 get_node_info(#pubsub_node{info = Info}) -> Info;
 get_node_info(#pep_node{info = Info}) -> Info.
@@ -206,8 +204,8 @@ handle_cast({presence, From, To, Packet}, State) ->
 	lists:member(From#jid.lresource,
 		     get_present_resources(element(1, LJID), element(2, LJID),
 					   From#jid.luser, From#jid.lserver)),
-    Key = {element(1, LJID), element(2, LJID), From#jid.luser, From#jid.lserver},
-    Record = #pubsub_presence{to_from = Key, resource = From#jid.lresource},
+    Key = {To#jid.lserver, From#jid.luser, From#jid.lserver},
+    Record = #pubsub_presence{key = Key, resource = From#jid.lresource},
     Host = case LJID of
 	       {"", LServer, ""} ->
 		   LServer;
@@ -2584,10 +2582,11 @@ maybe_add_defaults(NewOpts, Table) ->
 get_present_resources({ToUser, ToServer, _}, {FromUser, FromServer, _}) ->
     get_present_resources(ToUser, ToServer, FromUser, FromServer).
 
-get_present_resources(ToUser, ToServer, FromUser, FromServer) ->
+get_present_resources(_ToUser, ToServer, FromUser, FromServer) ->
     %% Return a list of resources of FromUser@FromServer that have
-    %% sent presence to ToUser@ToServer.
-    Key = {ToUser, ToServer, FromUser, FromServer},
+    %% sent presence to ToUser@ToServer.  At least, that's the theory.
+    %% In practice, we don't care whom the user sent presence to.
+    Key = {ToServer, FromUser, FromServer},
     lists:map(fun(#pubsub_presence{resource = Res}) -> Res end,
 	      case catch mnesia:dirty_read(pubsub_presence, Key) of
 		  Result when is_list(Result) ->
