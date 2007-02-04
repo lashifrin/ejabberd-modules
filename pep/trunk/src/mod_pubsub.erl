@@ -46,7 +46,7 @@
 
 -record(pubsub_node, {host_node, host_parent, info}).
 -record(pubsub_presence, {key, resource}).	%key is {host, luser, lserver}
--record(pep_node, {owner_node, info}).		%owner is {luser, lserver, ""}
+-record(pep_node, {owner_node, owner, info}).	%owner is {luser, lserver, ""}
 -record(nodeinfo, {items = [],
 		   options = [],
 		   entities = ?DICT:new()
@@ -119,6 +119,7 @@ init([ServerHost, Opts]) ->
     mnesia:create_table(pep_node,
 			[{disc_only_copies, [node()]},
 			 {attributes, record_info(fields, pep_node)}]),
+    mnesia:add_table_index(pep_node, owner),
     mnesia:create_table(pubsub_presence,
 			[{ram_copies, [node()]},
 			 {attributes, record_info(fields, pubsub_presence)},
@@ -226,51 +227,46 @@ handle_cast({presence, From, To, Packet}, State) ->
 	    %% A new resource is available.  Loop through all nodes
 	    %% and see if the contact is subscribed, and if so, and if
 	    %% the node is so configured, send the last item.
-	    Match = case Host of
+	    Nodes = case Host of
 			{_, _, _} ->
-			    #pep_node{owner_node = {LJID, '_'}, _ = '_'};
+			    mnesia:dirty_index_read(pep_node, LJID, #pep_node.owner);
 			_ ->
-			    #pubsub_node{host_node = {LJID, '_'}, _ = '_'}
+			    mnesia:dirty_match_object(#pubsub_node{host_node = {LJID, '_'}, _ = '_'})
 		    end,
-	    case catch mnesia:dirty_match_object(Match) of
-		{'EXIT', Reason} ->
-		    ?ERROR_MSG("~p", [Reason]);
-		Nodes ->
-		    lists:foreach(
-		      fun(N) ->
-			      Node = get_node_name(N),
-			      Info = get_node_info(N),
-			      Subscription = get_subscription(Info, From),
-			      SendWhen = get_node_option(Info, send_last_published_item),
-			      %% If the contact has an explicit
-			      %% subscription to the node, and the
-			      %% node is so configured, send last
+	    lists:foreach(
+	      fun(N) ->
+		      Node = get_node_name(N),
+		      Info = get_node_info(N),
+		      Subscription = get_subscription(Info, From),
+		      SendWhen = get_node_option(Info, send_last_published_item),
+		      %% If the contact has an explicit
+		      %% subscription to the node, and the
+		      %% node is so configured, send last
+		      %% item.
+		      if Subscription /= none, Subscription /= pending,
+			 SendWhen == on_sub_and_presence ->
+			      send_last_published_item(jlib:jid_tolower(From), Host, Node, Info);
+			 SendWhen == on_sub_and_presence ->
+			      %% Else, if the node is so configured, and the user sends entity
+			      %% capabilities saying that it wants notifications, send last
 			      %% item.
-			      if Subscription /= none, Subscription /= pending,
-				 SendWhen == on_sub_and_presence ->
-				      send_last_published_item(jlib:jid_tolower(From), Host, Node, Info);
-				 SendWhen == on_sub_and_presence ->
-				      %% Else, if the node is so configured, and the user sends entity
-				      %% capabilities saying that it wants notifications, send last
-				      %% item.
-				      LookingFor = Node++"+notify",
-				      case catch mod_caps:get_features(?MYNAME, 
-								       mod_caps:read_caps(element(4, Packet))) of
-					  Features when is_list(Features) ->
-					      case lists:member(LookingFor, Features) of
-						  true ->
-						      send_last_published_item(jlib:jid_tolower(From), Host, Node, Info);
-						  _ ->
-						      ok
-					      end;
+			      LookingFor = Node++"+notify",
+			      case catch mod_caps:get_features(?MYNAME, 
+							       mod_caps:read_caps(element(4, Packet))) of
+				  Features when is_list(Features) ->
+				      case lists:member(LookingFor, Features) of
+					  true ->
+					      send_last_published_item(jlib:jid_tolower(From), Host, Node, Info);
 					  _ ->
 					      ok
 				      end;
-				 true ->
+				  _ ->
 				      ok
-			      end
-		      end, Nodes)
-	    end,
+			      end;
+			 true ->
+			      ok
+		      end
+	      end, Nodes),
 	    {noreply, State};
        true ->
 	    {noreply, State}
@@ -644,8 +640,7 @@ iq_disco_items(Host, _From, SNode) ->
 
 pep_disco_items(Acc, _From, To, "", _Lang) ->
     LJID = jlib:jid_tolower(jlib:jid_remove_resource(To)),
-    Match = #pep_node{owner_node = {LJID, '_'}, _ = '_'},
-    case catch mnesia:dirty_match_object(Match) of
+    case catch mnesia:dirty_index_read(pep_node, LJID, #pep_node.owner) of
 	{'EXIT', Reason} ->
 	    ?ERROR_MSG("~p", [Reason]),
 	    Acc;
@@ -827,6 +822,7 @@ create_new_node(Host, Node, Owner, ServerHost, Access, Configuration) ->
 				       ?DICT:new()),
 				mnesia:write(
 				  #pep_node{owner_node = {LOwner, Node},
+					    owner = LOwner,
 					    info = #nodeinfo{entities = Entities,
 							     options = ConfigOptions}}),
 				ok
