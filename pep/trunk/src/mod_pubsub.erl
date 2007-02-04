@@ -906,7 +906,8 @@ create_new_node(Host, Node, Owner, ServerHost, Access, Configuration) ->
 					 ?NS_PUBSUB_NMI),
 				 ?XFIELD("jid-single", "Node Creator",
 					 "creator",
-					 jlib:jid_to_string(LOwner))]}]),
+					 jlib:jid_to_string(LOwner))]}],
+			      none),
 			    {result, []};
 			{atomic, {error, _} = Error} ->
 			    Error;
@@ -977,7 +978,7 @@ publish_item(Host, JID, Node, ItemID, Payload) ->
 	{atomic, {error, _} = Error} ->
 	    Error;
 	{atomic, {result, Res}} ->
-	    broadcast_publish_item(Host, Node, ItemID, Payload),
+	    broadcast_publish_item(Host, Node, ItemID, Payload, jlib:jid_tolower(JID)),
 	    {result, Res};
 	OtherError ->
 	    ?ERROR_MSG("~p", [OtherError]),
@@ -1939,7 +1940,7 @@ send_last_published_item(Subscriber, Host, Node, Info) ->
 
 
 
-broadcast_publish_item(Host, Node, ItemID, Payload) ->
+broadcast_publish_item(Host, Node, ItemID, Payload, From) ->
     ?DEBUG("broadcasting for ~p / ~p", [Host, Node]),
     Table = get_table(Host),
     Sender = get_sender(Host),
@@ -1987,15 +1988,14 @@ broadcast_publish_item(Host, Node, ItemID, Payload) ->
 		       end
 	       end, ok, Info#nodeinfo.entities),
 
-	    case Info#nodeinfo.options of
-		[{defaults, pep_node} | _] ->
+	    case {Info#nodeinfo.options, From} of
+		{[{defaults, pep_node} | _], {LUser, LServer, LResource}} ->
 		    %% If this is PEP, we want to generate
 		    %% notifications based on entity capabilities as
 		    %% well.
-		    ?DEBUG("looking for pid of sender's session", []),
-		    case ejabberd_sm:get_session_pid(Sender#jid.luser,
-						     Sender#jid.lserver,
-						     Sender#jid.lresource) of
+		    ?DEBUG("looking for pid of ~p@~p/~p", 
+			   [LUser, LServer, LResource]),
+		    case ejabberd_sm:get_session_pid(LUser, LServer, LResource) of
 			C2SPid when is_pid(C2SPid) ->
 			    ?DEBUG("found it", []),
 			    case catch ejabberd_c2s:get_subscribed_and_online(C2SPid) of
