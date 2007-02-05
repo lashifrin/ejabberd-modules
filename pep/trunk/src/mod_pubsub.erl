@@ -238,6 +238,9 @@ handle_cast({presence, From, To, Packet}, State) ->
 			   F when is_list(F) -> F;
 			   _ -> []
 		       end,
+	    PresenceSubscribed =
+		has_presence_subscription(To#jid.luser, To#jid.lserver,
+					  jlib:jid_tolower(From)),
 	    lists:foreach(
 	      fun(N) ->
 		      Node = get_node_name(N),
@@ -251,15 +254,31 @@ handle_cast({presence, From, To, Packet}, State) ->
 		      if Subscription /= none, Subscription /= pending,
 			 SendWhen == on_sub_and_presence ->
 			      send_last_published_item(jlib:jid_tolower(From), Host, Node, Info);
-			 SendWhen == on_sub_and_presence ->
+			 PresenceSubscribed, SendWhen == on_sub_and_presence ->
 			      %% Else, if the node is so configured, and the user sends entity
 			      %% capabilities saying that it wants notifications, send last
 			      %% item.
 			      LookingFor = Node++"+notify",
 			      case lists:member(LookingFor, Features) of
 				  true ->
-				      send_last_published_item(jlib:jid_tolower(From), Host, Node, Info);
-				  _ ->
+				      MaySubscribe =
+					  case get_node_option(Info, access_model) of
+					      %% open, whitelist, presence, roster, authorize
+					      open -> true;
+					      presence -> PresenceSubscribed;
+					      whitelist -> false; % subscribers are added manually
+					      authorize -> false; % likewise
+					      roster ->
+						  AllowedGroups = get_node_option(Info, access_roster_groups),
+						  is_in_roster_group(To#jid.luser, To#jid.lserver,
+								     jlib:jid_tolower(From), AllowedGroups)
+					  end,
+				      if MaySubscribe ->
+					      send_last_published_item(jlib:jid_tolower(From), Host, Node, Info);
+					 true ->
+					      ok
+				      end;
+				  false ->
 				      ok
 			      end;
 			 true ->
@@ -1085,27 +1104,18 @@ subscribe_node(Host, From, JID, Node) ->
 		      AccessModel == authorize ->
 			   pending;
 		      AccessModel == presence ->
-			    %% XXX: this applies only to PEP
+			   %% XXX: this applies only to PEP
 			   {OUser, OServer, _} = Host,
-			   {Subscription1, _Groups} =
-			       ejabberd_hooks:run_fold(
-				 roster_get_jid_info, OServer,
-				 {none, []}, [OUser, OServer, SubscriberWithoutResource]),
-			   if (Subscription1 == both) or
-			      (Subscription1 == from) ->
+			   case has_presence_subscription(OUser, OServer, Subscriber) of
+			       true ->
 				   subscribed;
-			      true ->
+			       false ->
 				   {error, extend_error(?ERR_NOT_AUTHORIZED, "presence-subscription-required")}
 			   end;
 		      AccessModel == roster ->
-			    %% XXX: this applies only to PEP
+			   %% XXX: this applies only to PEP
 			   {OUser, OServer, _} = Host,
-			   {_Subscription, Groups} =
-			       ejabberd_hooks:run_fold(
-				 roster_get_jid_info, OServer,
-				 {none, []}, [OUser, OServer, SubscriberWithoutResource]),
-			   case lists:any(fun(Group) -> lists:member(Group, AllowedGroups) end,
-					  Groups) of
+			   case is_in_roster_group(OUser, OServer, Subscriber, AllowedGroups) of
 			       true ->
 				   subscribed;
 			       false ->
@@ -1157,6 +1167,26 @@ subscribe_node(Host, From, JID, Node) ->
 		    {error, ?ERR_INTERNAL_SERVER_ERROR}
 	    end
     end.
+
+has_presence_subscription(OwnerUser, OwnerServer, {SubscriberUser, SubscriberServer, _}) ->
+    {Subscription, _Groups} =
+	ejabberd_hooks:run_fold(
+	  roster_get_jid_info, OwnerServer,
+	  {none, []}, [OwnerUser, OwnerServer, {SubscriberUser, SubscriberServer, ""}]),
+    if (Subscription == both) or
+       (Subscription == from) ->
+	    true;
+       true ->
+	    false
+    end.
+
+is_in_roster_group(OwnerUser, OwnerServer, {SubscriberUser, SubscriberServer, _}, AllowedGroups) ->
+    {_Subscription, Groups} =
+	ejabberd_hooks:run_fold(
+	  roster_get_jid_info, OwnerServer,
+	  {none, []}, [OwnerUser, OwnerServer, {SubscriberUser, SubscriberServer, ""}]),
+    lists:any(fun(Group) -> lists:member(Group, AllowedGroups) end,
+	      Groups).
 
 send_authorization_request(Lang, Approver, Subscriber, Node, Host) ->
     Stanza =
@@ -1996,11 +2026,11 @@ broadcast_publish_item(Host, Node, ItemID, Payload, From) ->
 			    case catch ejabberd_c2s:get_subscribed_and_online(C2SPid) of
 				ContactsWithCaps when is_list(ContactsWithCaps) ->
 				    ?DEBUG("found contacts with caps: ~p", [ContactsWithCaps]),
+				    LookingFor = Node++"+notify",
 				    %% We have a list of the form [{JID, Caps}].
 				    lists:foreach(
 				      fun({JID, Caps}) ->
 					      Features = mod_caps:get_features(?MYNAME, Caps),
-					      LookingFor = Node++"+notify",
 					      case lists:member(LookingFor, Features) of
 						  true ->
 						      ejabberd_router:route(
