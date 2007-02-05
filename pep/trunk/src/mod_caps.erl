@@ -138,13 +138,18 @@ maybe_get_features(#caps{node = Node, version = Version, exts = Exts}) ->
 	    {ok, Features}
     end.
 
+timestamp() ->
+    {MegaSecs, Secs, _MicroSecs} = now(),
+    MegaSecs * 1000000 + Secs.
+    
 handle_call({get_features, Caps}, From, State) ->
     case maybe_get_features(Caps) of
 	{ok, Features} -> 
 	    {reply, Features, State};
 	wait ->
+	    Timeout = timestamp() + 10,
 	    FeatureQueries = State#state.feature_queries,
-	    NewFeatureQueries = [{From, Caps} | FeatureQueries],
+	    NewFeatureQueries = [{From, Caps, Timeout} | FeatureQueries],
 	    NewState = State#state{feature_queries = NewFeatureQueries},
 	    {noreply, NewState}
     end;
@@ -234,11 +239,12 @@ handle_cast({disco_response, From, _To,
     NewRequests = ?DICT:erase(ID, Requests),
     {noreply, State#state{disco_requests = NewRequests}};
 handle_cast(visit_feature_queries, #state{feature_queries = FeatureQueries} = State) ->
-    %% XXX: expire old requests that never get any answer?
+    Timestamp = timestamp(),
     NewFeatureQueries =
-	lists:foldl(fun({From, Caps}, Acc) ->
+	lists:foldl(fun({From, Caps, Timeout}, Acc) ->
 			    case maybe_get_features(Caps) of
-				wait -> [{From, Caps} | Acc];
+				wait when Timeout < Timestamp -> [{From, Caps, Timeout} | Acc];
+				wait -> Acc;
 				{ok, Features} ->
 				    gen_server:reply(From, Features),
 				    Acc
