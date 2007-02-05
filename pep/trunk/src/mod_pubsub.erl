@@ -2263,7 +2263,15 @@ iq_pubsub_owner(Host, From, Type, Lang, SubEl) ->
 		{set, "configure"} ->
 		    set_node_config(Host, From, Node, Els, Lang);
 		{get, "default"} ->
-		    {error, extend_error(?ERR_FEATURE_NOT_IMPLEMENTED, unsupported, "retrieve-default")};
+		    Fields = get_node_config_xfields("", 
+						     #nodeinfo{options = [{defaults, get_table(Host)}]}
+						     , Lang),
+		    {result, [{xmlelement, "pubsub",
+			       [{"xmlns", ?NS_PUBSUB_OWNER}],
+			       [{xmlelement, "default", [],
+				 [{xmlelement, "x", [{"xmlns", ?NS_XDATA},
+						     {"type", "form"}],
+				   Fields}]}]}]};
 		{set, "delete"} ->
 		    delete_node(Host, From, Node);
 		{set, "purge"} ->
@@ -2362,7 +2370,10 @@ get_node_config(Host, From, Node, Lang) ->
 	 {presence_based_delivery, true}]).
 
 get_node_option(Info, current_approver) ->
-    Default = hd(get_owners_jids(Info)),
+    Default = case get_owners_jids(Info) of
+		  [FirstOwner|_] -> FirstOwner;
+		  _ -> {"","",""}
+	      end,
     Options = Info#nodeinfo.options,
     element(
       2, element(2, lists:keysearch(
