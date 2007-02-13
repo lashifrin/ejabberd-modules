@@ -3,7 +3,7 @@
 
 	Homepage: http://ejabberd.jabber.ru/mod_logxml
 	Author: Badlop
-	Version: 0.2.1 - 2006-08-08
+	Version: 0.2.2 - 2007-02-13
 	Module for ejabberd 0.7.5 or newer
 
 
@@ -33,31 +33,38 @@ This module reuses code from mod_log_forensic, mod_stats2file, mod_muc_log
 
 stanza: 
     Log packets only when stanza matches
-    Default vaue: [iq, message, presence, other]
+    Default value: [iq, message, presence, other]
 direction: 
     Log packets only when direction matches
-    Default vaue: [internal, vhosts, external]
+    Default value: [internal, vhosts, external]
 orientation: 
     Log packets only when orientation matches
-    Default vaue: [send, revc]
+    Default value: [send, revc]
 logdir: 
     Base filename, including absolute path
-    Default vaue: "/tmp/jabberlogs/"
+    Default value: "/tmp/jabberlogs/"
+timezone:
+    The time zone for the logs is configurable with this option. 
+	Allowed values are 'local' and 'universal'.
+	With the first value, the local time, 
+	as reported to Erlang by the operating system, will be used. 
+	With the latter, GMT/UTC time will be used. 
+	Default value: local
 rotate_days: 
     Rotate logs every X days
     Put 'no' to disable this limit.
-    Default vaue: 1
+    Default value: 1
 rotate_megs: 
     Rotate when the logfile size is higher than this, in megabytes.
     Put 'no' to disable this limit.
-    Default vaue: 10
+    Default value: 10
 rotate_kpackets: 
     Rotate every *1000 XMPP packets logged
     Put 'no' to disable this limit.
-    Default vaue: 10
+    Default value: 10
 check_rotate_kpackets: 
     Check rotation every *1000 packets
-    Default vaue: 1
+    Default value: 1
 
 
 	EXAMPLE CONFIGURATION
@@ -68,6 +75,7 @@ check_rotate_kpackets:
      {direction, [external]},
      {orientation, [send, recv]},
      {logdir, "/var/jabber/logs/"},
+     {timezone, universal}, 
      {rotate_days, 1}, 
      {rotate_megs, 100}, 
      {rotate_kpackets, no},
@@ -77,6 +85,9 @@ check_rotate_kpackets:
 
 	CHANGELOG
 	---------
+
+0.2.2 - 2007-02-13
+  * Added new option: timezone
 
 0.2.1 - 2006-08-08
   * Fixed small bug on start/2 

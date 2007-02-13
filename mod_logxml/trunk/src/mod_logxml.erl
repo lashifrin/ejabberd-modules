@@ -3,16 +3,16 @@
 %%% Author  : Badlop
 %%% Purpose : Log XMPP packets to XML file
 %%% Created : 
-%%% Id      : 0.2.1
+%%% Id      : 0.2.2
 %%%----------------------------------------------------------------------
 
 -module(mod_logxml).
 -author('').
--vsn('').
+-vsn('0.2.2').
 
 -behaviour(gen_mod).
 
--export([start/2, init/5, stop/1,
+-export([start/2, init/6, stop/1,
 	send_packet/3, receive_packet/4]).
 
 -include("ejabberd.hrl").
@@ -39,6 +39,8 @@ start(Host, Opts) ->
 	RotateO = {Rd, Rf, Rp},
 	CheckRKP = gen_mod:get_opt(check_rotate_kpackets, Opts, 1),
 
+	Timezone = gen_mod:get_opt(timezone, Opts, local),
+
 	Orientation = gen_mod:get_opt(orientation, Opts, [send, recv]),
 	Stanza = gen_mod:get_opt(stanza, Opts, [iq, message, presence, other]),
 	Direction = gen_mod:get_opt(direction, Opts, [internal, vhosts, external]),
@@ -49,8 +51,8 @@ start(Host, Opts) ->
 
 	ejabberd_hooks:add(user_send_packet, Host, ?MODULE, send_packet, 90),
 	ejabberd_hooks:add(user_receive_packet, Host, ?MODULE, receive_packet, 90),
-    register(gen_mod:get_module_proc(Host, ?PROCNAME),
-		spawn(?MODULE, init, [Host, Logdir, RotateO, CheckRKP, FilterO])).
+	register(gen_mod:get_module_proc(Host, ?PROCNAME),
+		spawn(?MODULE, init, [Host, Logdir, RotateO, CheckRKP, Timezone, FilterO])).
 
 stop(Host) ->
     ejabberd_hooks:delete(user_send_packet, Host, ?MODULE, send_packet, 60),
@@ -59,9 +61,9 @@ stop(Host) ->
     Proc ! stop,
     {wait, Proc}.
 
-init(Host, Logdir, RotateO, CheckRKP, FilterO) ->
+init(Host, Logdir, RotateO, CheckRKP, Timezone, FilterO) ->
 	{IoDevice, Filename, Gregorian_day} = open_file(Logdir, Host),
-	loop(Host, IoDevice, Filename, Logdir, CheckRKP, RotateO, 0, Gregorian_day, FilterO).
+	loop(Host, IoDevice, Filename, Logdir, CheckRKP, RotateO, 0, Gregorian_day, Timezone, FilterO).
 
 %% -------------------
 %% Main
@@ -126,9 +128,9 @@ filter(FilterO, E) ->
 		lists:member(Direction, DirectionO)]),
 	{Orientation, Stanza, Direction}}. 
 
-loop(Host, IoDevice, Filename, Logdir, CheckRKP, RotateO, PacketC, Gregorian_day, FilterO) ->
-    receive
-        {addlog, E} ->
+loop(Host, IoDevice, Filename, Logdir, CheckRKP, RotateO, PacketC, Gregorian_day, Timezone, FilterO) ->
+	receive
+		{addlog, E} ->
 			{IoDevice3, Filename3, Gregorian_day3, PacketC3} = case filter(FilterO, E) of
 				{true, OSD} ->
 					Div = PacketC/CheckRKP,
@@ -138,18 +140,18 @@ loop(Host, IoDevice, Filename, Logdir, CheckRKP, RotateO, PacketC, Gregorian_day
 						false ->
 							{IoDevice, Filename, Gregorian_day, PacketC+1}
 					end,
-					add_log(IoDevice2, E, OSD),
+					add_log(IoDevice2, Timezone, E, OSD),
 					{IoDevice2, Filename2, Gregorian_day2, PacketC2};
 				_ ->
 					{IoDevice, Filename, Gregorian_day, PacketC}
 				end,
-            loop(Host, IoDevice3, Filename3, Logdir, CheckRKP, RotateO, PacketC3, Gregorian_day3, FilterO);
-        stop ->
+			loop(Host, IoDevice3, Filename3, Logdir, CheckRKP, RotateO, PacketC3, Gregorian_day3, Timezone, FilterO);
+		stop ->
 			close_file(IoDevice),
-            ok;
-        _ ->
-            loop(Host, IoDevice, Filename, Logdir, CheckRKP, RotateO, PacketC, Gregorian_day, FilterO)
-    end.
+			ok;
+		_ ->
+			loop(Host, IoDevice, Filename, Logdir, CheckRKP, RotateO, PacketC, Gregorian_day, Timezone, FilterO)
+	end.
 
 send_packet(FromJID, ToJID, P) ->
 	Host = FromJID#jid.lserver,
@@ -161,13 +163,17 @@ receive_packet(_JID, From, To, P) ->
     Proc = gen_mod:get_module_proc(Host, ?PROCNAME),
 	Proc ! {addlog, {recv, From, To, P}}.
 
-add_log(IoDevice, {Orientation, From, To, Packet}, _OSD) ->
+add_log(IoDevice, Timezone, {Orientation, From, To, Packet}, _OSD) ->
 	%{Orientation, Stanza, Direction} = OSD, 
 	LocalJID = case Orientation of
 		send -> From;
 		recv -> To
 	end,
-	TimestampISO = jlib:timestamp_to_iso(calendar:now_to_universal_time(now())),
+	TimeStamp = case Timezone of
+		local -> calendar:now_to_local_time(now());
+		universal -> calendar:now_to_universal_time(now())
+	end,
+	TimestampISO = jlib:timestamp_to_iso(TimeStamp),
 	io:fwrite(IoDevice, "<packet or=\"~p\" ljid=\"~s\" ts=\"~s\">~s</packet>~n", 
 		[Orientation, jlib:jid_to_string(LocalJID), TimestampISO, xml:element_to_string(Packet)]).
 
@@ -185,7 +191,7 @@ open_file(Logdir, Host) ->
 	Sec = string:substr(TimeStamp, 16, 2),
 	S = "-",
 	Logname = lists:flatten([Host,S,Year,S,Month,S,Day,S,Hour,S,Min,S,Sec,".xml"]),
-    Filename = filename:join([Logdir, Logname]),
+	Filename = filename:join([Logdir, Logname]),
 
 	Gregorian_day = get_gregorian_day(),
 
