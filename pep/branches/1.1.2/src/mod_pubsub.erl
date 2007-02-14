@@ -46,7 +46,7 @@
 
 -record(pubsub_node, {host_node, host_parent, info}).
 -record(pubsub_presence, {key, resource}).	%key is {host, luser, lserver}
--record(pep_node, {owner_node, info}).		%owner is {luser, lserver, ""}
+-record(pep_node, {owner_node, owner, info}).	%owner is {luser, lserver, ""}
 -record(nodeinfo, {items = [],
 		   options = [],
 		   entities = ?DICT:new()
@@ -119,6 +119,7 @@ init([ServerHost, Opts]) ->
     mnesia:create_table(pep_node,
 			[{disc_only_copies, [node()]},
 			 {attributes, record_info(fields, pep_node)}]),
+    mnesia:add_table_index(pep_node, owner),
     mnesia:create_table(pubsub_presence,
 			[{ram_copies, [node()]},
 			 {attributes, record_info(fields, pubsub_presence)},
@@ -226,51 +227,64 @@ handle_cast({presence, From, To, Packet}, State) ->
 	    %% A new resource is available.  Loop through all nodes
 	    %% and see if the contact is subscribed, and if so, and if
 	    %% the node is so configured, send the last item.
-	    Match = case Host of
+	    Nodes = case Host of
 			{_, _, _} ->
-			    #pep_node{owner_node = {LJID, '_'}, _ = '_'};
+			    mnesia:dirty_index_read(pep_node, LJID, #pep_node.owner);
 			_ ->
-			    #pubsub_node{host_node = {LJID, '_'}, _ = '_'}
+			    mnesia:dirty_match_object(#pubsub_node{host_node = {LJID, '_'}, _ = '_'})
 		    end,
-	    case catch mnesia:dirty_match_object(Match) of
-		{'EXIT', Reason} ->
-		    ?ERROR_MSG("~p", [Reason]);
-		Nodes ->
-		    lists:foreach(
-		      fun(N) ->
-			      Node = get_node_name(N),
-			      Info = get_node_info(N),
-			      Subscription = get_subscription(Info, From),
-			      SendWhen = get_node_option(Info, send_last_published_item),
-			      %% If the contact has an explicit
-			      %% subscription to the node, and the
-			      %% node is so configured, send last
+	    Features = case catch mod_caps:get_features(?MYNAME, 
+							mod_caps:read_caps(element(4, Packet))) of
+			   F when is_list(F) -> F;
+			   _ -> []
+		       end,
+	    PresenceSubscribed =
+		has_presence_subscription(To#jid.luser, To#jid.lserver,
+					  jlib:jid_tolower(From)),
+	    lists:foreach(
+	      fun(N) ->
+		      Node = get_node_name(N),
+		      Info = get_node_info(N),
+		      Subscription = get_subscription(Info, From),
+		      SendWhen = get_node_option(Info, send_last_published_item),
+		      %% If the contact has an explicit
+		      %% subscription to the node, and the
+		      %% node is so configured, send last
+		      %% item.
+		      if Subscription /= none, Subscription /= pending,
+			 SendWhen == on_sub_and_presence ->
+			      send_last_published_item(jlib:jid_tolower(From), Host, Node, Info);
+			 PresenceSubscribed, SendWhen == on_sub_and_presence ->
+			      %% Else, if the node is so configured, and the user sends entity
+			      %% capabilities saying that it wants notifications, send last
 			      %% item.
-			      if Subscription /= none, Subscription /= pending,
-				 SendWhen == on_sub_and_presence ->
-				      send_last_published_item(jlib:jid_tolower(From), Host, Node, Info);
-				 SendWhen == on_sub_and_presence ->
-				      %% Else, if the node is so configured, and the user sends entity
-				      %% capabilities saying that it wants notifications, send last
-				      %% item.
-				      LookingFor = Node++"+notify",
-				      case catch mod_caps:get_features(?MYNAME, 
-								       mod_caps:read_caps(element(4, Packet))) of
-					  Features when is_list(Features) ->
-					      case lists:member(LookingFor, Features) of
-						  true ->
-						      send_last_published_item(jlib:jid_tolower(From), Host, Node, Info);
-						  _ ->
-						      ok
-					      end;
-					  _ ->
+			      LookingFor = Node++"+notify",
+			      case lists:member(LookingFor, Features) of
+				  true ->
+				      MaySubscribe =
+					  case get_node_option(Info, access_model) of
+					      %% open, whitelist, presence, roster, authorize
+					      open -> true;
+					      presence -> PresenceSubscribed;
+					      whitelist -> false; % subscribers are added manually
+					      authorize -> false; % likewise
+					      roster ->
+						  AllowedGroups = get_node_option(Info, access_roster_groups),
+						  is_in_roster_group(To#jid.luser, To#jid.lserver,
+								     jlib:jid_tolower(From), AllowedGroups)
+					  end,
+				      if MaySubscribe ->
+					      send_last_published_item(jlib:jid_tolower(From), Host, Node, Info);
+					 true ->
 					      ok
 				      end;
-				 true ->
+				  false ->
 				      ok
-			      end
-		      end, Nodes)
-	    end,
+			      end;
+			 true ->
+			      ok
+		      end
+	      end, Nodes),
 	    {noreply, State};
        true ->
 	    {noreply, State}
@@ -644,8 +658,7 @@ iq_disco_items(Host, _From, SNode) ->
 
 pep_disco_items(Acc, _From, To, "", _Lang) ->
     LJID = jlib:jid_tolower(jlib:jid_remove_resource(To)),
-    Match = #pep_node{owner_node = {LJID, '_'}, _ = '_'},
-    case catch mnesia:dirty_match_object(Match) of
+    case catch mnesia:dirty_index_read(pep_node, LJID, #pep_node.owner) of
 	{'EXIT', Reason} ->
 	    ?ERROR_MSG("~p", [Reason]),
 	    Acc;
@@ -827,6 +840,7 @@ create_new_node(Host, Node, Owner, ServerHost, Access, Configuration) ->
 				       ?DICT:new()),
 				mnesia:write(
 				  #pep_node{owner_node = {LOwner, Node},
+					    owner = LOwner,
 					    info = #nodeinfo{entities = Entities,
 							     options = ConfigOptions}}),
 				ok
@@ -1090,27 +1104,18 @@ subscribe_node(Host, From, JID, Node) ->
 		      AccessModel == authorize ->
 			   pending;
 		      AccessModel == presence ->
-			    %% XXX: this applies only to PEP
+			   %% XXX: this applies only to PEP
 			   {OUser, OServer, _} = Host,
-			   {Subscription1, _Groups} =
-			       ejabberd_hooks:run_fold(
-				 roster_get_jid_info, OServer,
-				 {none, []}, [OUser, OServer, SubscriberWithoutResource]),
-			   if (Subscription1 == both) or
-			      (Subscription1 == from) ->
+			   case has_presence_subscription(OUser, OServer, Subscriber) of
+			       true ->
 				   subscribed;
-			      true ->
+			       false ->
 				   {error, extend_error(?ERR_NOT_AUTHORIZED, "presence-subscription-required")}
 			   end;
 		      AccessModel == roster ->
-			    %% XXX: this applies only to PEP
+			   %% XXX: this applies only to PEP
 			   {OUser, OServer, _} = Host,
-			   {_Subscription, Groups} =
-			       ejabberd_hooks:run_fold(
-				 roster_get_jid_info, OServer,
-				 {none, []}, [OUser, OServer, SubscriberWithoutResource]),
-			   case lists:any(fun(Group) -> lists:member(Group, AllowedGroups) end,
-					  Groups) of
+			   case is_in_roster_group(OUser, OServer, Subscriber, AllowedGroups) of
 			       true ->
 				   subscribed;
 			       false ->
@@ -1162,6 +1167,26 @@ subscribe_node(Host, From, JID, Node) ->
 		    {error, ?ERR_INTERNAL_SERVER_ERROR}
 	    end
     end.
+
+has_presence_subscription(OwnerUser, OwnerServer, {SubscriberUser, SubscriberServer, _}) ->
+    {Subscription, _Groups} =
+	ejabberd_hooks:run_fold(
+	  roster_get_jid_info, OwnerServer,
+	  {none, []}, [OwnerUser, OwnerServer, {SubscriberUser, SubscriberServer, ""}]),
+    if (Subscription == both) or
+       (Subscription == from) ->
+	    true;
+       true ->
+	    false
+    end.
+
+is_in_roster_group(OwnerUser, OwnerServer, {SubscriberUser, SubscriberServer, _}, AllowedGroups) ->
+    {_Subscription, Groups} =
+	ejabberd_hooks:run_fold(
+	  roster_get_jid_info, OwnerServer,
+	  {none, []}, [OwnerUser, OwnerServer, {SubscriberUser, SubscriberServer, ""}]),
+    lists:any(fun(Group) -> lists:member(Group, AllowedGroups) end,
+	      Groups).
 
 send_authorization_request(Lang, Approver, Subscriber, Node, Host) ->
     Stanza =
@@ -2001,11 +2026,11 @@ broadcast_publish_item(Host, Node, ItemID, Payload, From) ->
 			    case catch ejabberd_c2s:get_subscribed_and_online(C2SPid) of
 				ContactsWithCaps when is_list(ContactsWithCaps) ->
 				    ?DEBUG("found contacts with caps: ~p", [ContactsWithCaps]),
+				    LookingFor = Node++"+notify",
 				    %% We have a list of the form [{JID, Caps}].
 				    lists:foreach(
 				      fun({JID, Caps}) ->
 					      Features = mod_caps:get_features(?MYNAME, Caps),
-					      LookingFor = Node++"+notify",
 					      case lists:member(LookingFor, Features) of
 						  true ->
 						      ejabberd_router:route(
@@ -2238,7 +2263,15 @@ iq_pubsub_owner(Host, From, Type, Lang, SubEl) ->
 		{set, "configure"} ->
 		    set_node_config(Host, From, Node, Els, Lang);
 		{get, "default"} ->
-		    {error, extend_error(?ERR_FEATURE_NOT_IMPLEMENTED, unsupported, "retrieve-default")};
+		    Fields = get_node_config_xfields("", 
+						     #nodeinfo{options = [{defaults, get_table(Host)}]}
+						     , Lang),
+		    {result, [{xmlelement, "pubsub",
+			       [{"xmlns", ?NS_PUBSUB_OWNER}],
+			       [{xmlelement, "default", [],
+				 [{xmlelement, "x", [{"xmlns", ?NS_XDATA},
+						     {"type", "form"}],
+				   Fields}]}]}]};
 		{set, "delete"} ->
 		    delete_node(Host, From, Node);
 		{set, "purge"} ->
@@ -2337,7 +2370,10 @@ get_node_config(Host, From, Node, Lang) ->
 	 {presence_based_delivery, true}]).
 
 get_node_option(Info, current_approver) ->
-    Default = hd(get_owners_jids(Info)),
+    Default = case get_owners_jids(Info) of
+		  [FirstOwner|_] -> FirstOwner;
+		  _ -> {"","",""}
+	      end,
     Options = Info#nodeinfo.options,
     element(
       2, element(2, lists:keysearch(
