@@ -1,0 +1,6 @@
+To compile this module, run
+
+erlc mysql*.erl
+
+Then copy the beam files to the ejabberd ebin directory (or where the
+ejabberd beam files are).
