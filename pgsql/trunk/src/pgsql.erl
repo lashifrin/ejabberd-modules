@@ -19,16 +19,16 @@
 
 connect(Host, Database, User, Password) ->
     connect([{database, Database},
-           {host, Host},
-           {user, User},
-           {password, Password}]).
+	     {host, Host},
+	     {user, User},
+	     {password, Password}]).
 
 connect(Host, Database, User, Password, Port) ->
     connect([{database, Database},
-           {host, Host},
-           {user, User},
-           {port, Port},
-           {password, Password}]).
+	     {host, Host},
+	     {user, User},
+	     {port, Port},
+	     {password, Password}]).
 
 connect(Options) ->
     {ok, Db} = pgsql_proto:run(Options),
