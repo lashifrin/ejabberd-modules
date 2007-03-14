@@ -21,7 +21,16 @@ build.bat on Windows
 
 3. Edit ejabberd.cfg by adding lines like these:
 
-[TODO]
+{listen, 
+ [...
+  {5280, ejabberd_http, [http_poll, web_admin, {request_handlers, [{["http-bind"], mod_http_bind}]}]},
+  ...]}.
+
+{modules,
+ [...
+  {mod_http_bind, []},
+ ...]}.
+ 
 
 
 
