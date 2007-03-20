@@ -3,7 +3,7 @@
 
 	Homepage: http://ejabberd.jabber.ru/mod_logxml
 	Author: Badlop
-	Version: 0.2.2 - 2007-02-13
+	Version: 0.2.3 - 2007-03-20
 	Module for ejabberd 0.7.5 or newer
 
 
@@ -85,6 +85,9 @@ check_rotate_kpackets:
 
 	CHANGELOG
 	---------
+
+0.2.3 - 2007-03-20
+  * The file name respects the timezone option
 
 0.2.2 - 2007-02-13
   * Added new option: timezone
