@@ -2030,12 +2030,18 @@ broadcast_publish_item(Host, Node, ItemID, Payload, From) ->
 				    %% We have a list of the form [{JID, Caps}].
 				    lists:foreach(
 				      fun({JID, Caps}) ->
-					      Features = mod_caps:get_features(?MYNAME, Caps),
-					      case lists:member(LookingFor, Features) of
-						  true ->
-						      ejabberd_router:route(
-							Sender, jlib:make_jid(JID), Stanza);
+					      case catch mod_caps:get_features(?MYNAME, Caps) of
+						  Features when is_list(Features) ->
+						      case lists:member(LookingFor, Features) of
+							  true ->
+							      ejabberd_router:route(
+								Sender, jlib:make_jid(JID), Stanza);
+							  _ ->
+							      ok
+						      end;
 						  _ ->
+						      %% couldn't get entity capabilities.  
+						      %% nothing to do about that...
 						      ok
 					      end
 				      end, ContactsWithCaps);
@@ -2644,6 +2650,8 @@ get_present_resources(_ToUser, ToServer, FromUser, FromServer) ->
     %% Return a list of resources of FromUser@FromServer that have
     %% sent presence to ToUser@ToServer.  At least, that's the theory.
     %% In practice, we don't care whom the user sent presence to.
+    %% Having the server in the key makes sure that each virtual host
+    %% does what it should, though.
     Key = {ToServer, FromUser, FromServer},
     lists:map(fun(#pubsub_presence{resource = Res}) -> Res end,
 	      case catch mnesia:dirty_read(pubsub_presence, Key) of
