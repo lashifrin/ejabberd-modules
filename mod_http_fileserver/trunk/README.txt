@@ -19,9 +19,12 @@ directory to export is "/var/www":
   {modules,
    [
     ...
-    {mod_http_fileserver, [{docroot, "/var/www"}]},
+    {mod_http_fileserver, [{docroot, "/var/www"}, {accesslog, /var/log/ejabberd/access.log}]},
     ...
    ]}
+
+   accesslog is an optional parameter to specify an apache access log
+   file like. No log will be recorded if missing.
 
 	USAGE
 	=====
@@ -30,4 +33,3 @@ directory to export is "/var/www":
 
 	CHANGELOG
 	=========
-
