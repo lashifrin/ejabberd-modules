@@ -155,7 +155,6 @@ handle_call(stop, _From, State) ->
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
 handle_cast({addlog, Direction, LUser, LServer, JID, P}, State) ->
-io:format("asd~n"),
     Storages = State#state.storages,
     NewStorages =
 	case should_store_jid(LUser, LServer, JID,
@@ -654,22 +653,26 @@ process_local_iq_list(From, _To, #iq{type = Type, sub_el = SubEl} = IQ) ->
             RSM = parse_rsm(SubEls),
             ?MYDEBUG("RSM Results: ~p ~n", [RSM]),
             Result = case parse_root_argument(Attrs) of 
-                {error, E} -> {error, E};
-                {interval, Start, Stop} -> get_list(LUser, LServer, Start, Stop, '_');
-                {interval, Start, Stop, Jid} -> get_list(LUser, LServer, Start, Stop, Jid);
-                _ -> {error, ?ERR_BAD_REQUEST}
-            end,
+			 {error, E} -> {error, E};
+			 {interval, Start, Stop} ->
+			     get_list(LUser, LServer, Start, Stop, '_');
+			 {interval, Start, Stop, Jid} ->
+			     get_list(LUser, LServer, Start, Stop, Jid);
+			 {index, Jid, Start} ->
+			     get_list(LUser, LServer, Start, infinity, Jid);
+			 _ -> {error, ?ERR_BAD_REQUEST}
+		     end,
             case Result of
                 {ok, Items} ->
                     FunId = fun(El) -> ?MYDEBUG("FunId  ~p  ~n", [El]),  integer_to_list(element(5,El)) end,
                     FunCompare = fun(Id, El) -> 
-                                        Id2=list_to_integer(FunId(El)), 
-                                        Id1=list_to_integer(Id),
-                                        if Id1 == Id2 -> equal;
-                                           Id1 > Id2 -> greater;
-                                           Id1 < Id2 -> smaller
-                                        end
-                                    end,
+					 Id2 = list_to_integer(FunId(El)), 
+					 Id1 = list_to_integer(Id),
+					 if Id1 == Id2 -> equal;
+					    Id1 > Id2 -> greater;
+					    Id1 < Id2 -> smaller
+					 end
+				 end,
                     case catch execute_rsm(RSM, lists:keysort(5, Items), FunId,FunCompare)  of
                         {error, R} ->
                             IQ#iq{type = error, sub_el = [SubEl, R]};
@@ -679,21 +682,21 @@ process_local_iq_list(From, _To, #iq{type = Type, sub_el = SubEl} = IQ) ->
                         {RSM_Elem, Items2} ->
                             Zero = calendar:datetime_to_gregorian_seconds({{1970, 1, 1}, {0, 0, 0}}),
                             Fun = fun(A) ->
-                                    Seconds= A#archive_message.start - Zero,
-                                    Start2 =  jlib:now_to_utc_string({Seconds div 1000000, Seconds rem 1000000, 0}),
-                                    Args0 = [{"with", jlib:jid_to_string(A#archive_message.jid)}, {"start", Start2}],
-                                    Args = case  A#archive_message.subject of
-                                                "" -> Args0;
-                                                Subject -> [{"subject",Subject} | Args0]
-                                            end,
-                                    {xmlelement, "store", Args, []}
-                                end,
+					  Seconds= A#archive_message.start - Zero,
+					  Start2 =  jlib:now_to_utc_string({Seconds div 1000000, Seconds rem 1000000, 0}),
+					  Args0 = [{"with", jlib:jid_to_string(A#archive_message.jid)}, {"start", Start2}],
+					  Args = case  A#archive_message.subject of
+						     "" -> Args0;
+						     Subject -> [{"subject",Subject} | Args0]
+						 end,
+					  {xmlelement, "chat", Args, []}
+				  end,
                             IQ#iq{type = result, sub_el = [{xmlelement, "list", [{"xmlns", ?NS_ARCHIVE}], lists:append(lists:map(Fun, Items2),[RSM_Elem])}]}
                     end;
                 {error, R} ->
                     IQ#iq{type = error, sub_el = [SubEl, R]}
             end
-        end.
+    end.
 
 
 
@@ -718,7 +721,7 @@ process_local_iq_retrieve(From, _To, #iq{type = Type, sub_el = SubEl} = IQ) ->
                     end
                 end
         end.
-        
+
 
 retrieve_collection(Index, RSM) ->
     case get_collection(Index) of
@@ -745,7 +748,7 @@ retrieve_collection(Index, RSM) ->
 				 [{"secs", integer_to_list(Elem#msg.secs)}],
 				 [{xmlelement, "body", [], [{xmlcdata,  Elem#msg.body}]}]}
 			end,
-                    {xmlelement, "store", Args, lists:append(lists:map(Format_Fun, Items), [RSM_Elem])}
+                    {xmlelement, "chat", Args, lists:append(lists:map(Format_Fun, Items), [RSM_Elem])}
             end
     end.
         
@@ -878,10 +881,11 @@ parse_root_argument_aux([{"end", Str} | Tail], {AW, AS, _}) ->
 parse_root_argument_aux([_ | Tail], A) ->
     parse_root_argument_aux(Tail, A);
 parse_root_argument_aux([], A) ->  A.
-    
 
 
-get_timestamp() -> calendar:datetime_to_gregorian_seconds(calendar:local_time()).
+
+get_timestamp() ->
+    calendar:datetime_to_gregorian_seconds(calendar:universal_time()).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1012,13 +1016,13 @@ execute_rsm(RSM, List, GetId, IdCompare) ->
 
 % execute_rsm_aux(count, _List, _, _) ->
 %      count;
-     
+
 execute_rsm_aux(none, _List, _, _) ->
     none;
-    
+
 execute_rsm_aux(error, _List, _, _) ->
     {error, ?ERR_BAD_REQUEST};
-    
+
 execute_rsm_aux({S, M, reversed}, List, IdFun, Acc) ->
     {NewFun,NewS} = case IdFun of
         index ->
@@ -1040,7 +1044,7 @@ execute_rsm_aux({S, M, reversed}, List, IdFun, Acc) ->
                S}
         end,
     {Index, L2} =  execute_rsm_aux({NewS,M,normal}, lists:reverse(List), NewFun, 0), 
-    {Acc + length(List) - Index, lists:reverse(L2)};
+    {Acc + length(List) - Index - length(L2), lists:reverse(L2)};
 
 execute_rsm_aux({{id,I}, M, normal}, List,  index,  Acc) ->
     execute_rsm_aux({list_to_integer(I), M, normal}, List,  index,  Acc);
