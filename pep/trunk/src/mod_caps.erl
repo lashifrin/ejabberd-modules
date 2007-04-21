@@ -206,8 +206,6 @@ handle_cast({disco_response, From, _To,
 	    #state{disco_requests = Requests} = State) ->
     case {Type, SubEls} of
 	{result, [{xmlelement, "query", Attrs, Els}]} ->
-	    %% Did we get the correct node?
-	    ResultNode = xml:get_attr_s("node", Attrs),
 	    case catch ?DICT:fetch(ID, Requests) of
 		{Node, SubNode} ->
 		    Features =
