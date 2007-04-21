@@ -206,27 +206,20 @@ handle_cast({disco_response, From, _To,
 	    #state{disco_requests = Requests} = State) ->
     case {Type, SubEls} of
 	{result, [{xmlelement, "query", Attrs, Els}]} ->
-	    %% Did we get the correct node?
-	    ResultNode = xml:get_attr_s("node", Attrs),
 	    case catch ?DICT:fetch(ID, Requests) of
 		{Node, SubNode} ->
-		    case (Node ++ "#" ++ SubNode) of
-			ResultNode ->
-			    Features =
-				lists:flatmap(fun({xmlelement, "feature", FAttrs, _}) ->
-						      [xml:get_attr_s("var", FAttrs)];
-						 (_) ->
-						      []
-					      end, Els),
-			    mnesia:transaction(
-			      fun() ->
-				      mnesia:write(#caps_features{node_pair = {Node, SubNode},
-								  features = Features})
-			      end),
-			    gen_server:cast(self(), visit_feature_queries);
-			_ ->
-			    ?ERROR_MSG("We asked for ~s#~s, but got ~s", [Node, SubNode, ResultNode])
-		    end;
+		    Features =
+			lists:flatmap(fun({xmlelement, "feature", FAttrs, _}) ->
+					      [xml:get_attr_s("var", FAttrs)];
+					 (_) ->
+					      []
+				      end, Els),
+		    mnesia:transaction(
+		      fun() ->
+			      mnesia:write(#caps_features{node_pair = {Node, SubNode},
+							  features = Features})
+		      end),
+		    gen_server:cast(self(), visit_feature_queries);
 		_ ->
 		    ?ERROR_MSG("ID '~s' matches no query", [ID])
 	    end;
