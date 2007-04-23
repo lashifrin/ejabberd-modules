@@ -373,7 +373,7 @@ iq_info_internal({xmlelement, Name, Attrs, Els}, Filter) when Name == "iq" ->
 					  SubName /= "error"],
 			{case NonErrorEls of
 			     [NonErrorEl] -> xml:get_tag_attr_s("xmlns", NonErrorEl);
-			     _ -> ""
+			     _ -> invalid
 			 end,
 			 FilteredEls};
 		    _ ->
