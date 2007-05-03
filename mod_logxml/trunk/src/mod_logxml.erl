@@ -55,8 +55,8 @@ start(Host, Opts) ->
 		spawn(?MODULE, init, [Host, Logdir, RotateO, CheckRKP, Timezone, FilterO])).
 
 stop(Host) ->
-    ejabberd_hooks:delete(user_send_packet, Host, ?MODULE, send_packet, 60),
-    ejabberd_hooks:delete(user_receive_packet, Host, ?MODULE, receive_packet, 60),
+    ejabberd_hooks:delete(user_send_packet, Host, ?MODULE, send_packet, 90),
+    ejabberd_hooks:delete(user_receive_packet, Host, ?MODULE, receive_packet, 90),
     Proc = gen_mod:get_module_proc(Host, ?PROCNAME),
     Proc ! stop,
     {wait, Proc}.
