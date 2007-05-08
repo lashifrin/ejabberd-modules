@@ -112,6 +112,7 @@ init([Host, _Opts]) ->
     mnesia:create_table(caps_features,
 			[{ram_copies, [node()]},
 			 {attributes, record_info(fields, caps_features)}]),
+    mnesia:add_table_copy(caps_features, node(), ram_copies),
     {ok, #state{host = Host}}.
 
 maybe_get_features(#caps{node = Node, version = Version, exts = Exts}) ->
@@ -206,8 +207,8 @@ handle_cast({disco_response, From, _To,
 	    #state{disco_requests = Requests} = State) ->
     case {Type, SubEls} of
 	{result, [{xmlelement, "query", Attrs, Els}]} ->
-	    case catch ?DICT:fetch(ID, Requests) of
-		{Node, SubNode} ->
+	    case ?DICT:find(ID, Requests) of
+		{ok, {Node, SubNode}} ->
 		    Features =
 			lists:flatmap(fun({xmlelement, "feature", FAttrs, _}) ->
 					      [xml:get_attr_s("var", FAttrs)];
@@ -220,7 +221,7 @@ handle_cast({disco_response, From, _To,
 							  features = Features})
 		      end),
 		    gen_server:cast(self(), visit_feature_queries);
-		_ ->
+		error ->
 		    ?ERROR_MSG("ID '~s' matches no query", [ID])
 	    end;
 	{result, _} ->
