@@ -112,6 +112,7 @@ init([Host, _Opts]) ->
     mnesia:create_table(caps_features,
 			[{ram_copies, [node()]},
 			 {attributes, record_info(fields, caps_features)}]),
+    mnesia:add_table_copy(caps_features, node(), ram_copies),
     {ok, #state{host = Host}}.
 
 maybe_get_features(#caps{node = Node, version = Version, exts = Exts}) ->

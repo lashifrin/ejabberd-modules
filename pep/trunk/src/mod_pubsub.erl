@@ -124,6 +124,7 @@ init([ServerHost, Opts]) ->
 			[{ram_copies, [node()]},
 			 {attributes, record_info(fields, pubsub_presence)},
 			 {type, bag}]),
+    mnesia:add_table_copy(pubsub_presence, node(), ram_copies),
 
     Host = gen_mod:get_opt(host, Opts, "pubsub." ++ ServerHost),
     update_table(Host),

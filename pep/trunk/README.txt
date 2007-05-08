@@ -14,5 +14,8 @@ file, like this:
 ...
  ]}.
 
+If you have a cluster, you may want to replicate the Mnesia tables
+pubsub_node and pep_node on the nodes.
+
 Author: Magnus Henoch, xmpp:legoscia@jabber.cd.chalmers.se,
 mailto:henoch@dtek.chalmers.se
