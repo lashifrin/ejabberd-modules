@@ -606,7 +606,7 @@ handle_sync_event({http_put, Rid, Key, NewKey, Hold, Packet, StartTo},
                                         ["<stream:stream to='",
                                          StartTo, 
                                          "' xmlns='jabber:client' "
-                                         "version='1.0' "
+                                         %%"version='1.0' "
                                          "xmlns:stream='http://etherx.jabber.org/streams'>"] ++ Packet;
                                     true ->
                                         Packet
