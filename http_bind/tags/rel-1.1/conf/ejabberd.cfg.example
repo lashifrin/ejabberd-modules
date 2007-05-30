@@ -129,7 +129,7 @@
   {5269, ejabberd_s2s_in,  [{shaper, s2s_shaper},
 			    {max_stanza_size, 131072}
 			   ]},
-  {5280, ejabberd_http,    [http_poll, http_bind, web_admin]},
+  {5280, ejabberd_http,    [http_poll, web_admin, {request_handlers, [{["http-bind"], mod_http_bind}]}]},
   {8888, ejabberd_service, [{access, all},
 			    {hosts, ["icq.localhost", "sms.localhost"],
 			     [{password, "secret"}]}]}
@@ -149,6 +149,7 @@
 % Used modules:
 {modules,
  [
+  {mod_http_bind,  []},
   {mod_register,   [{access, register}]},
   {mod_roster,     []},
   {mod_privacy,    []},
