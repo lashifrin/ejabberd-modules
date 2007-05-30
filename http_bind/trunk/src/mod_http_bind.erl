@@ -15,7 +15,7 @@
 -module(mod_http_bind).
 -author('steve@zeank.in-berlin.de').
 
--define(MOD_HTTP_BIND_VERSION, "1.0").
+-define(MOD_HTTP_BIND_VERSION, "1.2").
 -vsn(?MOD_HTTP_BIND_VERSION).
 
 %%-define(ejabberd_debug, true).
@@ -23,9 +23,9 @@
 -behaviour(gen_mod).
 
 -export([
-	start/2,
-	stop/1,
-	process/2
+         start/2,
+         stop/1,
+         process/2
 	]).
 
 -include("ejabberd.hrl").
