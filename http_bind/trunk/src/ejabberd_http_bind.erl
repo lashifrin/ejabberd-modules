@@ -542,6 +542,7 @@ handle_sync_event({http_put, Rid, Key, NewKey, Hold, Packet, StartTo},
     {MinPoll, _} = string:to_integer(?MIN_POLLING),
     if
 	(Packet == "") and 
+        (Hold == 0) and
 	(TNow - StateData#state.last_poll < MinPoll*1000*1000) ->
 	    Reply = {error, polling_too_frequently},
 	    {reply, Reply, StateName, StateData};
