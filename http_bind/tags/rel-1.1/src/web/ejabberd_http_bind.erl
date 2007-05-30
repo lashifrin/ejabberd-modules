@@ -27,7 +27,7 @@
 	 close/1,
 	 process_request/1]).
 
-%%-define(ejabberd_debug, true).
+-define(ejabberd_debug, true).
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
@@ -603,7 +603,7 @@ handle_sync_event({http_put, Rid, Key, NewKey, Hold, Packet, StartTo},
                                         ["<stream:stream to='",
                                          StartTo, 
                                          "' xmlns='jabber:client' "
-                                         "version='1.0' "
+                                         %%"version='1.0' "
                                          "xmlns:stream='http://etherx.jabber.org/streams'>"] ++ Packet;
                                     true ->
                                         Packet
