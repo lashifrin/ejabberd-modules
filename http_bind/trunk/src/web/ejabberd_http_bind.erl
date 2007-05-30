@@ -8,7 +8,7 @@
 
 -module(ejabberd_http_bind).
 -author('steve@zeank.in-berlin.de').
--vsn('Revision: $Rev$').
+-vsn('$Rev$').
 
 -behaviour(gen_fsm).
 
@@ -22,7 +22,8 @@
 	 terminate/3,
 	 send/2,
 	 setopts/2,
-     sockname/1, peername/1,
+         sockname/1, 
+         peername/1,
 	 controlling_process/2,
 	 close/1,
 	 process_request/1]).
