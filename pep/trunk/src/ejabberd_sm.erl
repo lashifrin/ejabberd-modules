@@ -14,13 +14,14 @@
 %% API
 -export([start_link/0,
 	 route/3,
-	 open_session/4, close_session/4,
+	 open_session/5, close_session/4,
+	 check_in_subscription/6,
 	 bounce_offline_message/3,
 	 disconnect_removed_user/2,
 	 get_user_resources/2,
 	 get_session_pid/3,
-	 set_presence/5,
-	 unset_presence/5,
+	 set_presence/7,
+	 unset_presence/6,
 	 close_session_unset_presence/5,
 	 dirty_get_sessions_list/0,
 	 dirty_get_my_sessions_list/0,
@@ -28,7 +29,8 @@
 	 register_iq_handler/4,
 	 register_iq_handler/5,
 	 unregister_iq_handler/2,
-	 ctl_process/2
+	 ctl_process/2,
+	 get_user_ip/3
 	]).
 
 %% gen_server callbacks
@@ -39,7 +41,7 @@
 -include("jlib.hrl").
 -include("ejabberd_ctl.hrl").
 
--record(session, {sid, usr, us, priority}).
+-record(session, {sid, usr, us, priority, info}).
 -record(state, {}).
 
 %% default value for the maximum number of user connections
@@ -64,8 +66,8 @@ route(From, To, Packet) ->
 	    ok
     end.
 
-open_session(SID, User, Server, Resource) ->
-    set_session(SID, User, Server, Resource, undefined),
+open_session(SID, User, Server, Resource, IP) ->
+    set_session(SID, User, Server, Resource, undefined, IP),
     check_for_sessions_to_replace(User, Server, Resource),
     JID = jlib:make_jid(User, Server, Resource),
     ejabberd_hooks:run(sm_register_connection_hook, JID#jid.lserver,
@@ -79,6 +81,14 @@ close_session(SID, User, Server, Resource) ->
     JID = jlib:make_jid(User, Server, Resource),
     ejabberd_hooks:run(sm_remove_connection_hook, JID#jid.lserver,
 		       [SID, JID]).
+
+check_in_subscription(Acc, User, Server, _JID, _Type, _Reason) ->
+    case ejabberd_auth:is_user_exists(User, Server) of
+	true ->
+	    Acc;
+	false ->
+	    {stop, false}
+    end.
 
 bounce_offline_message(From, To, Packet) ->
     Err = jlib:make_error_reply(Packet, ?ERR_SERVICE_UNAVAILABLE),
@@ -114,11 +124,27 @@ get_session_pid(User, Server, Resource) ->
 	    none
     end.
 
-set_presence(SID, User, Server, Resource, Priority) ->
-    set_session(SID, User, Server, Resource, Priority).
+get_user_ip(User, Server, Resource) ->
+    LUser = jlib:nodeprep(User),
+    LServer = jlib:nameprep(Server),
+    LResource = jlib:resourceprep(Resource),
+    USR = {LUser, LServer, LResource},
+    case mnesia:dirty_index_read(session, USR, #session.usr) of
+	[] ->
+	    undefined;
+	Ss ->
+	    Session = lists:max(Ss),
+	    proplists:get_value(ip, Session#session.info)
+    end.
 
-unset_presence(SID, User, Server, Resource, Status) ->
-    set_session(SID, User, Server, Resource, undefined),
+
+set_presence(SID, User, Server, Resource, Priority, Presence, IP) ->
+    set_session(SID, User, Server, Resource, Priority, IP),
+    ejabberd_hooks:run(set_presence_hook, jlib:nameprep(Server),
+		       [User, Server, Resource, Presence]).
+
+unset_presence(SID, User, Server, Resource, Status, IP) ->
+    set_session(SID, User, Server, Resource, undefined, IP),
     ejabberd_hooks:run(unset_presence_hook, jlib:nameprep(Server),
 		       [User, Server, Resource, Status]).
 
@@ -183,6 +209,8 @@ init([]) ->
     ets:new(sm_iqtable, [named_table]),
     lists:foreach(
       fun(Host) ->
+	      ejabberd_hooks:add(roster_in_subscription, Host,
+				 ejabberd_sm, check_in_subscription, 20),
 	      ejabberd_hooks:add(offline_message_hook, Host,
 				 ejabberd_sm, bounce_offline_message, 100),
 	      ejabberd_hooks:add(remove_user, Host,
@@ -275,17 +303,19 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%--------------------------------------------------------------------
 
-set_session(SID, User, Server, Resource, Priority) ->
+set_session(SID, User, Server, Resource, Priority, IP) ->
     LUser = jlib:nodeprep(User),
     LServer = jlib:nameprep(Server),
     LResource = jlib:resourceprep(Resource),
     US = {LUser, LServer},
     USR = {LUser, LServer, LResource},
+    Info = [{ip, IP}],
     F = fun() ->
 		mnesia:write(#session{sid = SID,
 				      usr = USR,
 				      us = US,
-				      priority = Priority})
+				      priority = Priority,
+				      info = Info})
 	end,
     mnesia:sync_dirty(F).
 
@@ -619,6 +649,8 @@ update_tables() ->
 	[usr, us, pid] ->
 	    mnesia:delete_table(session);
 	[sid, usr, us, priority] ->
+	    mnesia:delete_table(session);
+	[sid, usr, us, priority, info] ->
 	    ok;
 	{'EXIT', _} ->
 	    ok

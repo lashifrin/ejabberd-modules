@@ -354,11 +354,11 @@ do_route(Host, ServerHost, Access, From, To, Packet) ->
 		"iq" ->
 		    case jlib:iq_query_info(Packet) of
 			#iq{type = get, xmlns = ?NS_DISCO_INFO,
-			    sub_el = SubEl} = IQ ->
+			    sub_el = SubEl, lang = Lang} = IQ ->
 			    {xmlelement, _, QAttrs, _} = SubEl,
 			    Node = xml:get_attr_s("node", QAttrs),
 			    Res = 
-				case iq_disco_info(Host, From, Node) of
+				case iq_disco_info(Host, From, Node, Lang) of
 				    {result, IQRes} ->
 					jlib:iq_to_xml(
 					  IQ#iq{type = result,
@@ -629,7 +629,7 @@ iq_pep_sm(From, To,
 	    IQ#iq{type = error, sub_el = [Error, SubEl]}
     end.
 
-iq_disco_info(Host, From, SNode) ->
+iq_disco_info(Host, From, SNode, Lang) ->
     Table = get_table(Host),
     Node = case Table of
 	       pubsub_node ->
@@ -667,7 +667,7 @@ iq_disco_info(Host, From, SNode) ->
 	     [{xmlelement, "identity",
 	       [{"category", "pubsub"},
 		{"type", "service"},
-		{"name", "Publish-Subscribe"}], []},
+		{"name", translate:translate(Lang, "Publish-Subscribe")}], []},
 	      {xmlelement, "feature", [{"var", ?NS_PUBSUB}], []},
 	      {xmlelement, "feature", [{"var", ?NS_VCARD}], []}] ++
 	     lists:map(fun(Feature) ->

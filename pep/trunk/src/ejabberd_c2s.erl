@@ -67,6 +67,7 @@
 		pres_timestamp,
 		pres_invis = false,
 		privacy_list = none,
+		ip,
 		lang}).
 
 %-define(DBGFSM, true).
@@ -144,6 +145,7 @@ init([{SockMod, Socket}, Opts]) ->
     TLSOpts = lists:filter(fun({certfile, _}) -> true;
 			      (_) -> false
 			   end, Opts),
+    IP = peerip(SockMod, Socket),
     Socket1 =
 	if
 	    TLSEnabled ->
@@ -162,7 +164,8 @@ init([{SockMod, Socket}, Opts]) ->
 				 tls_options    = TLSOpts,
 				 streamid       = new_id(),
 				 access         = Access,
-				 shaper         = Shaper}}.
+				 shaper         = Shaper,
+				 ip             = IP}}.
 
 
 %%----------------------------------------------------------------------
@@ -394,8 +397,9 @@ wait_for_auth({xmlstreamelement, El}, StateData) ->
 			       [StateData#state.socket,
 				jlib:jid_to_string(JID)]),
 			    SID = {now(), self()},
+			    IP = StateData#state.ip,
 			    ejabberd_sm:open_session(
-			      SID, U, StateData#state.server, R),
+			      SID, U, StateData#state.server, R, IP),
 			    Res1 = jlib:make_result_iq_reply(El),
 			    Res = setelement(4, Res1, []),
 			    send_element(StateData, Res),
@@ -725,8 +729,9 @@ wait_for_session({xmlstreamelement, El}, StateData) ->
 			      [StateData#state.socket,
 			       jlib:jid_to_string(JID)]),
 		    SID = {now(), self()},
+		    IP = StateData#state.ip,
 		    ejabberd_sm:open_session(
-		      SID, U, StateData#state.server, R),
+		      SID, U, StateData#state.server, R, IP),
 		    Res = jlib:make_result_iq_reply(El),
 		    send_element(StateData, Res),
 		    change_shaper(StateData, JID),
@@ -812,15 +817,22 @@ session_established({xmlstreamelement, El}, StateData) ->
 	    _ ->
 		case Name of
 		    "presence" ->
+			PresenceEl = ejabberd_hooks:run_fold(
+				       c2s_update_presence,
+				       Server,
+				       NewEl,
+				       [User, Server]),
 			case ToJID of
 			    #jid{user = User,
 				 server = Server,
 				 resource = ""} ->
 				?DEBUG("presence_update(~p,~n\t~p,~n\t~p)",
-				       [FromJID, NewEl, StateData]),
-				presence_update(FromJID, NewEl, StateData);
+				       [FromJID, PresenceEl, StateData]),
+				presence_update(FromJID, PresenceEl,
+						StateData);
 			    _ ->
-				presence_track(FromJID, ToJID, NewEl, StateData)
+				presence_track(FromJID, ToJID, PresenceEl,
+					       StateData)
 			end;
 		    "iq" ->
 			case StateData#state.privacy_list of
@@ -1348,7 +1360,8 @@ presence_update(From, Packet, StateData) ->
 				       StateData#state.user,
 				       StateData#state.server,
 				       StateData#state.resource,
-				       Status),
+				       Status,
+				       StateData#state.ip),
 	    presence_broadcast(StateData, From, StateData#state.pres_a, Packet),
 	    presence_broadcast(StateData, From, StateData#state.pres_i, Packet),
 	    StateData#state{pres_last = undefined,
@@ -1394,7 +1407,7 @@ presence_update(From, Packet, StateData) ->
 				  get_priority_from_presence(OldPresence)
 			  end,
 	    NewPriority = get_priority_from_presence(Packet),
-	    update_priority(NewPriority, StateData),
+	    update_priority(NewPriority, Packet, StateData),
 	    FromUnavail = (StateData#state.pres_last == undefined) or
 		StateData#state.pres_invis,
 	    ?DEBUG("from unavail = ~p~n", [FromUnavail]),
@@ -1673,12 +1686,14 @@ roster_change(IJID, ISubscription, StateData) ->
     end.
 
 
-update_priority(Pri, StateData) ->
+update_priority(Priority, Packet, StateData) ->
     ejabberd_sm:set_presence(StateData#state.sid,
 			     StateData#state.user,
 			     StateData#state.server,
 			     StateData#state.resource,
-			     Pri).
+			     Priority,
+			     Packet,
+			     StateData#state.ip).
 
 get_priority_from_presence(PresencePacket) ->
     case xml:get_subtag(PresencePacket, "priority") of
@@ -1819,3 +1834,12 @@ process_unauthenticated_stanza(StateData, El) ->
 	    ok
     end.
 
+peerip(SockMod, Socket) ->
+    IP = case SockMod of
+	     gen_tcp -> inet:peername(Socket);
+	     _ -> SockMod:peername(Socket)
+	 end,
+    case IP of
+	{ok, IPOK} -> IPOK;
+	_ -> undefined
+    end.
