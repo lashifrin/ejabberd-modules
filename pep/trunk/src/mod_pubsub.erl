@@ -22,6 +22,7 @@
 
 -export([disco_local_identity/5,
 	 disco_sm_identity/5,
+	 disco_sm_features/5,
 	 iq_pep_local/3,
 	 iq_pep_sm/3,
 	 pep_disco_items/5]).
@@ -135,6 +136,7 @@ init([ServerHost, Opts]) ->
     mod_disco:register_feature(ServerHost, ?NS_PUBSUB),
     ejabberd_hooks:add(disco_local_identity, ServerHost, ?MODULE, disco_local_identity, 75),
     ejabberd_hooks:add(disco_sm_identity, ServerHost, ?MODULE, disco_sm_identity, 75),
+    ejabberd_hooks:add(disco_sm_features, ServerHost, ?MODULE, disco_sm_features, 75),
     ejabberd_hooks:add(disco_sm_items, ServerHost, ?MODULE, pep_disco_items, 50),
 
     IQDisc = gen_mod:get_opt(iqdisc, Opts, one_queue),
@@ -324,6 +326,7 @@ terminate(_Reason, State) ->
     mod_disco:unregister_feature(ServerHost, ?NS_PUBSUB),
     ejabberd_hooks:delete(disco_local_identity, ServerHost, ?MODULE, disco_local_identity, 75),
     ejabberd_hooks:delete(disco_sm_identity, ServerHost, ?MODULE, disco_sm_identity, 75),
+    ejabberd_hooks:delete(disco_sm_features, ServerHost, ?MODULE, disco_sm_features, 75),
     ejabberd_hooks:delete(disco_sm_items, ServerHost, ?MODULE, pep_disco_items, 50),
     gen_iq_handler:remove_iq_handler(ejabberd_local, ServerHost, ?NS_PUBSUB),
     gen_iq_handler:remove_iq_handler(ejabberd_local, ServerHost, ?NS_PUBSUB_OWNER),
@@ -354,13 +357,19 @@ do_route(Host, ServerHost, Access, From, To, Packet) ->
 			    sub_el = SubEl} = IQ ->
 			    {xmlelement, _, QAttrs, _} = SubEl,
 			    Node = xml:get_attr_s("node", QAttrs),
-			    Res = IQ#iq{type = result,
-					sub_el = [{xmlelement, "query",
-						   QAttrs,
-						   iq_disco_info(Node)}]},
-			    ejabberd_router:route(To,
-						  From,
-						  jlib:iq_to_xml(Res));
+			    Res = 
+				case iq_disco_info(Host, From, Node) of
+				    {result, IQRes} ->
+					jlib:iq_to_xml(
+					  IQ#iq{type = result,
+						sub_el = [{xmlelement, "query",
+							   QAttrs,
+							   IQRes}]});
+				    {error, Error} ->
+					jlib:make_error_reply(
+					  Packet, Error)
+				end,
+			    ejabberd_router:route(To, From, Res);
 			#iq{type = get, xmlns = ?NS_DISCO_ITEMS,
 			    sub_el = SubEl} = IQ ->
 			    {xmlelement, _, QAttrs, _} = SubEl,
@@ -483,8 +492,88 @@ disco_sm_identity(Acc, _From, _To, [], _Lang) ->
 	[{xmlelement, "identity",
 	  [{"category", "pubsub"},
 	   {"type", "pep"}], []}];
-disco_sm_identity(Acc, _From, _To, _Node, _Lang) ->
-    Acc.
+disco_sm_identity(Acc, From, To, Node, _Lang) ->
+    LOwner = jlib:jid_tolower(jlib:jid_remove_resource(To)),
+    Identity =
+	case node_disco_identity(LOwner, From, Node) of
+	    {result, I} -> I;
+	    _ -> []
+	end,
+    Acc ++ Identity.
+
+disco_sm_features(Acc, _From, _To, [], _Lang) ->
+    Acc;
+disco_sm_features(Acc, From, To, Node, _Lang) ->
+    LOwner = jlib:jid_tolower(jlib:jid_remove_resource(To)),
+    Features = node_disco_features(LOwner, From, Node),
+    case {Acc, Features} of
+	{{result, AccFeatures}, {result, PepFeatures}} ->
+	    {result, AccFeatures++PepFeatures};
+	{_, {result, PepFeatures}} ->
+	    {result, PepFeatures};
+	{_, _} ->
+	    Acc
+    end.
+
+node_disco_info(Host, From, Node) ->
+    node_disco_info(Host, From, Node, true, true).
+node_disco_identity(Host, From, Node) ->
+    node_disco_info(Host, From, Node, true, false).
+node_disco_features(Host, From, Node) ->
+    node_disco_info(Host, From, Node, false, true).
+
+node_disco_info(Host, _From, Node, Identity, Features) ->
+    Table = get_table(Host),
+    case catch mnesia:dirty_read({Table, {Host, Node}}) of
+	[NodeData] ->
+	    NodeInfo = get_node_info(NodeData),
+
+	    I = case Identity of
+		    false -> [];
+		    true ->
+			%% Now, let's shoehorn the ejabberd pubsub
+			%% data model into the categories of the XEP :-)
+			Types =
+			    if Table == pep_node ->
+				    %% In PEP, there are only leaf nodes.
+				    ["leaf"];
+			       true ->
+				    SubNodes = mnesia:dirty_index_read(pubsub_node,
+								       {Host, Node},
+								       #pubsub_node.host_parent),
+				    case {SubNodes, NodeInfo#nodeinfo.items} of
+					{[], _} ->
+					    %% No sub-nodes: it's a leaf node
+					    ["leaf"];
+					{[_|_], []} ->
+					    %% Only sub-nodes: it's a collection node
+					    ["collection"];
+					{[_|_], [_|_]} ->
+					    %% Both items and sub-nodes: it's both
+					    ["leaf", "collection"]
+				    end
+			    end,
+			lists:map(fun(Type) ->
+					  {xmlelement, "identity",
+					   [{"category", "pubsub"},
+					    {"type", Type}], []}
+				  end, Types)
+		end,
+	    
+	    F = case {Features, Table} of
+		    {false, _} -> [];
+		    {true, _} ->
+			%% Hm... what features are supposed to be reported?
+			[]
+		end,
+	    
+	    {result, I++F};
+	[] ->
+	    {error, ?ERR_ITEM_NOT_FOUND};
+	_ ->
+	    {error, ?ERR_INTERNAL_SERVER_ERROR}
+    end.
+		
 
 get_table(Host) ->
     case Host of
@@ -540,8 +629,14 @@ iq_pep_sm(From, To,
 	    IQ#iq{type = error, sub_el = [Error, SubEl]}
     end.
 
-iq_disco_info(SNode) ->
-    Node = string:tokens(SNode, "/"),
+iq_disco_info(Host, From, SNode) ->
+    Table = get_table(Host),
+    Node = case Table of
+	       pubsub_node ->
+		   string:tokens(SNode, "/");
+	       pep_node ->
+		   SNode
+	   end,
     case Node of
 	[] ->
 	    PubsubFeatures =
@@ -568,19 +663,19 @@ iq_disco_info(SNode) ->
 		 "subscribe"
 		 %% , "subscription-notifications"
 		 ],
-	    [{xmlelement, "identity",
-	      [{"category", "pubsub"},
-	       {"type", "service"},
-	       {"name", "Publish-Subscribe"}], []},
-	     {xmlelement, "feature", [{"var", ?NS_PUBSUB}], []},
-	     {xmlelement, "feature", [{"var", ?NS_VCARD}], []}] ++
-		lists:map(fun(Feature) ->
-				  {xmlelement, "feature",
-				   [{"var", ?NS_PUBSUB++"#"++Feature}], []}
-			  end, PubsubFeatures);
+	    {result,
+	     [{xmlelement, "identity",
+	       [{"category", "pubsub"},
+		{"type", "service"},
+		{"name", "Publish-Subscribe"}], []},
+	      {xmlelement, "feature", [{"var", ?NS_PUBSUB}], []},
+	      {xmlelement, "feature", [{"var", ?NS_VCARD}], []}] ++
+	     lists:map(fun(Feature) ->
+			       {xmlelement, "feature",
+				[{"var", ?NS_PUBSUB++"#"++Feature}], []}
+		       end, PubsubFeatures)};
 	_ ->
-	    % TODO
-	    []
+	    node_disco_info(Host, From, Node)
     end.
 
 iq_disco_items(Host, _From, SNode) ->
