@@ -45,7 +45,7 @@
 -define(MAXTIME_CACHE_NEGATIVE, 86400).
 
 %% Time in miliseconds
--define(DISCO_QUERY_TIMEOUT, 30000).
+-define(DISCO_QUERY_TIMEOUT, 10000). % After 10 seconds of delay the server is declared dead
 
 
 %%====================================================================
@@ -241,7 +241,7 @@ iq_vcard(Lang) ->
 %%%-------------------------
 
 do_route(LServiceS, LServerS, Access, Allow_relay, Max_receivers, From, To, Packet) ->
-	case acl:match_rule(LServiceS, Access, From) of
+	case acl:match_rule(LServerS, Access, From) of
 		allow ->
 			From2 = jlib:jid_to_string(From),
 			do_route1(LServiceS, LServerS, Allow_relay, Max_receivers, From2, To, Packet);
@@ -292,7 +292,8 @@ do_route2(LServiceS, LServerS, Allow_relay, Max_receivers, From, To, Packet, Add
 			do_route3(LServiceS, LServerS, From, Packet, Grouped_addresses);
 		false ->
 			% If not, check if this packet requires relay
-			case check_relay_required(From#jid.server, LServerS, Grouped_addresses) of
+			FromJID = jlib:string_to_jid(From),
+			case check_relay_required(FromJID#jid.server, LServerS, Grouped_addresses) of
 				false -> do_route3(LServiceS, LServerS, From, Packet, Grouped_addresses);
 				true ->
 					% The packet requires relaying, but it is not allowed

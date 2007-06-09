@@ -45,11 +45,14 @@ max_receivers:
 	EXAMPLE CONFIGURATION
 	---------------------
 
+% Only admins can send packets to multicast service
+{access, multicast, [{allow, admin}, {deny, all}]}.
+
 {modules, [
   ...
   {mod_multicast, [
      {host, "multicast.example.org"},
-     {access, admin},
+     {access, multicast},
      {allow_relay, false},
      {max_receivers, 50}
   ]},
