@@ -29,7 +29,7 @@
 -include("ejabberd.hrl").
 -include("jlib.hrl").
 
--record(state, {lserver, lservice, access, allow_relay, max_receivers}).
+-record(state, {lserver, lservice, access, max_receivers}).
 
 -record(multicastc, {rserver, response, ts}).
 %% ts: timestamp (in seconds) when the cache item was last updated
@@ -91,14 +91,12 @@ stop(LServerS) ->
 init([LServerS, Opts]) ->
 	LServiceS = gen_mod:get_opt(host, Opts, "multicast." ++ LServerS),
 	Access = gen_mod:get_opt(access, Opts, all),
-	Allow_relay = gen_mod:get_opt(allow_relay, Opts, false),
 	Max_receivers = gen_mod:get_opt(max_receivers, Opts, 50),
 	create_cache(),
 	ejabberd_router:register_route(LServiceS),
 	{ok, #state{lservice = LServiceS,
 		lserver = LServerS,
 		access = Access,
-		allow_relay = Allow_relay,
 		max_receivers = Max_receivers}}.
 
 %%--------------------------------------------------------------------
@@ -147,12 +145,11 @@ handle_info({route, From, To, {xmlelement, Stanza_type, _, _} = Packet},
 		#state{lservice = LServiceS,
 			lserver = LServerS,
 			access = Access,
-			allow_relay = Allow_relay,
 			max_receivers = Max_receivers} = State)
 		% XEP33 allows only 'message' and 'presence' stanza types
 		when (Stanza_type == "message") or (Stanza_type == "presence") ->
-	io:format("Multicast packet: ~nFrom: ~p~nTo: ~p~nPacket: ~p~n", [From, To, Packet]),
-	case catch do_route(LServiceS, LServerS, Access, Allow_relay, Max_receivers, From, To, Packet) of
+	%io:format("Multicast packet: ~nFrom: ~p~nTo: ~p~nPacket: ~p~n", [From, To, Packet]),
+	case catch do_route(LServiceS, LServerS, Access, Max_receivers, From, To, Packet) of
 		{'EXIT', Reason} ->
 			?ERROR_MSG("~p", [Reason]);
 		_ ->
@@ -240,11 +237,11 @@ iq_vcard(Lang) ->
 %%% Route 0: Check user
 %%%-------------------------
 
-do_route(LServiceS, LServerS, Access, Allow_relay, Max_receivers, From, To, Packet) ->
+do_route(LServiceS, LServerS, Access, Max_receivers, From, To, Packet) ->
 	case acl:match_rule(LServerS, Access, From) of
 		allow ->
 			From2 = jlib:jid_to_string(From),
-			do_route1(LServiceS, LServerS, Allow_relay, Max_receivers, From2, To, Packet);
+			do_route1(LServiceS, LServerS, Max_receivers, From2, To, Packet);
 		_ ->
 			route_error(To, From, Packet, forbidden, "Access denied by service policy")
 	end.
@@ -255,21 +252,21 @@ do_route(LServiceS, LServerS, Access, Allow_relay, Max_receivers, From, To, Pack
 %%%-------------------------
 
 %% TODO: return error packet to sender if the packet has errors
-do_route1(LServiceS, LServerS, Allow_relay, Max_receivers, From, To, Packet) ->
+do_route1(LServiceS, LServerS, Max_receivers, From, To, Packet) ->
 
 	Addresses_tag = xml:get_subtag(Packet, "addresses"),
 	{xmlelement, _, PAttrs, Addresses_xml} = Addresses_tag,
 
 	?NS_ADDRESS = xml:get_attr_s("xmlns", PAttrs),
 
-	do_route2(LServiceS, LServerS, Allow_relay, Max_receivers, From, To, Packet, Addresses_xml).
+	do_route2(LServiceS, LServerS, Max_receivers, From, To, Packet, Addresses_xml).
 
 
 %%%-------------------------
 %%% Route 2: Format list of destinations
 %%%-------------------------
 
-do_route2(LServiceS, LServerS, Allow_relay, Max_receivers, From, To, Packet, Addresses_xml) ->
+do_route2(LServiceS, LServerS, Max_receivers, From, To, Packet, Addresses_xml) ->
 	Addresses = get_address_els(Addresses_xml),
 
 	% TODO: If the packet has too many receivers, route error packet
@@ -286,21 +283,15 @@ do_route2(LServiceS, LServerS, Allow_relay, Max_receivers, From, To, Packet, Add
 
 	Grouped_addresses = group_dests_by_servers(JIDs),
 
-	% Check if relay is allowed
-	case Allow_relay of
+	% Check if this packet requires relay
+	FromJID = jlib:string_to_jid(From),
+	case check_relay_required(FromJID#jid.server, LServerS, Grouped_addresses) of
+		false -> do_route3(LServiceS, LServerS, From, Packet, Grouped_addresses);
 		true ->
-			do_route3(LServiceS, LServerS, From, Packet, Grouped_addresses);
-		false ->
-			% If not, check if this packet requires relay
-			FromJID = jlib:string_to_jid(From),
-			case check_relay_required(FromJID#jid.server, LServerS, Grouped_addresses) of
-				false -> do_route3(LServiceS, LServerS, From, Packet, Grouped_addresses);
-				true ->
-					% The packet requires relaying, but it is not allowed
-					% So let's abort and return error
-					route_error(To, From, Packet, forbidden,
-					"Relaying denied by service policy")
-			end
+			% The packet requires relaying, but it is not allowed
+			% So let's abort and return error
+			route_error(To, From, Packet, forbidden,
+			"Relaying denied by service policy")
 	end.
 
 %% Given a list of xmlelements, some may be of "address" type,

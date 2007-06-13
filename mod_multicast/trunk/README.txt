@@ -34,9 +34,6 @@ host
 access:
     Specify who can send packets to the multicast service.
     Default value: all
-allow_relay:
-    Allow relay support
-    Default value: false
 max_receivers:
     Base filename, including absolute path
     Default value: 50
@@ -48,12 +45,20 @@ max_receivers:
 % Only admins can send packets to multicast service
 {access, multicast, [{allow, admin}, {deny, all}]}.
 
+% If you want to allow all your users:
+%{access, multicast, [{allow, all}]}.
+
+% This allows both admins and remote users to send packets,
+% but does not allow local users
+%{acl, allservers, {server_glob, "*"}}.
+%{access, multicast, [{allow, admin}, {deny, local}, {allow, allservers}]}.
+
+
 {modules, [
   ...
   {mod_multicast, [
-     {host, "multicast.example.org"},
+     %{host, "multicast.example.org"},
      {access, multicast},
-     {allow_relay, false},
      {max_receivers, 50}
   ]},
   ...
@@ -71,7 +76,7 @@ Tasks to do:
 
 Feature requests:
  - Allow to define "multicast.SERVER" on ejabberd.cfg, and SERVER will be replaced with the hostname
- - Provide time and last
+ - Provide version, time and last
  - GUI with FORMS to allow users of non-capable clients to write XEP-33 packets easily
 
 Could use mod_multicast somehow:
