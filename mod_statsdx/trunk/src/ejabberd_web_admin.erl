@@ -3,7 +3,7 @@
 %%% Author  : Alexey Shchepin <alexey@sevcom.net>
 %%% Purpose : Administration web interface
 %%% Created :  9 Apr 2004 by Alexey Shchepin <alexey@sevcom.net>
-%%% Id      : $Id: ejabberd_web_admin.erl 588 2006-07-07 08:06:12Z mremond $
+%%% Id      : $Id$
 %%%----------------------------------------------------------------------
 %%% Copyright (c) 2004-2006 Alexey Shchepin
 %%% Copyright (c) 2004-2006 Process One
@@ -11,7 +11,7 @@
 
 -module(ejabberd_web_admin).
 -author('alexey@sevcom.net').
--vsn('$Revision: 588 $ ').
+-vsn('$Revision$ ').
 
 %% External exports
 -export([process_admin/2,
@@ -2363,7 +2363,7 @@ do_table_element(Lang, L, N) ->
 	]).
 
 do_stat_table(global, Lang, Stat, Host) ->
-	Os = mod_statsdx:get(global, [Stat, Host]),
+	Os = mod_statsdx:get_statistic(global, [Stat, Host]),
 	lists:map(
 		fun({L, N}) -> 
 			do_table_element(Lang, L, io_lib:format("~p", [N]))
@@ -2384,9 +2384,9 @@ do_stat(Node, Lang, Stat, Host) ->
 
 % Get a stat name
 get_stat_n(Stat) ->
-	mod_statsdx:get(foo, [Stat, title]).
+	mod_statsdx:get_statistic(foo, [Stat, title]).
 % Get a stat value
-get_stat_v(Node, Stat) -> get_stat_v2(mod_statsdx:get(Node, Stat)).
+get_stat_v(Node, Stat) -> get_stat_v2(mod_statsdx:get_statistic(Node, Stat)).
 get_stat_v2(Value) when is_list(Value) -> Value;
 get_stat_v2(Value) when is_float(Value) -> io_lib:format("~.4f", [Value]);
 get_stat_v2(Value) -> io_lib:format("~p", [Value]).

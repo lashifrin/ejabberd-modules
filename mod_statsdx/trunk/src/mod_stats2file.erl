@@ -3,12 +3,12 @@
 %%% Author  : Badlop
 %%% Purpose : Generates files with all kind of statistics
 %%% Created :
-%%% Id      : 0.2.4
+%%% Id      : $Id$
 %%%----------------------------------------------------------------------
 
 -module(mod_stats2file).
 -author('').
--vsn('0.2.4').
+-vsn('$Revision$').
 
 -behaviour(gen_mod).
 
@@ -354,7 +354,7 @@ getl(Args) -> get(node(), [Args]).
 getl(Args, Host) -> get(node(), [Args, Host]).
 
 get(Node, A) -> 
-	mod_statsdx:get(Node, A).
+	mod_statsdx:get_statistic(Node, A).
 
 
 %% -------------------
@@ -407,5 +407,5 @@ do_stat_table(F, Stat, Host, T, _Lang) ->
 		fun({Name, Value}) -> 
 			fwts(F, Name, io_lib:format("~p", [Value]), T)
 		end,
-		mod_statsdx:get(global, [Stat, Host])
+		mod_statsdx:get_statistic(global, [Stat, Host])
 	).

@@ -3,16 +3,16 @@
 %%% Author  : Badlop
 %%% Purpose : Calculates and gathers statistics actively
 %%% Created :
-%%% Id      : 0.2.4
+%%% Id      : $Id$
 %%%----------------------------------------------------------------------
 
 -module(mod_statsdx).
 -author('').
--vsn('0.2.4').
+-vsn('$Revision$').
 
 -behaviour(gen_mod).
 
--export([start/2, loop/0, stop/1, get/2, 
+-export([start/2, loop/0, stop/1, get_statistic/2, 
 	remove_user/2, user_send_packet/3, user_receive_packet/4,
 	user_login/1, user_logout/4]).
 
@@ -154,6 +154,12 @@ getl(Args) -> get(node(), [Args]).
 getl(Args, Host) -> get(node(), [Args, Host]).
 
 %get(_Node, ["", title]) -> "";
+
+get_statistic(N, A) -> 
+	case catch get(N, A) of
+		{'EXIT', _} -> unknown;
+		Res -> Res
+	end.
 
 get(global, A) -> get(node(), A);
 
