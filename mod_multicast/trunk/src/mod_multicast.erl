@@ -19,11 +19,14 @@
 %% gen_server callbacks
 -export([init/1,
 	 handle_info/2,
-	 purge/0, % TODO: once timer is implemented, don't export purge/0
 	 handle_call/3,
 	 handle_cast/2,
 	 terminate/2,
 	 code_change/3
+	]).
+
+-export([
+	 purge_loop/1
 	]).
 
 -include("ejabberd.hrl").
@@ -39,12 +42,15 @@
 %% TODO: move this line to jlib.hrl
 -define(NS_ADDRESS, "http://jabber.org/protocol/address").
 
+-define(PURGE_PROCNAME, ejabberd_mod_multicast_purgeloop).
+
 %% TODO: allow configuration instead of hard-coding
 %% Time in seconds
 -define(MAXTIME_CACHE_POSITIVE, 86400).
 -define(MAXTIME_CACHE_NEGATIVE, 86400).
 
 %% Time in miliseconds
+-define(CACHE_PURGE_TIMER, 86400000). % Purge the cache every 24 hours
 -define(DISCO_QUERY_TIMEOUT, 10000). % After 10 seconds of delay the server is declared dead
 
 
@@ -93,6 +99,7 @@ init([LServerS, Opts]) ->
 	Access = gen_mod:get_opt(access, Opts, all),
 	Max_receivers = gen_mod:get_opt(max_receivers, Opts, 50),
 	create_cache(),
+	try_start_loop(),
 	ejabberd_router:register_route(LServiceS),
 	{ok, #state{lservice = LServiceS,
 		lserver = LServerS,
@@ -109,6 +116,7 @@ init([LServerS, Opts]) ->
 %% Description: Handling call messages
 %%--------------------------------------------------------------------
 handle_call(stop, _From, State) ->
+	try_stop_loop(),
 	{stop, normal, ok, State}.
 
 %%--------------------------------------------------------------------
@@ -624,6 +632,11 @@ is_obsolete(Response, Ts, Now, {Max_pos, Max_neg}) ->
 	end,
 	(Now - Ts) > Max.
 
+
+%%%-------------------------
+%%% Purge
+%%%-------------------------
+
 purge() ->
 	Maxmins_positive = ?MAXTIME_CACHE_POSITIVE,
 	Maxmins_negative = ?MAXTIME_CACHE_NEGATIVE,
@@ -645,6 +658,40 @@ purge(Now, Maxmins) ->
 			multicastc)
 		end,
 	mnesia:transaction(F).
+
+
+%%%-------------------------
+%%% Purge loop
+%%%-------------------------
+
+try_start_loop() ->
+	case lists:member(?PURGE_PROCNAME, registered()) of
+		true -> ok;
+		false -> start_loop()
+	end,
+	?PURGE_PROCNAME ! new_module.
+
+start_loop() ->
+	register(?PURGE_PROCNAME, spawn(?MODULE, purge_loop, [0])),
+	?PURGE_PROCNAME ! purge_now.
+
+try_stop_loop() ->
+	?PURGE_PROCNAME ! try_stop.
+
+% NM = number of modules are running on this node
+purge_loop(NM) ->
+	receive
+		purge_now ->
+			purge(),
+			timer:send_after(?CACHE_PURGE_TIMER, ?PURGE_PROCNAME, purge_now),
+			purge_loop(NM);
+		new_module ->
+			purge_loop(NM + 1);
+		try_stop when NM > 1 ->
+			purge_loop(NM - 1);
+		try_stop ->
+			purge_loop_finished
+	end.
 
 
 %%%-------------------------

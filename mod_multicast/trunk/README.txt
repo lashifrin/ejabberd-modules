@@ -69,13 +69,11 @@ max_receivers:
 	-----
 
 Tasks to do:
- - Verify the current access+acl checking works for local users, remote users, remote servers
  - Maybe some errors should abort the execution
  - Document on the guide and ejabberd.cfg.example
  - Consider anti-spam requirements
 
 Feature requests:
- - Allow to define "multicast.SERVER" on ejabberd.cfg, and SERVER will be replaced with the hostname
  - Provide version, time and last
  - GUI with FORMS to allow users of non-capable clients to write XEP-33 packets easily
 
