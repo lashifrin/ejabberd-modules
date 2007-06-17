@@ -1531,8 +1531,13 @@ delete_node(Host, JID, Node) ->
 	    Error;
 	{atomic, {removed, Removed}} ->
 	    broadcast_removed_node(Host, Removed),
-	    broadcast_retract_item(
-	      Host, ["pubsub", "nodes"], node_to_string(Node)),
+	    case Table of
+		pubsub_node ->
+		    broadcast_retract_item(
+		      Host, ["pubsub", "nodes"], node_to_string(Node));
+		_ ->
+		    ok
+	    end,
 	    {result, []};
 	_ ->
 	    {error, ?ERR_INTERNAL_SERVER_ERROR}
@@ -2059,6 +2064,60 @@ send_last_published_item(Subscriber, Host, Node, Info) ->
 	      get_sender(Host), jlib:make_jid(Subscriber), Stanza)
     end.
 
+%% broadcast Stanza to all contacts of the user that are advertising
+%% interest in this kind of Node.
+broadcast_by_caps({LUser, LServer, LResource}, Node, Stanza) ->
+    ?DEBUG("looking for pid of ~p@~p/~p", 
+	   [LUser, LServer, LResource]),
+    %% We need to know the resource, so we can ask for presence data.
+    LResource1 = case LResource of
+		     "" ->
+			 %% If we don't know the resource, just pick one.
+			 case ejabberd_sm:get_user_resources(LUser, LServer) of
+			     [R|_] ->
+				 R;
+			     %% But maybe the user is offline.
+			     [] ->
+				 ?ERROR_MSG("~p@~p is offline; can't deliver ~p to contacts",
+					    [LUser, LServer, Stanza]),
+				 ""
+			 end;
+		     R ->
+			 R
+		 end,
+    %% But we don't fake a resource for the sender address.
+    Sender = jlib:make_jid(LUser, LServer, LResource),
+    case ejabberd_sm:get_session_pid(LUser, LServer, LResource1) of
+	C2SPid when is_pid(C2SPid) ->
+	    ?DEBUG("found it", []),
+	    case catch ejabberd_c2s:get_subscribed_and_online(C2SPid) of
+		ContactsWithCaps when is_list(ContactsWithCaps) ->
+		    ?DEBUG("found contacts with caps: ~p", [ContactsWithCaps]),
+		    LookingFor = Node++"+notify",
+		    %% We have a list of the form [{JID, Caps}].
+		    lists:foreach(
+		      fun({JID, Caps}) ->
+			      case catch mod_caps:get_features(?MYNAME, Caps) of
+				  Features when is_list(Features) ->
+				      case lists:member(LookingFor, Features) of
+					  true ->
+					      ejabberd_router:route(
+						Sender, jlib:make_jid(JID), Stanza);
+					  _ ->
+					      ok
+				      end;
+				  _ ->
+				      %% couldn't get entity capabilities.  
+				      %% nothing to do about that...
+				      ok
+			      end
+		      end, ContactsWithCaps);
+		_ ->
+		    ok
+	    end;
+	_ ->
+	    ok
+    end.
 
 
 broadcast_publish_item(Host, Node, ItemID, Payload, From) ->
@@ -2109,44 +2168,12 @@ broadcast_publish_item(Host, Node, ItemID, Payload, From) ->
 		       end
 	       end, ok, Info#nodeinfo.entities),
 
-	    case {Info#nodeinfo.options, From} of
-		{[{defaults, pep_node} | _], {LUser, LServer, LResource}} ->
+	    case Info#nodeinfo.options of
+		[{defaults, pep_node} | _] ->
 		    %% If this is PEP, we want to generate
 		    %% notifications based on entity capabilities as
 		    %% well.
-		    ?DEBUG("looking for pid of ~p@~p/~p", 
-			   [LUser, LServer, LResource]),
-		    case ejabberd_sm:get_session_pid(LUser, LServer, LResource) of
-			C2SPid when is_pid(C2SPid) ->
-			    ?DEBUG("found it", []),
-			    case catch ejabberd_c2s:get_subscribed_and_online(C2SPid) of
-				ContactsWithCaps when is_list(ContactsWithCaps) ->
-				    ?DEBUG("found contacts with caps: ~p", [ContactsWithCaps]),
-				    LookingFor = Node++"+notify",
-				    %% We have a list of the form [{JID, Caps}].
-				    lists:foreach(
-				      fun({JID, Caps}) ->
-					      case catch mod_caps:get_features(?MYNAME, Caps) of
-						  Features when is_list(Features) ->
-						      case lists:member(LookingFor, Features) of
-							  true ->
-							      ejabberd_router:route(
-								Sender, jlib:make_jid(JID), Stanza);
-							  _ ->
-							      ok
-						      end;
-						  _ ->
-						      %% couldn't get entity capabilities.  
-						      %% nothing to do about that...
-						      ok
-					      end
-				      end, ContactsWithCaps);
-				_ ->
-				    ok
-			    end;
-			_ ->
-			    ok
-		    end;
+		    broadcast_by_caps(From, Node, Stanza);
 		_ ->
 		    ok
 	    end;
@@ -2163,30 +2190,40 @@ broadcast_retract_item(Host, Node, ItemID) ->
 	    Info = get_node_info(N),
 	    case get_node_option(Info, notify_retract) of
 		true ->
-		    %% XXX: presence-based notifications?
+		    ItemAttrs = case ItemID of
+				    "" -> [];
+				    _ -> [{"id", ItemID}]
+				end,
+		    Stanza =
+			{xmlelement, "message", [],
+			 [{xmlelement, "event",
+			   [{"xmlns", ?NS_PUBSUB_EVENT}],
+			   [{xmlelement, "items",
+			     [{"node", node_to_string(Node)}],
+			     [{xmlelement, "retract",
+			       ItemAttrs, []}]}]}]},
 		    ?DICT:fold(
 		       fun(JID, #entity{subscription = Subscription}, _) ->
 			       if 
 				   (Subscription /= none) and
 				   (Subscription /= pending) ->
-				       ItemAttrs = case ItemID of
-						       "" -> [];
-						       _ -> [{"id", ItemID}]
-						   end,
-				       Stanza =
-					   {xmlelement, "message", [],
-					    [{xmlelement, "event",
-					      [{"xmlns", ?NS_PUBSUB_EVENT}],
-					      [{xmlelement, "items",
-						[{"node", node_to_string(Node)}],
-						[{xmlelement, "retract",
-						  ItemAttrs, []}]}]}]},
 				       ejabberd_router:route(
 					 Sender, jlib:make_jid(JID), Stanza);
 				   true ->
 				       ok
 			       end
-		       end, ok, Info#nodeinfo.entities);
+		       end, ok, Info#nodeinfo.entities),
+
+		    case Info#nodeinfo.options of
+			[{defaults, pep_node} | _] ->
+			    %% If this is PEP, we want to generate
+			    %% notifications based on entity capabilities as
+			    %% well.
+			    broadcast_by_caps(Host, Node, Stanza);
+			_ ->
+			    ok
+		    end;
+
 		false ->
 		    ok
 	    end;
@@ -2202,25 +2239,35 @@ broadcast_purge_node(Host, Node) ->
 	    Info = get_node_info(N),
 	    case get_node_option(Info, notify_retract) of
 		true ->
-		    %% XXX: presence-based notifications?
+		    Stanza =
+			{xmlelement, "message", [],
+			 [{xmlelement, "event",
+			   [{"xmlns", ?NS_PUBSUB_EVENT}],
+			   [{xmlelement, "purge",
+			     [{"node", node_to_string(Node)}],
+			     []}]}]},
 		    ?DICT:fold(
 		       fun(JID, #entity{subscription = Subscription}, _) ->
 			       if 
 				   (Subscription /= none) and
 				   (Subscription /= pending) ->
-				       Stanza =
-					   {xmlelement, "message", [],
-					    [{xmlelement, "event",
-					      [{"xmlns", ?NS_PUBSUB_EVENT}],
-					      [{xmlelement, "purge",
-						[{"node", node_to_string(Node)}],
-						[]}]}]},
 				       ejabberd_router:route(
 					 Sender, jlib:make_jid(JID), Stanza);
 				   true ->
 				       ok
 			       end
-		       end, ok, Info#nodeinfo.entities);
+		       end, ok, Info#nodeinfo.entities),
+
+		    case Info#nodeinfo.options of
+			[{defaults, pep_node} | _] ->
+			    %% If this is PEP, we want to generate
+			    %% notifications based on entity capabilities as
+			    %% well.
+			    broadcast_by_caps(Host, Node, Stanza);
+			_ ->
+			    ok
+		    end;
+
 		false ->
 		    ok
 	    end;
@@ -2231,29 +2278,40 @@ broadcast_purge_node(Host, Node) ->
 
 broadcast_removed_node(Host, Removed) ->
     lists:foreach(
-      fun({Node, Info}) ->
+      fun({NodeData, Info}) ->
+	      Node = get_node_name(NodeData),
 	      case get_node_option(Info, notify_delete) of
 		  true ->
-		      %% XXX: presence-based notifications?
 		      Entities = Info#nodeinfo.entities,
+		      Stanza =
+			  {xmlelement, "message", [],
+			   [{xmlelement, "event",
+			     [{"xmlns", ?NS_PUBSUB_EVENT}],
+			     [{xmlelement, "delete",
+			       [{"node", node_to_string(Node)}],
+			       []}]}]},
 		      ?DICT:fold(
 			 fun(JID, #entity{subscription = Subscription}, _) ->
 				 if 
 				     (Subscription /= none) and
 				     (Subscription /= pending) ->
-					 Stanza =
-					     {xmlelement, "message", [],
-					      [{xmlelement, "event",
-						[{"xmlns", ?NS_PUBSUB_EVENT}],
-						[{xmlelement, "delete",
-						  [{"node", node_to_string(Node)}],
-						  []}]}]},
 					 ejabberd_router:route(
 					   get_sender(Host), jlib:make_jid(JID), Stanza);
 				     true ->
 					 ok
 				 end
-			 end, ok, Entities);
+			 end, ok, Entities),
+
+		    case Info#nodeinfo.options of
+			[{defaults, pep_node} | _] ->
+			    %% If this is PEP, we want to generate
+			    %% notifications based on entity capabilities as
+			    %% well.
+			    broadcast_by_caps(Host, Node, Stanza);
+			_ ->
+			    ok
+		    end;
+
 		  false ->
 		      ok
 	      end
@@ -2267,6 +2325,25 @@ broadcast_config_notification(Host, Node, Lang) ->
 	    Info = get_node_info(N),
 	    case get_node_option(Info, notify_config) of
 		true ->
+		    Fields = get_node_config_xfields(
+			       Node, Info, Lang),
+		    Content = case get_node_option(
+				     Info, deliver_payloads) of
+				  true ->
+				      [{xmlelement, "x",
+					[{"xmlns", ?NS_XDATA},
+					 {"type", "result"}],
+					Fields}];
+				  false ->
+				      []
+			      end,
+		    Stanza =
+			{xmlelement, "message", [],
+			 [{xmlelement, "event",
+			   [{"xmlns", ?NS_PUBSUB_EVENT}],
+			   [{xmlelement, "configuration",
+			     [{"node", node_to_string(Node)}],
+			     Content}]}]},
 		    ?DICT:fold(
 		       fun(JID, #entity{subscription = Subscription}, _) ->
 			       Resources = get_recipient_resources(Host, JID, Info),
@@ -2274,25 +2351,6 @@ broadcast_config_notification(Host, Node, Lang) ->
 				   Subscription /= none,
 				   Subscription /= pending,
 				   Resources /= [] ->
-				       Fields = get_node_config_xfields(
-						  Node, Info, Lang),
-				       Content = case get_node_option(
-							Info, deliver_payloads) of
-						     true ->
-							 [{xmlelement, "x",
-							   [{"xmlns", ?NS_XDATA},
-							    {"type", "result"}],
-							   Fields}];
-						     false ->
-							 []
-						 end,
-				       Stanza =
-					   {xmlelement, "message", [],
-					    [{xmlelement, "event",
-					      [{"xmlns", ?NS_PUBSUB_EVENT}],
-					      [{xmlelement, "configuration",
-						[{"node", node_to_string(Node)}],
-						Content}]}]},
 				       TheJID = jlib:make_jid(JID),
 				       lists:foreach(fun(Resource) ->
 							     FullJID = jlib:jid_replace_resource(TheJID, Resource),
@@ -2302,7 +2360,18 @@ broadcast_config_notification(Host, Node, Lang) ->
 				   true ->
 				       ok
 			       end
-		       end, ok, Info#nodeinfo.entities);
+		       end, ok, Info#nodeinfo.entities),
+
+		    case Info#nodeinfo.options of
+			[{defaults, pep_node} | _] ->
+			    %% If this is PEP, we want to generate
+			    %% notifications based on entity capabilities as
+			    %% well.
+			    broadcast_by_caps(Host, Node, Stanza);
+			_ ->
+			    ok
+		    end;
+
 		false ->
 		    ok
 	    end;
