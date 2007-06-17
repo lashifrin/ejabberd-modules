@@ -69,12 +69,12 @@ max_receivers:
 	-----
 
 Tasks to do:
+ - Check interaction of this module with privacy lists on ejabberd
  - Maybe some errors should abort the execution
  - Document on the guide and ejabberd.cfg.example
  - Consider anti-spam requirements
 
 Feature requests:
- - Provide version, time and last
  - GUI with FORMS to allow users of non-capable clients to write XEP-33 packets easily
 
 Could use mod_multicast somehow:

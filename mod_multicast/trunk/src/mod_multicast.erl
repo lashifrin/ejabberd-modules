@@ -37,6 +37,7 @@
 -record(multicastc, {rserver, response, ts}).
 %% ts: timestamp (in seconds) when the cache item was last updated
 
+-define(VERSION_MULTICAST, "$Revision$").
 -define(PROCNAME, ejabberd_mod_multicast).
 
 %% TODO: move this line to jlib.hrl
@@ -211,6 +212,11 @@ process_iq(_, #iq{type = get, xmlns = ?NS_VCARD, lang = Lang} = IQ, _) ->
 	IQ#iq{type = result, sub_el =
 		[{xmlelement, "vCard", [{"xmlns", ?NS_VCARD}], iq_vcard(Lang)}]};
 
+%% version request
+process_iq(_, #iq{type = get, xmlns = ?NS_VERSION} = IQ, _) ->
+	IQ#iq{type = result, sub_el =
+		[{xmlelement, "query", [{"xmlns", ?NS_VERSION}], iq_version()}]};
+
 %% Unknown "set" or "get" request
 process_iq(_, #iq{type=Type, sub_el=SubEl} = IQ, _) when Type==get; Type==set ->
 	IQ#iq{type = error, sub_el = [SubEl, ?ERR_SERVICE_UNAVAILABLE]};
@@ -238,7 +244,13 @@ iq_vcard(Lang) ->
 		[{xmlcdata, ?EJABBERD_URI}]},
 	{xmlelement, "DESC", [],
 		[{xmlcdata, translate:translate(Lang, "ejabberd Multicast service\n"
-		"Copyright (c) 2003-2006 Alexey Shchepin")}]}].
+		"Copyright (c) 2007 Alexey Shchepin")}]}].
+
+iq_version() ->
+	[{xmlelement, "name", [],
+		[{xmlcdata, "mod_multicast"}]},
+	{xmlelement, "version", [],
+		[{xmlcdata, ?VERSION_MULTICAST}]}].
 
 
 %%%-------------------------
