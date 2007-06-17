@@ -826,10 +826,16 @@ iq_pubsub(Host, ServerHost, From, Type, SubEl, Access) ->
 			    {error, ?ERR_BAD_REQUEST}
 		    end;
 		{set, "retract"} ->
+		    ForceNotify =
+			case xml:get_attr_s("notify", Attrs) of
+			    "1" -> true;
+			    "true" -> true;
+			    _ -> false
+			end,
 		    case xml:remove_cdata(Els) of
 			[{xmlelement, "item", ItemAttrs, _}] ->
 			    ItemID = xml:get_attr_s("id", ItemAttrs),
-			    delete_item(Host, From, Node, ItemID);
+			    delete_item(Host, From, Node, ItemID, ForceNotify);
 			_ ->
 			    {error, extend_error(?ERR_BAD_REQUEST, "item-required")}
 		    end;
@@ -1096,7 +1102,7 @@ publish_item(Host, JID, Node, ItemID, Payload) ->
     end.
 
 
-delete_item(Host, JID, Node, ItemID) ->
+delete_item(Host, JID, Node, ItemID, ForceNotify) ->
     Publisher = jlib:jid_tolower(jlib:jid_remove_resource(JID)),
     Table = get_table(Host),
     F = fun() ->
@@ -1128,7 +1134,7 @@ delete_item(Host, JID, Node, ItemID) ->
 	{atomic, {error, _} = Error} ->
 	    Error;
 	{atomic, {result, Res}} ->
-	    broadcast_retract_item(Host, Node, ItemID),
+	    broadcast_retract_item(Host, Node, ItemID, ForceNotify),
 	    {result, Res};
 	_ ->
 	    {error, ?ERR_INTERNAL_SERVER_ERROR}
@@ -1534,7 +1540,7 @@ delete_node(Host, JID, Node) ->
 	    case Table of
 		pubsub_node ->
 		    broadcast_retract_item(
-		      Host, ["pubsub", "nodes"], node_to_string(Node));
+		      Host, ["pubsub", "nodes"], node_to_string(Node), false);
 		_ ->
 		    ok
 	    end,
@@ -2182,13 +2188,13 @@ broadcast_publish_item(Host, Node, ItemID, Payload, From) ->
     end.
 
 
-broadcast_retract_item(Host, Node, ItemID) ->
+broadcast_retract_item(Host, Node, ItemID, ForceNotify) ->
     Table = get_table(Host),
     Sender = get_sender(Host),
     case catch mnesia:dirty_read(Table, {Host, Node}) of
 	[N] ->
 	    Info = get_node_info(N),
-	    case get_node_option(Info, notify_retract) of
+	    case ForceNotify orelse get_node_option(Info, notify_retract) of
 		true ->
 		    ItemAttrs = case ItemID of
 				    "" -> [];
