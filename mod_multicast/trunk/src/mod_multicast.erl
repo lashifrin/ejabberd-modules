@@ -260,8 +260,7 @@ iq_version() ->
 do_route(LServiceS, LServerS, Access, Max_receivers, From, To, Packet) ->
 	case acl:match_rule(LServerS, Access, From) of
 		allow ->
-			From2 = jlib:jid_to_string(From),
-			do_route1(LServiceS, LServerS, Max_receivers, From2, To, Packet);
+			do_route1(LServiceS, LServerS, Max_receivers, From, To, Packet);
 		_ ->
 			route_error(To, From, Packet, forbidden, "Access denied by service policy")
 	end.
@@ -271,47 +270,26 @@ do_route(LServiceS, LServerS, Access, Max_receivers, From, To, Packet) ->
 %%% Route 1: Check packet
 %%%-------------------------
 
-%% TODO: return error packet to sender if the packet has errors
 do_route1(LServiceS, LServerS, Max_receivers, From, To, Packet) ->
+	case get_adrs_el(Packet) of
+		{correct, Addresses_xml} ->
+			do_route2(LServiceS, LServerS, Max_receivers, From, To, Packet, Addresses_xml);
+		{error, Error_text} ->
+			route_error(To, From, Packet, bad_request, Error_text)
+	end.
 
-	Addresses_tag = xml:get_subtag(Packet, "addresses"),
-	{xmlelement, _, PAttrs, Addresses_xml} = Addresses_tag,
-
-	?NS_ADDRESS = xml:get_attr_s("xmlns", PAttrs),
-
-	do_route2(LServiceS, LServerS, Max_receivers, From, To, Packet, Addresses_xml).
-
-
-%%%-------------------------
-%%% Route 2: Format list of destinations
-%%%-------------------------
-
-do_route2(LServiceS, LServerS, Max_receivers, From, To, Packet, Addresses_xml) ->
-	Addresses = get_address_els(Addresses_xml),
-
-	% TODO: If the packet has too many receivers, route error packet
-	case length(Addresses) > Max_receivers of
-		false -> ok;
-		true ->
-			route_error(To, From, Packet, not_acceptable,
-			"Too many receiver fields were specified")
-	end,
-
-	{JIDs, URIs, Others} = split_dests(Addresses),
-
-	send_error_address(From, Packet, URIs ++ Others),
-
-	Grouped_addresses = group_dests_by_servers(JIDs),
-
-	% Check if this packet requires relay
-	FromJID = jlib:string_to_jid(From),
-	case check_relay_required(FromJID#jid.server, LServerS, Grouped_addresses) of
-		false -> do_route3(LServiceS, LServerS, From, Packet, Grouped_addresses);
-		true ->
-			% The packet requires relaying, but it is not allowed
-			% So let's abort and return error
-			route_error(To, From, Packet, forbidden,
-			"Relaying denied by service policy")
+get_adrs_el(Packet) ->
+	case xml:get_subtag(Packet, "addresses") of
+		{xmlelement, _, PAttrs, Addresses_xml} ->
+			case xml:get_attr_s("xmlns", PAttrs) of
+				?NS_ADDRESS -> 
+					case get_address_els(Addresses_xml) of
+						[] -> {error, "no address elements found"};
+						Addresses -> {correct, Addresses}
+					end;
+				_ -> {error, "wrong xmlns"}
+			end;
+		_ -> {error, "no addresses element found"}
 	end.
 
 %% Given a list of xmlelements, some may be of "address" type,
@@ -337,6 +315,38 @@ get_address_els(Addresses_xml) ->
 		end,
 		[],
 		Addresses_xml).
+
+
+%%%-------------------------
+%%% Route 2: Format list of destinations
+%%%-------------------------
+
+do_route2(LServiceS, LServerS, Max_receivers, From1, To, Packet, Addresses) ->
+	From = jlib:jid_to_string(From1),
+
+	case length(Addresses) > Max_receivers of
+		false -> ok;
+		true ->
+			route_error(To, From, Packet, not_acceptable,
+			"Too many receiver fields were specified")
+	end,
+
+	{JIDs, URIs, Others} = split_dests(Addresses),
+
+	send_error_address(From, Packet, URIs ++ Others),
+
+	Grouped_addresses = group_dests_by_servers(JIDs),
+
+	% Check if this packet requires relay
+	FromJID = jlib:string_to_jid(From),
+	case check_relay_required(FromJID#jid.server, LServerS, Grouped_addresses) of
+		false -> do_route3(LServiceS, LServerS, From, Packet, Grouped_addresses);
+		true ->
+			% The packet requires relaying, but it is not allowed
+			% So let's abort and return error
+			route_error(To, From, Packet, forbidden,
+			"Relaying denied by service policy")
+	end.
 
 %% Report errors for each unknown address
 %% Currently only jid addresses are acceptable on ejabberd
@@ -717,6 +727,8 @@ route_error(To, From, Packet, ErrType, ErrText) ->
 	Err = jlib:make_error_reply(Packet, Reply),
 	ejabberd_router:route(To, From, Err).
 
+make_reply(bad_request, Lang, ErrText) ->
+	?ERRT_BAD_REQUEST(Lang, ErrText);
 make_reply(jid_malformed, Lang, ErrText) ->
 	?ERRT_JID_MALFORMED(Lang, ErrText);
 make_reply(not_acceptable, Lang, ErrText) ->
