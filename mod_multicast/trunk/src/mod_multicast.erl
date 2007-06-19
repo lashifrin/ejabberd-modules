@@ -544,23 +544,11 @@ query_server_childs(RServer, LServiceS) ->
 
 %% Ask the server for its disco items
 get_child_els(RServer, LServiceJID) ->
-	% Send request
 	Packet = {xmlelement, "iq",
 		[{"to", RServer}, {"type", "get"}],
 		[{xmlelement, "query", [{"xmlns", ?NS_DISCO_ITEMS}], []}]},
-	ejabberd_router:route(
-		stj(LServiceJID),
-		stj(RServer),
-		Packet),
 	
-	% Wait for answer
-	Childs =
-		receive {route, _From, _To, IQ} ->
-			{xmlelement, "query", _, List} = xml:get_subtag(IQ, "query"),
-			List
-		after ?DISCO_QUERY_TIMEOUT -> % in miliseconds
-			[]
-		end,
+	Childs = route_and_receive(stj(LServiceJID), stj(RServer), Packet),
 
 	% Convert answer to list
 	% For each one, if it's "item", look for jid
@@ -578,23 +566,11 @@ get_child_els(RServer, LServiceJID) ->
 %% Ask the server if it supports XEP33
 %% Returns true or false
 query_this(RServerS, LServiceS) ->
-	% Send request
 	Packet = {xmlelement, "iq",
 		[{"to", RServerS}, {"type", "get"}],
 		[{xmlelement, "query", [{"xmlns", ?NS_DISCO_INFO}], []}]},
-	ejabberd_router:route(
-		stj(LServiceS),
-		stj(RServerS),
-		Packet),
 	
-	% Wait for answer
-	Features =
-		receive {route, _From, _To, IQ} ->
-			{xmlelement, "query", _, List} = xml:get_subtag(IQ, "query"),
-			List
-		after ?DISCO_QUERY_TIMEOUT -> % in miliseconds
-			[]
-		end,
+	Features = route_and_receive(stj(LServiceS), stj(RServerS), Packet),
 
 	% Convert answer to list
 	% For each one, if it's "feature", look for var
@@ -608,6 +584,20 @@ query_this(RServerS, LServiceS) ->
 		end,
 		Features).
 
+%% Route the request and wait to receive the response
+%% It is very important to only accept a packet that is routed exactly
+%% from this destination and to ourselves
+route_and_receive(From, To, Packet) ->
+	% Send packet
+	ejabberd_router:route(From, To, Packet),
+	% Wait for answer
+	receive {route, To, From, IQ} ->
+		{xmlelement, "query", _, List} = xml:get_subtag(IQ, "query"),
+		List
+	after ?DISCO_QUERY_TIMEOUT -> % in miliseconds
+		[]
+	end.
+	
 
 %%%-------------------------
 %%% Cache
