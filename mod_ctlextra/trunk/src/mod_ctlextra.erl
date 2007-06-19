@@ -1,14 +1,14 @@
 %%%----------------------------------------------------------------------
 %%% File    : mod_ctlextra.erl
-%%% Author  :
+%%% Author  : Badlop
 %%% Purpose : Adds more options for ejabberd_ctl
 %%% Created :
-%%% Id      :
+%%% Id      : $Id$
 %%%----------------------------------------------------------------------
 
 -module(mod_ctlextra).
 -author('').
--vsn('0.2.5').
+-vsn('$Revision$').
 
 -behaviour(gen_mod).
 
@@ -77,6 +77,7 @@ start(Host, _Opts) ->
 		{"stats onlineusers", "number of logged users"},
 
 		% misc
+		{"get-cookie", "get the Erlang cookie of this node"},
 		{"killsession user server resource", "kill a user session"}
 	], ?MODULE, ctl_process),
     ejabberd_ctl:register_commands(Host, [
@@ -269,6 +270,10 @@ ctl_process(_Val, ["status-num", Status_required]) ->
 
 ctl_process(_Val, ["status-list", Status_required]) ->
 	ctl_process(_Val, "all", ["status-list", Status_required]);
+
+ctl_process(_Val, ["get-cookie"]) ->
+    io:format("~s~n", [atom_to_list(erlang:get_cookie())]),
+    ?STATUS_SUCCESS;
 
 ctl_process(_Val, ["killsession", User, Server, Resource]) ->
     ejabberd_router:route(
