@@ -69,7 +69,6 @@ max_receivers:
 	-----
 
 Tasks to do:
- - Check interaction of this module with privacy lists on ejabberd
  - Document on the guide and ejabberd.cfg.example
  - Consider anti-spam requirements
  - To save bandwidth, if a final stanza to be sent has no address elements, 

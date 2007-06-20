@@ -26,6 +26,7 @@
 	]).
 
 -export([
+	 do_route4/5,
 	 purge_loop/1
 	]).
 
@@ -386,12 +387,44 @@ group_dests_by_servers(Jids) ->
 
 
 %%%-------------------------
-%%% Route 3: Find multicast and send packets
+%%% Route 3: Look for cached responses
 %%%-------------------------
 
 do_route3(LServiceS, LServerS, From, Packet, Grouped_addresses) ->
-	List = add_multicast_response(Grouped_addresses, LServerS, LServiceS),
-	build_send_packet(List, From, Packet).
+	Maxtime_positive = ?MAXTIME_CACHE_POSITIVE,
+	Maxtime_negative = ?MAXTIME_CACHE_NEGATIVE,
+
+	% Fill all the possible data from the cache
+	Grouped_addresses2 = lists:map(
+		fun({RServer, JIDs}) ->
+			Cached_response = search_server_on_cache(RServer, LServerS, {Maxtime_positive, Maxtime_negative}),
+			{RServer, JIDs, Cached_response}
+		end,
+		Grouped_addresses),
+
+	% Check if some server is unknown
+	All_servers_known = lists:all(
+		fun({_RServer, _JIDs, Cached_response2}) ->
+			found == (catch element(1, Cached_response2))
+		end,
+		Grouped_addresses2),
+
+	Fun = case All_servers_known of
+		% If all servers are known, continue the execution as usual
+		true -> apply;
+		% If any server is unknown, let's spawn a process to serve it
+		false -> spawn
+	end,
+	apply(erlang, Fun, [?MODULE, do_route4, [LServiceS, LServerS, From, Packet, Grouped_addresses2]]).
+
+
+%%%-------------------------
+%%% Route 4: Ask multicast support and send packets
+%%%-------------------------
+
+do_route4(LServiceS, LServerS, From, Packet, Grouped_addresses2) ->
+	Grouped_addresses3 = add_multicast_response(Grouped_addresses2, LServerS, LServiceS),
+	build_send_packet(Grouped_addresses3, From, Packet).
 
 %% Try to find multicast service for each server group
 %% If not, split group
@@ -399,8 +432,8 @@ do_route3(LServiceS, LServerS, From, Packet, Grouped_addresses) ->
 add_multicast_response(Grouped_addresses, LServerS, LServiceS) ->
 	lists:foldl(
 		fun(Group, R) ->
-			{RServer, JIDs} = Group,
-			R ++ case check_server_support(RServer, LServerS, LServiceS) of
+			{RServer, JIDs, Cached_response} = Group,
+			R ++ case check_server_support(RServer, Cached_response, LServerS, LServiceS) of
 				local ->
 					[{JID, local_user} || JID <- JIDs];
 				not_supported ->
@@ -495,15 +528,11 @@ replace_tag_el(El, Value, {xmlelement, Name, Attrs, Els}) ->
 %%% Check protocol support
 %%%-------------------------
 
-check_server_support(RServer, LServerS, _Server)
-		when RServer == LServerS ->
-	local;
+check_server_support(RServer, Cached_response, _LServer, LServiceS) ->
+	case Cached_response of
+		{found, local_server} ->
+			local;
 
-check_server_support(RServer, _LServer, LServiceS) ->
-	Maxtime_positive = ?MAXTIME_CACHE_POSITIVE,
-	Maxtime_negative = ?MAXTIME_CACHE_NEGATIVE,
-
-	case look_server(RServer, {Maxtime_positive, Maxtime_negative}) of
 		{found, Response} ->
 			Response;
 
@@ -619,7 +648,11 @@ add_response(RServer, Response) ->
 %% Search on the cache if there is a response for the server
 %% If there is a response but is obsolete,
 %% don't bother removing since it will later be overwritten anyway
-look_server(RServer, Maxmins) ->
+search_server_on_cache(RServer, LServerS, _Maxmins)
+		when RServer == LServerS ->
+	{found, local_server};
+
+search_server_on_cache(RServer, _LServerS, Maxmins) ->
 	case look_server(RServer) of
 		not_found ->
 			not_found;
