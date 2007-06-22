@@ -505,22 +505,24 @@ update_addresses_xml(Packet, Dests) ->
 								{false, _} -> XML
 							end
 					end;
+				{xmlcdata, _} -> [];
 				_ -> XML
 			end
 		end,
 		Addresses_xml),
-	Addresses_xml3 = lists:flatten(Addresses_xml2),
-	replace_tag_el("addresses",
-		{xmlelement, "addresses", PAttrs, Addresses_xml3},
-		Packet).
+	Addresses_elements = case lists:flatten(Addresses_xml2) of
+		[] -> [];
+		E -> [{xmlelement, "addresses", PAttrs, E}]
+	end,
+	replace_tag_el("addresses", Addresses_elements, Packet).
 
 add_delivered({xmlelement, Name, Attrs, Els}) ->
 	Attrs2 = Attrs ++ [{"delivered", "true"}],
 	{xmlelement, Name, Attrs2, Els}.
 
-replace_tag_el(El, Value, {xmlelement, Name, Attrs, Els}) ->
+replace_tag_el(El, Elements, {xmlelement, Name, Attrs, Els}) ->
 	Els1 = lists:keydelete(El, 2, Els),
-	Els2 = Els1 ++ [Value],
+	Els2 = Els1 ++ Elements,
 	{xmlelement, Name, Attrs, Els2}.
 
 

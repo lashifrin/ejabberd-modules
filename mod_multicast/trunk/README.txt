@@ -71,8 +71,6 @@ max_receivers:
 Tasks to do:
  - Document on the guide and ejabberd.cfg.example
  - Consider anti-spam requirements
- - To save bandwidth, if a final stanza to be sent has no address elements, 
-   remove the whole addresses element
 
 Feature requests:
  - GUI with FORMS to allow users of non-capable clients to write XEP-33 packets easily
