@@ -26,6 +26,7 @@
 	]).
 
 -export([
+	 route_packet_multicast/4,
 	 do_route4/5,
 	 purge_loop/1
 	]).
@@ -476,10 +477,13 @@ build_send_packet(List, From, Packet) ->
 
 %% If the sender is external, and at least one destination is external,
 %% then this package requires relaying
-check_relay_required(RServer, LServerS, _Grouped_addresses)
-		when RServer == LServerS ->
-	false;
-check_relay_required(_RServer, LServerS, Grouped_addresses) ->
+check_relay_required(RServer, LServerS, Grouped_addresses) ->
+	case string:str(RServer, LServerS) > 0 of
+		true -> false;
+		false -> check_relay_required(LServerS, Grouped_addresses)
+	end.
+
+check_relay_required(LServerS, Grouped_addresses) ->
 	lists:any(
 		fun({RServer, _JIDs}) ->
 			RServer /= LServerS
@@ -778,3 +782,38 @@ make_reply(forbidden, Lang, ErrText) ->
 	?ERRT_FORBIDDEN(Lang, ErrText).
 
 stj(String) -> jlib:string_to_jid(String).
+
+
+%%%-------------------------
+%%% Exported multicast functions 
+%%%-------------------------
+
+route_packet_multicast(From, Destinations, Multicast_service, Packet) ->
+	% Build and addresses element
+	Ad_list = lists:map(
+		fun(User_jid_string) ->
+			build_address_element(User_jid_string)
+		end,
+		Destinations),
+	Element = build_addresses_element(Ad_list),
+
+	% Add element to original packet
+	{xmlelement, Type, Attrs, Els} = Packet,
+	Els2 = [Element | Els],
+	Packet_multicast = {xmlelement, Type, Attrs, Els2},
+
+	% Finally, send the packet to the multicast service
+	ejabberd_router:route(
+		From,
+		jlib:string_to_jid(Multicast_service),
+		Packet_multicast).
+
+build_address_element(Jid_string) ->
+	{xmlelement, "address", 
+		[{"type", "bcc"}, {"jid", Jid_string}], 
+		[]}.
+
+build_addresses_element(Addresses_list) ->
+	{xmlelement, "addresses", 
+		[{"xmlns", "http://jabber.org/protocol/address"}], 
+		Addresses_list}.
