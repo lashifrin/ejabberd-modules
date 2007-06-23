@@ -146,8 +146,9 @@ handle_info({route, From, To, {xmlelement, "iq", _Attrs, _Els} = Packet}, State)
 			?ERROR_MSG("Error when processing IQ stanza: ~p", [Reason]),
 			Err = jlib:make_error_reply(Packet, ?ERR_INTERNAL_SERVER_ERROR),
 			ejabberd_router:route(To, From, Err);
-		_ ->
-			ok
+		reply ->
+			Pid = list_to_pid(To#jid.resource),
+			catch Pid ! {route, From, To, Packet}
 	end,
 	{noreply, State};
 
@@ -165,6 +166,10 @@ handle_info({route, From, To, {xmlelement, Stanza_type, _, _} = Packet},
 		_ ->
 			ok
 	end,
+	{noreply, State};
+
+handle_info({get_host, Pid}, State) ->
+	Pid ! {my_host, State#state.lservice},
 	{noreply, State};
 
 handle_info(_Info, State) ->
@@ -221,6 +226,10 @@ process_iq(_, #iq{type = get, xmlns = ?NS_VERSION} = IQ, _) ->
 %% Unknown "set" or "get" request
 process_iq(_, #iq{type=Type, sub_el=SubEl} = IQ, _) when Type==get; Type==set ->
 	IQ#iq{type = error, sub_el = [SubEl, ?ERR_SERVICE_UNAVAILABLE]};
+
+%% IQ "result" or "error".
+process_iq(_, reply, _) ->
+	reply;
 
 %% IQ "result" or "error".
 process_iq(_, _, _) ->
@@ -345,7 +354,7 @@ do_route2(LServiceS, LServerS, Max_receivers, From1, To, Packet, Addresses) ->
 		true ->
 			% The packet requires relaying, but it is not allowed
 			% So let's abort and return error
-			route_error(To, From, Packet, forbidden,
+			route_error(To, FromJID, Packet, forbidden,
 			"Relaying denied by service policy")
 	end.
 
@@ -619,10 +628,17 @@ query_this(RServerS, LServiceS) ->
 %% It is very important to only accept a packet that is routed exactly
 %% from this destination and to ourselves
 route_and_receive(From, To, Packet) ->
+	% Add the Pid of this process as the resource
+	% TODO: investigate if this is the best solution
+	My_pid_resource = pid_to_list(self()),
+	From2 = From#jid{
+		resource = My_pid_resource,
+		lresource = My_pid_resource
+		},
 	% Send packet
-	ejabberd_router:route(From, To, Packet),
+	ejabberd_router:route(From2, To, Packet),
 	% Wait for answer
-	receive {route, To, From, IQ} ->
+	receive {route, To, From2, IQ} ->
 		{xmlelement, "query", _, List} = xml:get_subtag(IQ, "query"),
 		List
 	after ?DISCO_QUERY_TIMEOUT -> % in miliseconds
@@ -745,12 +761,12 @@ purge_loop(NM) ->
 %%% Error report
 %%%-------------------------
 
-route_error(To, From, Packet, ErrType, ErrText) ->
+route_error(From, To, Packet, ErrType, ErrText) ->
 	{xmlelement, _Name, Attrs, _Els} = Packet,
 	Lang = xml:get_attr_s("xml:lang", Attrs),
 	Reply = make_reply(ErrType, Lang, ErrText),
 	Err = jlib:make_error_reply(Packet, Reply),
-	ejabberd_router:route(To, From, Err).
+	ejabberd_router:route(From, To, Err).
 
 make_reply(bad_request, Lang, ErrText) ->
 	?ERRT_BAD_REQUEST(Lang, ErrText);
