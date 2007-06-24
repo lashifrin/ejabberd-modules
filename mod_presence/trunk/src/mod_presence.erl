@@ -18,6 +18,7 @@
          start/2,
          stop/1,
          get_info/2,
+         process/2,
          show_presence/1]).
 
 %% gen_server callbacks
@@ -29,8 +30,10 @@
 
 -record(presence_registered, {us_host, xml, icon}).
 -record(state, {host, server_host, access}).
--record(session, {sid, usr, us, priority}).
 -record(presence, {resource, status, priority, text}).
+
+%% Copied from ejabberd_sm.erl
+-record(session, {sid, usr, us, priority, info}).
 
 -define(PROCNAME, ejabberd_mod_presence).
 -define(SERVICE_NAME(Host), "presence." ++ Host).
@@ -58,19 +61,12 @@ start(Host, Opts) ->
 	 1000,
 	 worker,
 	 [?MODULE]},
-    Dir =
-        case os:getenv("EJABBERD_PIXMAPS_PATH") of
-            false ->
-                case code:priv_dir(ejabberd) of
-                    {error, _} ->
-                        ?PIXMAPS_DIR;
-                    Path ->
-                        filename:join([Path, ?PIXMAPS_DIR])
-                end;
-            Path ->
-                Path
-        end,
-    ets:new(pixmaps_dirs, [named_table, public]),
+    Default_dir = case code:priv_dir(ejabberd) of
+		{error, _} -> ?PIXMAPS_DIR;
+		Path -> filename:join([Path, ?PIXMAPS_DIR])
+    end,
+    Dir = gen_mod:get_opt(pixmaps_path, Opts, Default_dir),
+    catch ets:new(pixmaps_dirs, [named_table, public]),
     ets:insert(pixmaps_dirs, {directory, Dir}),
     supervisor:start_child(ejabberd_sup, ChildSpec).
 
@@ -541,3 +537,37 @@ show_presence({image_no_check, LUser, LServer, Theme}) ->
 show_presence(_) ->
     {404, [], ejabberd_web:make_xhtml([?XC("h1", "Not found")])}.
 
+
+make_xhtml(Els) ->
+    {xmlelement, "html", [{"xmlns", "http://www.w3.org/1999/xhtml"},
+			  {"xml:lang", "en"},
+			  {"lang", "en"}],
+     [{xmlelement, "head", [],
+       [{xmlelement, "meta", [{"http-equiv", "Content-Type"},
+			      {"content", "text/html; charset=utf-8"}], []}]},
+      {xmlelement, "body", [], Els}
+     ]}.
+
+process(LocalPath, Request) ->
+    case LocalPath of
+        [User, Server | Tail] ->
+            LServer = jlib:nameprep(Server),
+            case lists:member(LServer, ?MYHOSTS) of
+                true ->
+                    LUser = jlib:nodeprep(User),
+                    case Tail of
+                        ["xml"] ->
+                            mod_presence:show_presence({xml, LUser, LServer});
+                        ["image"] ->
+                            mod_presence:show_presence({image, LUser, LServer});
+                        ["image", Theme] ->
+                            mod_presence:show_presence({image, LUser, LServer, Theme});
+                        _ ->
+                            {404, [], make_xhtml([?XC("h1", "Not found")])}
+                    end;
+                false ->
+                    {404, [], make_xhtml([?XC("h1", "Not found")])}
+            end;
+        _ ->
+            {404, [], make_xhtml([?XC("h1", "Not found")])}
+    end.
