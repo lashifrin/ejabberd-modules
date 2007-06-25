@@ -4,7 +4,7 @@
 
 	Homepage: http://ejabberd.jabber.ru/mod_multicast
 	Author: Badlop
-	Module for ejabberd 1.1.3
+	Module for ejabberd SVN
 
 
 	DESCRIPTION
@@ -70,8 +70,11 @@ max_receivers:
 
 Tasks to do:
  - Document on the guide and ejabberd.cfg.example
+ - Find a better solution to the spawn/get-query-response problem, instead of sending pid as resource
  - Consider anti-spam requirements
-
+ - Find a solution to this problem: a chatroom with 200 participants,
+ all from the same remote server.
+ 
 Feature requests:
  - GUI with FORMS to allow users of non-capable clients to write XEP-33 packets easily
 
