@@ -791,8 +791,8 @@ stj(String) -> jlib:string_to_jid(String).
 route_packet_multicast(From, Destinations, Multicast_service, Packet) ->
 	% Build and addresses element
 	Ad_list = lists:map(
-		fun(User_jid_string) ->
-			build_address_element(User_jid_string)
+		fun(JID) ->
+			build_address_element(jlib:jid_to_string(JID))
 		end,
 		Destinations),
 	Element = build_addresses_element(Ad_list),

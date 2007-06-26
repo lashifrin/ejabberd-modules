@@ -14,6 +14,7 @@
 
 %% API
 -export([route/3,
+	 route_multiple/4,
 	 register_route/1,
 	 register_route/2,
 	 register_routes/1,
@@ -54,6 +55,32 @@ route(From, To, Packet) ->
 	_ ->
 	    ok
     end.
+
+% Server_host = string()
+% From = #jid
+% Destinations = [#jid]
+route_multiple(Server_host, From, Destinations, Packet) ->
+	case find_multicast_service(Server_host) of
+		{true, Multicast} -> 
+			mod_multicast:route_packet_multicast(From, Destinations, Multicast, Packet);
+		false -> route_packet_normal(From, Destinations, Packet)
+	end.
+
+%% TODO: Look for an alternative way to know the JID of a local multicast service
+%% if the current method is not efficient enought.
+-define(PROCNAME_MULTICAST, ejabberd_mod_multicast).
+find_multicast_service(Server_host) ->
+	Proc = gen_mod:get_module_proc(Server_host, ?PROCNAME_MULTICAST),
+	case catch Proc ! {get_host, self()} of
+		{'ERROR', _} -> false;
+		{get_host, _} -> 
+			receive {my_host, Multicast} -> Multicast end,
+			{true, Multicast}
+	end.
+
+route_packet_normal(From, Destinations, Packet) ->
+	[ejabberd_router:route(From, To, Packet) || To <- Destinations].
+
 
 register_route(Domain) ->
     register_route(Domain, undefined).

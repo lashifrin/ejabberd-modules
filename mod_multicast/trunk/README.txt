@@ -19,7 +19,7 @@ The development of this module is included on a Google Summer of Code 2007 proje
 	-------
 
 1. Compile the module.
-2. Copy the binary file to ejabberd ebin directory.
+2. Copy the binary files to ejabberd ebin directory.
 3. Edit ejabberd.cfg and add the module to the list of modules:
   {mod_multicast, []},
 4. Start ejabberd.
@@ -71,6 +71,7 @@ max_receivers:
 Tasks to do:
  - Document on the guide and ejabberd.cfg.example
  - Find a better solution to the spawn/get-query-response problem, instead of sending pid as resource
+ - Find a better solution to know if a local multicast service exists (ejabberd_router) for the sender component
  - Consider anti-spam requirements
  - Find a solution to this problem: a chatroom with 200 participants,
  all from the same remote server.
@@ -80,7 +81,6 @@ Feature requests:
 
 Could use mod_multicast somehow:
  - when client sends presence stanza
- - mod_muc
  - mod_pubsub/mod_pep
  - mod_irc
 
