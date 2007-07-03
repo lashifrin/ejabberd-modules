@@ -195,6 +195,7 @@ write_stats(I, node, Node, F, T) ->
 	%fwttl(F, "sslusers", T),
 	%fwttl(F, "tlsusers", T),
 	fwttl(F, "httppollusers", T),
+	fwttl(F, "httpbindusers", T),
 	fwttl(F, "s2sconnections", T),
 	fwttl(F, "s2sservers", T),
 	fwbl2(F, T),

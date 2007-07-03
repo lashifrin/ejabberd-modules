@@ -2288,6 +2288,7 @@ get_node(global, Node, ["statsdx"], Query, Lang) ->
 	  [?XE("tbody", [
 	     do_stat(global, Lang, "authusers"),
 		do_stat(Node, Lang, "httppollusers"),
+		do_stat(Node, Lang, "httpbindusers"),
 		do_stat(Node, Lang, "s2sconnections"),
 		do_stat(Node, Lang, "s2sservers")
        ])

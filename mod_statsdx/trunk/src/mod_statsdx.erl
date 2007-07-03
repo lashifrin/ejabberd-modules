@@ -286,6 +286,8 @@ get(N, ["onlineusers"]) -> rpc:call(N, mnesia, table_info, [presence, size]);
 get(_, ["onlineusers", Host]) -> length(ejabberd_sm:get_vh_session_list(Host));
 get(_, ["httppollusers", title]) -> "HTTP-Poll users (aprox)";
 get(N, ["httppollusers"]) -> rpc:call(N, mnesia, table_info, [http_poll, size]);
+get(_, ["httpbindusers", title]) -> "HTTP-Bind users (aprox)";
+get(N, ["httpbindusers"]) -> rpc:call(N, mnesia, table_info, [http_bind, size]);
 
 get(_, ["s2sconnections", title]) -> "Outgoing S2S connections";
 get(_, ["s2sconnections"]) -> length(get_S2SConns());
