@@ -37,6 +37,10 @@ Configurable options:
 	==================
 
 	Adds additional statistics provided by mod_statsdx to the Web Interface
+	
+This patched version of the Wb Interface
+is only compatible with ejabberd 1.1.2 and 1.1.3.
+So, it does not work with newer versions of ejabberd.
 
 
 	CONFIGURE
