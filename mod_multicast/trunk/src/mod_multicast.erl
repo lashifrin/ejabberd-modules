@@ -56,6 +56,8 @@
 -define(CACHE_PURGE_TIMER, 86400000). % Purge the cache every 24 hours
 -define(DISCO_QUERY_TIMEOUT, 10000). % After 10 seconds of delay the server is declared dead
 
+-define(MAX_ADDRESSES_PER_PAQUET, 20).
+
 
 %%====================================================================
 %% API
@@ -436,7 +438,8 @@ do_route3(LServiceS, LServerS, From, Packet, Grouped_addresses) ->
 
 do_route4(LServiceS, LServerS, From, Packet, Grouped_addresses2) ->
 	Grouped_addresses3 = add_multicast_response(Grouped_addresses2, LServerS, LServiceS),
-	build_send_packet(Grouped_addresses3, From, Packet).
+	Grouped_addresses4 = split_groups(?MAX_ADDRESSES_PER_PAQUET, Grouped_addresses3),
+	build_send_packet(Grouped_addresses4, From, Packet).
 
 %% Try to find multicast service for each server group
 %% If not, split group
@@ -456,6 +459,29 @@ add_multicast_response(Grouped_addresses, LServerS, LServiceS) ->
 		end,
 		[],
 		Grouped_addresses).
+
+split_groups(Max, Groups) ->
+	R = [split_group(Max, Group) || Group <- Groups],
+	lists:append(R).
+
+%% Split a group of addresses in groups equal or smaller than Max
+split_group(_, {_, local_user} = Group) -> 
+	[Group];
+
+split_group(Max, {As, M}) ->
+	{_, Group2} = lists:foldl(
+		fun(A, {Count, R}) ->
+			case Count >= Max of 
+				true -> {1, [{[A], M} | R]};
+				_ -> 
+					[{Current, M} | C2] = R,
+					{Count + 1, [{[A | Current], M} | C2]}
+			end
+		end,
+		{0, [{[], M}]},
+		As),
+	Group2.
+
 
 %% Send to all, for each group
 build_send_packet(List, From, Packet) ->

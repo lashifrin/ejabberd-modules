@@ -73,10 +73,6 @@ Tasks to do:
  - Find a better solution to the spawn/get-query-response problem, instead of sending pid as resource
  - Find a better solution to know if a local multicast service exists (ejabberd_router) for the sender component
  - Consider anti-spam requirements
- - Find a solution to this problem: a chatroom with 200 participants,
- all from the same remote server: a xep33 packet 
- with 200 destinations will be rejected at the destination server.
- The solution is to split big packets into smaller ones
  
 Feature requests:
  - GUI with FORMS to allow users of non-capable clients to write XEP-33 packets easily
