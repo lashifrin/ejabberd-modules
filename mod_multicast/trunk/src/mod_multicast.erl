@@ -344,7 +344,7 @@ do_route2(LServiceS, LServerS, Max_receivers, From1, To, Packet, Addresses) ->
 
 	{JIDs, URIs, Others} = split_dests(Addresses),
 
-	send_error_address(From, Packet, URIs ++ Others),
+	send_error_address(From1, Packet, URIs, Others),
 
 	Grouped_addresses = group_dests_by_servers(JIDs),
 
@@ -359,13 +359,15 @@ do_route2(LServiceS, LServerS, Max_receivers, From1, To, Packet, Addresses) ->
 			"Relaying denied by service policy")
 	end.
 
-%% Report errors for each unknown address
-%% Currently only jid addresses are acceptable on ejabberd
-%% TODO: inform on the error message which address exactly produced the error
-send_error_address(From, Packet, Unknown_adds) ->
-	[ route_error(From, From, Packet, jid_malformed, 
-			"The service does not understand some address")
-		|| _A <- Unknown_adds ].
+%% Sends an error message for each unknown address
+%% Currently only 'jid' addresses are acceptable on ejabberd
+send_error_address(From, Packet, URIs, Others) ->
+	URIs2 = ["uri: " ++ URI || URI <- URIs],
+	Others2 = [io_lib:format("~p", [Other]) || Other <- Others],
+	Unknown_adds = URIs2 ++ Others2,
+	[route_error(From, From, Packet, jid_malformed, 
+			"The service does not understand the address: " ++ A)
+		|| A <- Unknown_adds].
 
 %% Split the list of destinations depending on the address type
 split_dests(Addresses) ->
