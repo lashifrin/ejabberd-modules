@@ -465,8 +465,8 @@ split_groups(Max, Groups) ->
 	lists:append(R).
 
 %% Split a group of addresses in groups equal or smaller than Max
-split_group(_, {_, local_user} = Group) -> 
-	[Group];
+split_group(_, {_, local_user} = Group) -> [Group];
+split_group(_, {_, no_multicast} = Group) -> [Group];
 
 split_group(Max, {As, M}) ->
 	{_, Group2} = lists:foldl(
