@@ -638,6 +638,15 @@ get_child_els(RServer, LServiceJID) ->
 %% Ask the server if it supports XEP33
 %% Returns true or false
 query_this(RServerS, LServiceS) ->
+	% If the JID of the remote server is "echo.*", 
+	% we know it does not support XEP33
+	% This check is done to prevent asking an echoing service
+	case string:str(RServerS, "echo.") of
+		1 -> false;
+		_ -> query_this2(RServerS, LServiceS)
+	end.
+
+query_this2(RServerS, LServiceS) ->
 	Packet = {xmlelement, "iq",
 		[{"to", RServerS}, {"type", "get"}],
 		[{xmlelement, "query", [{"xmlns", ?NS_DISCO_INFO}], []}]},
