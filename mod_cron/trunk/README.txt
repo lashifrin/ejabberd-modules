@@ -1,0 +1,65 @@
+
+	mod_cron - Execute scheduled commands
+
+	Author: Badlop
+	http://ejabberd.jabber.ru/mod_cron
+
+
+This module allows advanced ejabberd administrators to schedule commands for 
+periodic and automatic execution. This module is a similar concept than the
+*nix's cron program. Obviously, the admin must know in advance which module,
+function and arguments to use, so this module is not intended for starting
+administrators.
+
+
+	BASIC CONFIGURATION
+	===================
+
+Add the module to your ejabberd.cfg, on the modules section:
+{modules, [
+  ...
+  {mod_cron, []},
+  ...
+]}.
+
+
+	TASK SYNTAX
+	===========
+
+Each task is described using a tuple with this syntax:
+  {Time, Time_units, Module, Function, Arguments}
+Where:
+  Time is an integer.
+  Time_units indicates the time unit you use. It can be: seconds, minutes, hours, days.
+  Module and Function are the exact call you want to schedule.
+  Arguments is a list of arguments. It can be emtpy.
+
+For example, let's define some dummy tasks:
+ * Every 3 hours, print on the log file some info about mnesia:
+    {3, hours, mnesia, info, []}
+   
+ * Every day, try to register certain account:
+    {1, days, ejabberd_auth, try_register, ["tommy", "jabber.example.org", "MyP455WorD"]}
+
+
+	TASKS ON EJABBERD.CFG
+	=====================
+
+Now that you know how to define new tasks, you can add the ones you want on ejabberd.cfg
+For example:
+{modules, [
+  ...
+  {mod_cron, [{tasks, [
+    {3, hours, mnesia, info, []},
+    {1, days, ejabberd_auth, try_register, ["aaa", "atenea", "aaaaaa"]}
+  ]}]},
+  ...
+]}.
+
+
+	EJABBERD-CTL
+	============
+
+This module provides two new commands on the ejabberd-ctl command line tool:
+ * cron-list: list scheduled tasks
+ * cron-del taskid: delete this task from the schedule
