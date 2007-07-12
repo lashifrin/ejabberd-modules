@@ -47,7 +47,7 @@ add_task(Host, Task) ->
 	{Time_num, Time_unit, Mod, Fun, Args} = Task,
 
 	% Convert to miliseconds
-	Time = Time_num * case Time_unit of
+	Time = case Time_unit of
 		seconds -> timer:seconds(Time_num);
 		minutes -> timer:minutes(Time_num);
 		hours -> timer:hours(Time_num);
