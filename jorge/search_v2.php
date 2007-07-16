@@ -42,6 +42,7 @@ if ($tag_count=="t") { $start_from=$offset_day; }
 
 $plain_phase=$search_phase; // fix me
 
+// we dont want any % here...
 if (preg_match("/%/i",$search_phase)) { $search_phase="";}
 
 include ("upper.php");
@@ -55,11 +56,8 @@ if (!$search_phase) {
 	else
 	{
 
-
-	if (strlen(str_replace(" ","",$search_phase)  ) < 3 OR strlen($search_phase)>80 ) { print "<b><br><br>$search_w1[$lang]<br><br><br></b>"; $search_phase="";  $brake="1";}
-
+// check if we are using parametrized search or not
 $qquery = is_query_from($search_phase);
-
 
 // parametric search
 if ($qquery[from] == "t") {
@@ -70,13 +68,8 @@ if ($qquery[from] == "t") {
 	$user_name=get_user_id(mysql_escape_string($user_name),$xmpp_host);
 	$server=get_server_id(mysql_escape_string($server),$xmpp_host);
 	$search_phase=$qquery[query];
-	if ($qquery[query]) { if (strlen($search_phase) < 3 OR strlen($search_phase)>80 ) { print "<b><br><br>$search_w1[$lang]</b><br></br><br>"; $brake="1";}  }
 
 }
-
-
-if ($brake!="1") {
-
 
 
 if ($search_phase) {
@@ -377,10 +370,8 @@ if($a==$b) { print '<tr><td colspan="4" style="text-align: center;"><b>'.$no_res
 print '</table>'."\n";
 
 
-} // end of everything ;)
-
-
 }
+
 
 if ($search_phase!="") {
 
