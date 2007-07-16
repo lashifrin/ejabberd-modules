@@ -52,7 +52,8 @@ $puid_s=pg_escape_string($puid);
 
 $res = pg_query($bazaj, "select username, password from users where username='$uid_s' and password='$puid_s'");
 if (!$res) {
-	print "<h2>STOP: Internal system error(1.0)</h2>";
+	print "<h2>STOP: Internal system error(1.0)--</h2>";
+	echo pg_last_error();
 	exit;
 }
 
@@ -522,7 +523,16 @@ function db_size() {
 
 }
 
+function verbose_split_line($in_minutes,$lang,$verb_h,$in_min) {
 
+	if ($in_minutes>60) {
+		return $verb_h[$lang];
+	}
+	elseif ($in_minutes<60)  {
+		return $in_minutes." ".$in_min[$lang];
+	}
+
+}
 
 
 ?>

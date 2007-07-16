@@ -50,10 +50,21 @@ tr.maint {
 	color: #000000; 
 	}
 
+
 tr.main_row_a { background-color: #e8eef7; }
 tr.main_row_b { background-color: #e0e9f7; }
 tr.spacer { background-color: #afccf7; }
 tr.spacerb { background-color: #ffffcc; }
+
+tr.splitl {
+
+	background-color: #f1f7ff;
+	font-size: 10px;
+	color: grey;
+	text-align: center;
+
+}
+
 
 
 a.menue {

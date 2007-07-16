@@ -187,6 +187,28 @@ if ($talker) {
 	$talker_name = get_user_name($talker,$xmpp_host);
 	$server_name = get_server_name($server,$xmpp_host);
 	$nickname = query_nick_name($bazaj,$token,$talker_name,$server_name);
+	// dynamicly calculate row size depending on users name
+	$nick_size=strlen($nickname);
+	$token_size=strlen($token);
+	if ($nick_size>$token_size)
+		{
+		if ($nick_size>30) {
+				$row_size="30";
+				}
+				else{
+				$row_size=$nick_size;
+				}
+		}
+		elseif($nick_size<$token_size)
+		{
+		if ($token_size>30) {
+				$row_size="30";
+				}
+				else {
+				$row_size=$token_size;
+				}
+		}
+
 	if ($nickname=="f") { $nickname=$not_in_r[$lang]; }
 	print '<table id="maincontent" border="0" cellspacing="0" class="ff">'."\n";
 	print '<tr class="maint">'."\n";
@@ -212,13 +234,14 @@ if ($talker) {
 		$old_d = $pass_to_next;
 		// end time calc
 		if ($time_diff>$split_line AND $licz>1) { 
-			$in_minutes = round(($time_diff/60),0);
-			print '<tr class="spacerb">';
-			print '<td  style="text-align: center;"><i>'.$in_minutes.' '.$in_min[$lang].'</i></td>';
-			print '<td colspan="4" style="font-size: 1px;"><hr size="1" noshade="" color="#cccccc"/></td></tr>';
+				$in_minutes = round(($time_diff/60),0);
+				print '<tr class="splitl">';
+				print '<td colspan="5" style="font-size: 10px;"><i>'.verbose_split_line($in_minutes,$lang,$verb_h,$in_min).'</i><hr size="1" noshade="" color="#cccccc"/></td></tr>';
+
 			} // splitting line - defaults to 900s = 15min
+
 		print '<tr class="'.$col.'">'."\n";
-		print '<td width="80" class="time_chat">'.$ts.'</td>'."\n";
+		print '<td class="time_chat" style="padding-left: 10px; padding-right: 10px;";>'.$ts.'</td>'."\n";
 
 		if ($entry["direction"] == 1) 
 			{ 
@@ -236,7 +259,7 @@ if ($talker) {
 
 
 		if ($aa<2 AND $tt<2) { 
-		print '<td>&nbsp;&nbsp;'.htmlspecialchars($out).'&nbsp;&nbsp;&nbsp;<a name="'.$licz.'"></a></td>'."\n"; $here="1"; } else { print '<td style="text-align: right;">-&nbsp;&nbsp;</td>'."\n"; $here="0"; }
+		print '<td width="'.$row_size.'" style="padding-left: 5px; padding-right: 10px;"><pre>'.htmlspecialchars($out).'</pre><a name="'.$licz.'"></a></td>'."\n"; $here="1"; } else { print '<td style="text-align: right; padding-right: 5px">-</td>'."\n"; $here="0"; }
 
 		$new_s=htmlspecialchars($entry["body"]);
 		$to_r = array("\n");
@@ -248,16 +271,15 @@ if ($talker) {
 		$lnk=encode_url("$tslice@$entry[peer_name_id]@$entry[peer_server_id]@",$ee,$url_key);
 		$to_base2 = "$tslice@$entry[peer_name_id]@$entry[peer_server_id]@1@$licz@$lnk@NULL@$start@";
 		$to_base2 = encode_url($to_base2,$token,$url_key);
-		if ($here=="1") { print '<td colspan="2">&nbsp;&nbsp;<a href="my_links.php?a='.$to_base2.'"><small>'.$my_links_save[$lang].'</small></a></td>'."\n"; } else { print '<td></td>'."\n"; }
-
+		if ($here=="1") { print '<td colspan="2" style="padding-left: 2px; font-size: 9px;"><a href="my_links.php?a='.$to_base2.'">'.$my_links_save[$lang].'</a></td>'."\n"; } else { print '<td></td>'."\n"; }
 		if ($t=2) { $c=1; $t=0; }
-
 		print '</tr>'."\n";
 		}
 	print '</tbody>'."\n";
 
 
 // limiting code
+print '<tr class="spacer" height="1px"><td colspan="5"></td></tr>';
 print '<tr class="maint"><td style="text-align: center;" colspan="9">';
 for($i=0;$i < $nume;$i=$i+$num_lines_bro){
 

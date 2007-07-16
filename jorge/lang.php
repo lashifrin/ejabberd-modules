@@ -277,6 +277,11 @@ $no_more[eng] = "No more search results";
 $in_min[pol] = pl_znaczki("minut");
 $in_min[eng] = "minutes";
 
+$verb_h[pol] = pl_znaczki("przerwa ponad jedn± godzinê");
+$verb_h[eng] = "break more than one hour";
+
+
+
 $help_search_tips[pol] = pl_znaczki("
 <br/><br/>
 <li>Wyszukiwarka: Podpowiedzi.</li>
