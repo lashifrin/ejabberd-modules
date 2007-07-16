@@ -70,7 +70,6 @@ max_receivers:
 
 Tasks to do:
  - Document on the guide and ejabberd.cfg.example
- - Find a better solution to the spawn/get-query-response problem, instead of sending pid as resource
  - Find a better solution to know if a local multicast service exists (ejabberd_router) for the sender component
  - Consider anti-spam requirements
  
