@@ -172,9 +172,8 @@ while ($entry = mysql_fetch_array($result)) {
 				$old_d = $pass_to_next;
 				if ($time_diff>$split_line AND $day_mark>1 AND $type!="4") { 
 					$in_minutes = round(($time_diff/60),0);
-					print '<tr class="spacerb">';
-					print '<td  style="text-align: center;"><i>'.$in_minutes.' '.$in_min[$lang].'</i></td>';
-					print '<td colspan="4" style="font-size: 1px;"><hr size="1" noshade="" color="#cccccc"/></td></tr>';
+					print '<tr class="splitl">';
+					print '<td colspan="5" style="font-size: 10px;">'.verbose_split_line($in_minutes,$lang,$verb_h,$in_min).'<hr size="1" noshade="" color="#cccccc"/></td></tr>';
 					} // splitting line 900s = 15min.
 				// end 
 
@@ -359,6 +358,8 @@ if ($type!="7") {
 
 	}
 
+	print '<tr class="spacer" height="1px"><td colspan="5"></td></tr>'."\n";
+	print '<tr class="maint"  height="15px"><td colspan="5"></td></tr>'."\n";
 	mysql_free_result ($result);
 	mysql_free_result ($results);
 	mysql_close();
