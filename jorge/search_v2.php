@@ -348,7 +348,7 @@ if ($type!="7") {
 	// time field:
 	print '<td width="120">'.$dat["ts"].'</td>'."\n";
 	// direction and talker
-	print '<td style="text-align: left;">'.$fr.'&nbsp;&nbsp;'.$talk.'&nbsp;&nbsp;</td>'."\n";
+	print '<td style="text-align: left;">'.$fr.'&nbsp;&nbsp;'.cut_nick($talk).'&nbsp;&nbsp;</td>'."\n";
 	// and content:
 	print '<td width="700">'.$body_talk.'</td>'."\n";
 	// score for info

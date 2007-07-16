@@ -53,7 +53,6 @@ $puid_s=pg_escape_string($puid);
 $res = pg_query($bazaj, "select username, password from users where username='$uid_s' and password='$puid_s'");
 if (!$res) {
 	print "<h2>STOP: Internal system error(1.0)--</h2>";
-	echo pg_last_error();
 	exit;
 }
 
@@ -534,5 +533,14 @@ function verbose_split_line($in_minutes,$lang,$verb_h,$in_min) {
 
 }
 
+function cut_nick($nick) {
+
+	if (strlen($nick)> 25) {
+		$nick=substr($nick,0,25)."...";
+
+	}
+	
+	return $nick;
+}
 
 ?>

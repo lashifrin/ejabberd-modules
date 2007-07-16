@@ -49,9 +49,9 @@ for ($lt = 0; $lt < pg_numrows($res); $lt++) {
 	$predefined="from:$jid";
 	$predefined=encode_url($predefined,$token,$url_key);
 	print '<tr title="'.$con_title[$lang].'" style="cursor: pointer;" bgcolor="'.$col.'" onclick="window.open(\'search_v2.php?b='.$predefined.'\');" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#'.$col.'\';">';
-	print '<td><b>'.htmlspecialchars($nick).'</b></td>'."\n";
+	print '<td style="padding-left:7px"><b>'.cut_nick(htmlspecialchars($nick)).'</b></td>'."\n";
 	print '<td>(<i>'.htmlspecialchars($jid).'</i>)</td>'."\n";
-	print '<td style="text-align: center;">'.htmlspecialchars($grp).'</td>';
+	print '<td style="text-align: center;">'.cut_nick(htmlspecialchars($grp)).'</td>';
 	print '<td style="text-align: center;"><input type="checkbox" disabled="disabled"></td>'."\n";
 	print '</tr>'."\n";
 

@@ -86,7 +86,7 @@ if ($variables[ismylink]=="1") {
 	print htmlspecialchars($variables[lnk]).'&start='.htmlspecialchars($variables[strt]).'#'.htmlspecialchars($variables[linktag]).'"></td></tr>'."\n";
 	print '<tr><td height="5"></td></tr>'."\n";
 	print '<tr class="main_row_b"><td style="text-align:center;">'.$my_links_chat[$lang].'&nbsp;&nbsp;'."\n";
-	print '<b>'.htmlspecialchars($nickname).'</b> (<i>'.htmlspecialchars($jid).'</i>)</td></tr>'."\n";
+	print '<b>'.cut_nick(htmlspecialchars($nickname)).'</b> (<i>'.htmlspecialchars($jid).'</i>)</td></tr>'."\n";
 	print '<tr><td height="5"></td></tr>'."\n";
 	print '<tr><td colspan="3" align="center"><textarea class="ccc" name="desc" rows="4">'.$my_links_optional[$lang].'</textarea></td></tr>'."\n";
 	print '<tr><td colspan="3" align="center"><input name="trigger" class="red" type="submit" value="'.$my_links_commit[$lang].'">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
@@ -118,7 +118,7 @@ if (mysql_num_rows($result) == "0") { print '<br /><br /><center><b>'.$my_links_
 			print '<td><a href="main.php?a='.$entry['link'].'" target="_blank">'.pl_znaczki(verbose_date($entry['datat'],$lang)).'</a></td>';
 			$nickname=query_nick_name($bazaj,  $token,  get_user_name($entry[peer_name_id],$xmpp_host), get_server_name($entry[peer_server_id],$xmpp_host));
 			$jid=get_user_name($entry[peer_name_id],$xmpp_host).'@'.get_server_name($entry[peer_server_id],$xmpp_host);
-			print '<td>&nbsp;<b>'.htmlspecialchars($nickname).'</b> (<i>'.htmlspecialchars($jid).'</i>)&nbsp;</td>';
+			print '<td>&nbsp;<b>'.cut_nick(htmlspecialchars($nickname)).'</b> (<i>'.htmlspecialchars($jid).'</i>)&nbsp;</td>';
 			$opis=htmlspecialchars($entry[description]);
 			print '<td>&nbsp;'.$opis.'</td>';
 			print '<td><a href="my_links.php?del=t&link_id='.$entry[id_link].'" onClick="if (!confirm(\''.$del_conf_my_link[$lang].'\')) return false;" >&nbsp;'.$del_my_link[$lang].'&nbsp;</a></td>';

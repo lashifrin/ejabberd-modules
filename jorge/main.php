@@ -166,7 +166,7 @@ if ($tslice) {
 			$to_base2 = "$tslice@$entry[todaytalk]@$entry[server]@";
 			$to_base2 = encode_url($to_base2,$token,$url_key);
 			print '<tr>'."\n";
-			print '<td><a id="pretty" href="?a='.$to_base2.'" title="JabberID:;'.htmlspecialchars($user_name).'@'.htmlspecialchars($server_name).'">'.$bold_b.htmlspecialchars($nickname).$bold_e.'</a></td>'."\n";
+			print '<td><a id="pretty" href="?a='.$to_base2.'" title="JabberID:;'.htmlspecialchars($user_name).'@'.htmlspecialchars($server_name).'">'.$bold_b.cut_nick(htmlspecialchars($nickname)).$bold_e.'</a></td>'."\n";
 			print '</tr>'."\n";
 	}
 	print '</table>'."\n";
@@ -187,28 +187,6 @@ if ($talker) {
 	$talker_name = get_user_name($talker,$xmpp_host);
 	$server_name = get_server_name($server,$xmpp_host);
 	$nickname = query_nick_name($bazaj,$token,$talker_name,$server_name);
-	// dynamicly calculate row size depending on users name
-	$nick_size=strlen($nickname);
-	$token_size=strlen($token);
-	if ($nick_size>$token_size)
-		{
-		if ($nick_size>30) {
-				$row_size="30";
-				}
-				else{
-				$row_size=$nick_size;
-				}
-		}
-		elseif($nick_size<$token_size)
-		{
-		if ($token_size>30) {
-				$row_size="30";
-				}
-				else {
-				$row_size=$token_size;
-				}
-		}
-
 	if ($nickname=="f") { $nickname=$not_in_r[$lang]; }
 	print '<table id="maincontent" border="0" cellspacing="0" class="ff">'."\n";
 	print '<tr class="maint">'."\n";
@@ -258,8 +236,15 @@ if ($talker) {
 
 
 
-		if ($aa<2 AND $tt<2) { 
-		print '<td width="'.$row_size.'" style="padding-left: 5px; padding-right: 10px;"><pre>'.htmlspecialchars($out).'</pre><a name="'.$licz.'"></a></td>'."\n"; $here="1"; } else { print '<td style="text-align: right; padding-right: 5px">-</td>'."\n"; $here="0"; }
+		if ($aa<2 AND $tt<2) {
+			
+				print '<td style="padding-left: 5px; padding-right: 10px; nowrap="nowrap">'.cut_nick(htmlspecialchars($out)).'<a name="'.$licz.'"></a></td>'."\n"; 
+				$here="1"; 
+			} 
+			else 
+			{ 
+				print '<td style="text-align: right; padding-right: 5px">-</td>'."\n"; $here="0"; 
+			}
 
 		$new_s=htmlspecialchars($entry["body"]);
 		$to_r = array("\n");
