@@ -1,0 +1,39 @@
+Jorge by Zbyszek Zolkiewski (C) 2007
+
+About.
+ Jorge is set of php scripts/programs that are front-end for Oleg Palij mod_logdb (http://www.dp.uz.gov.ua/o.palij/mod_logdb/)
+It is still under strong development so use it at your own risk.
+
+ Jorge was written as "proof of concept" and can be used as an example: how to build applications for
+server-side message archivizing, browsing and searching.
+However i make lot of effortsment to provide as good quality of code as i can, ther can still be plenty of bugs, so
+beware of them.
+
+
+Licensing.
+ Jorge is distributed by GPL License provided in COPYING file as well in parts in all source files.
+Jorge uses jQuery library and some plugins, please read license info at http://docs.jquery.com/Licensing
+Jorge is using freeCap PHP CAPTCHA distributed on GPL License (http://www.puremango.co.uk/cm_php_captcha_script_113.php)
+
+Bug reporting:
+If you found any bug or have any improvement idea you can contact me at: zbyszek('at')toliman.pl
+
+Requirements:
+- working ejabberd server with current mod_logdb
+- ejabberd backend requirements: postgresql (other backends are not supported)
+- mysql server 4.1+ (currently only MySQL backend of mod_logdb is supported)
+- any http server supporting php 4.4 (tested only with 4.4.4) with gd, mcrypt,iconv support
+
+Client Requirements:
+- Jorge is tested and compatibile with: IE6+,Firefox 2+, Opera (..and Firefox is most recomended)
+- Web-browser _must_ have enabled javascript as Jorge strongly relay on jQuery and other js related scripts
+
+Installing:
+- copy Jorge files into your http server (sugested vhost over SSL connection)
+- set up database for Jorge (install/jorge.sql)
+- copy config.php.inc to config.php and edit file
+- convert mod_logdb database tables (*messages*) into MyISAM and add fulltext indexes. Script for that is provided into install direstory
+  edit it and run from console by php convert.php
+- patch mod_logdb - it is needed becouse by default mod_logdb use InnoDB engine witch does not support fulltext indexes
+- that's it!
+

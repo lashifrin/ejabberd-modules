@@ -1,0 +1,14 @@
+--- mod_logdb_mysql.erl.orginal	2007-07-11 20:06:18.000000000 +0200
++++ mod_logdb_mysql.erl	2007-07-12 08:29:56.000000000 +0200
+@@ -777,8 +777,9 @@
+                 "body TEXT, ",
+                 "timestamp DOUBLE, ",
+                 "INDEX owner_i (owner_id), ",
+-                "INDEX peer_i (peer_name_id, peer_server_id) ",
+-             ") ENGINE=InnoDB CHARACTER SET = utf8;"
++                "INDEX peer_i (peer_name_id, peer_server_id), ",
++		"FULLTEXT (body) ",
++             ") ENGINE=MYISAM CHARACTER SET = utf8;"
+             ],
+     case sql_query_internal(DBRef, Query) of
+          {updated, _MySQLRes} ->

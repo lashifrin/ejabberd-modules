@@ -1,0 +1,43 @@
+Jorge - alpha
+
+Updated: 04/07/2007
+
+ToDo list for beta front-end for mod_logdb:
+
+- threads in chat view (done) *
+- option for deleting chats (done) *
+- profiled message saving
+- tree view in archive browser (done) *
+- more search options: time, time&from, time&from&keyword (moved to beta)
+- possible jQuery interface? (not for now)
+- switch to AES encryption  (done) *
+- new look (done) *
+- more functions, less code garbage (done) *
+- finish offline message browser & replaying (moved to beta)
+- message text formating (done) *
+- additionaly security review to ensure that ther's no drawback in security functions
+- optimize sql queries in message browser - too many loops out þhere (done)*
+- quick search (done) *
+- multi language support (done) *
+- unique all links (now missing in my_links and some parts of main)
+- add config file - it must be done before beta
+- embended multimedia players (mp3, flash...)
+
+Known issues:
+
+- missing delete on empty archives (done) *
+- missing thread view in search with "from:" clausule (done) *
+- missing pagination in search results (done) *
+- not fully internationalized login page (done) *
+
+Amusements:
+
+- no. of messages in days/mylinks (done) *
+- own styles/colors
+- customized no. of results on page
+
+
+We need lot of testing!!!
+
+
+Zbyszek ¯ó³kiewski

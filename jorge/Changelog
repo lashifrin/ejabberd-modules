@@ -1,0 +1,49 @@
+------------------------------------------------------------------------
+r9 | kolargol | 2007-06-17 03:07:08 +0200 (Sun, 17 Jun 2007) | 4 lines
+
+changed max char in mylinks from 60 to 120
+updated todo list
+
+
+------------------------------------------------------------------------
+r8 | kolargol | 2007-06-17 02:57:03 +0200 (Sun, 17 Jun 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r7 | kolargol | 2007-06-17 02:56:31 +0200 (Sun, 17 Jun 2007) | 3 lines
+
+added "MyLinks" feature. You can save your links as "favorites" in special place in system, you can add comment and so one
+fixed minor bugs
+
+------------------------------------------------------------------------
+r6 | kolargol | 2007-06-16 21:42:37 +0200 (Sat, 16 Jun 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r5 | kolargol | 2007-06-16 21:41:14 +0200 (Sat, 16 Jun 2007) | 3 lines
+
+small bugfix in search results
+added parsing function to search results
+
+------------------------------------------------------------------------
+r4 | kolargol | 2007-06-16 21:36:33 +0200 (Sat, 16 Jun 2007) | 2 lines
+
+reworked some menu things...
+
+------------------------------------------------------------------------
+r3 | kolargol | 2007-06-16 20:44:56 +0200 (Sat, 16 Jun 2007) | 2 lines
+
+adding changelog
+
+------------------------------------------------------------------------
+r2 | kolargol | 2007-06-16 20:43:26 +0200 (Sat, 16 Jun 2007) | 2 lines
+
+some cleaning 
+
+------------------------------------------------------------------------
+r1 | kolargol | 2007-06-16 20:29:58 +0200 (Sat, 16 Jun 2007) | 3 lines
+
+this is initial commit. we spliting work over the front-end into 2 versions: public alpha and stron development one.
+
+
+------------------------------------------------------------------------
