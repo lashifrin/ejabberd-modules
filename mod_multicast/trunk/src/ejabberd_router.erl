@@ -72,7 +72,7 @@ route_multiple(Server_host, From, Destinations, Packet) ->
 find_multicast_service(Server_host) ->
 	Proc = gen_mod:get_module_proc(Server_host, ?PROCNAME_MULTICAST),
 	case catch Proc ! {get_host, self()} of
-		{'ERROR', _} -> false;
+		{'EXIT', _} -> false;
 		{get_host, _} -> 
 			receive {my_host, Multicast} -> Multicast end,
 			{true, Multicast}
