@@ -20,7 +20,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 */
 
-
 include("func.php");
 $time_start=getmicrotime(); // debuging info _start_
 include("sessions.php"); // sessions handling

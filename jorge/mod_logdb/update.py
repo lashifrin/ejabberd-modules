@@ -2,12 +2,12 @@
 from optparse import OptionParser
 import os, MySQLdb, logging, sys, re
 
-user="root"
-passwd="gonduras"
-dbname="logdb"
-host="localhost"
+user=""
+passwd=""
+dbname=""
+host=""
 port=3306
-vhost="jabber.dp.uz.gov.ua"
+vhost=""
 
 parser = OptionParser()
 parser.add_option("-f", "--force",

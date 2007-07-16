@@ -1,14 +1,13 @@
 Jorge by Zbyszek Zolkiewski (C) 2007
 
 About.
- Jorge is set of php scripts/programs that are front-end for Oleg Palij mod_logdb.
+ Jorge is set of php scripts that are front-end for Oleg Palij mod_logdb.
 It is still under strong development so use it at your own risk.
 
  Jorge was written as "proof of concept" and can be used as an example: how to build applications for
-server-side message archivizing, browsing and searching.
-However i make lot of effortsment to provide as good quality of code as i can, ther can still be plenty of bugs, so
+server-side message archiving, browsing and searching.
+However i make lot of effortsment to provide as good quality of code as i can, there can still be plenty of bugs, so
 beware of them.
-
 
 Licensing.
  Jorge is distributed by GPL License provided in COPYING file as well in parts in all source files.
@@ -19,7 +18,7 @@ Bug reporting:
 If you found any bug or have any improvement idea you can contact me at: zbyszek('at')toliman.pl
 
 Requirements:
-- working ejabberd server with current mod_logdb
+- working ejabberd server with current mod_logdb (compatibile version is bundled with Jorge)
 - ejabberd backend requirements: postgresql (other backends are not supported)
 - mysql server 4.1+ (currently only MySQL backend of mod_logdb is supported)
 - any http server supporting php 4.4 (tested only with 4.4.4) with gd, mcrypt,iconv support
@@ -29,7 +28,7 @@ Client Requirements:
 - Web-browser _must_ have enabled javascript as Jorge strongly relay on jQuery and other js related scripts
 
 Installing:
-- copy Jorge files into your http server (sugested vhost over SSL connection)
+- copy Jorge files into your http server (sugested vhost over SSL connection). There is sample .htaccess file - showing how to rewrite port 80 to 443
 - set up database for Jorge (install/jorge.sql)
 - copy config.php.inc to config.php and edit file
 - convert mod_logdb database tables (*messages*) into MyISAM and add fulltext indexes. Script for that is provided into install direstory

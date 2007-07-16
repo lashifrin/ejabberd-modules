@@ -72,7 +72,7 @@ if ($j_uid!=$uid)
 	
 	else 
 	{ 
-		if ($puid_s==$j_puid) {
+		if ($puid_s===$j_puid) {
 			return "t";
 			}
 			else
@@ -81,6 +81,8 @@ if ($j_uid!=$uid)
 			}
 	}
 
+
+return "f";
 
 }
 
