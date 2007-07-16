@@ -1,7 +1,7 @@
 Jorge by Zbyszek Zolkiewski (C) 2007
 
 About.
- Jorge is set of php scripts/programs that are front-end for Oleg Palij mod_logdb (http://www.dp.uz.gov.ua/o.palij/mod_logdb/)
+ Jorge is set of php scripts/programs that are front-end for Oleg Palij mod_logdb.
 It is still under strong development so use it at your own risk.
 
  Jorge was written as "proof of concept" and can be used as an example: how to build applications for
