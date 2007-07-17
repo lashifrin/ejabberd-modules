@@ -587,29 +587,19 @@ send_query(RServerS, LServiceS, XMLNS) ->
 %%% Check protocol support: Receive response: Error
 %%%-------------------------
 
-%% Some kind of error, probably it's fault of the original sender
-%% Let's send this packet to the original sender
-% TODO: Don't forward to the user the errors that are iq:..., 
-% because they are due to our iq:query requests
-process_iqreply_error(From, To, Packet) ->
+%% TODO: If it's a server, and does not exist, don't store on cache
+process_iqreply_error(From, To, _Packet) ->
 	% We don't need to change the TO attribute in the outgoing XMPP packet,
 	% since ejabberd will do it
 
 	% We do not change the From attribute in the outgoing XMPP packet,
 	% this way the user will know what server reported the error
 
-	% TODO: Add the addresses element to this error packet
-
-	% Get the original user that sended the message
 	FromS = jlib:jid_to_string(From),
 	case search_waiter(FromS, info) of
 		{found_waiter, Waiter} ->
-			ToUser = Waiter#waiter.sender,
-
 			LServiceS = jlib:jid_to_string(To),
-			received_awaiter(FromS, Waiter, LServiceS),
-
-			ejabberd_router:route(From, ToUser, Packet);
+			received_awaiter(FromS, Waiter, LServiceS);
 		_ -> ok
 	end.
 
