@@ -15,7 +15,8 @@ Jorge uses jQuery library and some plugins, please read license info at http://d
 Jorge is using freeCap PHP CAPTCHA distributed on GPL License (http://www.puremango.co.uk/cm_php_captcha_script_113.php)
 
 Bug reporting:
-If you found any bug or have any improvement idea you can contact me at: zbyszek('at')toliman.pl
+If you found any bug or have any improvement idea you can contact me at: zbyszek('at')toliman.pl or via JID: kolargol@jabber.autocom.pl
+Patches are most welcome.
 
 Requirements:
 - working ejabberd server with current mod_logdb (compatibile version is bundled with Jorge)
@@ -36,3 +37,9 @@ Installing:
 - patch mod_logdb - it is needed becouse by default mod_logdb use InnoDB engine witch does not support fulltext indexes
 - that's it!
 
+
+!!!SECURITY NOTICE!!!
+
+This scripts was written in enviroment that has registered_globals set to off and it is good practise to leave that setting intact.
+Also please note if you have enabled qpc_magic_quotes() as this can break code in some places.
+Before use: check your server enviroment thoroughly for potencial security risk.

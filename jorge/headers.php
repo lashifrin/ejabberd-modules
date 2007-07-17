@@ -20,6 +20,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 */
 
+$token=""; // initialize token variable
+$user_id=""; // initialize user_id
+$owner_id=""; // initialize owner_id;
+$talker=""; // initialize talker
+$tslice=""; // initialize tslice
+
 include("func.php");
 $time_start=getmicrotime(); // debuging info _start_
 include("sessions.php"); // sessions handling
@@ -85,6 +91,20 @@ $lang=$sess->get('language');
 	<script src="lib/jquery.tooltip.js" type="text/javascript"></script>
 	<script type="text/javascript" src="lib/jquery.quicksearch.js"></script>
 	<script type="text/javascript" src="lib/hl.js"></script>
+
+<?
+// prevent loading includes as long as user is not admin.
+if ($token==$admin_name) {
+?>
+	<script type="text/javascript" src="lib/excanvas.js"></script>
+	<script type="text/javascript" src="lib/chart.js"></script>
+	<script type="text/javascript" src="lib/canvaschartpainter.js"></script>
+	<link rel="stylesheet" type="text/css" href="canvaschart.css" />
+<?
+}
+?>
+
+
 	<title>Jorge - alpha release</title>
         <script type="text/javascript">
             $(function() {
