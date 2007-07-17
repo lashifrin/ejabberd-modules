@@ -45,6 +45,13 @@
 %%  after being updated, possible values are: local | multicast_not_supported | {multicast_supported, string()}
 
 -record(waiter, {awaiting, group, renewal=false, sender, packet}).
+%% awaiting = {[Remote_service], Local_service, Type_awaiting}
+%%  Remote_service = Local_service = string()
+%%  Type_awaiting = info | items
+%% group = #group
+%% renewal = true | false
+%% sender = From
+%% packet = xml()
 
 -define(VERSION_MULTICAST, "$Revision$").
 -define(PROCNAME, ejabberd_mod_multicast).
@@ -158,9 +165,10 @@ handle_info({route, From, To, {xmlelement, "iq", Attrs, _Els} = Packet}, State) 
 			Err = jlib:make_error_reply(Packet, ?ERR_INTERNAL_SERVER_ERROR),
 			ejabberd_router:route(To, From, Err);
 		reply ->
+			LServiceS = jlib:jid_to_string(To),
 			case xml:get_attr_s("type", Attrs) of
-				"result" -> process_iqreply_result(From, To, Packet, State);
-				"error" -> process_iqreply_error(From, To, Packet)
+				"result" -> process_iqreply_result(From, LServiceS, Packet, State);
+				"error" -> process_iqreply_error(From, LServiceS, Packet)
 			end
 	end,
 	{noreply, State};
@@ -452,7 +460,7 @@ process_group(LServiceS, From, Packet, Group) ->
 		{obsolete, not_supported} ->
  			send_query_info(Server, LServiceS),
  			add_waiter(#waiter{
-				awaiting = {[Server], info},
+				awaiting = {[Server], LServiceS, info},
 				group = Group,
 				renewal = false,
 				sender = From,
@@ -462,7 +470,7 @@ process_group(LServiceS, From, Packet, Group) ->
 		{obsolete, {multicast_supported, Old_service}} ->
  			send_query_info(Old_service, LServiceS),
  			add_waiter(#waiter{
-				awaiting = {[Old_service], info},
+				awaiting = {[Old_service], LServiceS, info},
 				group = Group,
 				renewal = true,
 				sender = From,
@@ -472,7 +480,7 @@ process_group(LServiceS, From, Packet, Group) ->
 		not_cached ->
  			send_query_info(Server, LServiceS),
  			add_waiter(#waiter{
-				awaiting = {[Server], info},
+				awaiting = {[Server], LServiceS, info},
 				group = Group,
 				renewal = false,
 				sender = From,
@@ -587,18 +595,16 @@ send_query(RServerS, LServiceS, XMLNS) ->
 %%% Check protocol support: Receive response: Error
 %%%-------------------------
 
-%% TODO: If it's a server, and does not exist, don't store on cache
-process_iqreply_error(From, To, _Packet) ->
+process_iqreply_error(From, LServiceS, _Packet) ->
 	% We don't need to change the TO attribute in the outgoing XMPP packet,
 	% since ejabberd will do it
 
-	% We do not change the From attribute in the outgoing XMPP packet,
+	% We do not change the FROM attribute in the outgoing XMPP packet,
 	% this way the user will know what server reported the error
 
 	FromS = jlib:jid_to_string(From),
-	case search_waiter(FromS, info) of
+	case search_waiter(FromS, LServiceS, info) of
 		{found_waiter, Waiter} ->
-			LServiceS = jlib:jid_to_string(To),
 			received_awaiter(FromS, Waiter, LServiceS);
 		_ -> ok
 	end.
@@ -608,13 +614,13 @@ process_iqreply_error(From, To, _Packet) ->
 %%% Check protocol support: Receive response: Disco
 %%%-------------------------
 
-process_iqreply_result(From, To, Packet, State) ->
+process_iqreply_result(From, LServiceS, Packet, State) ->
 	{xmlelement, "query", Attrs2, Els2} = xml:get_subtag(Packet, "query"),
 	case xml:get_attr_s("xmlns", Attrs2) of
 		?NS_DISCO_INFO ->
-			process_discoinfo_result(From, To, Els2, State);
+			process_discoinfo_result(From, LServiceS, Els2, State);
 		?NS_DISCO_ITEMS ->
-			process_discoitems_result(From, To, Els2)
+			process_discoitems_result(From, LServiceS, Els2)
 	end.
 
 
@@ -622,16 +628,16 @@ process_iqreply_result(From, To, Packet, State) ->
 %%% Check protocol support: Receive response: Disco Info
 %%%-------------------------
 
-process_discoinfo_result(From, To, Els, _State) ->
+process_discoinfo_result(From, LServiceS, Els, _State) ->
 	FromS = jlib:jid_to_string(From),
-	case search_waiter(FromS, info) of
+	case search_waiter(FromS, LServiceS, info) of
 		{found_waiter, Waiter} ->
-			process_discoinfo_result2(FromS, To, Els, Waiter);
+			process_discoinfo_result2(FromS, LServiceS, Els, Waiter);
 		_ -> 
 			ok
 	end.
 
-process_discoinfo_result2(FromS, To, Els, Waiter) ->
+process_discoinfo_result2(FromS, LServiceS, Els, Waiter) ->
 	% Check the response, to see if it includes the XEP33 feature. If support ==
 	Multicast_support = lists:any(
 		fun(XML) ->
@@ -645,7 +651,6 @@ process_discoinfo_result2(FromS, To, Els, Waiter) ->
 
 	Group = Waiter#waiter.group,
 	RServer = Group#group.server,
-	LServiceS = jlib:jid_to_string(To),
 
 	case Multicast_support of
 		true -> 
@@ -677,7 +682,7 @@ process_discoinfo_result2(FromS, To, Els, Waiter) ->
 					% Store on Pool
 					delo_waiter(Waiter),
 					add_waiter(Waiter#waiter{
-						awaiting = {[FromS], items},
+						awaiting = {[FromS], LServiceS, items},
 						renewal = false
 					});
 
@@ -693,7 +698,7 @@ process_discoinfo_result2(FromS, To, Els, Waiter) ->
 %%% Check protocol support: Receive response: Disco Items
 %%%-------------------------
 
-process_discoitems_result(From, To, Els) ->
+process_discoitems_result(From, LServiceS, Els) ->
 
 	% Convert list of xmlelement into list of strings
 	List = lists:foldl(
@@ -709,16 +714,15 @@ process_discoitems_result(From, To, Els) ->
 		Els),
 
 	% Send disco#info queries to each item
-	LServiceS = jlib:jid_to_string(To),
 	[send_query_info(Item, LServiceS) || Item <- List],
 			
-	% Search who was awaiting a disco#items response from this JID (awaiting == {items, JID})
+	% Search who was awaiting a disco#items response from this JID
 	FromS = jlib:jid_to_string(From),
-	{found_waiter, Waiter} = search_waiter(FromS, items),
+	{found_waiter, Waiter} = search_waiter(FromS, LServiceS, items),
 
 	delo_waiter(Waiter),
  	add_waiter(Waiter#waiter{
-		awaiting = {List, info},
+		awaiting = {List, LServiceS, info},
 		renewal = false
 	}).
 
@@ -728,7 +732,7 @@ process_discoitems_result(From, To, Els) ->
 %%%-------------------------
 
 received_awaiter(JID, Waiter, LServiceS) ->
-	{JIDs, info} = Waiter#waiter.awaiting,
+	{JIDs, LServiceS, info} = Waiter#waiter.awaiting,
 	delo_waiter(Waiter),
 	Group = Waiter#waiter.group,
 	RServer = Group#group.server,
@@ -754,7 +758,7 @@ received_awaiter(JID, Waiter, LServiceS) ->
 					% said it would support XEP33, but it doesn't!
 					send_query_info(RServer, LServiceS),
 					add_waiter(Waiter#waiter{
-						awaiting = {[RServer], info},
+						awaiting = {[RServer], LServiceS, info},
 						renewal = false
 					})
 			end;
@@ -762,7 +766,7 @@ received_awaiter(JID, Waiter, LServiceS) ->
 		JIDs2 ->
 			% Maybe other component on the server supports XEP33
 			add_waiter(Waiter#waiter{
-				awaiting = {JIDs2, info},
+				awaiting = {JIDs2, LServiceS, info},
 				renewal = false
 			})
 	end.
@@ -895,11 +899,12 @@ delo_waiter(Waiter) ->
 
 % Search on the Pool who is waiting for this result
 % If there are several matches, pick the first one only
-search_waiter(JID, Type) ->
+search_waiter(JID, LServiceS, Type) ->
 	Rs = ets:foldl(
 		fun(W, Res) ->
-			{JIDs, Type1} = W#waiter.awaiting,
+			{JIDs, LServiceS1, Type1} = W#waiter.awaiting,
 			case lists:member(JID, JIDs) 
+				and (LServiceS == LServiceS1)
 				and (Type1 == Type) of
 				true -> Res ++ [W];
 				false -> Res
