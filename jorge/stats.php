@@ -46,9 +46,9 @@ print "<h2>Stats for: ".str_replace("_",".",$xmpp_host)."</h2>";
 print '<table class="ff">'."\n";
 print '<tr><td>'."\n";
 print '<p><b>Number of user using message archiving:</b></p>'."\n";
-print '<div id="chart" class="chart" style="width: 1000px; height: 200px;"></div>'."\n";
+print '<div id="chart" class="chart" style="width: 1000px; height: 200px; font-size: 8pt;"></div>'."\n";
 print '<p><b>Number of messages logged by server:</b></p>';
-print '<div id="messages" class="chart" style="width: 1000px; height: 200px;"></div>'."\n";
+print '<div id="messages" class="chart" style="width: 1000px; height: 250px; font-size: 8pt;"></div>'."\n";
 print '</td>';
 print '<td style="padding-left: 30px">'."\n";
 print '<div><b>Top ten talkers today:</b><br><br>'."\n";
@@ -101,7 +101,7 @@ print '</tr></table>'."\n";
 	var b = new Chart(document.getElementById('messages'));
 				b.setDefaultType(CHART_LINE);
 				b.setGridDensity(32, 10);
-				<? print "b.setVerticalRange(0, $maximum_a);"; ?>	
+				<? print "b.setVerticalRange(0, $maximum_b);"; ?>	
 				b.setHorizontalLabels(['30','29','28','27','26','25','24','23','22','21','22','21','20','19','18','17','16','15','14','13','12','11','10','9','8','7','6', '5', '4', '3', '2', '1']);
 				<? print "b.add ('Last 30 days', '#3480ff', ["; 
 			
