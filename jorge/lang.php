@@ -373,14 +373,10 @@ $help_advanced_tips[eng] = "
 </ul>
 
 
-
-
-
-
-
 ";
 
-
+$admin_site_gen[pol] = pl_znaczki("Strona zosta³a wygenerowana w: ");
+$admin_site_gen[eng] = "Site generated in:";
 
 
 

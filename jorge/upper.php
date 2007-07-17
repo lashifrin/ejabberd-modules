@@ -44,7 +44,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
 		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
-		if ($token==$admin_name) { $loc6='<a href="admin.php"> | Admin</a>'; }
+		if ($token==$admin_name) { $loc6='<a href="stats.php"> | Stats</a>'; }
 	}
 	elseif(preg_match("/main.php/i",$location))
 	{
@@ -53,7 +53,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
 		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
-		if ($token==$admin_name) { $loc6='<a href="admin.php"> | Admin</a>'; }
+		if ($token==$admin_name) { $loc6='<a href="stats.php"> | Stats</a>'; }
 
 	}
 	elseif(preg_match("/my_links.php/i",$location))
@@ -63,7 +63,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$loc3='<b>'.$menu_item3[$lang].' ('.$my_links_count.') </b>';
 		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
 		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
-		if ($token==$admin_name) { $loc6='<a href="admin.php"> | Admin</a>'; }
+		if ($token==$admin_name) { $loc6='<a href="stats.php"> | Stats</a>'; }
 
 
 	}
@@ -74,7 +74,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<b>'.$menu_item4[$lang].'</b>';
 		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
-		if ($token==$admin_name) { $loc6='<a href="admin.php"> | Admin</a>'; }
+		if ($token==$admin_name) { $loc6='<a href="stats.php"> | Stats</a>'; }
 
 
 	}
@@ -85,7 +85,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
 		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
-		if ($token==$admin_name) { $loc6='<a href="admin.php"> | Admin</a>'; }
+		if ($token==$admin_name) { $loc6='<a href="stats.php"> | Stats</a>'; }
 
 	}
 	elseif(preg_match("/contacts.php/i", $location))
@@ -95,17 +95,17 @@ if (preg_match("/search_v2.php/i",$location))
 		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
 		$loc5='<b>'.$menu_item5[$lang].'</b>';
-		if ($token==$admin_name) { $loc6='<a href="admin.php"> | Admin</a>'; }
+		if ($token==$admin_name) { $loc6='<a href="stats.php"> | Stats</a>'; }
 
 	}
-	elseif(preg_match("/admin.php/i", $location))
+	elseif(preg_match("/stats.php/i", $location))
 	{
 		$loc1='<a href="main.php">'.$menu_item1[$lang].'</a>';
 		$loc2='<a href="search_v2.php">'.$menu_item2[$lang].'</a>';
 		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
 		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
-		if ($token==$admin_name) { $loc6=' | <b>Admin</b></a>'; }
+		if ($token==$admin_name) { $loc6=' | <b>Stats</b></a>'; }
 
 		
 	}

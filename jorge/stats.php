@@ -42,7 +42,7 @@ while ($entry=mysql_fetch_array($result)) {
 
 $maximum_a = max($e);
 $maximum_b = max($d);
-
+print "<h2>Stats for: ".str_replace("_",".",$xmpp_host)."</h2>";
 print '<table class="ff">'."\n";
 print '<tr><td>'."\n";
 print '<p><b>Number of user using message archiving:</b></p>'."\n";
