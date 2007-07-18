@@ -108,25 +108,25 @@ $result=mysql_query($query);
 if (mysql_num_rows($result) == "0") { print '<br /><br /><center><b>'.$my_links_no_links[$lang].'</b></center>'; }
 	else {
 
-		print '<center>';
-		print '<br /><br />';
-		print '<table class="ff">';
-		print '<tr class="maint"><td>'.$my_links_link[$lang].'</td><td>'.$my_links_chat[$lang].'</td><td>'.$my_links_desc[$lang].'</td></tr>';
+		print '<center>'."\n";
+		print '<br /><br />'."\n";
+		print '<table class="ff">'."\n";
+		print '<tr class="maint"><td>'.$my_links_link[$lang].'</td><td>'.$my_links_chat[$lang].'</td><td>'.$my_links_desc[$lang].'</td></tr>'."\n";
 		while ($entry = mysql_fetch_array($result)) {
 
-			print '<tr bgcolor="#e8eef7" onMouseOver="this.bgColor=\'c3d9ff\';"onMouseOut="this.bgColor=\'#e8eef7\';" >';
-			print '<td><a href="main.php?a='.$entry['link'].'" target="_blank">'.pl_znaczki(verbose_date($entry['datat'],$lang)).'</a></td>';
+			print '<tr style="cursor: pointer;" bgcolor="#e8eef7" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#e8eef7\';">'."\n";
+			print '<td onclick="window.open(\'main.php?a='.$entry['link'].'\');" style="padding-left: 10px; padding-right: 10px">'.pl_znaczki(verbose_date($entry['datat'],$lang)).'</td>'."\n";
 			$nickname=query_nick_name($bazaj,  $token,  get_user_name($entry[peer_name_id],$xmpp_host), get_server_name($entry[peer_server_id],$xmpp_host));
 			$jid=get_user_name($entry[peer_name_id],$xmpp_host).'@'.get_server_name($entry[peer_server_id],$xmpp_host);
-			print '<td>&nbsp;<b>'.cut_nick(htmlspecialchars($nickname)).'</b> (<i>'.htmlspecialchars($jid).'</i>)&nbsp;</td>';
+			print '<td onclick="window.open(\'main.php?a='.$entry['link'].'\');">&nbsp;<b>'.cut_nick(htmlspecialchars($nickname)).'</b> (<i>'.htmlspecialchars($jid).'</i>)&nbsp;</td>'."\n";
 			$opis=htmlspecialchars($entry[description]);
-			print '<td>&nbsp;'.$opis.'</td>';
-			print '<td><a href="my_links.php?del=t&link_id='.$entry[id_link].'" onClick="if (!confirm(\''.$del_conf_my_link[$lang].'\')) return false;" >&nbsp;'.$del_my_link[$lang].'&nbsp;</a></td>';
-			print '</tr>';
+			print '<td onclick="window.open(\'main.php?a='.$entry['link'].'\');">&nbsp;'.$opis.'</td>'."\n";
+			print '<td><a href="my_links.php?del=t&link_id='.$entry[id_link].'" onClick="if (!confirm(\''.$del_conf_my_link[$lang].'\')) return false;" >&nbsp;'.$del_my_link[$lang].'&nbsp;</a></td>'."\n";
+			print '</tr>'."\n";
 		}
 
-	print '</table>';
-	print '</center>';
+	print '</table>'."\n";
+	print '</center>'."\n";
 	}
 
 

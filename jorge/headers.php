@@ -25,6 +25,7 @@ $user_id=""; // initialize user_id
 $owner_id=""; // initialize owner_id;
 $talker=""; // initialize talker
 $tslice=""; // initialize tslice
+$xmpp_host=""; // initialize hostname
 
 include("func.php");
 $time_start=getmicrotime(); // debuging info _start_
@@ -40,7 +41,6 @@ db_connect($mod_logdb);
 
 // user name - we hold it in session, lets fetch it...
 $token=$sess->get('uid_l');
-
 
 // authentication checks. Ensure if session data is not altered... (only when we are inside Jorge)
 if (!preg_match("/index.php/i",$_SERVER['PHP_SELF'])) {
@@ -91,7 +91,6 @@ $lang=$sess->get('language');
 	<script src="lib/jquery.tooltip.js" type="text/javascript"></script>
 	<script type="text/javascript" src="lib/jquery.quicksearch.js"></script>
 	<script type="text/javascript" src="lib/hl.js"></script>
-
 <?
 // prevent loading includes as long as user is not admin.
 if ($token==$admin_name) {
@@ -103,8 +102,6 @@ if ($token==$admin_name) {
 <?
 }
 ?>
-
-
 	<title>Jorge - alpha release</title>
         <script type="text/javascript">
             $(function() {
