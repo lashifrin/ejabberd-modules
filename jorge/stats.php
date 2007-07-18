@@ -24,8 +24,6 @@ include ("upper.php");
 
 if ($admin_name!=$token) { print 'no access'; exit; }
 
-$today="";
-
 $today = date("Y-n-d");
 
 $top_ten_talkers_today="select at, owner_id, count from `messages-stats_$xmpp_host` where at = '$today' order by count desc limit 10";
@@ -42,7 +40,8 @@ while ($entry=mysql_fetch_array($result)) {
 
 $maximum_a = max($e);
 $maximum_b = max($d);
-print "<h2>Stats for: ".str_replace("_",".",$xmpp_host)."</h2>";
+
+print "<h2>Stats for: ".$xmpp_host_dotted."</h2>";
 print '<table class="ff">'."\n";
 print '<tr><td style="padding-left: 10px">'."\n";
 print '<p><b>Number of user using message archiving:</b></p>'."\n";
@@ -58,7 +57,7 @@ $i=0;
 while ($entry=mysql_fetch_array($result)) {
 	
 	$i++;
-	print "<b>".$i.".</b> ".get_user_name($entry[owner_id],$xmpp_host)."@".$xmpp_host." (<i>$entry[count]</i>)<br>"."\n";
+	print "<b>".$i.".</b> ".get_user_name($entry[owner_id],$xmpp_host)."@".$xmpp_host_dotted." (<i>$entry[count]</i>)<br>"."\n";
 
 }
 print '</div>'."\n";
@@ -69,7 +68,7 @@ $result=mysql_query($top_ten_talkers_yesterday);
 while ($entry=mysql_fetch_array($result)) {
 
 	$i++;
-	print "<b>".$i.".</b> ".get_user_name($entry[owner_id],$xmpp_host)."@".$xmpp_host." (<i>$entry[count]</i>)<br>"."\n";
+	print "<b>".$i.".</b> ".get_user_name($entry[owner_id],$xmpp_host)."@".$xmpp_host_dotted." (<i>$entry[count]</i>)<br>"."\n";
 	
 }
 

@@ -32,6 +32,9 @@ $time_start=getmicrotime(); // debuging info _start_
 include("sessions.php"); // sessions handling
 include("config.php"); // read configuration
 
+// make dotted domaniname
+$xmpp_host_dotted=str_replace("_",".",$xmpp_host);
+
 // init session
 $sess = new session;
 

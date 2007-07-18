@@ -121,7 +121,7 @@ print '<table border="0" cellspacing="0" class="ff" width="100%">'."\n";
 print '<tr>'."\n";
 print '<td style="text-align: left;">'.$loc1.' | '.$loc2.' | '.$loc3.' | '.$loc5.' | '.$loc4.$loc6.'</td>'."\n";
 print '<td style="text-align: right;">'."\n";
-print '<b>'.$token.'@'.str_replace("_",".",$xmpp_host).'</b>&nbsp; | &nbsp;';
+print '<b>'.$token.'@'.$xmpp_host_dotted.'</b>&nbsp; | &nbsp;';
 print $ch_lan[$lang];
 print ' <a href="'.$location.'?a='.$link_sw.'&sw_lang=t'.$cur_loc.'">'.$lang_sw[$lang].'</a>&nbsp; | &nbsp;';
 print '<a href="help.php" target="_blank">'.$help_but[$lang].'</a>&nbsp; | &nbsp;<a href="index.php?act=logout">'.$log_out_b[$lang].'</a></td>';
