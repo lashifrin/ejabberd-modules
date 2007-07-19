@@ -154,7 +154,7 @@ $tslice_table='messages_'.$xmpp_host.'_'.$tslice;
 if ($tslice) {
 	$result=db_q($user_id,$server,$tslice_table,$talker,$search_p,"2");
 	if ($result=="f") { header ("Location: main.php");  }
-	print '<td valign="top">'."\n";
+	print '<td valign="top" style="padding-top: 15px;">'."\n";
 	print '<table class="ff">'."\n";
 	while ($entry = mysql_fetch_array($result))
 	{
@@ -250,7 +250,6 @@ if ($talker) {
 		$to_r = array("\n");
 		$t_ro = array("<br>");
 		$new_s=str_replace($to_r,$t_ro,$new_s);
-		#$new_s=parse_urls($new_s); // temp disabled
 		$new_s=wordwrap($new_s,107,"<br>",true);
 		print '<td width="800" colspan="2">'.$new_s.'</td>'."\n";
 		$lnk=encode_url("$tslice@$entry[peer_name_id]@$entry[peer_server_id]@",$ee,$url_key);

@@ -117,7 +117,7 @@ print '</tr></table>';
     echo '<center>'."\n";
     echo '<form action="index.php" method="post">'."\n";
     echo '<br /><br /><table class="ff" border="0" cellspacing="0" cellpadding="0">'."\n";
-    echo '<tr><td align="right">'.$login_w[$lang].'&nbsp;</td><td><input name="inpLogin" value="'.$_POST[inpLogin].'" class="log" ></td><td>@'.str_replace("_",".",$xmpp_host).'</td></tr>'."\n";
+    echo '<tr><td align="right">'.$login_w[$lang].'&nbsp;</td><td><input name="inpLogin" value="'.$_POST[inpLogin].'" class="log" ></td><td>@'.$xmpp_host_dotted.'</td></tr>'."\n";
     echo '<tr height="3" ><td></td></tr>';
     echo '<tr><td align="right">'.$passwd_w[$lang].'&nbsp;</td><td><input name="inpPass" type="password" class="log"></td></tr>'."\n";
     echo '<tr height="10"><td></td></tr>';
