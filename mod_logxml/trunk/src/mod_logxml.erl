@@ -3,16 +3,16 @@
 %%% Author  : Badlop
 %%% Purpose : Log XMPP packets to XML file
 %%% Created : 
-%%% Id      : 0.2.3
+%%% Id      : 
 %%%----------------------------------------------------------------------
 
 -module(mod_logxml).
 -author('').
--vsn('0.2.3').
+-vsn('0.2.4').
 
 -behaviour(gen_mod).
 
--export([start/2, init/6, stop/1,
+-export([start/2, init/7, stop/1,
 	send_packet/3, receive_packet/4]).
 
 -include("ejabberd.hrl").
@@ -48,11 +48,12 @@ start(Host, Opts) ->
 		{orientation, Orientation},
 		{stanza, Stanza},
 		{direction, Direction}},
+	ShowIP = gen_mod:get_opt(show_ip, Opts, false),
 
 	ejabberd_hooks:add(user_send_packet, Host, ?MODULE, send_packet, 90),
 	ejabberd_hooks:add(user_receive_packet, Host, ?MODULE, receive_packet, 90),
 	register(gen_mod:get_module_proc(Host, ?PROCNAME),
-		spawn(?MODULE, init, [Host, Logdir, RotateO, CheckRKP, Timezone, FilterO])).
+		spawn(?MODULE, init, [Host, Logdir, RotateO, CheckRKP, Timezone, ShowIP, FilterO])).
 
 stop(Host) ->
     ejabberd_hooks:delete(user_send_packet, Host, ?MODULE, send_packet, 90),
@@ -61,9 +62,9 @@ stop(Host) ->
     Proc ! stop,
     {wait, Proc}.
 
-init(Host, Logdir, RotateO, CheckRKP, Timezone, FilterO) ->
+init(Host, Logdir, RotateO, CheckRKP, Timezone, ShowIP, FilterO) ->
 	{IoDevice, Filename, Gregorian_day} = open_file(Logdir, Host, Timezone),
-	loop(Host, IoDevice, Filename, Logdir, CheckRKP, RotateO, 0, Gregorian_day, Timezone, FilterO).
+	loop(Host, IoDevice, Filename, Logdir, CheckRKP, RotateO, 0, Gregorian_day, Timezone, ShowIP, FilterO).
 
 %% -------------------
 %% Main
@@ -128,7 +129,7 @@ filter(FilterO, E) ->
 		lists:member(Direction, DirectionO)]),
 	{Orientation, Stanza, Direction}}. 
 
-loop(Host, IoDevice, Filename, Logdir, CheckRKP, RotateO, PacketC, Gregorian_day, Timezone, FilterO) ->
+loop(Host, IoDevice, Filename, Logdir, CheckRKP, RotateO, PacketC, Gregorian_day, Timezone, ShowIP, FilterO) ->
 	receive
 		{addlog, E} ->
 			{IoDevice3, Filename3, Gregorian_day3, PacketC3} = case filter(FilterO, E) of
@@ -140,17 +141,17 @@ loop(Host, IoDevice, Filename, Logdir, CheckRKP, RotateO, PacketC, Gregorian_day
 						false ->
 							{IoDevice, Filename, Gregorian_day, PacketC+1}
 					end,
-					add_log(IoDevice2, Timezone, E, OSD),
+					add_log(IoDevice2, Timezone, ShowIP, E, OSD),
 					{IoDevice2, Filename2, Gregorian_day2, PacketC2};
 				_ ->
 					{IoDevice, Filename, Gregorian_day, PacketC}
 				end,
-			loop(Host, IoDevice3, Filename3, Logdir, CheckRKP, RotateO, PacketC3, Gregorian_day3, Timezone, FilterO);
+			loop(Host, IoDevice3, Filename3, Logdir, CheckRKP, RotateO, PacketC3, Gregorian_day3, Timezone, ShowIP, FilterO);
 		stop ->
 			close_file(IoDevice),
 			ok;
 		_ ->
-			loop(Host, IoDevice, Filename, Logdir, CheckRKP, RotateO, PacketC, Gregorian_day, Timezone, FilterO)
+			loop(Host, IoDevice, Filename, Logdir, CheckRKP, RotateO, PacketC, Gregorian_day, Timezone, ShowIP, FilterO)
 	end.
 
 send_packet(FromJID, ToJID, P) ->
@@ -163,15 +164,21 @@ receive_packet(_JID, From, To, P) ->
     Proc = gen_mod:get_module_proc(Host, ?PROCNAME),
 	Proc ! {addlog, {recv, From, To, P}}.
 
-add_log(IoDevice, Timezone, {Orientation, From, To, Packet}, _OSD) ->
+add_log(IoDevice, Timezone, ShowIP, {Orientation, From, To, Packet}, _OSD) ->
 	%{Orientation, Stanza, Direction} = OSD, 
 	LocalJID = case Orientation of
 		send -> From;
 		recv -> To
 	end,
+	LocalIPS = case ShowIP of
+		true -> 
+			{UserIP, _Port} = ejabberd_sm:get_user_ip(LocalJID#jid.user, LocalJID#jid.server, LocalJID#jid.resource),
+			io_lib:format("lip=\"~s\" ", [inet_parse:ntoa(UserIP)]);
+		false -> ""
+	end,
 	TimestampISO = get_now_iso(Timezone),
-	io:fwrite(IoDevice, "<packet or=\"~p\" ljid=\"~s\" ts=\"~s\">~s</packet>~n", 
-		[Orientation, jlib:jid_to_string(LocalJID), TimestampISO, xml:element_to_string(Packet)]).
+	io:fwrite(IoDevice, "<packet or=\"~p\" ljid=\"~s\" ~sts=\"~s\">~s</packet>~n", 
+		[Orientation, jlib:jid_to_string(LocalJID), LocalIPS, TimestampISO, xml:element_to_string(Packet)]).
 
 %% -------------------
 %% File

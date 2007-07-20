@@ -3,7 +3,7 @@
 
 	Homepage: http://ejabberd.jabber.ru/mod_logxml
 	Author: Badlop
-	Version: 0.2.3 - 2007-03-20
+	Version: 0.2.4 - 2007-07-20
 	Module for ejabberd 0.7.5 or newer
 
 
@@ -50,6 +50,10 @@ timezone:
 	as reported to Erlang by the operating system, will be used. 
 	With the latter, GMT/UTC time will be used. 
 	Default value: local
+show_ip: 
+    If the IP address of the local user should be logged to file.
+    This option requires ejabberd SVN r772 (2007-05-21) or newer.
+    Default value: false
 rotate_days: 
     Rotate logs every X days
     Put 'no' to disable this limit.
@@ -76,6 +80,7 @@ check_rotate_kpackets:
      {orientation, [send, recv]},
      {logdir, "/var/jabber/logs/"},
      {timezone, universal}, 
+     {show_ip, true}, 
      {rotate_days, 1}, 
      {rotate_megs, 100}, 
      {rotate_kpackets, no},
@@ -85,6 +90,9 @@ check_rotate_kpackets:
 
 	CHANGELOG
 	---------
+
+0.2.4 - 2007-07-20
+  * Added new option: show_ip
 
 0.2.3 - 2007-03-20
   * The file name respects the timezone option
