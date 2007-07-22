@@ -39,7 +39,7 @@ print '<div align="right"><a href="mailto:zzolkiewski@aster.com.pl">'.$quest1[$l
 // footer for admins...
 $time_end = getmicrotime();
 $time = substr($time_end - $time_start, 0, 10);
-if ($token==$admin_name) {print '<small>'.$admin_site_gen[$lang].$time.'s. '.db_size().'</small>'; };
+if ($token==$admin_name) {print '<small>'.$admin_site_gen[$lang].$time.'s.</small>'; };
 ?>
 
 </body>

@@ -519,8 +519,7 @@ function db_size() {
       $size += $row["Data_length"];
   }
   $size = round(($size/1024)/1024, 1);
-  $dsize = "Current db size: $size MB";
-  return $dsize;
+  return $size;
 
 }
 
@@ -544,5 +543,21 @@ function cut_nick($nick) {
 	
 	return $nick;
 }
+
+function total_messages($xmpp_host) {
+
+  $result = mysql_query("select count from `messages-stats_$xmpp_host`");
+  $m_count = 0;
+  while($row = mysql_fetch_array($result)) {
+      $m_count += $row["count"];
+  }
+  
+  return $m_count;
+
+}
+
+
+
+
 
 ?>

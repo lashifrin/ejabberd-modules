@@ -41,7 +41,9 @@ while ($entry=mysql_fetch_array($result)) {
 $maximum_a = max($e);
 $maximum_b = max($d);
 
-print "<h2>Stats for: ".$xmpp_host_dotted."</h2>";
+print "<h2><u>Stats for: ".$xmpp_host_dotted."</u></h2>";
+print "<p style=\"padding-left: 10px;\">Total <b>".number_format(total_messages($xmpp_host))."</b> messages logged by the server. Current database size is: <b>".db_size()."</b> MB</p>";
+print '<hr size="1" noshade="" color="#cccccc"/>'."\n";
 print '<table class="ff">'."\n";
 print '<tr><td style="padding-left: 10px">'."\n";
 print '<p><b>Number of user using message archiving:</b></p>'."\n";
