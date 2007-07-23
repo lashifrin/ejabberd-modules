@@ -263,7 +263,7 @@ function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type
 	// archiwa rozmów: przegl±danie:
 	if ($type=="1") {
 
-		$query="select at from `messages-stats_$xmpp_host` where owner_id='$user_id' order by str_to_date(at,'%Y-%m-%d') desc";
+		$query="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' order by str_to_date(at,'%Y-%m-%d') desc";
 	}
 
 	// rozmowy w danym dniu
@@ -278,7 +278,7 @@ function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type
 
 	// wyszukiwanie frazy
 	if ($type=="4") {
-		$query="select from_unixtime(timestamp+0) as ts, peer_name_id, peer_server_id, direction, body, match(body) against('$search_p' IN BOOLEAN MODE) as score from `messages_$xmpp_host"."_$tslice_table` where match(body) against('$search_p' IN BOOLEAN MODE) and owner_id='$user_id' limit $start_set,10000";
+		$query="select from_unixtime(timestamp+0) as ts, peer_name_id, peer_server_id, direction, body, match(body) against('$search_p' IN BOOLEAN MODE) as score from `logdb_messages_$tslice_table"."_$xmpp_host` where match(body) against('$search_p' IN BOOLEAN MODE) and owner_id='$user_id' limit $start_set,10000";
 	}
 
 	// wyszukiwanie wszystkich rozmów z danym userem
@@ -290,12 +290,12 @@ function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type
 			}
 			else { $addq=""; }
 
-		$query="select from_unixtime(timestamp+0) as ts, peer_name_id, peer_server_id, direction, body $adds from `messages_$xmpp_host"."_$tslice_table` where $addq owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server' limit $start_set,10000";
+		$query="select from_unixtime(timestamp+0) as ts, peer_name_id, peer_server_id, direction, body $adds from `logdb_messages_$tslice_table"."_$xmpp_host` where $addq owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server' limit $start_set,10000";
 	}
 
 	// limited search
 	if ($type=="6") {
-		$query="select at from `messages-stats_$xmpp_host` where owner_id='$user_id' order by str_to_date(at,\"%Y-%m-%d\") desc limit $start_set,10000";
+		$query="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' order by str_to_date(at,\"%Y-%m-%d\") desc limit $start_set,10000";
 		}
 
 
@@ -346,7 +346,7 @@ function get_server_name ($server_id,$xmpp_host) {
 
 function get_stats($user_id,$tslice,$xmpp_host) {
 
-	$result=mysql_query("select count from `messages-stats_$xmpp_host` where owner_id='$user_id' and at='$tslice'");
+	$result=mysql_query("select count from `logdb_stats_$xmpp_host` where owner_id='$user_id' and at='$tslice'");
 	$row=mysql_fetch_row($result);
 	$stats=$row[0];
 	mysql_free_result($result);
@@ -546,7 +546,7 @@ function cut_nick($nick) {
 
 function total_messages($xmpp_host) {
 
-  $result = mysql_query("select count from `messages-stats_$xmpp_host`");
+  $result = mysql_query("select count from `logdb_stats_$xmpp_host`");
   $m_count = 0;
   while($row = mysql_fetch_array($result)) {
       $m_count += $row["count"];

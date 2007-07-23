@@ -51,27 +51,27 @@ if ($action=="del") {
 	if (!ctype_digit($talker)) { print 'Ooops...(1)'; exit; }
 	if (!ctype_digit($server)) { print 'Ooops...(2)'; exit; }
 
-	$query="delete from `messages_$xmpp_host"."_$tslice` where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server'";
+	$query="delete from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server'";
 	$result=mysql_query($query) or die ("Ooops...Error");
 	// how many chats is there left?
-	$query="select count(peer_name_id) from `messages_$xmpp_host"."_$tslice` where owner_id='$user_id'";
+	$query="select count(peer_name_id) from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id'";
 	$result=mysql_query($query);
 	$row=mysql_fetch_row($result);
 	// if there is nothing left, lets cleanu up stats, we dont want to have mess in db
 	if ($row[0]=="0") {
-			$query="delete from `messages-stats_$xmpp_host` where owner_id='$user_id' and at='$tslice' limit 1";
+			$query="delete from `logdb_stats_$xmpp_host` where owner_id='$user_id' and at='$tslice' limit 1";
 			$result=mysql_query($query) or die ("Ooops...Error");
 			mysql_free_result($result);
 			}
 			else
 			{
 			// update stats if not delete
-			$query="select count(body) from `messages_$xmpp_host"."_$tslice` where owner_id='$user_id'";
+			$query="select count(body) from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id'";
 			$result=mysql_query($query) or die ("Ooops...Error1");
 			$row=mysql_fetch_row($result);
 			$new_stats=$row[0];
 			mysql_free_result($result);
-			$query="update `messages-stats_$xmpp_host` set count='$new_stats' where owner_id='$user_id' and at='$tslice'";
+			$query="update `logdb_stats_$xmpp_host` set count='$new_stats' where owner_id='$user_id' and at='$tslice'";
 			$result=mysql_query($query) or die ("Ooops...Error2");
 			mysql_free_result($result);
 			}
@@ -103,7 +103,7 @@ print '<tr>'."\n";
 print '<td rowspan="3" valign="top">'."\n";
 print '<ul id="treemenu2" class="treeview" style="padding: 0px;">'."\n";
 
-$result=mysql_query("select substring(at,1,7) as at, at as verb from `messages-stats_$xmpp_host` where owner_id='$user_id' group by at order by at desc");
+$result=mysql_query("select substring(at,1,7) as at, at as verb from `logdb_stats_$xmpp_host` where owner_id='$user_id' group by at order by at desc");
 
 while ($entry=mysql_fetch_array($result)) {
 
@@ -115,7 +115,7 @@ print '<li>'.$bop.$cl_entry.$bcl.''."\n"; // folder - begin
 
   print '<ul rel="'.$rel.'">'."\n"; // folder content
 	
-	$query="select at from `messages-stats_$xmpp_host` where owner_id = '$user_id' and substring(at,1,7) = '$entry[at]' order by str_to_date(at,'%Y-%m-%d') desc";
+	$query="select at from `logdb_stats_$xmpp_host` where owner_id = '$user_id' and substring(at,1,7) = '$entry[at]' order by str_to_date(at,'%Y-%m-%d') desc";
 	$result2=mysql_query($query);
 	while ($ent=mysql_fetch_array($result2)) {
 
@@ -148,7 +148,7 @@ ddtreemenu.createTree("treemenu2", true, 1)
 print '</td></tr></table>';
 
 // lets generate table name...
-$tslice_table='messages_'.$xmpp_host.'_'.$tslice;
+$tslice_table='logdb_messages_'.$tslice.'_'.$xmpp_host;
 
 // Chats in selected days:
 if ($tslice) {
