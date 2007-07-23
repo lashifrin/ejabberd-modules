@@ -11,6 +11,9 @@ periodic and automatic execution. This module is a similar concept than the
 function and arguments to use, so this module is not intended for starting
 administrators.
 
+Each time a scheduled task finish its execution, a message is printed in the
+ejabberd log file.
+
 
 	BASIC CONFIGURATION
 	===================

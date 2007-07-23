@@ -14,10 +14,12 @@
 
 -export([
 	ctl_process/3,
+	run_task/3,
 	start/2, 
 	stop/1]).
 
 -include("ejabberd_ctl.hrl").
+-include("ejabberd.hrl").
 
 -record(task, {taskid, timerref, host, task}).
 
@@ -55,7 +57,7 @@ add_task(Host, Task) ->
 	end,
 
 	% Start timer
-	{ok, TimerRef} = timer:apply_interval(Time, Mod, Fun, Args),
+	{ok, TimerRef} = timer:apply_interval(Time, ?MODULE, run_task, [Mod, Fun, Args]),
 
 	% Get new task identifier
 	TaskId = get_new_taskid(),
@@ -74,6 +76,19 @@ get_new_taskid() ->
 	case ets:last(cron_tasks) of
 		'$end_of_table' -> 0;
 		Id -> Id + 1
+	end.
+
+% Method to run existing task
+run_task(Mod, Fun, Args) ->
+	case catch apply(Mod, Fun, Args) of
+		{'EXIT', Reason} ->
+			?ERROR_MSG("Error in scheduled task ~p:~p~p:~n~p", [Mod, Fun, Args, Reason]);
+		{error, Reason} ->
+			?ERROR_MSG("Error in scheduled task ~p:~p~p:~n~p", [Mod, Fun, Args, Reason]);
+		ok ->
+			?INFO_MSG("Scheduled task ~p:~p~p finished ok", [Mod, Fun, Args]);
+		Res ->
+			?INFO_MSG("Scheduled task ~p:~p~p returned:~n~p", [Mod, Fun, Args, Res])
 	end.
 
 % Method to delete task, given a taskid
