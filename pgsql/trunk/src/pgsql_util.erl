@@ -1,7 +1,7 @@
 %%% File    : pgsql_util.erl
 %%% Author  : Christian Sunesson
 %%% Description : utility functions used in implementation of 
-%%% postgresql driver.
+%%%               postgresql driver.
 %%% Created : 11 May 2005 by Blah <cos@local>
 
 -module(pgsql_util).
@@ -81,8 +81,11 @@ recv_byte(Sock, Timeout) ->
 	    throw(E)
     end.
 
-string(String) ->
+%% Convert String to binary
+string(String) when list(String) ->
     Bin = list_to_binary(String),
+    <<Bin/binary, 0/integer>>;
+string(Bin) when binary(String) ->
     <<Bin/binary, 0/integer>>.
 
 %%% Two zero terminated strings.
@@ -90,9 +93,11 @@ make_pair(Key, Value) when atom(Key) ->
     make_pair(atom_to_list(Key), Value);
 make_pair(Key, Value) when atom(Value) ->
     make_pair(Key, atom_to_list(Value));
-make_pair(Key, Value) ->
+make_pair(Key, Value) when list(Key), list(Value) ->
     BinKey = list_to_binary(Key),
     BinValue = list_to_binary(Value),
+    make_pair(BinKey, BinValue);
+make_pair(Key, Value) when binary(Key), binary(Value) ->
     <<BinKey/binary, 0/integer, 
      BinValue/binary, 0/integer>>.
 
@@ -257,20 +262,20 @@ pass_plain(Password) ->
 %%
 
 pass_md5(User, Password, Salt) ->
-	Digest = hex(md5([Password, User])),
-	Encrypt = hex(md5([Digest, Salt])),
-	Pass = ["md5", Encrypt, 0],
-	list_to_binary(Pass).
+    Digest = hex(md5([Password, User])),
+    Encrypt = hex(md5([Digest, Salt])),
+    Pass = ["md5", Encrypt, 0],
+    list_to_binary(Pass).
 
 hex(B) when binary(B) ->
-	hexlist(binary_to_list(B), []).
+    hexlist(binary_to_list(B), []).
 
 hexlist([], Acc) ->
-	lists:reverse(Acc);
+    lists:reverse(Acc);
 hexlist([N|Rest], Acc) ->
-	HighNibble = (N band 16#f0) bsr 4,
-	LowNibble = (N band 16#0f),
-	hexlist(Rest, [hexdigit(LowNibble), hexdigit(HighNibble)|Acc]).
+    HighNibble = (N band 16#f0) bsr 4,
+    LowNibble = (N band 16#0f),
+    hexlist(Rest, [hexdigit(LowNibble), hexdigit(HighNibble)|Acc]).
 
 hexdigit(0) -> $0;
 hexdigit(1) -> $1;
@@ -288,5 +293,3 @@ hexdigit(12) -> $c;
 hexdigit(13) -> $d;
 hexdigit(14) -> $e;
 hexdigit(15) -> $f.
-
-

@@ -62,16 +62,19 @@ run(Options) ->
 		    [self(), Options]),
     {ok, Db}.
 
+%% TODO: We should use states instead of process dictionary
 init(DriverPid, Options) ->
     put(options, Options), % connection setup options
     put(driver, DriverPid), % driver's process id
 
     %%io:format("Init~n", []),
+    %% Default values: We connect to localhost on the standard TCP/IP
+    %% port.
     Host = option(host, "localhost"),
     Port = option(port, 5432),
 
     case socket({tcp, Host, Port}) of 
-	{ok, Sock } ->
+	{ok, Sock} ->
 	    connect(Sock);
 	Error ->
 	    Reason = {init, Error},
@@ -82,6 +85,7 @@ init(DriverPid, Options) ->
 connect(Sock) ->
     %%io:format("Connect~n", []),
     %% Connection settings for database-login.
+    %% TODO: Check if the default values are relevant:
     UserName = option(user, "cos"),
     DatabaseName = option(database, "template1"),
     
@@ -117,18 +121,19 @@ authenticate(Sock) ->
 		2 -> % Kerberos 5
 		    exit({nyi, auth_kerberos5});
 		3 -> % Plaintext password
-				Password = option(password, ""),
-				EncodedPass = encode_message(pass_plain, Password),
+		    Password = option(password, ""),
+		    EncodedPass = encode_message(pass_plain, Password),
 		    ok = send(Sock, EncodedPass),
 		    authenticate(Sock);
 		4 -> % Hashed password
 		    exit({nyi, auth_crypt});
 		5 -> % MD5 password
-				Password = option(password, ""),
-				User = option(user, ""),
-				EncodedPass = encode_message(pass_md5, {User, Password, Salt}),
-				ok = send(Sock, EncodedPass),
-				authenticate(Sock);
+		    Password = option(password, ""),
+		    User = option(user, ""),
+		    EncodedPass = encode_message(pass_md5,
+						 {User, Password, Salt}),
+		    ok = send(Sock, EncodedPass),
+		    authenticate(Sock);
 		_ ->
 		    exit({authentication, {unknown, AuthMethod}})
 	    end;
