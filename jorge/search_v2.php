@@ -42,9 +42,6 @@ if ($tag_count=="t") { $start_from=$offset_day; }
 
 $plain_phase=$search_phase; // fix me
 
-// we dont want any % here...
-if (preg_match("/%/i",$search_phase)) { $search_phase="";}
-
 include ("upper.php");
 
 // we need to rewrite this part internaly...
