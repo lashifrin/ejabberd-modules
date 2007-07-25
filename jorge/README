@@ -37,6 +37,11 @@ Installing:
 - patch mod_logdb - it is needed becouse by default mod_logdb use InnoDB engine witch does not support fulltext indexes
 - that's it!
 
+Archive usage:
+We can say that 1 milion messeges collected by the server consume approx. 65 Megabytes. Depending on number of users that use your server and
+how many will activate logging, you must compute db partitions.
+
+
 
 !!!SECURITY NOTICE!!!
 

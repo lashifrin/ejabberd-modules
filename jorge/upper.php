@@ -44,7 +44,8 @@ if (preg_match("/search_v2.php/i",$location))
 		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
 		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
-		if ($token==$admin_name) { $loc6='<a href="stats.php"> | Stats</a>'; }
+		$search_loc=1;
+		if ($token==$admin_name) { $loc6=' | <a href="stats.php"> Stats</a>'; }
 	}
 	elseif(preg_match("/main.php/i",$location))
 	{
@@ -53,7 +54,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
 		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
-		if ($token==$admin_name) { $loc6='<a href="stats.php"> | Stats</a>'; }
+		if ($token==$admin_name) { $loc6=' | <a href="stats.php"> Stats</a>'; }
 
 	}
 	elseif(preg_match("/my_links.php/i",$location))
@@ -63,7 +64,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$loc3='<b>'.$menu_item3[$lang].' ('.$my_links_count.') </b>';
 		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
 		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
-		if ($token==$admin_name) { $loc6='<a href="stats.php"> | Stats</a>'; }
+		if ($token==$admin_name) { $loc6=' | <a href="stats.php"> Stats</a>'; }
 
 
 	}
@@ -74,7 +75,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<b>'.$menu_item4[$lang].'</b>';
 		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
-		if ($token==$admin_name) { $loc6='<a href="stats.php"> | Stats</a>'; }
+		if ($token==$admin_name) { $loc6=' | <a href="stats.php"> Stats</a>'; }
 
 
 	}
@@ -85,7 +86,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
 		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
-		if ($token==$admin_name) { $loc6='<a href="stats.php"> | Stats</a>'; }
+		if ($token==$admin_name) { $loc6=' | <a href="stats.php"> Stats</a>'; }
 
 	}
 	elseif(preg_match("/contacts.php/i", $location))
@@ -95,7 +96,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
 		$loc5='<b>'.$menu_item5[$lang].'</b>';
-		if ($token==$admin_name) { $loc6='<a href="stats.php"> | Stats</a>'; }
+		if ($token==$admin_name) { $loc6=' | <a href="stats.php">Stats</a>'; }
 
 	}
 	elseif(preg_match("/stats.php/i", $location))
@@ -128,12 +129,66 @@ print '<a href="help.php" target="_blank">'.$help_but[$lang].'</a>&nbsp; | &nbsp
 print '</tr>'."\n";
 print '<tr><td></td></tr>'."\n";
 print '<tr><td width="450" colspan="9">'."\n";
-print '<form action="search_v2.php" method="post"><input type="text" name="query" class="cc" value="'.$search_phase.'">'."\n";
-print '<input class="red" type="submit" value="'.$search_box[$lang].'"></form></td>'."\n";
+print '<form action="search_v2.php" method="post">'."\n";
+print '<input type="text" name="query" class="cc" value="'.$search_phase.'">'."\n";
+
+if ($search_loc==1) {
+	
+	$time2_start=$_POST[time2_start];
+	$time2_end=$_POST[time2_end];
+	if ($time2_start OR $time2_end) {
+		if (validate_date($time2_start=="f")) { unset($time2_start); }
+		if (validate_date($time2_start=="f")) { unset($time2_end); }
+		if (strtotime("$time2_start") > strtotime("$time2_end")) { $alert = $time_range_w[$lang]; unset ($search_phase); }
+		}
+
+	$result=db_q($user_id,$server,$tslice_table,$talker,$search_p,1,$offset_arch,$xmpp_host);
+	while ($results=mysql_fetch_array($result)) {
+
+		$r++;
+		$to_tble[$r] = $results[at];
+
+	}
+
+	print '<select class="cc" name="time2_start" style="text-align: center;">'."\n";
+	print '<option value="">'.$time_range_from[$lang].'</option>'."\n";
+	for ($t=1;$t<$r;$t++) {
+
+		print '<option value="'.$to_tble[$t].'"';
+			if ($time2_start==$to_tble[$t]) {
+				print 'selected="selected"'; 
+			}
+		print '>'.$to_tble[$t].'</option>'."\n";
+	
+	}
+
+	print '</select>'."\n";
+	print '&nbsp;';
+	print '<select class="cc" name="time2_end" style="text-align: center;">'."\n";
+	print '<option value="">'.$time_range_to[$lang].'</option>'."\n";
+
+	for ($t=1;$t<$r;$t++) {
+
+		print '<option value="'.$to_tble[$t].'"';
+			if ($time2_end==$to_tble[$t]) {
+				print 'selected="selected"'; 
+			}
+		print '>'.$to_tble[$t].'</option>'."\n";
+	
+	}
+
+	print '</select>'."\n";
+
+}
+
+print '<input class="red" type="submit" value="'.$search_box[$lang].'">'."\n";
+print '</form></td>'."\n";
 print '</tr>'."\n";
 print '<tr height="12" class="maint"><td colspan="11" width="100%"></td></tr>'."\n";
 print '<tr height="3" class="spacer"><td colspan="11" width="100%"></td></tr>'."\n";
 print '</table>'."\n";
+
+print '<p align="center"><b>'.$alert.'</b></p>';
 
 
 ?>

@@ -117,8 +117,8 @@ $log_out_b[eng] = "Logout";
 $archives_t[pol] = pl_znaczki("Archiwa");
 $archives_t[eng] = "Archives";
 
-$talks[pol] = pl_znaczki("Rozmowy:");
-$talks[eng] = "Chats:";
+$talks[pol] = pl_znaczki("Rozmowy z:");
+$talks[eng] = "Chats with:";
 
 $thread[pol] = pl_znaczki("Tre¶æ:");
 $thread[eng] = "Content:";
@@ -282,6 +282,14 @@ $in_min[eng] = "minutes";
 $verb_h[pol] = pl_znaczki("przerwa ponad jedn± godzinê");
 $verb_h[eng] = "break more than one hour";
 
+$time_range_w[pol] = pl_znaczki("Pole \"Od\" nie mo¿e byæ wiêksze od pola \"Do\"");
+$time_range_w[eng] = "Field \"From\" cannot be greater than field \"To\"";
+
+$time_range_from[pol] = pl_znaczki("od");
+$time_range_from[eng] = "from";
+
+$time_range_to[pol] = pl_znaczki("do");
+$time_range_to[eng] = "to";
 
 
 $help_search_tips[pol] = pl_znaczki("

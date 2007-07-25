@@ -52,7 +52,7 @@ $puid_s=pg_escape_string($puid);
 
 $res = pg_query($bazaj, "select username, password from users where username='$uid_s' and password='$puid_s'");
 if (!$res) {
-	print "<h2>STOP: Internal system error(1.0)--</h2>";
+	print "<h2>STOP: Internal system error. Please refresh this page.</h2>";
 	exit;
 }
 
@@ -254,16 +254,23 @@ function is_query_from($query) {
 }
 
 
-function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type,$start="",$xmpp_host,$num_lines_bro="") {
+function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type,$start="",$xmpp_host,$num_lines_bro="",$time_s="",$end_s="") {
 
 	$start_set=$start;
 	if ($start_set=="") { $start_set="0"; }
 	$end_set=$start+$num_lines_bro;
 
+	if ($time_s AND $end_s) {
+
+		$add_tl = " and str_to_date(at,'%Y-%m-%d') >= str_to_date('$time_s','%Y-%m-%d') and str_to_date(at,'%Y-%m-%d') < str_to_date('$end_s','%Y-%m-%d')";
+
+	}
+
 	// archiwa rozmów: przegl±danie:
 	if ($type=="1") {
 
-		$query="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' order by str_to_date(at,'%Y-%m-%d') desc";
+		$query="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' $add_tl order by str_to_date(at,'%Y-%m-%d') desc";
+		#select * from `logdb_stats_jabber_autocom_pl` where owner_id='1' and str_to_date(at,'%Y-%m-%d') >= str_to_date('2007-6-21','%Y-%m-%d') and str_to_date(at,'%Y-%m-%d') < str_to_date('2007-7-1','%Y-%m-%d') order by str_to_date(at,'%Y-%m-%d') desc;
 	}
 
 	// rozmowy w danym dniu
@@ -295,7 +302,7 @@ function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type
 
 	// limited search
 	if ($type=="6") {
-		$query="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' order by str_to_date(at,\"%Y-%m-%d\") desc limit $start_set,10000";
+		$query="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' $add_tl order by str_to_date(at,\"%Y-%m-%d\") desc limit $start_set,10000";
 		}
 
 

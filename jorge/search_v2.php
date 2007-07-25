@@ -99,7 +99,7 @@ print '<tr class="maint"><td>'.$time_t[$lang].'</td><td>'.$talks[$lang].'</td><t
 print '<tr class="spacer"><td colspan="4"></td></tr>';
 if ($offset_arch) { $type_p="6"; } else { $type_p="1"; }
 
-$result=db_q($user_id,$server,$tslice_table,$talker,$search_p,$type_p,$offset_arch,$xmpp_host);
+$result=db_q($user_id,$server,$tslice_table,$talker,$search_p,$type_p,$offset_arch,$xmpp_host,$nn,$time2_start,$time2_end);
 
 $arch_table=mysql_num_rows($result);
 $external=0;

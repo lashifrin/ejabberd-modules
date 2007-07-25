@@ -11,6 +11,7 @@ h2 {
 	}
 
 input.cc { width: 400px; border: 1px solid gray; }
+select.cc { width: 70pt; border: 1px solid gray; }
 input.log { width: 250px; border: 1px solid gray;}
 input.ccc { width: 400px; border: 1px solid gray; }
 textarea.ccc { width: 400px; border: 1px solid gray; }
