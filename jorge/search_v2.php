@@ -89,7 +89,6 @@ mysql_query("create temporary table results_table (
 
 
 //main table
-print '<br>'."\n";
 print '<h2>'.$search_res[$lang].'</h2>'."\n";
 print '<table align="center" border="0" cellspacing="0" class="ff">'."\n";
 print '<tr class="maint"><td>'.$time_t[$lang].'</td><td>'.$talks[$lang].'</td><td>'.$thread[$lang].'</td><td>'.$score.'</td></tr>'."\n";
