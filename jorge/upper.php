@@ -152,7 +152,7 @@ if ($search_loc==1) {
 
 	print '<select class="cc" name="time2_start" style="text-align: center;">'."\n";
 	print '<option value="">'.$time_range_from[$lang].'</option>'."\n";
-	for ($t=1;$t<$r;$t++) {
+	for ($t=$r;$t>1;$t--) {
 
 		print '<option value="'.$to_tble[$t].'"';
 			if ($time2_start==$to_tble[$t]) {
