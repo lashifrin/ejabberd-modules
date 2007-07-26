@@ -133,9 +133,20 @@ print '<form action="search_v2.php" method="post">'."\n";
 print '<input type="text" name="query" class="cc" value="'.$search_phase.'">'."\n";
 
 if ($search_loc==1) {
-	
+
+	if (isset($_GET[c])) {
+		$trange_from_get = $_GET[c];
+		$time2s = decode_trange($trange_from_get,$token,$url_key);
+		$time2_start=$time2s[0];
+		$time2_end=$time2s[1];
+	}
+	else
+	{
+
 	$time2_start=$_POST[time2_start];
 	$time2_end=$_POST[time2_end];
+	
+	}
 	if ($time2_start OR $time2_end) {
 		if (validate_date($time2_start=="f")) { unset($time2_start); }
 		if (validate_date($time2_start=="f")) { unset($time2_end); }

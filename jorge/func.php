@@ -171,6 +171,20 @@ function decode_search_url($url,$token,$url_key) {
 
 }
 
+function decode_trange($url,$token,$url_key) {
+
+	$key=$url_key;
+	$url = str_replace("kezyt2s0", "+",$url);
+	$uri_d=decrypt_aes($key,$url);
+	$uri_d = strrev($uri_d);
+	list($time2_start,$time2_end) = split("@",$uri_d);
+	$time2s[0] = $time2_start;
+	$time2s[1] = $time2_end;
+	return $time2s;
+
+}
+
+
 function decode_predefined($url,$token,$url_key) {
 	$key=$url_key;
 	$url = str_replace("kezyt2s0", "+",$url);
@@ -262,7 +276,7 @@ function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type
 
 	if ($time_s AND $end_s) {
 
-		$add_tl = " and str_to_date(at,'%Y-%m-%d') >= str_to_date('$time_s','%Y-%m-%d') and str_to_date(at,'%Y-%m-%d') < str_to_date('$end_s','%Y-%m-%d')";
+		$add_tl = " and str_to_date(at,'%Y-%m-%d') >= str_to_date('$time_s','%Y-%m-%d') and str_to_date(at,'%Y-%m-%d') <= str_to_date('$end_s','%Y-%m-%d')";
 
 	}
 

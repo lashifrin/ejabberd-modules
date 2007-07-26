@@ -256,8 +256,9 @@ while ($entry = mysql_fetch_array($result)) {
 					print '<tr class="maint">';
 					print '<td colspan="2" style="text-align: left;">';
 					print '<a href="search_v2.php?a='.$lnk_p.'"></a></td>'; // fix me
+					$trange = "$time2_start@$time2_end"; // this is needed for time range to pass to next page
 					print '<td colspan="2" style="text-align: right;">';
-					print '<a href="search_v2.php?a='.encode_url($lnk_n,$token,$url_key).'">'.$search_next[$lang].'</a></td></tr>';
+					print '<a href="search_v2.php?a='.encode_url($lnk_n,$token,$url_key).'&c='.encode_url($trange,$token,$url_key).'">'.$search_next[$lang].'</a></td></tr>';
 					break 2;
 					
 					}
