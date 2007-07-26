@@ -163,7 +163,7 @@ if ($search_loc==1) {
 
 	print '<select class="cc" name="time2_start" style="text-align: center;">'."\n";
 	print '<option value="">'.$time_range_from[$lang].'</option>'."\n";
-	for ($t=$r;$t>1;$t--) {
+	for ($t=1;$t<=$r;$t++) {
 
 		print '<option value="'.$to_tble[$t].'"';
 			if ($time2_start==$to_tble[$t]) {
@@ -175,10 +175,11 @@ if ($search_loc==1) {
 
 	print '</select>'."\n";
 	print '&nbsp;';
+	$pass_t=$t;
 	print '<select class="cc" name="time2_end" style="text-align: center;">'."\n";
 	print '<option value="">'.$time_range_to[$lang].'</option>'."\n";
 
-	for ($t=1;$t<$r;$t++) {
+	for ($t=$r;$t>=1;$t--) {
 
 		print '<option value="'.$to_tble[$t].'"';
 			if ($time2_end==$to_tble[$t]) {
@@ -190,8 +191,8 @@ if ($search_loc==1) {
 
 	print '</select>'."\n";
 
-	if ($time2_start AND !$time2_end) { $time2_end = $to_tble[($t+1)-$t]; }
-	if (!$time2_start AND $time2_end) { $time2_start = $to_tble[$t]; }
+	if ($time2_start AND !$time2_end) { $time2_end = $to_tble[$pass_t-1]; }
+	if (!$time2_start AND $time2_end) { $time2_start = $to_tble[($t+1)-$t]; }
 
 }
 
