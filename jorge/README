@@ -33,8 +33,8 @@ Installing:
 - set up database for Jorge (install/jorge.sql)
 - copy config.php.inc to config.php and edit file
 - convert mod_logdb database tables (*messages*) into MyISAM and add fulltext indexes. Script for that is provided into install direstory
-  edit it and run from console by php convert.php
-- patch mod_logdb - it is needed becouse by default mod_logdb use InnoDB engine witch does not support fulltext indexes
+  edit it and run from console by invoke 'php convert.php'
+- patch mod_logdb - it is needed becouse by default mod_logdb use InnoDB engine witch does not support fulltext indexes. Patch available in install directory
 - that's it!
 
 Archive usage:

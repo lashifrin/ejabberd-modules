@@ -79,7 +79,7 @@ if ($action=="del") {
 			mysql_free_result($result);
 			}
 	// also if there were some saved links - we clean them up from mylins as well. We are so nice...
-	$query="delete from mylinks where owner_id ='$user_id' and peer_name_id='$talker' and link like '$lnk%'";
+	$query="delete from jorge_mylinks where owner_id ='$user_id' and peer_name_id='$talker' and link like '$lnk%'";
 	$result=mysql_query($query) or die ("Ooops...Error");
 	mysql_free_result($result);
 	unset($talker);

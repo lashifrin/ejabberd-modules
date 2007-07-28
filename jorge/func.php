@@ -388,7 +388,7 @@ function get_server_id ($server_name,$xmpp_host) {
 
 function get_my_links_count ($user_id) {
 
-	$result=mysql_query("select count(id_link) from mylinks where owner_id='$user_id'");
+	$result=mysql_query("select count(id_link) from jorge_mylinks where owner_id='$user_id'");
 	$row=mysql_fetch_row($result);
 	$my_links_count=$row[0];
 	if ($my_links_count) { return $my_links_count; } else { return "0";}
