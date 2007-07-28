@@ -38,7 +38,7 @@ while ($results=mysql_fetch_array($result)) {
 	print '<tr><td style="padding-left: 0px; padding-right: 10px;">'.$results[event].'</td>'."\n";
 	print '<td>'.$results[log_time].'</td>'."\n";
 	print '<td style="text-align: center;">'.$results[level].'</td>'."\n";
-	print '<td style="padding-left: 5px;">'.$ip_desc.$results[extra].'</td</tr>'."\n";
+	print '<td style="padding-left: 5px;">'.$ip_desc.$results[extra].'</td></tr>'."\n";
 
 
 
