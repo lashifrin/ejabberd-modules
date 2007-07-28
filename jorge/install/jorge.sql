@@ -55,4 +55,19 @@ CREATE TABLE `jorge_mylinks` (
   PRIMARY KEY  (`id_link`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
+--
+-- Fill dictionary with predefined values
+--
+
+LOCK TABLES `jorge_logger_dict` WRITE;
+INSERT INTO `jorge_logger_dict` VALUES (1,'Logged in','eng'),(2,'Logged out','eng'),(3,'Login failed','eng'),(4,'Deleted chat thread','eng'),(5,'Deleted whole archive','eng'),(6,'Turned off archivization','eng'),(7,'Turned on archivization','eng');
+UNLOCK TABLES;
+
+--
+-- Fill level dictionary
+--
+
+LOCK TABLES `jorge_logger_level_dict` WRITE;
+INSERT INTO `jorge_logger_level_dict` VALUES (1,'normal','eng'),(2,'warn','eng'),(3,'alert','eng');
+UNLOCK TABLES;
 
