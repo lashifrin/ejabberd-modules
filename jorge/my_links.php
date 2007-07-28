@@ -60,7 +60,7 @@ if ($tigger==$my_links_commit[$lang]) {
 	$user_id=get_user_id($token,$xmpp_host);
 	if ($desc==$my_links_optional[$lang]) { $desc=$my_links_none[$lang]; }
 	$desc=substr($desc,0,120);
-	$query="insert into mylinks (owner_id,peer_name_id,peer_server_id,datat,link,description) values ('$user_id','$peer_user','$peer_server','$datat','$aaa','$desc')";
+	$query="insert into jorge_mylinks (owner_id,peer_name_id,peer_server_id,datat,link,description) values ('$user_id','$peer_user','$peer_server','$datat','$aaa','$desc')";
 	$result = mysql_query($query) or die ("Ooops...Error.");
 	print '<center><p style="background-color: yellow;">'.$my_links_added[$lang].'</p>';
 	print '<a href="main.php?a='.$aaa.'"><b>'.$my_links_back[$lang].'</b></a></center>';
