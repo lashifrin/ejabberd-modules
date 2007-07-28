@@ -91,7 +91,7 @@ if ($_GET['act']=='logout') {
 	$query = "select count(id_user) as log_number from jorge_logger where id_user = '$ui_fail' and log_time > date_sub(now(),interval 1 minute)";
 	$result = mysql_query($query);
 	$row=mysql_fetch_row($result);
-	if ($row[0]>="3") { $log_level="3"; } else { $log_level="2";}
+	if ($row[0]>"3") { $log_level="3"; } else { $log_level="2";} // bump log_level if more then 3 log attempts in one minute
 	$query="insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time,extra) values ('$ui_fail',3,'$log_level',NOW(),'$rem_adre')";
 	mysql_query($query) or die;
 
