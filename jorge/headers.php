@@ -26,6 +26,7 @@ $owner_id=""; // initialize owner_id;
 $talker=""; // initialize talker
 $tslice=""; // initialize tslice
 $xmpp_host=""; // initialize hostname
+$rem_adre = $_SERVER['REMOTE_ADDR'];
 
 include("func.php");
 $time_start=getmicrotime(); // debuging info _start_
@@ -118,7 +119,7 @@ if ($token==$admin_name) {
 
 		$('img').Tooltip();
 
-		$('a, tr').Tooltip({
+		$('a, tr, td').Tooltip({
 			extraClass: "fancy",
 			showBody: ";",
 			showURL: false,

@@ -44,6 +44,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
 		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
+		$loc5a='<a href="logger.php">'.$menu_item6[$lang].'</a>';
 		$search_loc=1;
 		if ($token==$admin_name) { $loc6=' | <a href="stats.php"> Stats</a>'; }
 	}
@@ -54,6 +55,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
 		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
+		$loc5a='<a href="logger.php">'.$menu_item6[$lang].'</a>';
 		if ($token==$admin_name) { $loc6=' | <a href="stats.php"> Stats</a>'; }
 
 	}
@@ -64,6 +66,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$loc3='<b>'.$menu_item3[$lang].' ('.$my_links_count.') </b>';
 		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
 		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
+		$loc5a='<a href="logger.php">'.$menu_item6[$lang].'</a>';
 		if ($token==$admin_name) { $loc6=' | <a href="stats.php"> Stats</a>'; }
 
 
@@ -75,6 +78,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<b>'.$menu_item4[$lang].'</b>';
 		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
+		$loc5a='<a href="logger.php">'.$menu_item6[$lang].'</a>';
 		if ($token==$admin_name) { $loc6=' | <a href="stats.php"> Stats</a>'; }
 
 
@@ -86,6 +90,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
 		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
+		$loc5a='<a href="logger.php">'.$menu_item6[$lang].'</a>';
 		if ($token==$admin_name) { $loc6=' | <a href="stats.php"> Stats</a>'; }
 
 	}
@@ -96,6 +101,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
 		$loc5='<b>'.$menu_item5[$lang].'</b>';
+		$loc5a='<a href="logger.php">'.$menu_item6[$lang].'</a>';
 		if ($token==$admin_name) { $loc6=' | <a href="stats.php">Stats</a>'; }
 
 	}
@@ -106,10 +112,25 @@ if (preg_match("/search_v2.php/i",$location))
 		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
 		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
+		$loc5a='<a href="logger.php">'.$menu_item6[$lang].'</a>';
 		if ($token==$admin_name) { $loc6=' | <b>Stats</b></a>'; }
 
 		
 	}
+	elseif(preg_match("/logger.php/i", $location))
+	{
+		$loc1='<a href="main.php">'.$menu_item1[$lang].'</a>';
+		$loc2='<a href="search_v2.php">'.$menu_item2[$lang].'</a>';
+		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
+		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
+		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
+		$loc5a='<b>'.$menu_item6[$lang].'</b>';
+		if ($token==$admin_name) { $loc6=' | <a href="stats.php"> Stats</a>'; }
+
+		
+	}
+
+
 
 // check if archivization is currently enabled...
 if ($sess->get('log_status') == "0") { print '<p style="background-color: yellow; text-align: center;">'.$status_msg1[$lang].'</p>'; }
@@ -120,7 +141,7 @@ $spool = spool_count($bazaj,$token);
 
 print '<table border="0" cellspacing="0" class="ff" width="100%">'."\n";
 print '<tr>'."\n";
-print '<td style="text-align: left;">'.$loc1.' | '.$loc2.' | '.$loc3.' | '.$loc5.' | '.$loc4.$loc6.'</td>'."\n";
+print '<td style="text-align: left;">'.$loc1.' | '.$loc2.' | '.$loc3.' | '.$loc5.' | '.$loc4.' | '.$loc5a.$loc6.'</td>'."\n";
 print '<td style="text-align: right;">'."\n";
 print '<b>'.$token.'@'.$xmpp_host_dotted.'</b>&nbsp; | &nbsp;';
 print $ch_lan[$lang];

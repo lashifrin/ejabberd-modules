@@ -53,6 +53,9 @@ if ($action=="del") {
 
 	$query="delete from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server'";
 	$result=mysql_query($query) or die ("Ooops...Error");
+	$jid_date = ''.get_user_name($talker,$xmpp_host).'@'.get_server_name($server,$xmpp_host).$logger_from_day[$lang].$tslice.'';
+	$query="insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time,extra) values ('$user_id',4,1,NOW(),'$jid_date')";
+	mysql_query($query) or die;
 	// how many chats is there left?
 	$query="select count(peer_name_id) from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id'";
 	$result=mysql_query($query);

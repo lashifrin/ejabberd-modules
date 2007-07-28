@@ -95,6 +95,9 @@ $menu_item4[eng] = "Settings";
 $menu_item5[pol] = pl_znaczki("Kontakty");
 $menu_item5[eng] = "Contacts";
 
+$menu_item6[pol] = pl_znaczki("Logi");
+$menu_item6[eng] = "Logs";
+
 $search_box[pol] = pl_znaczki("Szukaj w archiwach");
 $search_box[eng] = "Search in archives";
 
@@ -249,8 +252,17 @@ $con_tab2[eng] = "Contact name";
 $con_tab3[pol] = pl_znaczki("JabberID");
 $con_tab3[eng] = "JabberID";
 
-$con_tab4[pol] = pl_znaczki("Archiwizowaæ?");
-$con_tab4[eng] = "Archive?";
+$con_tab4[pol] = pl_znaczki("Archiwizacja w³±czona?");
+$con_tab4[eng] = "Is archiving enabled?";
+
+$con_tab_act_y[pol] = pl_znaczki("Tak");
+$con_tab_act_y[eng] = "Yes";
+
+$con_tab_act_n[pol] = pl_znaczki("Nie");
+$con_tab_act_n[eng] = "No";
+
+$con_tab_submit[pol] = pl_znaczki("Zapisz zmiany");
+$con_tab_submit[eng] = "Save changes";
 
 $con_tab6[pol] = pl_znaczki("Grupa");
 $con_tab6[eng] = "Group";
@@ -388,11 +400,26 @@ $help_advanced_tips[eng] = "
 $admin_site_gen[pol] = pl_znaczki("Strona zosta³a wygenerowana w: ");
 $admin_site_gen[eng] = "Site generated in:";
 
+$logger_from_day[pol] = pl_znaczki(" z dnia: ");
+$logger_from_day[eng] = " from day: ";
 
+$logger_overview[pol] = pl_znaczki("Logi aktywno¶ci w Jorge");
+$logger_overview[eng] = "Activity logs on Jorge";
 
+$logger_f1[pol] = pl_znaczki("Zdarzenie:");
+$logger_f1[eng] = "Event:";
 
+$logger_f2[pol] = pl_znaczki("Data zdarzenia:");
+$logger_f2[eng] = "Event date:";
 
+$logger_f3[pol] = pl_znaczki("Poziom zdarzenia:");
+$logger_f3[eng] = "Event level:";
 
+$logger_f4[pol] = pl_znaczki("Dodatkowe informacje:");
+$logger_f4[eng] = "Additional info:";
+
+$logger_f_ip[pol] = pl_znaczki("z adresu IP: ");
+$logger_f_ip[eng] = "from IP address: ";
 
 
 ?>

@@ -578,6 +578,14 @@ function total_messages($xmpp_host) {
 }
 
 
+function get_do_log_list($user_id,$xmpp_host) {
+
+	$result = mysql_query("select donotlog_list from logdb_settings_$xmpp_host where owner_id = '$user_id'");
+	$row = mysql_fetch_row($result);
+	$splited_list = explode("\n", $row[0]);
+	return $splited_list;
+
+}
 
 
 

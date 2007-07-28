@@ -54,7 +54,10 @@ if ($wo_sess || $$inpLogin || $inpPass) {
 }
 
 if ($_GET['act']=='logout') {
+	$ui = get_user_id($sess->get('uid_l'),$xmpp_host);
+	$query="insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time) values ('$ui',2,1,NOW())";
 	$sess->finish();
+	mysql_query($query) or die;
 	header("Location: index.php");
 	} else {
 	if ($inpLogin!="" || $inpPass!="") {
@@ -68,7 +71,11 @@ if ($_GET['act']=='logout') {
 		  $sess->set('enabled','t');
 		  $sess->set('log_status',$ret_v[1]);
 		  $sess->set('image_w','');
+		  $ui = get_user_id($sess->get('uid_l'),$xmpp_host);
+		  $query="insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time,extra) values ('$ui',1,1,NOW(),'$rem_adre')";
+		  mysql_query($query) or die;
 		  header("Location: main.php");
+		  exit; // lets break script at this point...
 		  }
 		  	else {
 				
@@ -80,6 +87,13 @@ if ($_GET['act']=='logout') {
 		}
 
 	$error_m="<br /><span class=\"hlt\"><b>$wrong_data[$lang]</b></span>";
+	$ui_fail=get_user_id($inpLogin,$xmpp_host);
+	$query = "select count(id_user) as log_number from jorge_logger where id_user = '$ui_fail' and log_time > date_sub(now(),interval 1 minute)";
+	$result = mysql_query($query);
+	$row=mysql_fetch_row($result);
+	if ($row[0]>="3") { $log_level="3"; } else { $log_level="2";}
+	$query="insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time,extra) values ('$ui_fail',3,'$log_level',NOW(),'$rem_adre')";
+	mysql_query($query) or die;
 
 	}
  
