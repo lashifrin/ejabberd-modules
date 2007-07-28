@@ -124,7 +124,7 @@ if (mysql_num_rows($result) == "0") { print '<br /><br /><center><b>'.$my_links_
 			print '<td><a href="my_links.php?del=t&link_id='.$entry[id_link].'" onClick="if (!confirm(\''.$del_conf_my_link[$lang].'\')) return false;" >&nbsp;'.$del_my_link[$lang].'&nbsp;</a></td>'."\n";
 			print '</tr>'."\n";
 		}
-
+	print '<tr class="spacer"><td colspan="4"></td></tr>';
 	print '</table>'."\n";
 	print '</center>'."\n";
 	}

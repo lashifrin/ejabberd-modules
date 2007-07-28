@@ -33,10 +33,16 @@ if ($tgle) {
 	if ($rres=="on") {
 				print '<center><p style="background-color: yellow; text-align: center;">'.$status_msg2[$lang].'</p></center>';
 				$sess->set('log_status','1');
+				$query="insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time) values ('$user_id',7,1,NOW())";
+				mysql_query($query) or die;
+
 		}
 		elseif($rres=="off") {
 				print '<center><p style="background-color: yellow; text-align: center;">'.$status_msg3[$lang].'</p></center>';
 				$sess->set('log_status','0');
+				$query="insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time) values ('$user_id',6,1,NOW())";
+				mysql_query($query) or die;
+
 		}
 }
 
