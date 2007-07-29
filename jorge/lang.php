@@ -279,6 +279,9 @@ $con_notice[eng] = "Notice: displaying only contacts with assigned nicknames.";
 $con_title[pol] = pl_znaczki("Kliknij na kontakcie aby zobaczyæ archiwum rozmów");
 $con_title[eng] = "Click on contact name to see chat history";
 
+$con_saved[pol] = pl_znaczki("Zmiany zosta³y zapisane");
+$con_saved[eng] = "Changes have beed saved";
+
 $help_notice[pol] = pl_znaczki("G³ówne zagadnienia");
 $help_notice[eng] = "Main topics";
 

@@ -22,10 +22,41 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
 require ("headers.php");
-
 include ("upper.php");
 print '<h2>'.$con_head[$lang].'</h2>';
 print '<small>'.$con_notice[$lang].'</small>';
+
+if ($_POST) {
+
+	print "<br><br>";
+	// get all post data...
+	while (array_keys($_POST)) {
+
+		$jid = base64_decode(str_replace("kezyt2s0", "+", key($_POST)));
+		$val = array_shift($_POST);
+
+		if ($val=="n") {
+			$do_not_log_list .=$jid."\n";
+			}
+
+
+
+	}
+	// quick workaround on clearing last 2 chars - shuld be done in first loop.
+	#$do_not_log_list =  mysql_escape_string(substr($do_not_log_list,0,-2));
+	$do_not_log_list = mysql_escape_string($do_not_log_list);
+	if ($do_not_log_list=="") { $do_not_log_list="NULL"; }
+	$query="update logdb_settings_jabber_autocom_pl set donotlog_list='$do_not_log_list' where owner_id='$user_id'";
+	mysql_query($query) or die ("Error");
+	print '<center><b>'.$con_saved[$lang].'</b></br></br></center>';
+
+}
+
+
+
+
+
+
 
 $res = pg_query($bazaj, "select a.nick, a.jid, b.grp from rosterusers a left outer join rostergroups b on (a.jid=b.jid and a.username=b.username) where a.username='$token' and a.nick !='' order by b.grp,a.nick");
 if (!$res) {
@@ -34,7 +65,10 @@ if (!$res) {
 	exit;
 }
 
+$do_notlog_list = get_do_log_list($user_id,$xmpp_host);
+
 print '<center>';
+print '<form action="contacts.php" method="post">'."\n";
 print '<table id="maincontent" border="0" class="ff" cellspacing="0">'."\n";
 print '<tr class="maint"><td>'.$con_tab2[$lang].'</td><td>'.$con_tab3[$lang].'</td><td>'.$con_tab6[$lang].'</td><td>'.$con_tab4[$lang].'</td></tr>'."\n";
 print '<tr class="spacer"><td colspan="4"></td></tr>';
@@ -48,16 +82,29 @@ for ($lt = 0; $lt < pg_numrows($res); $lt++) {
 	if ($col=="e0e9f7") { $col="e8eef7"; } else { $col="e0e9f7"; }
 	$predefined="from:$jid";
 	$predefined=encode_url($predefined,$token,$url_key);
-	print '<tr title="'.$con_title[$lang].'" style="cursor: pointer;" bgcolor="'.$col.'" onclick="window.open(\'search_v2.php?b='.$predefined.'\');" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#'.$col.'\';">';
-	print '<td style="padding-left:7px"><b>'.cut_nick(htmlspecialchars($nick)).'</b></td>'."\n";
-	print '<td>(<i>'.htmlspecialchars($jid).'</i>)</td>'."\n";
-	print '<td style="text-align: center;">'.cut_nick(htmlspecialchars($grp)).'</td>';
-	print '<td style="text-align: center;"><input type="checkbox" disabled="disabled"></td>'."\n";
+	print '<tr style="cursor: pointer;" bgcolor="'.$col.'" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#'.$col.'\';">'."\n";
+	print '<td title="'.$con_title[$lang].'" style="padding-left:7px" onclick="window.open(\'search_v2.php?b='.$predefined.'\');"><b>'.cut_nick(htmlspecialchars($nick)).'</b></td>'."\n";
+	print '<td title="'.$con_title[$lang].'" onclick="window.open(\'search_v2.php?b='.$predefined.'\');">(<i>'.htmlspecialchars($jid).'</i>)</td>'."\n";
+	print '<td title="'.$con_title[$lang].'" onclick="window.open(\'search_v2.php?b='.$predefined.'\');" style="text-align: center;">'.cut_nick(htmlspecialchars($grp)).'</td>'."\n";
+	print '<td style="text-align: center;">'."\n";
+	if (in_array($jid,$do_notlog_list) == TRUE ) { $selected="selected=selected"; } else { $selected=""; }
+	// temporary solution we should put integers here instead of full jids
+	$prepared_jid=str_replace("+", "kezyt2s0", base64_encode($jid)); 
+	print '<select class="cc2" name="'.$prepared_jid.'">'."\n";
+	print '<option value="y">'.$con_tab_act_y[$lang].'</option>'."\n";
+	print '<option value="n" '.$selected.' >'.$con_tab_act_n[$lang].'</option>'."\n";
+	print '</select>'."\n";
+	print '</td>'."\n";
 	print '</tr>'."\n";
 
 }
+print '<tr class="spacer"><td colspan="4"></td></tr>'."\n";
 print '</tbody>'."\n";
+print '<tr class="maint"><td colspan="4" style="text-align: center;">'."\n";
+print '<input class="red" type="submit" value="'.$con_tab_submit[$lang].'"></td></tr>'."\n";
+print '<tr class="spacer"><td colspan="4"></td></tr>'."\n";
 print '</table>'."\n";
+print '</form>'."\n";
 print '</center>'."\n";
 
 include ("footer.php");
