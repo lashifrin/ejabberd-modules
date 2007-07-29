@@ -6,7 +6,7 @@ ToDo list for beta front-end for mod_logdb:
 
 - threads in chat view (done) *
 - option for deleting chats (done) *
-- profiled message saving
+- profiled message saving (done) *
 - tree view in archive browser (done) *
 - more search options: time, time&from, time&from&keyword (done)
 - possible jQuery interface? (not for now)
@@ -26,7 +26,6 @@ ToDo list for beta front-end for mod_logdb:
 - code cleanups
 
 Sumarizing before bumping to beta stage:
-- profiled message archiving
 - printing
 - archive settings
 - "bug hunt session"

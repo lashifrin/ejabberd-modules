@@ -28,7 +28,6 @@ print '<small>'.$con_notice[$lang].'</small>';
 
 if ($_POST) {
 
-	print "<br><br>";
 	// get all post data...
 	while (array_keys($_POST)) {
 
@@ -42,8 +41,6 @@ if ($_POST) {
 
 
 	}
-	// quick workaround on clearing last 2 chars - shuld be done in first loop.
-	#$do_not_log_list =  mysql_escape_string(substr($do_not_log_list,0,-2));
 	$do_not_log_list = mysql_escape_string($do_not_log_list);
 	if ($do_not_log_list=="") { $do_not_log_list="NULL"; }
 	$query="update logdb_settings_jabber_autocom_pl set donotlog_list='$do_not_log_list' where owner_id='$user_id'";
