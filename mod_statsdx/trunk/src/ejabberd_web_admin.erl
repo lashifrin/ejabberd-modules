@@ -14,25 +14,15 @@
 -vsn('$Revision$ ').
 
 %% External exports
--export([process_admin/2,
+-export([process/2,
+         %% XXX bard: unexported, since it is only called from process/2 now
+         %% process_admin/2,
 	 list_users/4,
 	 list_users_in_diapason/4]).
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
-
-%% Since that file is different on SVN and 1.1.3
-%% We include here the content of the 1.1.3 version
-%% This module is for now compatible only with ejabberd 1.1.3 and older
-%% -include("ejabberd_http.hrl").
--record(request, {method,
-                  path,
-                  q = [],
-                  us,
-                  auth,
-                  lang = "",
-                  data = ""
-                 }).
+-include("ejabberd_http.hrl").
 
 -define(X(Name), {xmlelement, Name, [], []}).
 -define(XA(Name, Attrs), {xmlelement, Name, Attrs, []}).
@@ -65,6 +55,75 @@
 		      {"value", Value},
 		      {"size", Size}])).
 -define(INPUTST(Type, Name, Value, Size), ?INPUT(Type, Name, ?T(Value), Size)).
+
+
+process(["server", SHost | RPath], #request{auth = Auth,
+                                            q = Query,
+                                            lang = Lang} = Request) ->
+    Host = jlib:nameprep(SHost),
+    case lists:member(Host, ?MYHOSTS) of
+	true ->
+	    case get_auth(Auth) of
+		{User, Server} ->
+		    case acl:match_rule(
+			   Host, configure, jlib:make_jid(User, Server, "")) of
+			deny ->
+                            ejabberd_web:error(not_allowed);
+			allow ->
+			    process_admin(
+			      Host, Request#request{path = RPath,
+						    us = {User, Server}})
+		    end;
+		unauthorized ->
+		    {401,
+		     [{"WWW-Authenticate", "basic realm=\"ejabberd\""}],
+		     ejabberd_web:make_xhtml([{xmlelement, "h1", [],
+                                               [{xmlcdata, "401 Unauthorized"}]}])}
+	    end;
+	false ->
+            ejabberd_web:error(not_found)
+    end;
+
+process(RPath, #request{auth = Auth,
+                        q = Query,
+                        lang = Lang} = Request) ->
+    case get_auth(Auth) of
+	{User, Server} ->
+	    case acl:match_rule(
+		   global, configure, jlib:make_jid(User, Server, "")) of
+		deny ->
+                    ejabberd_web:error(not_allowed);
+		allow ->
+		    process_admin(
+		      global, Request#request{path = RPath,
+					      us = {User, Server}})
+	    end;
+	unauthorized ->
+            %% XXX bard: any reason to send this data now and not
+            %% always in case of an 401? ought to check http specs...
+	    {401, 
+	     [{"WWW-Authenticate", "basic realm=\"ejabberd\""}],
+	     ejabberd_web:make_xhtml([{xmlelement, "h1", [],
+				       [{xmlcdata, "401 Unauthorized"}]}])}
+    end.
+
+get_auth(Auth) ->
+    case Auth of
+        {SJID, P} ->
+            case jlib:string_to_jid(SJID) of
+                error ->
+                    unauthorized;
+                #jid{user = U, server = S} ->
+                    case ejabberd_auth:check_password(U, S, P) of
+                        true ->
+                            {U, S};
+                        false ->
+                            unauthorized
+                    end
+            end;
+         _ ->
+            unauthorized
+    end.
 
 make_xhtml(Els, global, Lang) ->
     {200, [html],
@@ -130,12 +189,16 @@ make_xhtml(Els, Host, Lang) ->
 		 [?XAE("div",
 		       [{"id", "header"}],
 		       [?XE("h1",
-			    [?ACT(Base, "Administration")]
+			    [?ACT("/admin/", "Administration")]
 			   )]),
 		  ?XAE("div",
 		       [{"id", "navigation"}],
 		       [?XE("ul",
-			    [?LI([?ACT(Base ++ "acls/", "Access Control Lists")]),
+			    [?LI([?XAE("div",
+			        [{"id", "navheadhost"}],
+			        [?AC(Base, Host)]
+			     )]),
+			     ?LI([?ACT(Base ++ "acls/", "Access Control Lists")]),
 			     ?LI([?ACT(Base ++ "access/", "Access Rules")]),
 			     ?LI([?ACT(Base ++ "users/", "Users")]),
 			     ?LI([?ACT(Base ++ "online-users/", "Online Users")]),
@@ -293,6 +356,11 @@ html>body #container {
   border-color: #fc8800;
   color: #FFF;
   background: #332;
+}
+
+#navheadhost {
+  text-align: left;
+  border-bottom: 2px solid #d47911;
 }
 
 #lastactivity li {
@@ -1233,7 +1301,7 @@ list_vhosts(Lang) ->
 			OnlineUsers =
 			    length(ejabberd_sm:get_vh_session_list(Host)),
 			RegisteredUsers =
-			    length(ejabberd_auth:get_vh_registered_users(Host)),
+			    ejabberd_auth:get_vh_registered_users_number(Host),
 			?XE("tr",
 			    [?XE("td", [?AC("../server/" ++ Host ++ "/", Host)]),
 			     ?XC("td", integer_to_list(RegisteredUsers)),
@@ -1382,8 +1450,7 @@ su_to_list({Server, User}) ->
 
 
 get_stats(global, Lang) ->
-    OnlineUsers = mnesia:table_info(presence, size),
-    AuthUsers = mnesia:table_info(session, size),
+    OnlineUsers = mnesia:table_info(session, size),
     RegisteredUsers = mnesia:table_info(passwd, size),
     S2SConns = ejabberd_s2s:dirty_get_connections(),
     S2SConnections = length(S2SConns),
@@ -1392,8 +1459,6 @@ get_stats(global, Lang) ->
 	  [?XE("tbody",
 	       [?XE("tr", [?XCT("td", "Registered Users:"),
 			   ?XC("td", integer_to_list(RegisteredUsers))]),
-		?XE("tr", [?XCT("td", "Authenticated Users:"),
-			   ?XC("td", integer_to_list(AuthUsers))]),
 		?XE("tr", [?XCT("td", "Online Users:"),
 			   ?XC("td", integer_to_list(OnlineUsers))]),
 		?XE("tr", [?XCT("td", "Outgoing s2s Connections:"),
@@ -1405,7 +1470,7 @@ get_stats(global, Lang) ->
 
 get_stats(Host, Lang) ->
     OnlineUsers = length(ejabberd_sm:get_vh_session_list(Host)),
-    RegisteredUsers = length(ejabberd_auth:get_vh_registered_users(Host)),
+    RegisteredUsers = ejabberd_auth:get_vh_registered_users_number(Host),
     [?XAE("table", [],
 	  [?XE("tbody",
 	       [?XE("tr", [?XCT("td", "Registered Users:"),
@@ -1595,7 +1660,18 @@ user_info(User, Server, Query, Lang) ->
 	    _ ->
 		[?XE("ul",
 		     lists:map(fun(R) ->
-				       ?LI([?C(R)])
+				       FIP = case ejabberd_sm:get_user_ip(
+						    User, Server, R) of
+						 undefined ->
+						     "";
+						 {IP, Port} ->
+						     " (" ++
+							 inet_parse:ntoa(IP) ++
+							 ":" ++
+							 integer_to_list(Port)
+							 ++ ")"
+					     end,
+				       ?LI([?C(R ++ FIP)])
 			       end, lists:sort(Resources)))]
 	end,
     Password = ejabberd_auth:get_password_s(User, Server),
@@ -1674,7 +1750,6 @@ user_queue(User, Server, Query, Lang) ->
 			     [us_to_list(US)]))] ++
 	case Res of
 	    ok -> [?CT("Submitted"), ?P];
-	    error -> [?CT("Bad format"), ?P];
 	    nothing -> []
 	end ++
 	[?XAE("form", [{"action", ""}, {"method", "post"}],
@@ -2038,7 +2113,7 @@ get_node(global, Node, ["db"], Query, Lang) ->
 	{badrpc, _Reason} ->
 	    [?XCT("h1", "RPC Call Error")];
 	Tables ->
-	    Res = node_db_parse_query(Node, Tables, Query),
+	    node_db_parse_query(Node, Tables, Query),
 	    STables = lists:sort(Tables),
 	    Rows = lists:map(
 		     fun(Table) ->
@@ -2075,11 +2150,7 @@ get_node(global, Node, ["db"], Query, Lang) ->
 				 ])
 		     end, STables),
 	    [?XC("h1", ?T("Database Tables at ") ++ atom_to_list(Node))] ++
-		case Res of
-		    ok -> [?CT("Submitted"), ?P];
-		    error -> [?CT("Bad format"), ?P];
-		    nothing -> []
-		end ++
+		[?CT("Submitted"), ?P] ++
 		[?XAE("form", [{"action", ""}, {"method", "post"}],
 		      [?XAE("table", [],
 			    [?XE("thead",
@@ -2202,8 +2273,7 @@ get_node(global, Node, ["statslight"], Query, Lang) ->
     UpTimeS = io_lib:format("~.3f", [element(1, UpTime)/1000]),
     CPUTime = rpc:call(Node, erlang, statistics, [runtime]),
     CPUTimeS = io_lib:format("~.3f", [element(1, CPUTime)/1000]),
-    Users = length(
-	      rpc:call(Node, ejabberd_sm, dirty_get_my_sessions_list, [])),
+    OnlineUsers = mnesia:table_info(session, size),
     TransactionsCommited =
 	rpc:call(Node, mnesia, system_info, [transaction_commits]),
     TransactionsAborted =
@@ -2222,9 +2292,9 @@ get_node(global, Node, ["statslight"], Query, Lang) ->
 		?XE("tr", [?XCT("td", "CPU Time:"),
 			   ?XAC("td", [{"class", "alignright"}],
 				CPUTimeS)]),
-		?XE("tr", [?XCT("td", "Authenticated Users:"),
+		?XE("tr", [?XCT("td", "Online Users:"),
 			   ?XAC("td", [{"class", "alignright"}],
-				integer_to_list(Users))]),
+				integer_to_list(OnlineUsers))]),
 		?XE("tr", [?XCT("td", "Transactions Commited:"),
 			   ?XAC("td", [{"class", "alignright"}],
 				integer_to_list(TransactionsCommited))]),
