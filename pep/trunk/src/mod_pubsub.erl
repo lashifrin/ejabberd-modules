@@ -969,7 +969,7 @@ create_new_node(Host, Node, Owner, ServerHost, Access, Configuration) ->
 		     [{xmlelement, "pubsub",
 		       [{"xmlns", ?NS_PUBSUB}],
 		       [{xmlelement, "create",
-			 [{"node", node_to_string(Node)}], []}]}]};
+			 [{"node", node_to_string(NewNode)}], []}]}]};
 		{error, _} = Error ->
 		    Error
 	    end;
