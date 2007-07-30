@@ -5,4 +5,3 @@
 {'src/ejabberd_local', [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
 {'src/ejabberd_sm', [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
 {'src/jlib', [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
-{'src/mod_disco',     [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
