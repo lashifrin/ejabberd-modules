@@ -49,11 +49,8 @@ if ($_POST) {
 
 }
 
-
-
-
-
-
+// clear _post data
+$_POST="";
 
 $res = pg_query($bazaj, "select a.nick, a.jid, b.grp from rosterusers a left outer join rostergroups b on (a.jid=b.jid and a.username=b.username) where a.username='$token' and a.nick !='' order by b.grp,a.nick");
 if (!$res) {
