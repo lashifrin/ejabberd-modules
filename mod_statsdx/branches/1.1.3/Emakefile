@@ -1,0 +1,4 @@
+{'../../ejabberd-dev/trunk/src/gen_mod', [{outdir, "../../ejabberd-dev/trunk/ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
+{'src/mod_statsdx',     [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
+{'src/mod_stats2file',     [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
+{'src/ejabberd_web_admin',     [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
