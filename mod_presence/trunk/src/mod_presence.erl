@@ -465,7 +465,7 @@ get_pixmaps_directory() ->
 available_themes(list) ->
     case file:list_dir(get_pixmaps_directory()) of
         {ok, List} ->
-            List;
+            lists:sort(List);
         {error, _} ->
             []
     end;
