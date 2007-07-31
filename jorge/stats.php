@@ -24,7 +24,7 @@ include ("upper.php");
 
 if ($admin_name!=$token) { print 'no access'; exit; }
 
-$today = date("Y-n-d");
+$today = date("Y-n-j");
 
 $top_ten_talkers_today="select at, owner_id, count from `logdb_stats_$xmpp_host` where at = '$today' order by count desc limit 10";
 $top_ten_talkers_yesterday="select at, owner_id, count from `logdb_stats_$xmpp_host` where at = (select date_format((date_sub(curdate(),interval 1 day)), \"%Y-%c-%d\")) order by count desc limit 10";

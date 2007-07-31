@@ -106,19 +106,19 @@ print '<tr>'."\n";
 print '<td rowspan="3" valign="top">'."\n";
 print '<ul id="treemenu2" class="treeview" style="padding: 0px;">'."\n";
 
-$result=mysql_query("select substring(at,1,7) as at, at as verb from `logdb_stats_$xmpp_host` where owner_id='$user_id' group by at order by at desc");
+$result=mysql_query("select substring(at,1,7) as at_m, at as verb from `logdb_stats_$xmpp_host` where owner_id='$user_id' group by at_m order by at desc");
 
 while ($entry=mysql_fetch_array($result)) {
 
 	$cl_entry = pl_znaczki(verbose_mo($entry[verb],$lang));
 
-if ($entry[at]==substr($tslice,0,7)) { $rel="open"; $bop="<b>"; $bcl="</b>"; } else { $rel=""; $bop=""; $bcl=""; } // ugly hack...
+if ($entry[at_m]==substr($tslice,0,7)) { $rel="open"; $bop="<b>"; $bcl="</b>"; } else { $rel=""; $bop=""; $bcl=""; } // ugly hack...
 
 print '<li>'.$bop.$cl_entry.$bcl.''."\n"; // folder - begin
 
   print '<ul rel="'.$rel.'">'."\n"; // folder content
 	
-	$query="select at from `logdb_stats_$xmpp_host` where owner_id = '$user_id' and substring(at,1,7) = '$entry[at]' order by str_to_date(at,'%Y-%m-%d') desc";
+	$query="select at from `logdb_stats_$xmpp_host` where owner_id = '$user_id' and substring(at,1,7) = '$entry[at_m]' order by str_to_date(at,'%Y-%m-%d') desc";
 	$result2=mysql_query($query);
 	while ($ent=mysql_fetch_array($result2)) {
 
