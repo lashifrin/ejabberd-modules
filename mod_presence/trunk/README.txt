@@ -84,3 +84,29 @@ on a web browser open the corresponding URI:
 	http://yourhost:5280/presence/<user>/<server>/image/
  * for image output with theme:
 	http://yourhost:5280/presence/<user>/<server>/image/<theme>/
+
+
+	EXAMPLE PHP CODE
+	----------------
+
+Tobias Markmann wrote this PHP script that generates HTML code.
+This example assumes that the URL of the presence is
+  http://example.org:5280/presence/tom/example.org
+
+<?php
+	$doc = new DOMDocument();
+	$doc->load('http://example.org:5280/presence/tom/example.org/xml');
+	$presences = $doc->getElementsByTagName("presence");
+	foreach ($presences as $presence) {
+		echo "<p style='bottom-margin: 1px;'>";
+		echo "<img src='http://example.org:5280/presence/tom/example.org/image' />";
+		echo "<a href='xmpp:".$presence->getAttribute('user').'@'.$presence->getAttribute('server')."/";
+		$resources = $presence->getElementsByTagName("resource");
+		foreach ($resources as $resource) {
+			echo $resource->getAttribute('name')."'>";
+			echo "Tobias Markmann</a> ( ";
+			echo $resource->nodeValue;
+		}
+		echo " )</p>";
+	}
+?> 
