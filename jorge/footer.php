@@ -44,3 +44,7 @@ if ($token==$admin_name) {print '<small>'.$admin_site_gen[$lang].$time.'s.</smal
 
 </body>
 </html>
+
+<?
+	ob_end_flush();
+?>

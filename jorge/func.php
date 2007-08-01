@@ -19,7 +19,6 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 */
-
 function getmicrotime(){
 list($usec, $sec) = explode(" ",microtime());
 return ((float)$usec + (float)$sec);
@@ -489,9 +488,9 @@ function parse_urls($text, $maxurl_len = 40, $target = '_blank')
 function verbose_date($dd,$lang="",$t="") {
 	// this function need to be changed!
 	if ($t=="m") {
-		$dd=strftime("%e.%m (%A)", strtotime("",strtotime("$dd"))). ""; }
+		$dd=strftime("%e.%m (%A)",strtotime("$dd")); }
 		else {
-		$dd=strftime("%e.%m.%Y, %A", strtotime("",strtotime("$dd"))). "<br>"; }
+		$dd=strftime("%e.%m.%Y, %A", strtotime("$dd")); }
 	$ee = array("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday");
 	$ee_pol = array("Pon","Wto","¦ro","Czw","Pi±","Sob","Nie");
 	$ee_eng = array("Mon","Tue","Wed","Thu","Fri","Sat","Sun");
@@ -500,13 +499,14 @@ function verbose_date($dd,$lang="",$t="") {
 	$ss_pol=array("Stycznia","Luty","Marca","Kwietnia","Maja","Czerwca","Lipca","Sierpnia","Wrzesnia","Pazdziernika","Listopada","Grudnia");
 	if ($lang=="pol") { $repl1=$ee_pol; } elseif($lang=="eng") { $repl1=$ee_eng; } elseif($lang=="") { $repl1=$ee_eng; }
 	$g=str_replace($ee,$repl1,$dd);
+	$ss_r="";
 	return str_replace($ss,$ss_r,$g);
 
 }
 
 function verbose_mo($dd,$lang) {
 	// this function need to be changed!
-	 $dd=strftime("%b %Y", strtotime("",strtotime("$dd"))). "<br>"; 
+	 $dd=strftime("%b %Y",strtotime($dd));
 	 $ss_eng = array("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"); // replace patern
 	 $ss = array("January","February", "March", "April", "May","June","July","August","September","October", "November","December"); // to verb eng
 	 $ss_pol=array("Styczeñ","Luty","Marzec","Kwiecieñ","Maj","Czerwiec","Lipiec","Sierpieñ","Wrzesieñ","Pa¼dziernik","Listopad","Grudzieñ"); // to verb pol
@@ -586,7 +586,4 @@ function get_do_log_list($user_id,$xmpp_host) {
 	return $splited_list;
 
 }
-
-
-
 ?>

@@ -19,19 +19,65 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 */
+// turn on buffering
+ob_start();
 
-$token=""; // initialize token variable
-$user_id=""; // initialize user_id
-$owner_id=""; // initialize owner_id;
-$talker=""; // initialize talker
-$tslice=""; // initialize tslice
-$xmpp_host=""; // initialize hostname
-$rem_adre = $_SERVER['REMOTE_ADDR'];
+// some definitions it seams there are needed in some moments...
+$token=""; 
+$user_id="";
+$owner_id="";
+$talker=""; 
+$tslice=""; 
+$xmpp_host=""; 
+$tslice_table="";
+$offset_arch="";
+$tag_count="";
+$add_tl="";
+$r="";
+$cur_loc="";
+$search_phase="";
+$start="";
+$a="";
+$search_loc="";
+$alert="";
+$ss_r="";
+$server="";
+$action="";
+$search_p="";
+$ee="";
+$licz="";
+$old_d="";
+$add_tl="";
+$aa="";
+
+define('pol','pol');
+define('eng','eng');
+define('user','user');
+define('pass','pass');
+define('name','name');
+define('host','host');
+define('sw_lang','sw_lang');
+define('verb','verb');
+define('at_m','at_m');
+define('tslice','tslice');
+define('talker','talker');
+define('server','server');
+define('ismylink','ismylink');
+define('linktag','linktag');
+define('lnk','lnk');
+define('action','action');
+define('strt','strt');
+define('at','at');
+define('time2_start','time2_start');
+define('time2_end','time2_end');
+define('c','c');
+
 
 include("func.php");
-$time_start=getmicrotime(); // debuging info _start_
 include("sessions.php"); // sessions handling
 include("config.php"); // read configuration
+
+$rem_adre = $_SERVER['REMOTE_ADDR'];
 
 // make dotted domaniname
 $xmpp_host_dotted=str_replace("_",".",$xmpp_host);
@@ -59,6 +105,8 @@ if (!preg_match("/index.php/i",$_SERVER['PHP_SELF'])) {
 
 	}
 
+
+$time_start=getmicrotime(); // debuging info _start_
 // charset - by default we work under utf-8. If you need other type of charset see pl_znaczki() in func.php and adjust encoding to your needs
 header("content-type: text/html; charset=utf-8");
 
