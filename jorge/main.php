@@ -142,7 +142,7 @@ print '</li>'."\n"; // folder - end
 </ul>
 
 <script type="text/javascript">
-ddtreemenu.createTree("treemenu2", true, 1)
+ddtreemenu.createTree("treemenu2", false, 1)
 </script>
 
 <?
