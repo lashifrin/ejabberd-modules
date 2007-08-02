@@ -518,7 +518,7 @@ function verbose_mo($dd,$lang) {
 
 
 function pl_znaczki($string) {
-	$string=iconv("iso-8859-2","UTF-8", "$string");
+	$string=mb_convert_encoding($string,"UTF-8","ISO-8859-2");
 	return $string;
 }
 
