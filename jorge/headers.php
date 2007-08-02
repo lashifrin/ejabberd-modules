@@ -20,6 +20,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 */
 // turn on buffering
+error_reporting(E_NONE);
 ob_start();
 
 // some definitions it seams there are needed in some moments...
