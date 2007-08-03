@@ -226,8 +226,13 @@ receive_loop(Sid, Rid, Wait, Hold, Attrs, StreamStart) ->
 prepare_response(Sid, Rid, Wait, Hold, Attrs, StreamStart) ->
     case http_get(Sid, Rid) of
 	{error, not_exists} ->
-            ?DEBUG("no session associated with sid: ~s", [Sid]),
-	    {404, ?HEADER, ""};
+            case xml:get_attr_s("type", Attrs) of
+                "terminate" ->
+                    {200, ?HEADER, "<body xmlns='http://jabber.org/protocol/httpbind'/>"};
+                _ ->
+                    ?DEBUG("no session associated with sid: ~s", [Sid]),
+                    {404, ?HEADER, ""}
+            end;
 	{ok, keep_on_hold} ->
 	    receive_loop(Sid, Rid, Wait, Hold, Attrs, StreamStart);
 	{ok, cancel} ->
