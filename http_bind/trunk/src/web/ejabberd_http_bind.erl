@@ -28,7 +28,7 @@
 	 close/1,
 	 process_request/1]).
 
--define(ejabberd_debug, true).
+%%-define(ejabberd_debug, true).
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
