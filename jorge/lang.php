@@ -23,6 +23,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 // Language file: Site work in UTF-8 encoding. If you want to use your custom charset f.e. Kanja or Russian charset,
 // modify function pl_znaczki() in func.php by adding right encoding conversion string to iconv. Default is Polish.
 
+if (__FILE__==$_SERVER['SCRIPT_FILENAME']) {
+
+	header("Location: index.php?act=logout");
+	exit;
+
+}
+
 $act_su[pol] = pl_znaczki("Zapisywanie rozmów na serwerze zosta³o w³±czone!");
 $act_su[eng] = "Message archiving activated succesfuly!";
 

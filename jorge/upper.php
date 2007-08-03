@@ -20,6 +20,14 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 */
 
+if (__FILE__==$_SERVER['SCRIPT_FILENAME']) {
+
+	header("Location: index.php?act=logout");
+	exit;
+
+}
+
+
 // well if we dont know in what language to talk, we cant show anything, so bye bye...
 if ($lang!="pol" && $lang!="eng") { header("Location: index.php?act=logout"); exit; }
 

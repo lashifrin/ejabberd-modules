@@ -19,6 +19,14 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 */
+
+if (__FILE__==$_SERVER['SCRIPT_FILENAME']) {
+
+	header("Location: index.php?act=logout");
+	exit;
+
+}
+
 class session {
 
     var $id;

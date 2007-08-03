@@ -19,18 +19,27 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 */
+
+if (__FILE__==$_SERVER['SCRIPT_FILENAME']) {
+
+	header("Location: index.php?act=logout");
+	exit;
+
+}
+
+
 function getmicrotime(){
-list($usec, $sec) = explode(" ",microtime());
-return ((float)$usec + (float)$sec);
+	list($usec, $sec) = explode(" ",microtime());
+	return ((float)$usec + (float)$sec);
 }
 
 
 
 function db_connect($mod_logdb)
 {
-$conn=mysql_connect("$mod_logdb[host]", "$mod_logdb[user]", "$mod_logdb[pass]") or die ("Us³uga chwilowo niedostêpna. Spróbuj za chwile. We're sorry but service is currently unavailable. Please try in few seconds.");
-mysql_select_db ("$mod_logdb[name]") or die ("Oops...");
-return $conn;
+	$conn=mysql_connect("$mod_logdb[host]", "$mod_logdb[user]", "$mod_logdb[pass]") or die ("Us³uga chwilowo niedostêpna. Spróbuj za chwile. We're sorry but service is currently unavailable. Please try in few seconds.");
+	mysql_select_db ("$mod_logdb[name]") or die ("Oops...");
+	return $conn;
 }
 
 

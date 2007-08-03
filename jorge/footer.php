@@ -20,8 +20,22 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 */
 
+if (__FILE__==$_SERVER['SCRIPT_FILENAME']) {
+
+	header("Location: index.php?act=logout");
+	exit;
+
+}
 
 $location=$_SERVER['PHP_SELF'];
+
+
+if ($location=="footer.php") {
+	header('Location: index.php?act=logout');
+	exit;
+}
+
+
 
 if (!preg_match("/index.php/i",$location)) {
 
