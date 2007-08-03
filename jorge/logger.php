@@ -22,9 +22,26 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 require ("headers.php");
 require ("upper.php");
+
+if ($_GET[a]) {
+	$offset_start=$_GET[a];
+	// we want only digits here,silently drop any invalid data and fallback to zero
+	if (!ctype_digit($offset_start)) { unset($offset_start); }
+	// and for sure, lets escape some, it is not nessesery as we validate this var abowe, but who knows if ctype have some bugs?
+	$offset_start=mysql_escape_string($offset_start);
+	}
+
+if (!$offset_start) { $offset_start=0; }
+
+$row=mysql_fetch_row(mysql_query("select count(id_user) from jorge_logger where id_user='$user_id'"));
+$nume=$row[0];
+
+//lets make code full-proff...discard userimput grater then his max events...
+if ($offset_start>$nume) { $offset_start=0; } 
+
 print '<h2>'.$logger_overview[$lang].'</h2>';
 
-$query = "select b.id_event, b.event as event,c.level as level, c.id_level, a.log_time,a.extra from jorge_logger a,jorge_logger_dict b,jorge_logger_level_dict c where a.id_log_detail=b.id_event and c.id_level=a.id_log_level and  id_user='$user_id' order by log_time desc";
+$query = "select b.id_event, b.event as event,c.level as level, c.id_level, a.log_time,a.extra from jorge_logger a,jorge_logger_dict b,jorge_logger_level_dict c where a.id_log_detail=b.id_event and c.id_level=a.id_log_level and  id_user='$user_id' order by log_time desc limit $offset_start,300";
 print '<center>';
 print '<table id="maincontent" class="ff" align="center" border="0" colspan="0" cellspacing="0" >'."\n";
 print '<tr class="maint"><td style="padding-left: 5px; padding-right: 0px;">'.$logger_f1[$lang].'</td><td style="padding-left: 0px; padding-right: 10px;">'.$logger_f2[$lang].'</td><td style="padding-left: 0px; padding-right: 10px;">'.$logger_f3[$lang].'</td><td style="padding-left: 0px; padding-right: 10px;">'.$logger_f4[$lang].'</td></tr>'."\n";
@@ -41,19 +58,27 @@ while ($results=mysql_fetch_array($result)) {
 	print '<td>'.$results[log_time].'</td>'."\n";
 	print '<td style="text-align: center;">'.$results[level].'</td>'."\n";
 	print '<td style="padding-left: 5px;">'.htmlspecialchars($ip_desc.$results[extra]).'</td></tr>'."\n";
-#	print '<tr height="1px"><td colspan="4"></td></tr>';
-
-
-
 
 }
 
-
-
-
-print '<tr class="spacer"><td colspan="4"></td></tr>'."\n";
-print '<tr class="maint" height="10px"><td colspan="4"></td></tr>'."\n";
+#print '<tr class="spacer"><td colspan="4"></td></tr>'."\n";
+#print '<tr class="maint" height="10px"><td colspan="4"></td></tr>'."\n";
 print '</tbody>';
+
+// pagination
+print '<tr class="spacer" height="1px"><td colspan="5"></td></tr>';
+print '<tr class="maint"><td style="text-align: center;" colspan="9">';
+for($i=0;$i < $nume;$i=$i+300){
+
+	if ($i!=$offset_start) {
+            print '<a href="?a='.$i.'"> <b>['.$i.']</b> </font></a>';
+	    }
+	    else { print ' -'.$i.'- '; }
+
+    }
+print '</td></tr>';
+
+
 print '</table>'."\n";
 print '</center>';
 
