@@ -21,8 +21,8 @@ Patches are most welcome.
 Requirements:
 - working ejabberd server with current mod_logdb (compatibile version is bundled with Jorge)
 - ejabberd backend requirements: postgresql (other backends are not supported)
-- mysql server 4.1+ (currently only MySQL backend of mod_logdb is supported)
-- any http server supporting php 4.4 (tested only with 4.4.4) with gd, mcrypt,iconv support
+- mysql server 4.1+ (developed on mysql5)
+- any http server supporting php 4.4+ (developed for php5) with gd, mcrypt support
 
 Client Requirements:
 - Jorge is tested and compatibile with: IE6+,Firefox 2+, Opera (..and Firefox is most recomended)
@@ -45,6 +45,5 @@ how many will activate logging, you must compute db partitions.
 
 !!!SECURITY NOTICE!!!
 
-This scripts was written in enviroment that has registered_globals set to off and it is good practise to leave that setting intact.
-Also please note if you have enabled qpc_magic_quotes() as this can break code in some places.
-Before use: check your server enviroment thoroughly for potencial security risk.
+Before use check if you set registered_globals to off. It is *required* for security reasons!
+Jorge is compatibile out of the box with: mod_security2 and php-hardened (suhosin) and easy to chroot.

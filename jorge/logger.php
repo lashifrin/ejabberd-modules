@@ -61,13 +61,11 @@ while ($results=mysql_fetch_array($result)) {
 
 }
 
-#print '<tr class="spacer"><td colspan="4"></td></tr>'."\n";
-#print '<tr class="maint" height="10px"><td colspan="4"></td></tr>'."\n";
 print '</tbody>';
 
 // pagination
-print '<tr class="spacer" height="1px"><td colspan="5"></td></tr>';
-print '<tr class="maint"><td style="text-align: center;" colspan="9">';
+print '<tr class="spacer" height="1px"><td colspan="4"></td></tr>';
+print '<tr class="maint"><td style="text-align: center;" colspan="4">';
 for($i=0;$i < $nume;$i=$i+300){
 
 	if ($i!=$offset_start) {
