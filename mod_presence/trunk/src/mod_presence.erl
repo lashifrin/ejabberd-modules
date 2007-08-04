@@ -8,7 +8,7 @@
 
 -module(mod_presence).
 -author('igor@goryachev.org').
--vsn('$Revision$').
+-vsn('$Revision$ ').
 
 -behaviour(gen_server).
 -behaviour(gen_mod).
@@ -62,9 +62,9 @@ start(Host, Opts) ->
 	 worker,
 	 [?MODULE]},
     Default_dir = case code:priv_dir(ejabberd) of
-		{error, _} -> ?PIXMAPS_DIR;
-		Path -> filename:join([Path, ?PIXMAPS_DIR])
-    end,
+		      {error, _} -> ?PIXMAPS_DIR;
+		      Path -> filename:join([Path, ?PIXMAPS_DIR])
+		  end,
     Dir = gen_mod:get_opt(pixmaps_path, Opts, Default_dir),
     catch ets:new(pixmaps_dirs, [named_table, public]),
     ets:insert(pixmaps_dirs, {directory, Dir}),
@@ -315,11 +315,11 @@ iq_set_register_info(Host, From, XML, Icon, _Lang) ->
     {LUser, LServer, _} = jlib:jid_tolower(From),
     LUS = {LUser, LServer},
     F = fun() ->
-	mnesia:write(
-	  #presence_registered{us_host = {LUS, Host},
-		  xml = XML,
-                  icon = Icon})
-    end,
+		mnesia:write(
+		  #presence_registered{us_host = {LUS, Host},
+				       xml = XML,
+				       icon = Icon})
+	end,
     case mnesia:transaction(F) of
 	{atomic, ok} ->
 	    {result, []};
