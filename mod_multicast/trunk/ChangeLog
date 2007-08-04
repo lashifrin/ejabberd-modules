@@ -1,0 +1,11 @@
+2007-08-04  Badlop  <badlop@ono.com>
+
+	* README.txt: Removed Changelog section.
+
+	* ChangeLog: New file to track changes.
+
+	* src/ejabberd_c2s.erl,
+	  src/ejabberd_router.erl,
+	  src/mod_muc_room.erl,
+	  src/mod_multicast.erl: Update 
+	  indentation using Emacs' erlang-mode.
