@@ -1,0 +1,6 @@
+2007-08-05  Badlop  <badlop@ono.com>
+
+	* ChangeLog: New file to track changes.
+
+	* src/mod_cron.erl: Fixed indentation.
+
