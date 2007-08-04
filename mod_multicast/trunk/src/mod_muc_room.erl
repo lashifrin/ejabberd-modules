@@ -500,11 +500,11 @@ handle_event({service_message, Msg}, _StateName, StateData) ->
     MessagePkt = {xmlelement, "message",
 		  [{"type", "groupchat"}],
 		  [{xmlelement, "body", [], [{xmlcdata, Msg}]}]},
-	route_packet(
-		StateData#state.server_host,
-		StateData#state.jid,
-		?DICT:to_list(StateData#state.users),
-		MessagePkt),
+    route_packet(
+      StateData#state.server_host,
+      StateData#state.jid,
+      ?DICT:to_list(StateData#state.users),
+      MessagePkt),
     NSD = add_message_to_history("",
 				 MessagePkt,
 				 StateData),
@@ -664,11 +664,11 @@ process_groupchat_message(From, {xmlelement, "message", Attrs, _Els} = Packet,
 		end,
 	    case IsAllowed of
 		true ->
-			route_packet(
-				StateData#state.server_host,
-				jlib:jid_replace_resource(StateData#state.jid, FromNick),
-				?DICT:to_list(StateData#state.users),
-				Packet),
+		    route_packet(
+		      StateData#state.server_host,
+		      jlib:jid_replace_resource(StateData#state.jid, FromNick),
+		      ?DICT:to_list(StateData#state.users),
+		      Packet),
 		    NewStateData2 =
 			add_message_to_history(FromNick,
 					       Packet,
@@ -2698,11 +2698,11 @@ add_to_log(Type, Data, StateData) ->
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Multicast
+%% Multicast
 
-% Server_host = string()
-% From = #jid
-% Destinations = [{_, #info}]
+%% Server_host = string()
+%% From = #jid
+%% Destinations = [{_, #info}]
 route_packet(Server_host, From, Destinations, Packet) ->
-	Destinations2 = [Info#user.jid || {_LJID, Info} <- Destinations],
-	ejabberd_router:route_multiple(Server_host, From, Destinations2, Packet).
+    Destinations2 = [Info#user.jid || {_LJID, Info} <- Destinations],
+    ejabberd_router:route_multiple(Server_host, From, Destinations2, Packet).

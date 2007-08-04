@@ -69,6 +69,7 @@ max_receivers:
 	-----
 
 Tasks to do:
+ - Implement XEP33 addresses limits
  - Document on the guide and ejabberd.cfg.example
  - Find a better solution to know if a local multicast service exists (ejabberd_router) for the sender component
  - Consider anti-spam requirements
@@ -79,10 +80,3 @@ Feature requests:
 Could use mod_multicast somehow:
  - mod_pubsub/mod_pep
  - mod_irc
-
-
-	CHANGELOG
-	---------
-
-0.1 - 2007-06-08
-  * Initial version

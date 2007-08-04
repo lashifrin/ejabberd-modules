@@ -8,7 +8,7 @@
 
 -module(mod_multicast).
 -author('badlop@ono.com').
--vsn('$Revision$').
+-vsn('$Revision$ ').
 
 -behaviour(gen_server).
 -behaviour(gen_mod).
@@ -53,7 +53,7 @@
 %% sender = From
 %% packet = xml()
 
--define(VERSION_MULTICAST, "$Revision$").
+-define(VERSION_MULTICAST, "$Revision$ ").
 -define(PROCNAME, ejabberd_mod_multicast).
 
 %% TODO: move this line to jlib.hrl
@@ -81,25 +81,25 @@
 %% Description: Starts the server
 %%--------------------------------------------------------------------
 start_link(LServerS, Opts) ->
-	Proc = gen_mod:get_module_proc(LServerS, ?PROCNAME),
-	gen_server:start_link({local, Proc}, ?MODULE, [LServerS, Opts], []).
+    Proc = gen_mod:get_module_proc(LServerS, ?PROCNAME),
+    gen_server:start_link({local, Proc}, ?MODULE, [LServerS, Opts], []).
 
 start(LServerS, Opts) ->
-	Proc = gen_mod:get_module_proc(LServerS, ?PROCNAME),
-	ChildSpec =	{
-		Proc,
-		{?MODULE, start_link, [LServerS, Opts]},
-		temporary,
-		1000,
-		worker,
-		[?MODULE]},
-	supervisor:start_child(ejabberd_sup, ChildSpec).
+    Proc = gen_mod:get_module_proc(LServerS, ?PROCNAME),
+    ChildSpec =	{
+      Proc,
+      {?MODULE, start_link, [LServerS, Opts]},
+      temporary,
+      1000,
+      worker,
+      [?MODULE]},
+    supervisor:start_child(ejabberd_sup, ChildSpec).
 
 stop(LServerS) ->
-	Proc = gen_mod:get_module_proc(LServerS, ?PROCNAME),
-	gen_server:call(Proc, stop),
-	supervisor:terminate_child(ejabberd_sup, Proc),
-	supervisor:delete_child(ejabberd_sup, Proc).
+    Proc = gen_mod:get_module_proc(LServerS, ?PROCNAME),
+    gen_server:call(Proc, stop),
+    supervisor:terminate_child(ejabberd_sup, Proc),
+    supervisor:delete_child(ejabberd_sup, Proc).
 
 
 %%====================================================================
@@ -114,14 +114,14 @@ stop(LServerS) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([LServerS, Opts]) ->
-	LServiceS = gen_mod:get_opt(host, Opts, "multicast." ++ LServerS),
-	Access = gen_mod:get_opt(access, Opts, all),
-	Max_receivers = gen_mod:get_opt(max_receivers, Opts, 50),
-	create_cache(),
-	try_start_loop(),
-	create_pool(),
-	ejabberd_router:register_route(LServiceS),
-	{ok, #state{lservice = LServiceS,
+    LServiceS = gen_mod:get_opt(host, Opts, "multicast." ++ LServerS),
+    Access = gen_mod:get_opt(access, Opts, all),
+    Max_receivers = gen_mod:get_opt(max_receivers, Opts, 50),
+    create_cache(),
+    try_start_loop(),
+    create_pool(),
+    ejabberd_router:register_route(LServiceS),
+    {ok, #state{lservice = LServiceS,
 		lserver = LServerS,
 		access = Access,
 		max_receivers = Max_receivers}}.
@@ -136,8 +136,8 @@ init([LServerS, Opts]) ->
 %% Description: Handling call messages
 %%--------------------------------------------------------------------
 handle_call(stop, _From, State) ->
-	try_stop_loop(),
-	{stop, normal, ok, State}.
+    try_stop_loop(),
+    {stop, normal, ok, State}.
 
 %%--------------------------------------------------------------------
 %% Function: handle_cast(Msg, State) -> {noreply, State} |
@@ -146,7 +146,7 @@ handle_call(stop, _From, State) ->
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
 handle_cast(_Msg, State) ->
-	{noreply, State}.
+    {noreply, State}.
 
 %%--------------------------------------------------------------------
 %% Function: handle_info(Info, State) -> {noreply, State} |
@@ -156,45 +156,46 @@ handle_cast(_Msg, State) ->
 %%--------------------------------------------------------------------
 
 handle_info({route, From, To, {xmlelement, "iq", Attrs, _Els} = Packet}, State) ->
-	IQ = jlib:iq_query_info(Packet),
-	case catch process_iq(From, IQ, State) of
-		Result when is_record(Result, iq) ->
-			ejabberd_router:route(To, From, jlib:iq_to_xml(Result));
-		{'EXIT', Reason} ->
-			?ERROR_MSG("Error when processing IQ stanza: ~p", [Reason]),
-			Err = jlib:make_error_reply(Packet, ?ERR_INTERNAL_SERVER_ERROR),
-			ejabberd_router:route(To, From, Err);
-		reply ->
-			LServiceS = jlib:jid_to_string(To),
-			case xml:get_attr_s("type", Attrs) of
-				"result" -> process_iqreply_result(From, LServiceS, Packet, State);
-				"error" -> process_iqreply_error(From, LServiceS, Packet)
-			end
-	end,
-	{noreply, State};
+    IQ = jlib:iq_query_info(Packet),
+    case catch process_iq(From, IQ, State) of
+	Result when is_record(Result, iq) ->
+	    ejabberd_router:route(To, From, jlib:iq_to_xml(Result));
+	{'EXIT', Reason} ->
+	    ?ERROR_MSG("Error when processing IQ stanza: ~p", [Reason]),
+	    Err = jlib:make_error_reply(Packet, ?ERR_INTERNAL_SERVER_ERROR),
+	    ejabberd_router:route(To, From, Err);
+	reply ->
+	    LServiceS = jlib:jid_to_string(To),
+	    case xml:get_attr_s("type", Attrs) of
+		"result" -> process_iqreply_result(From, LServiceS, Packet, State);
+		"error" -> process_iqreply_error(From, LServiceS, Packet)
+	    end
+    end,
+    {noreply, State};
 
+%% XEP33 allows only 'message' and 'presence' stanza type
 handle_info({route, From, To, {xmlelement, Stanza_type, _, _} = Packet},
-		#state{lservice = LServiceS,
-			lserver = LServerS,
-			access = Access,
-			max_receivers = Max_receivers} = State)
-		% XEP33 allows only 'message' and 'presence' stanza types
-		when (Stanza_type == "message") or (Stanza_type == "presence") ->
-	%io:format("Multicast packet: ~nFrom: ~p~nTo: ~p~nPacket: ~p~n", [From, To, Packet]),
-	case catch do_route(LServiceS, LServerS, Access, Max_receivers, From, To, Packet) of
-		{'EXIT', Reason} ->
-			?ERROR_MSG("~p", [Reason]);
-		_ ->
-			ok
-	end,
-	{noreply, State};
+	    #state{lservice = LServiceS,
+		   lserver = LServerS,
+		   access = Access,
+		   max_receivers = Max_receivers} = State)
+
+  when (Stanza_type == "message") or (Stanza_type == "presence") ->
+    %%io:format("Multicast packet: ~nFrom: ~p~nTo: ~p~nPacket: ~p~n", [From, To, Packet]),
+    case catch do_route(LServiceS, LServerS, Access, Max_receivers, From, To, Packet) of
+	{'EXIT', Reason} ->
+	    ?ERROR_MSG("~p", [Reason]);
+	_ ->
+	    ok
+    end,
+    {noreply, State};
 
 handle_info({get_host, Pid}, State) ->
-	Pid ! {my_host, State#state.lservice},
-	{noreply, State};
+    Pid ! {my_host, State#state.lservice},
+    {noreply, State};
 
 handle_info(_Info, State) ->
-	{noreply, State}.
+    {noreply, State}.
 
 %%--------------------------------------------------------------------
 %% Function: terminate(Reason, State) -> void()
@@ -204,15 +205,15 @@ handle_info(_Info, State) ->
 %% The return value is ignored.
 %%--------------------------------------------------------------------
 terminate(_Reason, State) ->
-	ejabberd_router:unregister_route(State#state.lservice),
-	ok.
+    ejabberd_router:unregister_route(State#state.lservice),
+    ok.
 
 %%--------------------------------------------------------------------
 %% Func: code_change(OldVsn, State, Extra) -> {ok, NewState}
 %% Description: Convert process state when code is changed
 %%--------------------------------------------------------------------
 code_change(_OldVsn, State, _Extra) ->
-	{ok, State}.
+    {ok, State}.
 
 
 %%====================================================================
@@ -226,62 +227,62 @@ code_change(_OldVsn, State, _Extra) ->
 
 %% disco#info request
 process_iq(_, #iq{type = get, xmlns = ?NS_DISCO_INFO, lang = Lang} = IQ, _State) ->
-	IQ#iq{type = result, sub_el =
-		[{xmlelement, "query", [{"xmlns", ?NS_DISCO_INFO}], iq_disco_info(Lang)}]};
+    IQ#iq{type = result, sub_el =
+	  [{xmlelement, "query", [{"xmlns", ?NS_DISCO_INFO}], iq_disco_info(Lang)}]};
 
 %% disco#items request
 process_iq(_, #iq{type = get, xmlns = ?NS_DISCO_ITEMS} = IQ, _) ->
-	IQ#iq{type = result, sub_el =
-		[{xmlelement, "query", [{"xmlns", ?NS_DISCO_ITEMS}], []}]};
+    IQ#iq{type = result, sub_el =
+	  [{xmlelement, "query", [{"xmlns", ?NS_DISCO_ITEMS}], []}]};
 
 %% vCard request
 process_iq(_, #iq{type = get, xmlns = ?NS_VCARD, lang = Lang} = IQ, _) ->
-	IQ#iq{type = result, sub_el =
-		[{xmlelement, "vCard", [{"xmlns", ?NS_VCARD}], iq_vcard(Lang)}]};
+    IQ#iq{type = result, sub_el =
+	  [{xmlelement, "vCard", [{"xmlns", ?NS_VCARD}], iq_vcard(Lang)}]};
 
 %% version request
 process_iq(_, #iq{type = get, xmlns = ?NS_VERSION} = IQ, _) ->
-	IQ#iq{type = result, sub_el =
-		[{xmlelement, "query", [{"xmlns", ?NS_VERSION}], iq_version()}]};
+    IQ#iq{type = result, sub_el =
+	  [{xmlelement, "query", [{"xmlns", ?NS_VERSION}], iq_version()}]};
 
 %% Unknown "set" or "get" request
 process_iq(_, #iq{type=Type, sub_el=SubEl} = IQ, _) when Type==get; Type==set ->
-	IQ#iq{type = error, sub_el = [SubEl, ?ERR_SERVICE_UNAVAILABLE]};
+    IQ#iq{type = error, sub_el = [SubEl, ?ERR_SERVICE_UNAVAILABLE]};
 
 %% IQ "result" or "error".
 process_iq(_, reply, _) ->
-	reply;
+    reply;
 
 %% IQ "result" or "error".
 process_iq(_, _, _) ->
-	ok.
+    ok.
 
 -define(FEATURE(Feat), {xmlelement,"feature",[{"var", Feat}],[]}).
 
 iq_disco_info(Lang) ->
-	[{xmlelement, "identity",
-		[{"category", "service"},
-		{"type", "multicast"},
-		{"name", translate:translate(Lang, "Multicast")}], []},
-	?FEATURE(?NS_DISCO_INFO),
-	?FEATURE(?NS_DISCO_ITEMS),
-	?FEATURE(?NS_VCARD),
-	?FEATURE(?NS_ADDRESS)].
+    [{xmlelement, "identity",
+      [{"category", "service"},
+       {"type", "multicast"},
+       {"name", translate:translate(Lang, "Multicast")}], []},
+     ?FEATURE(?NS_DISCO_INFO),
+     ?FEATURE(?NS_DISCO_ITEMS),
+     ?FEATURE(?NS_VCARD),
+     ?FEATURE(?NS_ADDRESS)].
 
 iq_vcard(Lang) ->
-	[{xmlelement, "FN", [],
-		[{xmlcdata, "ejabberd/mod_multicast"}]},
-	{xmlelement, "URL", [],
-		[{xmlcdata, ?EJABBERD_URI}]},
-	{xmlelement, "DESC", [],
-		[{xmlcdata, translate:translate(Lang, "ejabberd Multicast service\n"
-		"Copyright (c) 2007 Alexey Shchepin")}]}].
+    [{xmlelement, "FN", [],
+      [{xmlcdata, "ejabberd/mod_multicast"}]},
+     {xmlelement, "URL", [],
+      [{xmlcdata, ?EJABBERD_URI}]},
+     {xmlelement, "DESC", [],
+      [{xmlcdata, translate:translate(Lang, "ejabberd Multicast service\n"
+				      "Copyright (c) 2007 Alexey Shchepin")}]}].
 
 iq_version() ->
-	[{xmlelement, "name", [],
-		[{xmlcdata, "mod_multicast"}]},
-	{xmlelement, "version", [],
-		[{xmlcdata, ?VERSION_MULTICAST}]}].
+    [{xmlelement, "name", [],
+      [{xmlcdata, "mod_multicast"}]},
+     {xmlelement, "version", [],
+      [{xmlcdata, ?VERSION_MULTICAST}]}].
 
 
 %%%-------------------------
@@ -289,12 +290,12 @@ iq_version() ->
 %%%-------------------------
 
 do_route(LServiceS, LServerS, Access, Max_receivers, From, To, Packet) ->
-	case acl:match_rule(LServerS, Access, From) of
-		allow ->
-			do_route1(LServiceS, LServerS, Max_receivers, From, To, Packet);
-		_ ->
-			route_error(To, From, Packet, forbidden, "Access denied by service policy")
-	end.
+    case acl:match_rule(LServerS, Access, From) of
+	allow ->
+	    do_route1(LServiceS, LServerS, Max_receivers, From, To, Packet);
+	_ ->
+	    route_error(To, From, Packet, forbidden, "Access denied by service policy")
+    end.
 
 
 %%%-------------------------
@@ -302,50 +303,50 @@ do_route(LServiceS, LServerS, Access, Max_receivers, From, To, Packet) ->
 %%%-------------------------
 
 do_route1(LServiceS, LServerS, Max_receivers, From, To, Packet) ->
-	case get_adrs_el(Packet) of
-		{correct, Addresses_xml} ->
-			do_route2(LServiceS, LServerS, Max_receivers, From, To, Packet, Addresses_xml);
-		{error, Error_text} ->
-			route_error(To, From, Packet, bad_request, Error_text)
-	end.
+    case get_adrs_el(Packet) of
+	{correct, Addresses_xml} ->
+	    do_route2(LServiceS, LServerS, Max_receivers, From, To, Packet, Addresses_xml);
+	{error, Error_text} ->
+	    route_error(To, From, Packet, bad_request, Error_text)
+    end.
 
 get_adrs_el(Packet) ->
-	case xml:get_subtag(Packet, "addresses") of
-		{xmlelement, _, PAttrs, Addresses_xml} ->
-			case xml:get_attr_s("xmlns", PAttrs) of
-				?NS_ADDRESS -> 
-					case get_address_els(Addresses_xml) of
-						[] -> {error, "no address elements found"};
-						Addresses -> {correct, Addresses}
-					end;
-				_ -> {error, "wrong xmlns"}
-			end;
-		_ -> {error, "no addresses element found"}
-	end.
+    case xml:get_subtag(Packet, "addresses") of
+	{xmlelement, _, PAttrs, Addresses_xml} ->
+	    case xml:get_attr_s("xmlns", PAttrs) of
+		?NS_ADDRESS -> 
+		    case get_address_els(Addresses_xml) of
+			[] -> {error, "no address elements found"};
+			Addresses -> {correct, Addresses}
+		    end;
+		_ -> {error, "wrong xmlns"}
+	    end;
+	_ -> {error, "no addresses element found"}
+    end.
 
 %% Given a list of xmlelements, some may be of "address" type,
 %% return a list of only the attributes of those "address" elements
 get_address_els(Addresses_xml) ->
-	lists:foldl(
-		fun(XML, R) ->
-			case XML of
-				{xmlelement, "address", Attrs, _El} ->
-					case xml:get_attr_s("delivered", Attrs) of
-						"true" -> R;
-						_ ->
-							Type = xml:get_attr_s("type", Attrs),
-							case Type of
-								"to" -> [Attrs|R];
-								"cc" -> [Attrs|R];
-								"bcc" -> [Attrs|R];
-								_ -> R
-							end
-					end;
-				_ -> R
-			end
-		end,
-		[],
-		Addresses_xml).
+    lists:foldl(
+      fun(XML, R) ->
+	      case XML of
+		  {xmlelement, "address", Attrs, _El} ->
+		      case xml:get_attr_s("delivered", Attrs) of
+			  "true" -> R;
+			  _ ->
+			      Type = xml:get_attr_s("type", Attrs),
+			      case Type of
+				  "to" -> [Attrs|R];
+				  "cc" -> [Attrs|R];
+				  "bcc" -> [Attrs|R];
+				  _ -> R
+			      end
+		      end;
+		  _ -> R
+	      end
+      end,
+      [],
+      Addresses_xml).
 
 
 %%%-------------------------
@@ -353,69 +354,69 @@ get_address_els(Addresses_xml) ->
 %%%-------------------------
 
 do_route2(LServiceS, LServerS, Max_receivers, From1, To, Packet, Addresses) ->
-	From = jlib:jid_to_string(From1),
+    From = jlib:jid_to_string(From1),
 
-	case length(Addresses) > Max_receivers of
-		false -> ok;
-		true ->
-			route_error(To, From, Packet, not_acceptable,
+    case length(Addresses) > Max_receivers of
+	false -> ok;
+	true ->
+	    route_error(To, From, Packet, not_acceptable,
 			"Too many receiver fields were specified")
-	end,
+    end,
 
-	{JIDs, URIs, Others} = split_dests(Addresses),
+    {JIDs, URIs, Others} = split_dests(Addresses),
 
-	send_error_address(From1, Packet, URIs, Others),
+    send_error_address(From1, Packet, URIs, Others),
 
-	Grouped_addresses = group_dests_by_servers(JIDs),
+    Grouped_addresses = group_dests_by_servers(JIDs),
 
-	% Check if this packet requires relay
-	FromJID = jlib:string_to_jid(From),
-	case check_relay_required(FromJID#jid.server, LServerS, Grouped_addresses) of
-		false -> do_route3(LServiceS, LServerS, FromJID, Packet, Grouped_addresses);
-		true ->
-			% The packet requires relaying, but it is not allowed
-			% So let's abort and return error
-			route_error(To, FromJID, Packet, forbidden,
-				"Relaying denied by service policy")
-	end.
+    %% Check if this packet requires relay
+    FromJID = jlib:string_to_jid(From),
+    case check_relay_required(FromJID#jid.server, LServerS, Grouped_addresses) of
+	false -> do_route3(LServiceS, LServerS, FromJID, Packet, Grouped_addresses);
+	true ->
+	    %% The packet requires relaying, but it is not allowed
+	    %% So let's abort and return error
+	    route_error(To, FromJID, Packet, forbidden,
+			"Relaying denied by service policy")
+    end.
 
 %% Sends an error message for each unknown address
 %% Currently only 'jid' addresses are acceptable on ejabberd
 send_error_address(From, Packet, URIs, Others) ->
-	URIs2 = ["uri: " ++ URI || URI <- URIs],
-	Others2 = [io_lib:format("~p", [Other]) || Other <- Others],
-	Unknown_adds = URIs2 ++ Others2,
-	[route_error(From, From, Packet, jid_malformed, 
-			"The service does not understand the address: " ++ A)
-		|| A <- Unknown_adds].
+    URIs2 = ["uri: " ++ URI || URI <- URIs],
+    Others2 = [io_lib:format("~p", [Other]) || Other <- Others],
+    Unknown_adds = URIs2 ++ Others2,
+    [route_error(From, From, Packet, jid_malformed, 
+		 "The service does not understand the address: " ++ A)
+     || A <- Unknown_adds].
 
 %% Split the list of destinations depending on the address type
 split_dests(Addresses) ->
-	lists:foldl(
-		fun(Addr, {Jids1, Uris1, Others1}) ->
-			{Jid2, Uri2, Other2} =
-				case {xml:get_attr_s("jid", Addr), xml:get_attr_s("uri", Addr)} of
-					{[], []} -> {[], [], [Addr]};
-					{Jid, []} -> {[Jid], [], []};
-					{[], Uri} -> {[], [Uri], []};
-					{_Jid, _Uri} -> {[], [], [Addr]}
-				end,
-				{Jids1 ++ Jid2, Uris1 ++ Uri2, Others1 ++ Other2}
-		end,
-		{[], [], []},
-		Addresses).
+    lists:foldl(
+      fun(Addr, {Jids1, Uris1, Others1}) ->
+	      {Jid2, Uri2, Other2} =
+		  case {xml:get_attr_s("jid", Addr), xml:get_attr_s("uri", Addr)} of
+		      {[], []} -> {[], [], [Addr]};
+		      {Jid, []} -> {[Jid], [], []};
+		      {[], Uri} -> {[], [Uri], []};
+		      {_Jid, _Uri} -> {[], [], [Addr]}
+		  end,
+	      {Jids1 ++ Jid2, Uris1 ++ Uri2, Others1 ++ Other2}
+      end,
+      {[], [], []},
+      Addresses).
 
 %% Group destinations by their servers
 group_dests_by_servers(Jids) ->
-	D = lists:foldl(
-		fun(Jid, Dict) ->
-			ServerS = (stj(Jid))#jid.server,
-			dict:append(ServerS, Jid, Dict)
-		end,
-		dict:new(),
-		Jids),
-	Keys = dict:fetch_keys(D),
-	[ #group{server = Key, dests = dict:fetch(Key, D)} || Key <- Keys ].
+    D = lists:foldl(
+	  fun(Jid, Dict) ->
+		  ServerS = (stj(Jid))#jid.server,
+		  dict:append(ServerS, Jid, Dict)
+	  end,
+	  dict:new(),
+	  Jids),
+    Keys = dict:fetch_keys(D),
+    [ #group{server = Key, dests = dict:fetch(Key, D)} || Key <- Keys ].
 
 
 %%%-------------------------
@@ -423,18 +424,21 @@ group_dests_by_servers(Jids) ->
 %%%-------------------------
 
 do_route3(LServiceS, LServerS, From, Packet, Grouped_addresses) ->
-	Maxtime_positive = ?MAXTIME_CACHE_POSITIVE,
-	Maxtime_negative = ?MAXTIME_CACHE_NEGATIVE,
+    Maxtime_positive = ?MAXTIME_CACHE_POSITIVE,
+    Maxtime_negative = ?MAXTIME_CACHE_NEGATIVE,
 
-	% Fill all the possible data from the cache
-	Grouped_addresses2 = lists:map(
-		fun(G) ->
-			Cached_response = search_server_on_cache(G#group.server, LServerS, {Maxtime_positive, Maxtime_negative}),
-			G#group{multicast = Cached_response}
-		end,
-		Grouped_addresses),
+    %% Fill all the possible data from the cache
+    Grouped_addresses2 = 
+	lists:map(
+	  fun(G) ->
+		  Cached_response = 
+		      search_server_on_cache(G#group.server, LServerS,
+					     {Maxtime_positive, Maxtime_negative}),
+		  G#group{multicast = Cached_response}
+	  end,
+	  Grouped_addresses),
 
-	[process_group(LServiceS, From, Packet, Group) || Group <- Grouped_addresses2].
+    [process_group(LServiceS, From, Packet, Group) || Group <- Grouped_addresses2].
 
 
 %%%-------------------------
@@ -442,61 +446,58 @@ do_route3(LServiceS, LServerS, From, Packet, Grouped_addresses) ->
 %%%-------------------------
 
 process_group(LServiceS, From, Packet, Group) ->
-	Server = Group#group.server,
-	case Group#group.multicast of
+    Server = Group#group.server,
+    case Group#group.multicast of
 
-		{cached, local_server} ->
-			% Send a copy of the packet to each local user on Dests
-			[route_packet(From, ToUser, [], Packet) || ToUser <- Group#group.dests];
-		
-		{cached, not_supported} ->
-			% Send a copy of the packet to each remote user on Dests
-			[route_packet(From, ToUser, [], Packet) || ToUser <- Group#group.dests];
+	{cached, local_server} ->
+	    %% Send a copy of the packet to each local user on Dests
+	    [route_packet(From, ToUser, [], Packet) || ToUser <- Group#group.dests];
 
-		{cached, {multicast_supported, JID}} ->
-			% XEP33 is supported by the server, thanks to this service
-			route_packet(From, JID, Group#group.dests, Packet);
+	{cached, not_supported} ->
+	    %% Send a copy of the packet to each remote user on Dests
+	    [route_packet(From, ToUser, [], Packet) || ToUser <- Group#group.dests];
 
-		{obsolete, not_supported} ->
- 			send_query_info(Server, LServiceS),
- 			add_waiter(#waiter{
-				awaiting = {[Server], LServiceS, info},
-				group = Group,
-				renewal = false,
-				sender = From,
-				packet = Packet
-			});
+	{cached, {multicast_supported, JID}} ->
+	    %% XEP33 is supported by the server, thanks to this service
+	    route_packet(From, JID, Group#group.dests, Packet);
 
-		{obsolete, {multicast_supported, Old_service}} ->
- 			send_query_info(Old_service, LServiceS),
- 			add_waiter(#waiter{
-				awaiting = {[Old_service], LServiceS, info},
-				group = Group,
-				renewal = true,
-				sender = From,
-				packet = Packet
-			});
-		
-		not_cached ->
- 			send_query_info(Server, LServiceS),
- 			add_waiter(#waiter{
-				awaiting = {[Server], LServiceS, info},
-				group = Group,
-				renewal = false,
-				sender = From,
-				packet = Packet
-			})
+	{obsolete, not_supported} ->
+	    send_query_info(Server, LServiceS),
+	    add_waiter(#waiter{awaiting = {[Server], LServiceS, info},
+			       group = Group,
+			       renewal = false,
+			       sender = From,
+			       packet = Packet
+			      });
 
-	end.
+	{obsolete, {multicast_supported, Old_service}} ->
+	    send_query_info(Old_service, LServiceS),
+	    add_waiter(#waiter{awaiting = {[Old_service], LServiceS, info},
+			       group = Group,
+			       renewal = true,
+			       sender = From,
+			       packet = Packet
+			      });
+
+	not_cached ->
+	    send_query_info(Server, LServiceS),
+	    add_waiter(#waiter{awaiting = {[Server], LServiceS, info},
+			       group = Group,
+			       renewal = false,
+			       sender = From,
+			       packet = Packet
+			      })
+
+    end.
 
 %% Build and send packet to this group of destinations
 %% From = jid()
 %% To = string()
 %% Dests = [string()]
 route_packet(From, To, Dests, Packet) ->
-	Packet2 = update_addresses_xml(Packet, Dests),
-	Packet3 = xml:replace_tag_attr("to", To, Packet2),
-	ejabberd_router:route(From, stj(To), Packet3).
+    Packet2 = update_addresses_xml(Packet, Dests),
+    Packet3 = xml:replace_tag_attr("to", To, Packet2),
+    ejabberd_router:route(From, stj(To), Packet3).
 
 
 %%%-------------------------
@@ -506,17 +507,17 @@ route_packet(From, To, Dests, Packet) ->
 %% If the sender is external, and at least one destination is external,
 %% then this package requires relaying
 check_relay_required(RServer, LServerS, Grouped_addresses) ->
-	case string:str(RServer, LServerS) > 0 of
-		true -> false;
-		false -> check_relay_required(LServerS, Grouped_addresses)
-	end.
+    case string:str(RServer, LServerS) > 0 of
+	true -> false;
+	false -> check_relay_required(LServerS, Grouped_addresses)
+    end.
 
 check_relay_required(LServerS, Grouped_addresses) ->
-	lists:any(
-		fun(Group) ->
-			Group#group.server /= LServerS
-		end,
-		Grouped_addresses).
+    lists:any(
+      fun(Group) ->
+	      Group#group.server /= LServerS
+      end,
+      Grouped_addresses).
 
 
 %%%-------------------------
@@ -527,45 +528,46 @@ check_relay_required(LServerS, Grouped_addresses) ->
 %% If the address' type == bcc, remove address from list
 %% Dests = [string()]
 update_addresses_xml(Packet, Dests) ->
-	% get addresses
-	{xmlelement, _, PAttrs, Addresses_xml} = xml:get_subtag(Packet, "addresses"),
-	Addresses_xml2 = lists:map(
-		fun(XML) ->
-			case XML of
-				{xmlelement, "address", Attrs, _El} ->
-					case xml:get_attr_s("delivered", Attrs) of
-						"true" -> XML;
-						_ ->
-							JID = xml:get_attr_s("jid", Attrs),
-							Is_multicast_dest = lists:member(JID, Dests),
-							Type = xml:get_attr_s("type", Attrs),
-							case {Is_multicast_dest, Type} of
-								{true, _} -> XML;
-								{false, "to"} -> add_delivered(XML);
-								{false, "cc"} -> add_delivered(XML);
-								{false, "bcc"} -> [];
-								{false, _} -> XML
-							end
-					end;
-				{xmlcdata, _} -> [];
-				_ -> XML
-			end
-		end,
-		Addresses_xml),
-	Addresses_elements = case lists:flatten(Addresses_xml2) of
-		[] -> [];
-		E -> [{xmlelement, "addresses", PAttrs, E}]
-	end,
-	replace_tag_el("addresses", Addresses_elements, Packet).
+    %% get addresses
+    {xmlelement, _, PAttrs, Addresses_xml} = xml:get_subtag(Packet, "addresses"),
+    Addresses_xml2 = 
+	lists:map(
+	  fun(XML) ->
+		  case XML of
+		      {xmlelement, "address", Attrs, _El} ->
+			  case xml:get_attr_s("delivered", Attrs) of
+			      "true" -> XML;
+			      _ ->
+				  JID = xml:get_attr_s("jid", Attrs),
+				  Is_multicast_dest = lists:member(JID, Dests),
+				  Type = xml:get_attr_s("type", Attrs),
+				  case {Is_multicast_dest, Type} of
+				      {true, _} -> XML;
+				      {false, "to"} -> add_delivered(XML);
+				      {false, "cc"} -> add_delivered(XML);
+				      {false, "bcc"} -> [];
+				      {false, _} -> XML
+				  end
+			  end;
+		      {xmlcdata, _} -> [];
+		      _ -> XML
+		  end
+	  end,
+	  Addresses_xml),
+    Addresses_elements = case lists:flatten(Addresses_xml2) of
+			     [] -> [];
+			     E -> [{xmlelement, "addresses", PAttrs, E}]
+			 end,
+    replace_tag_el("addresses", Addresses_elements, Packet).
 
 add_delivered({xmlelement, Name, Attrs, Els}) ->
-	Attrs2 = Attrs ++ [{"delivered", "true"}],
-	{xmlelement, Name, Attrs2, Els}.
+    Attrs2 = Attrs ++ [{"delivered", "true"}],
+    {xmlelement, Name, Attrs2, Els}.
 
 replace_tag_el(El, Elements, {xmlelement, Name, Attrs, Els}) ->
-	Els1 = lists:keydelete(El, 2, Els),
-	Els2 = Els1 ++ Elements,
-	{xmlelement, Name, Attrs, Els2}.
+    Els1 = lists:keydelete(El, 2, Els),
+    Els2 = Els1 ++ Elements,
+    {xmlelement, Name, Attrs, Els2}.
 
 
 %%%-------------------------
@@ -574,21 +576,21 @@ replace_tag_el(El, Elements, {xmlelement, Name, Attrs, Els}) ->
 
 %% Ask the server if it supports XEP33
 send_query_info(RServerS, LServiceS) ->
-	% Don't ask a service which JID is "echo.*", 
-	case string:str(RServerS, "echo.") of
-		1 -> false;
-		_ -> send_query(RServerS, LServiceS, ?NS_DISCO_INFO)
-	end.
+    %% Don't ask a service which JID is "echo.*", 
+    case string:str(RServerS, "echo.") of
+	1 -> false;
+	_ -> send_query(RServerS, LServiceS, ?NS_DISCO_INFO)
+    end.
 
 send_query_items(RServerS, LServiceS) ->
-	send_query(RServerS, LServiceS, ?NS_DISCO_ITEMS).
+    send_query(RServerS, LServiceS, ?NS_DISCO_ITEMS).
 
 send_query(RServerS, LServiceS, XMLNS) ->
-	Packet = {xmlelement, "iq",
-		[{"to", RServerS}, {"type", "get"}],
-		[{xmlelement, "query", [{"xmlns", XMLNS}], []}]},
-	
-	ejabberd_router:route(stj(LServiceS), stj(RServerS), Packet).
+    Packet = {xmlelement, "iq",
+	      [{"to", RServerS}, {"type", "get"}],
+	      [{xmlelement, "query", [{"xmlns", XMLNS}], []}]},
+
+    ejabberd_router:route(stj(LServiceS), stj(RServerS), Packet).
 
 
 %%%-------------------------
@@ -596,18 +598,18 @@ send_query(RServerS, LServiceS, XMLNS) ->
 %%%-------------------------
 
 process_iqreply_error(From, LServiceS, _Packet) ->
-	% We don't need to change the TO attribute in the outgoing XMPP packet,
-	% since ejabberd will do it
+    %% We don't need to change the TO attribute in the outgoing XMPP packet,
+    %% since ejabberd will do it
 
-	% We do not change the FROM attribute in the outgoing XMPP packet,
-	% this way the user will know what server reported the error
+    %% We do not change the FROM attribute in the outgoing XMPP packet,
+    %% this way the user will know what server reported the error
 
-	FromS = jlib:jid_to_string(From),
-	case search_waiter(FromS, LServiceS, info) of
-		{found_waiter, Waiter} ->
-			received_awaiter(FromS, Waiter, LServiceS);
-		_ -> ok
-	end.
+    FromS = jlib:jid_to_string(From),
+    case search_waiter(FromS, LServiceS, info) of
+	{found_waiter, Waiter} ->
+	    received_awaiter(FromS, Waiter, LServiceS);
+	_ -> ok
+    end.
 
 
 %%%-------------------------
@@ -615,13 +617,13 @@ process_iqreply_error(From, LServiceS, _Packet) ->
 %%%-------------------------
 
 process_iqreply_result(From, LServiceS, Packet, State) ->
-	{xmlelement, "query", Attrs2, Els2} = xml:get_subtag(Packet, "query"),
-	case xml:get_attr_s("xmlns", Attrs2) of
-		?NS_DISCO_INFO ->
-			process_discoinfo_result(From, LServiceS, Els2, State);
-		?NS_DISCO_ITEMS ->
-			process_discoitems_result(From, LServiceS, Els2)
-	end.
+    {xmlelement, "query", Attrs2, Els2} = xml:get_subtag(Packet, "query"),
+    case xml:get_attr_s("xmlns", Attrs2) of
+	?NS_DISCO_INFO ->
+	    process_discoinfo_result(From, LServiceS, Els2, State);
+	?NS_DISCO_ITEMS ->
+	    process_discoitems_result(From, LServiceS, Els2)
+    end.
 
 
 %%%-------------------------
@@ -629,69 +631,68 @@ process_iqreply_result(From, LServiceS, Packet, State) ->
 %%%-------------------------
 
 process_discoinfo_result(From, LServiceS, Els, _State) ->
-	FromS = jlib:jid_to_string(From),
-	case search_waiter(FromS, LServiceS, info) of
-		{found_waiter, Waiter} ->
-			process_discoinfo_result2(FromS, LServiceS, Els, Waiter);
-		_ -> 
-			ok
-	end.
+    FromS = jlib:jid_to_string(From),
+    case search_waiter(FromS, LServiceS, info) of
+	{found_waiter, Waiter} ->
+	    process_discoinfo_result2(FromS, LServiceS, Els, Waiter);
+	_ -> 
+	    ok
+    end.
 
 process_discoinfo_result2(FromS, LServiceS, Els, Waiter) ->
-	% Check the response, to see if it includes the XEP33 feature. If support ==
-	Multicast_support = lists:any(
-		fun(XML) ->
-			case XML of
-				{xmlelement, "feature", Attrs, _} ->
-					?NS_ADDRESS == xml:get_attr_s("var", Attrs);
-				_ -> false
-			end
-		end,
-		Els),
+    %% Check the response, to see if it includes the XEP33 feature. If support ==
+    Multicast_support = 
+	lists:any(
+	  fun(XML) ->
+		  case XML of
+		      {xmlelement, "feature", Attrs, _} ->
+			  ?NS_ADDRESS == xml:get_attr_s("var", Attrs);
+		      _ -> false
+		  end
+	  end,
+	  Els),
 
-	Group = Waiter#waiter.group,
-	RServer = Group#group.server,
+    Group = Waiter#waiter.group,
+    RServer = Group#group.server,
 
-	case Multicast_support of
-		true -> 
+    case Multicast_support of
+	true -> 
+	    %% Store this response on cache
+	    add_response(RServer, {multicast_supported, FromS}),
 
-			% Store this response on cache
-			add_response(RServer, {multicast_supported, FromS}),
+	    %% Send XEP33 packet to JID
+	    FromM = Waiter#waiter.sender,
+	    DestsM =  Group#group.dests,
+	    PacketM = Waiter#waiter.packet,
+	    RServiceM = FromS,
+	    route_packet(FromM, RServiceM, DestsM, PacketM),
 
-			% Send XEP33 packet to JID
-			FromM = Waiter#waiter.sender,
-			DestsM =  Group#group.dests,
-			PacketM = Waiter#waiter.packet,
-			RServiceM = FromS,
-			route_packet(FromM, RServiceM, DestsM, PacketM),
+	    %% Remove from Pool
+	    delo_waiter(Waiter);
 
-			% Remove from Pool
-			delo_waiter(Waiter);
+	false -> 
+	    %% So we now know that JID does not support XEP33
+	    case FromS of
 
-		false -> 
+		RServer ->
+		    %% We asked the server, now let's see if any component supports it:
 
-			% So we now know that JID does not support XEP33
-			case FromS of
+		    %% Send disco#items query to JID
+		    send_query_items(FromS, LServiceS),
 
-				RServer ->
-					% We asked the server, now let's see if any component supports it:
+		    %% Store on Pool
+		    delo_waiter(Waiter),
+		    add_waiter(Waiter#waiter{
+				 awaiting = {[FromS], LServiceS, items},
+				 renewal = false
+				});
 
-					% Send disco#items query to JID
-					send_query_items(FromS, LServiceS),
+		%% We asked a component, and it does not support XEP33
+		_ ->
+		    received_awaiter(FromS, Waiter, LServiceS)
 
-					% Store on Pool
-					delo_waiter(Waiter),
-					add_waiter(Waiter#waiter{
-						awaiting = {[FromS], LServiceS, items},
-						renewal = false
-					});
-
-				% We asked a component, and it does not support XEP33
-				_ ->
-					received_awaiter(FromS, Waiter, LServiceS)
-
-			end
-	end.
+	    end
+    end.
 
 
 %%%-------------------------
@@ -700,31 +701,31 @@ process_discoinfo_result2(FromS, LServiceS, Els, Waiter) ->
 
 process_discoitems_result(From, LServiceS, Els) ->
 
-	% Convert list of xmlelement into list of strings
-	List = lists:foldl(
-		fun(XML, Res) ->
-			% For each one, if it's "item", look for jid
-			case XML of
-				{xmlelement, "item", Attrs, _} ->
-					Res ++ [xml:get_attr_s("jid", Attrs)];
-				_ -> Res
-			end
-		end,
-		[],
-		Els),
+    %% Convert list of xmlelement into list of strings
+    List = lists:foldl(
+	     fun(XML, Res) ->
+		     %% For each one, if it's "item", look for jid
+		     case XML of
+			 {xmlelement, "item", Attrs, _} ->
+			     Res ++ [xml:get_attr_s("jid", Attrs)];
+			 _ -> Res
+		     end
+	     end,
+	     [],
+	     Els),
 
-	% Send disco#info queries to each item
-	[send_query_info(Item, LServiceS) || Item <- List],
-			
-	% Search who was awaiting a disco#items response from this JID
-	FromS = jlib:jid_to_string(From),
-	{found_waiter, Waiter} = search_waiter(FromS, LServiceS, items),
+    %% Send disco#info queries to each item
+    [send_query_info(Item, LServiceS) || Item <- List],
 
-	delo_waiter(Waiter),
- 	add_waiter(Waiter#waiter{
-		awaiting = {List, LServiceS, info},
-		renewal = false
-	}).
+    %% Search who was awaiting a disco#items response from this JID
+    FromS = jlib:jid_to_string(From),
+    {found_waiter, Waiter} = search_waiter(FromS, LServiceS, items),
+
+    delo_waiter(Waiter),
+    add_waiter(Waiter#waiter{
+		 awaiting = {List, LServiceS, info},
+		 renewal = false
+		}).
 
 
 %%%-------------------------
@@ -732,44 +733,44 @@ process_discoitems_result(From, LServiceS, Els) ->
 %%%-------------------------
 
 received_awaiter(JID, Waiter, LServiceS) ->
-	{JIDs, LServiceS, info} = Waiter#waiter.awaiting,
-	delo_waiter(Waiter),
-	Group = Waiter#waiter.group,
-	RServer = Group#group.server,
+    {JIDs, LServiceS, info} = Waiter#waiter.awaiting,
+    delo_waiter(Waiter),
+    Group = Waiter#waiter.group,
+    RServer = Group#group.server,
 
-	% Remove this awaiter from the list of awaiting JIDs.
-	case lists:delete(JID, JIDs) of
+    %% Remove this awaiter from the list of awaiting JIDs.
+    case lists:delete(JID, JIDs) of
 
-		[] ->
-			% We couldn't find any service in this server that supports XEP33
-			case Waiter#waiter.renewal of
+	[] ->
+	    %% We couldn't find any service in this server that supports XEP33
+	    case Waiter#waiter.renewal of
 
-				false -> 
-					% Store on cache the response
-					add_response(RServer, not_supported),
+		false -> 
+		    %% Store on cache the response
+		    add_response(RServer, not_supported),
 
-					% Send a copy of the packet to each remote user on Dests
-					From = Waiter#waiter.sender,
-					Packet = Waiter#waiter.packet,
-					[route_packet(From, ToUser, [], Packet) || ToUser <- Group#group.dests];
+		    %% Send a copy of the packet to each remote user on Dests
+		    From = Waiter#waiter.sender,
+		    Packet = Waiter#waiter.packet,
+		    [route_packet(From, ToUser, [], Packet) || ToUser <- Group#group.dests];
 
-				true -> 
-					% We asked this component because the cache 
-					% said it would support XEP33, but it doesn't!
-					send_query_info(RServer, LServiceS),
-					add_waiter(Waiter#waiter{
-						awaiting = {[RServer], LServiceS, info},
-						renewal = false
-					})
-			end;
+		true -> 
+		    %% We asked this component because the cache 
+		    %% said it would support XEP33, but it doesn't!
+		    send_query_info(RServer, LServiceS),
+		    add_waiter(Waiter#waiter{
+				 awaiting = {[RServer], LServiceS, info},
+				 renewal = false
+				})
+	    end;
 
-		JIDs2 ->
-			% Maybe other component on the server supports XEP33
-			add_waiter(Waiter#waiter{
-				awaiting = {JIDs2, LServiceS, info},
-				renewal = false
+	JIDs2 ->
+	    %% Maybe other component on the server supports XEP33
+	    add_waiter(Waiter#waiter{
+			 awaiting = {JIDs2, LServiceS, info},
+			 renewal = false
 			})
-	end.
+    end.
 
 
 %%%-------------------------
@@ -777,49 +778,48 @@ received_awaiter(JID, Waiter, LServiceS) ->
 %%%-------------------------
 
 create_cache() ->
-	mnesia:create_table(multicastc, [{ram_copies, [node()]},
-		{attributes, record_info(fields, multicastc)}]).
+    mnesia:create_table(multicastc, [{ram_copies, [node()]},
+				     {attributes, record_info(fields, multicastc)}]).
 
 %% Add this response to the cache.
 %% If a previous response still exists, it's overwritten
 add_response(RServer, Response) ->
-	Secs = calendar:datetime_to_gregorian_seconds(calendar:now_to_datetime(now())),
-	mnesia:dirty_write(#multicastc{
-		rserver = RServer,
-		response = Response,
-		ts = Secs}).
+    Secs = calendar:datetime_to_gregorian_seconds(calendar:now_to_datetime(now())),
+    mnesia:dirty_write(#multicastc{rserver = RServer,
+				   response = Response,
+				   ts = Secs}).
 
 %% Search on the cache if there is a response for the server
 %% If there is a response but is obsolete,
 %% don't bother removing since it will later be overwritten anyway
 search_server_on_cache(RServer, LServerS, _Maxmins)
-		when RServer == LServerS ->
-	{cached, local_server};
+  when RServer == LServerS ->
+    {cached, local_server};
 
 search_server_on_cache(RServer, _LServerS, Maxmins) ->
-	case look_server(RServer) of
-		not_cached ->
-			not_cached;
-		{cached, Response, Ts} ->
-			Now = calendar:datetime_to_gregorian_seconds(calendar:now_to_datetime(now())),
-			case is_obsolete(Response, Ts, Now, Maxmins) of
-				false -> {cached, Response};
-				true -> {obsolete, Response}
-			end
-	end.
+    case look_server(RServer) of
+	not_cached ->
+	    not_cached;
+	{cached, Response, Ts} ->
+	    Now = calendar:datetime_to_gregorian_seconds(calendar:now_to_datetime(now())),
+	    case is_obsolete(Response, Ts, Now, Maxmins) of
+		false -> {cached, Response};
+		true -> {obsolete, Response}
+	    end
+    end.
 
 look_server(RServer) ->
-	case mnesia:dirty_read(multicastc, RServer) of
-		[] -> not_cached;
-		[M] -> {cached, M#multicastc.response, M#multicastc.ts}
-	end.
+    case mnesia:dirty_read(multicastc, RServer) of
+	[] -> not_cached;
+	[M] -> {cached, M#multicastc.response, M#multicastc.ts}
+    end.
 
 is_obsolete(Response, Ts, Now, {Max_pos, Max_neg}) ->
-	Max = case Response of
-		multicast_not_supported -> Max_neg;
-		_ -> Max_pos
-	end,
-	(Now - Ts) > Max.
+    Max = case Response of
+	      multicast_not_supported -> Max_neg;
+	      _ -> Max_pos
+	  end,
+    (Now - Ts) > Max.
 
 
 %%%-------------------------
@@ -827,26 +827,26 @@ is_obsolete(Response, Ts, Now, {Max_pos, Max_neg}) ->
 %%%-------------------------
 
 purge() ->
-	Maxmins_positive = ?MAXTIME_CACHE_POSITIVE,
-	Maxmins_negative = ?MAXTIME_CACHE_NEGATIVE,
-	Now = calendar:datetime_to_gregorian_seconds(calendar:now_to_datetime(now())),
-	purge(Now, {Maxmins_positive, Maxmins_negative}).
+    Maxmins_positive = ?MAXTIME_CACHE_POSITIVE,
+    Maxmins_negative = ?MAXTIME_CACHE_NEGATIVE,
+    Now = calendar:datetime_to_gregorian_seconds(calendar:now_to_datetime(now())),
+    purge(Now, {Maxmins_positive, Maxmins_negative}).
 
 purge(Now, Maxmins) ->
-	F = fun() ->
+    F = fun() ->
 		mnesia:foldl(
-			fun(R, _) ->
-				#multicastc{response = Response, ts = Ts} = R,
-				% If this record is obsolete, delete it
-				case is_obsolete(Response, Ts, Now, Maxmins) of
-					true -> mnesia:delete_object(R);
-					false -> ok
-				end
-			end,
-			none,
-			multicastc)
-		end,
-	mnesia:transaction(F).
+		  fun(R, _) ->
+			  #multicastc{response = Response, ts = Ts} = R,
+			  %% If this record is obsolete, delete it
+			  case is_obsolete(Response, Ts, Now, Maxmins) of
+			      true -> mnesia:delete_object(R);
+			      false -> ok
+			  end
+		  end,
+		  none,
+		  multicastc)
+	end,
+    mnesia:transaction(F).
 
 
 %%%-------------------------
@@ -854,33 +854,33 @@ purge(Now, Maxmins) ->
 %%%-------------------------
 
 try_start_loop() ->
-	case lists:member(?PURGE_PROCNAME, registered()) of
-		true -> ok;
-		false -> start_loop()
-	end,
-	?PURGE_PROCNAME ! new_module.
+    case lists:member(?PURGE_PROCNAME, registered()) of
+	true -> ok;
+	false -> start_loop()
+    end,
+    ?PURGE_PROCNAME ! new_module.
 
 start_loop() ->
-	register(?PURGE_PROCNAME, spawn(?MODULE, purge_loop, [0])),
-	?PURGE_PROCNAME ! purge_now.
+    register(?PURGE_PROCNAME, spawn(?MODULE, purge_loop, [0])),
+    ?PURGE_PROCNAME ! purge_now.
 
 try_stop_loop() ->
-	?PURGE_PROCNAME ! try_stop.
+    ?PURGE_PROCNAME ! try_stop.
 
-% NM = number of modules are running on this node
+%% NM = number of modules are running on this node
 purge_loop(NM) ->
-	receive
-		purge_now ->
-			purge(),
-			timer:send_after(?CACHE_PURGE_TIMER, ?PURGE_PROCNAME, purge_now),
-			purge_loop(NM);
-		new_module ->
-			purge_loop(NM + 1);
-		try_stop when NM > 1 ->
-			purge_loop(NM - 1);
-		try_stop ->
-			purge_loop_finished
-	end.
+    receive
+	purge_now ->
+	    purge(),
+	    timer:send_after(?CACHE_PURGE_TIMER, ?PURGE_PROCNAME, purge_now),
+	    purge_loop(NM);
+	new_module ->
+	    purge_loop(NM + 1);
+	try_stop when NM > 1 ->
+	    purge_loop(NM - 1);
+	try_stop ->
+	    purge_loop_finished
+    end.
 
 
 %%%-------------------------
@@ -888,35 +888,35 @@ purge_loop(NM) ->
 %%%-------------------------
 
 create_pool() ->
-	catch ets:new(multicastp, [duplicate_bag, public, named_table, {keypos, 2}]).
+    catch ets:new(multicastp, [duplicate_bag, public, named_table, {keypos, 2}]).
 
-% If a Waiter with the same key exists, it overwrites it
+%% If a Waiter with the same key exists, it overwrites it
 add_waiter(Waiter) ->
-	true = ets:insert(multicastp, Waiter).
+    true = ets:insert(multicastp, Waiter).
 
 delo_waiter(Waiter) ->
-	true = ets:delete_object(multicastp, Waiter).
+    true = ets:delete_object(multicastp, Waiter).
 
-% Search on the Pool who is waiting for this result
-% If there are several matches, pick the first one only
+%% Search on the Pool who is waiting for this result
+%% If there are several matches, pick the first one only
 search_waiter(JID, LServiceS, Type) ->
-	Rs = ets:foldl(
-		fun(W, Res) ->
-			{JIDs, LServiceS1, Type1} = W#waiter.awaiting,
-			case lists:member(JID, JIDs) 
-				and (LServiceS == LServiceS1)
-				and (Type1 == Type) of
-				true -> Res ++ [W];
-				false -> Res
-			end
-		end,
-		[],
-		multicastp
-	),
-	case Rs of
-		[R | _] -> {found_waiter, R};
-		[] -> waiter_not_found
-	end.
+    Rs = ets:foldl(
+	   fun(W, Res) ->
+		   {JIDs, LServiceS1, Type1} = W#waiter.awaiting,
+		   case lists:member(JID, JIDs) 
+		       and (LServiceS == LServiceS1)
+		       and (Type1 == Type) of
+		       true -> Res ++ [W];
+		       false -> Res
+		   end
+	   end,
+	   [],
+	   multicastp
+	  ),
+    case Rs of
+	[R | _] -> {found_waiter, R};
+	[] -> waiter_not_found
+    end.
 
 
 %%%-------------------------
@@ -924,20 +924,20 @@ search_waiter(JID, LServiceS, Type) ->
 %%%-------------------------
 
 route_error(From, To, Packet, ErrType, ErrText) ->
-	{xmlelement, _Name, Attrs, _Els} = Packet,
-	Lang = xml:get_attr_s("xml:lang", Attrs),
-	Reply = make_reply(ErrType, Lang, ErrText),
-	Err = jlib:make_error_reply(Packet, Reply),
-	ejabberd_router:route(From, To, Err).
+    {xmlelement, _Name, Attrs, _Els} = Packet,
+    Lang = xml:get_attr_s("xml:lang", Attrs),
+    Reply = make_reply(ErrType, Lang, ErrText),
+    Err = jlib:make_error_reply(Packet, Reply),
+    ejabberd_router:route(From, To, Err).
 
 make_reply(bad_request, Lang, ErrText) ->
-	?ERRT_BAD_REQUEST(Lang, ErrText);
+    ?ERRT_BAD_REQUEST(Lang, ErrText);
 make_reply(jid_malformed, Lang, ErrText) ->
-	?ERRT_JID_MALFORMED(Lang, ErrText);
+    ?ERRT_JID_MALFORMED(Lang, ErrText);
 make_reply(not_acceptable, Lang, ErrText) ->
-	?ERRT_NOT_ACCEPTABLE(Lang, ErrText);
+    ?ERRT_NOT_ACCEPTABLE(Lang, ErrText);
 make_reply(forbidden, Lang, ErrText) ->
-	?ERRT_FORBIDDEN(Lang, ErrText).
+    ?ERRT_FORBIDDEN(Lang, ErrText).
 
 stj(String) -> jlib:string_to_jid(String).
 
@@ -950,27 +950,27 @@ stj(String) -> jlib:string_to_jid(String).
 %% Destinations = [jid()]
 %% Multicast_service = string()
 route_packet_multicast(From, Destinations, Multicast_service, Packet) ->
-	% Build and addresses element
-	Ad_list = [build_address_element(jlib:jid_to_string(JID)) || JID <- Destinations],
-	Element = build_addresses_element(Ad_list),
+    %% Build and addresses element
+    Ad_list = [build_address_element(jlib:jid_to_string(JID)) || JID <- Destinations],
+    Element = build_addresses_element(Ad_list),
 
-	% Add element to original packet
-	{xmlelement, Type, Attrs, Els} = Packet,
-	Els2 = [Element | Els],
-	Packet_multicast = {xmlelement, Type, Attrs, Els2},
+    %% Add element to original packet
+    {xmlelement, Type, Attrs, Els} = Packet,
+    Els2 = [Element | Els],
+    Packet_multicast = {xmlelement, Type, Attrs, Els2},
 
-	% Finally, send the packet to the multicast service
-	ejabberd_router:route(
-		From,
-		jlib:string_to_jid(Multicast_service),
-		Packet_multicast).
+    %% Finally, send the packet to the multicast service
+    ejabberd_router:route(
+      From,
+      jlib:string_to_jid(Multicast_service),
+      Packet_multicast).
 
 build_address_element(Jid_string) ->
-	{xmlelement, "address", 
-		[{"type", "bcc"}, {"jid", Jid_string}], 
-		[]}.
+    {xmlelement, "address", 
+     [{"type", "bcc"}, {"jid", Jid_string}], 
+     []}.
 
 build_addresses_element(Addresses_list) ->
-	{xmlelement, "addresses", 
-		[{"xmlns", "http://jabber.org/protocol/address"}], 
-		Addresses_list}.
+    {xmlelement, "addresses", 
+     [{"xmlns", "http://jabber.org/protocol/address"}], 
+     Addresses_list}.
