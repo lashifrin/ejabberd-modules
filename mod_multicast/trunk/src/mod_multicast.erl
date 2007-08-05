@@ -33,7 +33,7 @@
 -include("ejabberd.hrl").
 -include("jlib.hrl").
 
--record(state, {lserver, lservice, access, max_receivers}).
+-record(state, {lserver, lservice, access, max_receivers, limits}).
 
 -record(multicastc, {rserver, response, ts}).
 %% ts: timestamp (in seconds) when the cache item was last updated
@@ -53,6 +53,12 @@
 %% sender = From
 %% packet = xml()
 
+-record(limits, {remote_user_message, remote_user_presence, 
+		 remote_server_message, remote_server_presence,
+		 local_user_message, local_user_presence, 
+		 local_server_message, local_server_presence}).
+%% All the elements are of type value()
+
 -define(VERSION_MULTICAST, "$Revision$ ").
 -define(PROCNAME, ejabberd_mod_multicast).
 
@@ -70,7 +76,15 @@
 -define(CACHE_PURGE_TIMER, 86400000). % Purge the cache every 24 hours
 -define(DISCO_QUERY_TIMEOUT, 10000). % After 10 seconds of delay the server is declared dead
 
--define(MAX_ADDRESSES_PER_PAQUET, 20).
+%% TODO: Put the correct values once XEP33 is updated
+-define(DEFAULT_LIMIT_REMOTE_USER_MESSAGE,   0).
+-define(DEFAULT_LIMIT_REMOTE_USER_PRESENCE,  0).
+-define(DEFAULT_LIMIT_REMOTE_SERVER_MESSAGE, 20).
+-define(DEFAULT_LIMIT_REMOTE_SERVER_PRESENCE,20).
+-define(DEFAULT_LIMIT_LOCAL_USER_MESSAGE,    20).
+-define(DEFAULT_LIMIT_LOCAL_USER_PRESENCE,   20).
+-define(DEFAULT_LIMIT_LOCAL_SERVER_MESSAGE,  infinite).
+-define(DEFAULT_LIMIT_LOCAL_SERVER_PRESENCE, infinite).
 
 
 %%====================================================================
@@ -117,6 +131,7 @@ init([LServerS, Opts]) ->
     LServiceS = gen_mod:get_opt(host, Opts, "multicast." ++ LServerS),
     Access = gen_mod:get_opt(access, Opts, all),
     Max_receivers = gen_mod:get_opt(max_receivers, Opts, 50),
+    Limits = build_limit_record(gen_mod:get_opt(limits, Opts, [])),
     create_cache(),
     try_start_loop(),
     create_pool(),
@@ -124,7 +139,8 @@ init([LServerS, Opts]) ->
     {ok, #state{lservice = LServiceS,
 		lserver = LServerS,
 		access = Access,
-		max_receivers = Max_receivers}}.
+		max_receivers = Max_receivers,
+		limits = Limits}}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -178,8 +194,8 @@ handle_info({route, From, To, {xmlelement, Stanza_type, _, _} = Packet},
 	    #state{lservice = LServiceS,
 		   lserver = LServerS,
 		   access = Access,
-		   max_receivers = Max_receivers} = State)
-
+		   max_receivers = Max_receivers,
+		   limits = Limits} = State)
   when (Stanza_type == "message") or (Stanza_type == "presence") ->
     %%io:format("Multicast packet: ~nFrom: ~p~nTo: ~p~nPacket: ~p~n", [From, To, Packet]),
     case catch do_route(LServiceS, LServerS, Access, Max_receivers, From, To, Packet) of
@@ -916,6 +932,46 @@ search_waiter(JID, LServiceS, Type) ->
     case Rs of
 	[R | _] -> {found_waiter, R};
 	[] -> waiter_not_found
+    end.
+
+
+%%%-------------------------
+%%% Limits: utils
+%%%-------------------------
+
+%% Type definitions for data structures related with XEP33 limits
+%% limit() = {Name, Value}
+%% Name = atom()
+%% Value = {Type, Number}
+%% Type = default | custom
+%% Number = integer() | infinite
+
+list_of_limits() ->
+    [{remote_user_message, ?DEFAULT_LIMIT_REMOTE_USER_MESSAGE},
+     {remote_user_presence, ?DEFAULT_LIMIT_REMOTE_USER_PRESENCE},
+     {remote_server_message, ?DEFAULT_LIMIT_REMOTE_SERVER_MESSAGE},
+     {remote_server_presence, ?DEFAULT_LIMIT_REMOTE_SERVER_PRESENCE},
+     {local_user_message, ?DEFAULT_LIMIT_LOCAL_USER_MESSAGE},
+     {local_user_presence, ?DEFAULT_LIMIT_LOCAL_USER_PRESENCE},
+     {local_server_message, ?DEFAULT_LIMIT_LOCAL_SERVER_MESSAGE},
+     {local_server_presence, ?DEFAULT_LIMIT_LOCAL_SERVER_PRESENCE}].
+
+%% Build a record of type #limits{}
+%% In fact, it builds a list and then converts to tuple
+%% It is important to put the elements in the list in 
+%% the same order than the elements in record #limits
+build_limit_record(LimitOpts) ->
+    Limits = [
+	      get_limit_value(Name, Default, LimitOpts) 
+	      || {Name, Default} <- list_of_limits()],
+    list_to_tuple([limits | Limits]).
+
+get_limit_value(Name, Default, LimitOpts) ->
+    case lists:keysearch(Name, 1, LimitOpts) of
+	{value, {Name, Number}} -> 
+	    {custom, Number};
+	false -> 
+	    {default, Default}
     end.
 
 
