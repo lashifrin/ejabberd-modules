@@ -242,9 +242,9 @@ code_change(_OldVsn, State, _Extra) ->
 %%%------------------------
 
 %% disco#info request
-process_iq(_, #iq{type = get, xmlns = ?NS_DISCO_INFO, lang = Lang} = IQ, _State) ->
+process_iq(_, #iq{type = get, xmlns = ?NS_DISCO_INFO, lang = Lang} = IQ, State) ->
     IQ#iq{type = result, sub_el =
-	  [{xmlelement, "query", [{"xmlns", ?NS_DISCO_INFO}], iq_disco_info(Lang)}]};
+	  [{xmlelement, "query", [{"xmlns", ?NS_DISCO_INFO}], iq_disco_info(Lang, State)}]};
 
 %% disco#items request
 process_iq(_, #iq{type = get, xmlns = ?NS_DISCO_ITEMS} = IQ, _) ->
@@ -275,7 +275,7 @@ process_iq(_, _, _) ->
 
 -define(FEATURE(Feat), {xmlelement,"feature",[{"var", Feat}],[]}).
 
-iq_disco_info(Lang) ->
+iq_disco_info(Lang, State) ->
     [{xmlelement, "identity",
       [{"category", "service"},
        {"type", "multicast"},
@@ -283,7 +283,8 @@ iq_disco_info(Lang) ->
      ?FEATURE(?NS_DISCO_INFO),
      ?FEATURE(?NS_DISCO_ITEMS),
      ?FEATURE(?NS_VCARD),
-     ?FEATURE(?NS_ADDRESS)].
+     ?FEATURE(?NS_ADDRESS), 
+iq_disco_info_extras(State)].
 
 iq_vcard(Lang) ->
     [{xmlelement, "FN", [],
@@ -973,6 +974,35 @@ get_limit_value(Name, Default, LimitOpts) ->
 	false -> 
 	    {default, Default}
     end.
+
+
+%%%-------------------------
+%%% Limits: XEP-0128 Service Discovery Extensions
+%%%-------------------------
+
+%% Code borrowed from mod_muc_room.erl
+
+-define(RFIELDT(Type, Var, Val),
+	{xmlelement, "field", [{"var", Var}, {"type", Type}],
+	 [{xmlelement, "value", [], [{xmlcdata, Val}]}]}).
+
+-define(RFIELDV(Var, Val),
+	{xmlelement, "field", [{"var", Var}],
+	 [{xmlelement, "value", [], [{xmlcdata, Val}]}]}).
+
+iq_disco_info_extras(State) ->
+	[limits | Limits_values] = tuple_to_list(State#state.limits),
+
+	Limits = lists:zip(list_of_limits(), Limits_values),
+	List_limits_xmpp = [?RFIELDV(to_string(Name), to_string(Number)) || 
+	{{Name, _Default}, {custom, Number}} <- Limits],
+
+    {xmlelement, "x", [{"xmlns", ?NS_XDATA}, {"type", "result"}],
+      [?RFIELDT("hidden", "FORM_TYPE", ?NS_ADDRESS)] ++ List_limits_xmpp
+	}.
+
+to_string(A) ->
+	hd(io_lib:format("~p",[A])).
 
 
 %%%-------------------------
