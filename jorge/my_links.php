@@ -51,7 +51,7 @@ if ($del=="t") {
 	if (!ctype_digit($link_id)) { print 'Dont play with that...'; exit; }
 	$query="delete from jorge_mylinks where owner_id='$user_id' and id_link='$link_id'";
 	$result=mysql_query($query) or die ("Ooops...Error");
-	print '<center><p style="background-color: yellow;">'.$my_links_removed[$lang].'</p>';
+	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 250pt;">'.$my_links_removed[$lang].'</div></center>';
 }
 
 

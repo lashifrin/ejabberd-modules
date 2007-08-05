@@ -114,6 +114,9 @@ $search_tip[eng] = "Displaying";
 $search_why[pol] = pl_znaczki(" wyników (<i>nie wiêcej ni¿ 100</i>). <a href=\"help.php#22\" target=\"_blank\"><u>Dowiedz siê dlaczego</u></a>");
 $search_why[eng] = " search results (<i>not more then 100</i>). <a href=\"help.php#22\" target=\"_blank\"><u>Find out why</u></a>";
 
+$search_warn[pol] = pl_znaczki("Uwaga: Wyszukuje tylko w podanym przedziale czasu");
+$search_warn[eng] = "Warning: Showing results only from selected time range";
+
 $arch_on[pol] = pl_znaczki("W³±cz archiwizacje");
 $arch_on[eng] = "Turn on archivization";
 
@@ -223,7 +226,7 @@ $del_conf_my_link[eng] = "Do you really want to remove that link?";
 $not_in_r[pol] = pl_znaczki("Poza list± kontaktów");
 $not_in_r[eng] = "Not in roster";
 
-$del_info[pol] = pl_znaczki("Rozmowa zosata³a usuniêta");
+$del_info[pol] = pl_znaczki("Rozmowa zosta³a usuniêta");
 $del_info[eng] = "Chat succesfuly deleted";
 
 $del_my_link[pol] = pl_znaczki("usuñ");

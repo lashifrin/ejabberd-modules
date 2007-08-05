@@ -141,7 +141,9 @@ if (preg_match("/search_v2.php/i",$location))
 
 
 // check if archivization is currently enabled...
-if ($sess->get('log_status') == "0") { print '<p style="background-color: yellow; text-align: center;">'.$status_msg1[$lang].'</p>'; }
+if ($sess->get('log_status') == "0") { 
+		print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 250pt;">'.$status_msg1[$lang].'</div></center>';
+	}
 if ($start) { $cur_loc="&start=$start"; }
 
 // check number of offline messages - this feature is pushed into later betas...

@@ -45,7 +45,7 @@ if ($_POST) {
 	if ($do_not_log_list=="") { $do_not_log_list="NULL"; }
 	$query="update logdb_settings_jabber_autocom_pl set donotlog_list='$do_not_log_list' where owner_id='$user_id'";
 	mysql_query($query) or die ("Error");
-	print '<center><b>'.$con_saved[$lang].'</b></br></br></center>';
+	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 150pt;">'.$con_saved[$lang].'</div></center><br>';
 
 }
 

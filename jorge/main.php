@@ -43,13 +43,12 @@ $talker=mysql_escape_string($talker);
 $server=mysql_escape_string($server);
 if (validate_date($tslice) == "f") { unset ($tslice); unset($e_string); unset($talker); }
 
+include("upper.php");
 
 // chat deletion
 if ($action=="del") {
 
-	if (!ctype_digit($talker)) { print 'Ooops...(1)'; exit; }
-	if (!ctype_digit($server)) { print 'Ooops...(2)'; exit; }
-
+	if (!ctype_digit($talker) OR !ctype_digit($server)) { print 'Ooops...'; exit; }
 	$query="delete from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server'";
 	$result=mysql_query($query) or die ("Ooops...Error");
 	$jid_date = ' '.get_user_name($talker,$xmpp_host).'@'.get_server_name($server,$xmpp_host).' ('.$tslice.')';
@@ -82,10 +81,8 @@ if ($action=="del") {
 	$result=mysql_query($query) or die ("Ooops...Error");
 	mysql_free_result($result);
 	unset($talker);
-	print '<center><p style="background-color: yellow; text-align: center; font-weight: bold;">'.$del_info[$lang].'</p></center>';
+	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 200pt;">'.$del_info[$lang].'</div></center>';
 }
-
-include("upper.php");
 
 // some validation things...
 if ($start) { if ((validate_start($start))!="t") { $start="0";  }  }

@@ -27,31 +27,29 @@ $tgle=$_POST['toggle'];
 // czy archiwizacja w³±czona?
 if ($sess->get('enabled') == "f") { header ("Location: not_enabled.php"); }
 
+include("upper.php");
+
 // zmiana w profilu logowania
 if ($tgle) { 
 	$rres=update_set_log_tgle($user_id,$xmpp_host);
 	if ($rres=="on") {
-				print '<center><p style="background-color: yellow; text-align: center;">'.$status_msg2[$lang].'</p></center>';
 				$sess->set('log_status','1');
 				$query="insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time) values ('$user_id',7,1,NOW())";
 				mysql_query($query) or die;
+				print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 400pt;">'.$status_msg2[$lang].'</div></center>';
 
 		}
 		elseif($rres=="off") {
-				print '<center><p style="background-color: yellow; text-align: center;">'.$status_msg3[$lang].'</p></center>';
 				$sess->set('log_status','0');
 				$query="insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time) values ('$user_id',6,1,NOW())";
 				mysql_query($query) or die;
+				print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 400pt;">'.$status_msg3[$lang].'</div></center>';
 
 		}
 }
 
-
-include("upper.php");
-
-
 print '<center>';
-print '<b>'.$menu_item4[$lang].'</b><br /><br />';
+print '<br><b>'.$menu_item4[$lang].'</b><br /><br />';
 
 print '<form action="settings.php" method="post"><input class="btn" type="submit" name="toggle" value="';
 if ($sess->get('log_status') == "0") { print $arch_on[$lang]; } else { print $arch_off[$lang]; }
@@ -60,14 +58,6 @@ print '"></form>'."\n";
 
 print '<input class="btn" type="button" value="'.$change_pass[$lang].'"><br /><br />';
 print '<input class="btn" type="button" value="'.$settings_del[$lang].'"><br />';
-
-
-
-
-
-
-
-
 
 print '</center>';
 print '<br /><br /><br />';
