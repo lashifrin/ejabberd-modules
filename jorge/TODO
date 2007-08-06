@@ -22,12 +22,10 @@ ToDo list for beta front-end for mod_logdb:
 - unique all links (now missing in my_links and some parts of main)
 - add config file (done) *
 - finish account managment
-- finish exports and printings
+- finish exports(done) *
 - code cleanups
 
 Sumarizing before bumping to beta stage:
-- printing
-- archive settings
 - "bug hunt session"
 
 

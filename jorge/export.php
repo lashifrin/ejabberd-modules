@@ -59,13 +59,13 @@ if (validate_date($tslice) == "f") { exit; }
 $tslice_table='logdb_messages_'.$tslice.'_'.$xmpp_host;
 $result=db_q($user_id,$server,$tslice_table,$talker,$search_p,"3",$start,$xmpp_host,20000);
 
-$user_name=get_user_name($talker,$xmpp_host);
-$server_name=get_server_name($server,$xmpp_host);
-$nickname=query_nick_name($bazaj,$token,$user_name,$server_name);
+$user_name=get_user_name(mysql_escape_string($talker),$xmpp_host);
+$server_name=get_server_name(mysql_escape_string($server),$xmpp_host);
+$nickname=query_nick_name($bazaj,pg_escape_string($token),pg_escape_string($user_name),pg_escape_string($server_name));
 
 $lang=$sess->get('language');
 
-$from_s = array("\"","/","\\",":","*","?","<",">","|");
+$from_s = array("\"","/","\\",":","*","?","<",">","|"," ");
 $nickname_sanitized=str_replace($from_s,"_",$nickname);
 
 header("Cache-Control: public, must-revalidate");
