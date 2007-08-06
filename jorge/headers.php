@@ -27,8 +27,10 @@ if (__FILE__==$_SERVER['SCRIPT_FILENAME']) {
 }
 
 // turn on buffering
-error_reporting(E_NONE);
 ob_start();
+
+// error reporting to off
+error_reporting(E_NONE);
 
 // some definitions it seams there are needed in some moments...
 $token=""; 

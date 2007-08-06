@@ -194,7 +194,8 @@ if ($talker) {
 	$loc_link = $e_string;
 	$action_link = "$tslice@$talker@$server_id@0@null@$loc_link@del@";
 	$action_link = encode_url($action_link,$token,$url_key);
-	print '<td align="right">['.$print_t[$lang].'&nbsp;|&nbsp;'.$export_t[$lang].'&nbsp;|&nbsp;<a class="delq" href="main.php?a='.$action_link.'" onClick="if (!confirm(\''.$del_conf[$lang].'\')) return false;">'.$del_t[$lang].'</a>]</td></tr>'."\n";
+	print '<td align="right" style="padding-right: 5px;">[ <a class="export" href="export.php?a='.$e_string.'">'.$export_link[$lang].'</a>&nbsp; | &nbsp;';
+	print '<a class="delq" href="main.php?a='.$action_link.'" onClick="if (!confirm(\''.$del_conf[$lang].'\')) return false;">'.$del_t[$lang].'</a> ]</td></tr>'."\n";
 	print '<tr class="spacer"><td colspan="4"></td></tr>';
 	print '<tbody id="searchfield">'."\n";
 	while ($entry = mysql_fetch_array($result))

@@ -145,9 +145,6 @@ $user_t[eng] = "User:";
 $my_links_save[pol] = pl_znaczki("MyLinks");
 $my_links_save[eng] = "MyLinks";
 
-$export_t[pol] = pl_znaczki("export");
-$export_t[eng] = "export";
-
 $print_t[pol] = pl_znaczki("drukuj");
 $print_t[eng] = "print";
 
@@ -315,6 +312,15 @@ $time_range_from[eng] = "from";
 
 $time_range_to[pol] = pl_znaczki("do");
 $time_range_to[eng] = "to";
+
+$export_link[pol] = pl_znaczki("exportuj");
+$export_link[eng] = "export";
+
+$export_head1[pol] = pl_znaczki("Historia rozmowy miêdzy Tob± a ");
+$export_head1[eng] = "Exported chat between you and ";
+
+$export_head2[pol] = pl_znaczki("przeprowadzona w dniu");
+$export_head2[eng] = "performed on";
 
 
 $help_search_tips[pol] = pl_znaczki("
