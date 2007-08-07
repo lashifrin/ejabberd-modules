@@ -1,0 +1,7 @@
+2007-08-07  Badlop  <badlop@ono.com>
+
+	* src/mod_ctlextra.erl: Fixed indentation.
+
+	* ChangeLog: New file to track changes.
+
+	* README.txt: Removed Changelog section.

@@ -1,4 +1,10 @@
-mod_ctlextra - Additional commands for ejabberdctl
+
+
+	mod_ctlextra - Additional commands for ejabberdctl
+
+	Homepage: http://ejabberd.jabber.ru/mod_ctlextra
+	Author: Badlop
+	Module for ejabberd 1.1.2 or newer
 
 
 	CONFIGURATION
@@ -26,13 +32,3 @@ Example content for the roster file:
    [{"bob", "example.org", "workers", "Bob"},
     {"mart", "example.org", "workers", "Mart"},
     {"Rich", "example.org", "bosses", "Rich"}].
-
-
-	CHANGELOG
-	=========
-
-0.2.5 - 26/Jan/2007
-  * New command for server and vhosts: muc-online-rooms (thanks to tsventon)
-
-0.2.4 - 22/Sep/2006
-  * Added new commands: status-num and status-list
