@@ -27,6 +27,7 @@ ToDo list for beta front-end for mod_logdb:
 
 Sumarizing before bumping to beta stage:
 - "bug hunt session"
+- optimize main.php - code can be execuded 4 times faster - there is bug in design
 
 
 Amusements:
