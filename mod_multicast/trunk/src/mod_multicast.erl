@@ -77,14 +77,12 @@
 -define(DISCO_QUERY_TIMEOUT, 10000). % After 10 seconds of delay the server is declared dead
 
 %% TODO: Put the correct values once XEP33 is updated
--define(DEFAULT_LIMIT_REMOTE_USER_MESSAGE,   0).
--define(DEFAULT_LIMIT_REMOTE_USER_PRESENCE,  0).
--define(DEFAULT_LIMIT_REMOTE_SERVER_MESSAGE, 20).
--define(DEFAULT_LIMIT_REMOTE_SERVER_PRESENCE,20).
--define(DEFAULT_LIMIT_LOCAL_USER_MESSAGE,    20).
--define(DEFAULT_LIMIT_LOCAL_USER_PRESENCE,   20).
--define(DEFAULT_LIMIT_LOCAL_SERVER_MESSAGE,  infinite).
--define(DEFAULT_LIMIT_LOCAL_SERVER_PRESENCE, infinite).
+-define(DEFAULT_LIMIT_LOCAL_MESSAGE,  100).
+-define(DEFAULT_LIMIT_LOCAL_PRESENCE, 100).
+-define(DEFAULT_LIMIT_REMOTE_MESSAGE, 20).
+-define(DEFAULT_LIMIT_REMOTE_PRESENCE,20).
+-define(DEFAULT_LIMIT_UNRESTRICTED_MESSAGE,  infinite).
+-define(DEFAULT_LIMIT_UNRESTRICTED_PRESENCE, infinite).
 
 
 %%====================================================================
@@ -242,9 +240,9 @@ code_change(_OldVsn, State, _Extra) ->
 %%%------------------------
 
 %% disco#info request
-process_iq(_, #iq{type = get, xmlns = ?NS_DISCO_INFO, lang = Lang} = IQ, State) ->
+process_iq(From, #iq{type = get, xmlns = ?NS_DISCO_INFO, lang = Lang} = IQ, State) ->
     IQ#iq{type = result, sub_el =
-	  [{xmlelement, "query", [{"xmlns", ?NS_DISCO_INFO}], iq_disco_info(Lang, State)}]};
+	  [{xmlelement, "query", [{"xmlns", ?NS_DISCO_INFO}], iq_disco_info(From, Lang, State)}]};
 
 %% disco#items request
 process_iq(_, #iq{type = get, xmlns = ?NS_DISCO_ITEMS} = IQ, _) ->
@@ -275,7 +273,7 @@ process_iq(_, _, _) ->
 
 -define(FEATURE(Feat), {xmlelement,"feature",[{"var", Feat}],[]}).
 
-iq_disco_info(Lang, State) ->
+iq_disco_info(From, Lang, State) ->
     [{xmlelement, "identity",
       [{"category", "service"},
        {"type", "multicast"},
@@ -283,8 +281,8 @@ iq_disco_info(Lang, State) ->
      ?FEATURE(?NS_DISCO_INFO),
      ?FEATURE(?NS_DISCO_ITEMS),
      ?FEATURE(?NS_VCARD),
-     ?FEATURE(?NS_ADDRESS), 
-     iq_disco_info_extras(State)].
+     ?FEATURE(?NS_ADDRESS)] ++
+	iq_disco_info_extras(From, State).
 
 iq_vcard(Lang) ->
     [{xmlelement, "FN", [],
@@ -947,15 +945,19 @@ search_waiter(JID, LServiceS, Type) ->
 %% Type = default | custom
 %% Number = integer() | infinite
 
+list_of_limits(local) ->
+    [{local_message, ?DEFAULT_LIMIT_LOCAL_MESSAGE},
+     {local_presence, ?DEFAULT_LIMIT_LOCAL_PRESENCE}];
+
+list_of_limits(remote) ->
+    [{remote_message, ?DEFAULT_LIMIT_REMOTE_MESSAGE},
+     {remote_presence, ?DEFAULT_LIMIT_REMOTE_PRESENCE}].
+
 list_of_limits() ->
-    [{remote_user_message, ?DEFAULT_LIMIT_REMOTE_USER_MESSAGE},
-     {remote_user_presence, ?DEFAULT_LIMIT_REMOTE_USER_PRESENCE},
-     {remote_server_message, ?DEFAULT_LIMIT_REMOTE_SERVER_MESSAGE},
-     {remote_server_presence, ?DEFAULT_LIMIT_REMOTE_SERVER_PRESENCE},
-     {local_user_message, ?DEFAULT_LIMIT_LOCAL_USER_MESSAGE},
-     {local_user_presence, ?DEFAULT_LIMIT_LOCAL_USER_PRESENCE},
-     {local_server_message, ?DEFAULT_LIMIT_LOCAL_SERVER_MESSAGE},
-     {local_server_presence, ?DEFAULT_LIMIT_LOCAL_SERVER_PRESENCE}].
+    list_of_limits(local) ++
+	list_of_limits(remote) ++
+	[{unrestricted_message, ?DEFAULT_LIMIT_UNRESTRICTED_MESSAGE},
+	 {unrestricted_presence, ?DEFAULT_LIMIT_UNRESTRICTED_PRESENCE}].
 
 %% Build a record of type #limits{}
 %% In fact, it builds a list and then converts to tuple
@@ -980,7 +982,7 @@ get_limit_value(Name, Default, LimitOpts) ->
 %%% Limits: XEP-0128 Service Discovery Extensions
 %%%-------------------------
 
-%% Code borrowed from mod_muc_room.erl
+%% Some parts of code are borrowed from mod_muc_room.erl
 
 -define(RFIELDT(Type, Var, Val),
 	{xmlelement, "field", [{"var", Var}, {"type", Type}],
@@ -990,16 +992,34 @@ get_limit_value(Name, Default, LimitOpts) ->
 	{xmlelement, "field", [{"var", Var}],
 	 [{xmlelement, "value", [], [{xmlcdata, Val}]}]}).
 
-iq_disco_info_extras(State) ->
+iq_disco_info_extras(From, State) ->
+    SenderT = sender_type(From),
+    io:format("se: ~p~n", [SenderT]),
+    case iq_disco_info_extras2(SenderT, State) of
+	[] -> [];
+	List_limits_xmpp ->
+	    [{xmlelement, "x", [{"xmlns", ?NS_XDATA}, {"type", "result"}],
+	      [?RFIELDT("hidden", "FORM_TYPE", ?NS_ADDRESS)] ++ List_limits_xmpp
+	     }]
+    end.
+
+sender_type(From) ->
+    Local_hosts = ?MYHOSTS,
+    case lists:member(From#jid.lserver, Local_hosts) of
+	true -> local;
+	false -> remote
+    end.
+
+iq_disco_info_extras2(SenderT, State) ->
     [limits | Limits_values] = tuple_to_list(State#state.limits),
-
-    Limits = lists:zip(list_of_limits(), Limits_values),
-    List_limits_xmpp = [?RFIELDV(to_string(Name), to_string(Number)) || 
-			   {{Name, _Default}, {custom, Number}} <- Limits],
-
-    {xmlelement, "x", [{"xmlns", ?NS_XDATA}, {"type", "result"}],
-     [?RFIELDT("hidden", "FORM_TYPE", ?NS_ADDRESS)] ++ List_limits_xmpp
-    }.
+    Limits_all = lists:zip(list_of_limits(), Limits_values),
+    Limits_sender = list_of_limits(SenderT),
+    [?RFIELDV(to_string(Name1), to_string(Number)) || 
+	%% Report only custom limits
+	{{Name1, _Default}, {custom, Number}} <- Limits_all,
+	%% And report only the limits that are interesting for this sender
+	{Name2, _} <- Limits_sender,
+	Name1 == Name2].
 
 to_string(A) ->
     hd(io_lib:format("~p",[A])).

@@ -1,6 +1,8 @@
 2007-08-07  Badlop  <badlop@ono.com>
 
-	* src/mod_multicast.erl: Fixed indentation.
+	* src/mod_multicast.erl: Fixed indentation. No differentiation 
+	between user and server limits. In disco#info responses, report 
+	only limits of interest.
 
 2007-08-06  Badlop  <badlop@ono.com>
 
@@ -12,9 +14,8 @@
 
 2007-08-04  Badlop  <badlop@ono.com>
 
-	* README.txt: Removed Changelog section.
-
 	* ChangeLog: New file to track changes.
+	* README.txt: Removed Changelog section.
 
 	* src/ejabberd_c2s.erl,
 	  src/ejabberd_router.erl,
