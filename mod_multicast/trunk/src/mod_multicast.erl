@@ -284,7 +284,7 @@ iq_disco_info(Lang, State) ->
      ?FEATURE(?NS_DISCO_ITEMS),
      ?FEATURE(?NS_VCARD),
      ?FEATURE(?NS_ADDRESS), 
-iq_disco_info_extras(State)].
+     iq_disco_info_extras(State)].
 
 iq_vcard(Lang) ->
     [{xmlelement, "FN", [],
@@ -991,18 +991,18 @@ get_limit_value(Name, Default, LimitOpts) ->
 	 [{xmlelement, "value", [], [{xmlcdata, Val}]}]}).
 
 iq_disco_info_extras(State) ->
-	[limits | Limits_values] = tuple_to_list(State#state.limits),
+    [limits | Limits_values] = tuple_to_list(State#state.limits),
 
-	Limits = lists:zip(list_of_limits(), Limits_values),
-	List_limits_xmpp = [?RFIELDV(to_string(Name), to_string(Number)) || 
-	{{Name, _Default}, {custom, Number}} <- Limits],
+    Limits = lists:zip(list_of_limits(), Limits_values),
+    List_limits_xmpp = [?RFIELDV(to_string(Name), to_string(Number)) || 
+			   {{Name, _Default}, {custom, Number}} <- Limits],
 
     {xmlelement, "x", [{"xmlns", ?NS_XDATA}, {"type", "result"}],
-      [?RFIELDT("hidden", "FORM_TYPE", ?NS_ADDRESS)] ++ List_limits_xmpp
-	}.
+     [?RFIELDT("hidden", "FORM_TYPE", ?NS_ADDRESS)] ++ List_limits_xmpp
+    }.
 
 to_string(A) ->
-	hd(io_lib:format("~p",[A])).
+    hd(io_lib:format("~p",[A])).
 
 
 %%%-------------------------
