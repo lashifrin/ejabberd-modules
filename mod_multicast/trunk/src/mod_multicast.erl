@@ -672,6 +672,8 @@ process_discoinfo_result2(FromS, LServiceS, Els, Waiter) ->
 
     case Multicast_support of
 	true -> 
+	    Limits = get_limits_xml(Els),
+
 	    %% Store this response on cache
 	    add_response(RServer, {multicast_supported, FromS}),
 
@@ -708,6 +710,67 @@ process_discoinfo_result2(FromS, LServiceS, Els, Waiter) ->
 
 	    end
     end.
+
+get_limits_xml(Els) ->
+    %% Get limits reported by the remote service
+    LimitOpts = get_limits_els(Els),
+
+    %% Build the final list of limits
+    %% For the ones not reported, put default numbers
+    build_limit_record(LimitOpts).
+
+%% Look for disco#info extras which may report limits
+%% TODO: Check if there are useful functions in xml.erl to clean this code 
+get_limits_els(Els) ->
+    lists:foldl(
+      fun(XML, R) -> 
+	      case XML of 
+		  {xmlelement, "x", Attrs, SubEls} ->
+		      case (?NS_XDATA == xml:get_attr_s("xmlns", Attrs)) and
+			  ("result" == xml:get_attr_s("type", Attrs)) of
+			  true -> get_limits_fields(SubEls) ++ R;
+			  false -> R
+		      end;
+		  _ -> R
+	      end
+      end,
+      [],
+      Els
+     ).
+
+get_limits_fields(Fields) ->
+    {Head, Tail} = lists:partition(
+		     fun(Field) -> 
+			     case Field of 
+				 {xmlelement, "field", Attrs, SubEls} ->
+				     ("FORM_TYPE" == xml:get_attr_s("var", Attrs)) and
+										     ("hidden" == xml:get_attr_s("type", Attrs));
+				 _ -> false
+			     end
+		     end,
+		     Fields
+		    ),
+    case Head of
+	[] -> [];
+	_ -> get_limits_values(Tail)
+    end.
+
+get_limits_values(Values) ->
+    lists:foldl(
+      fun(Value, R) -> 
+	      case Value of 
+		  {xmlelement, "field", Attrs, SubEls} -> 
+		      %% TODO: Only one subel is expected, but there may be several
+		      [{xmlelement, "value", AttrsV, SubElsV}] = SubEls,
+		      Number = xml:get_cdata(SubElsV),
+		      Name = xml:get_attr_s("var", Attrs),
+		      [{list_to_atom(Name), list_to_integer(Number)} | R];
+		  _ -> R
+	      end
+      end,
+      [],
+      Values
+     ).
 
 
 %%%-------------------------
@@ -994,7 +1057,6 @@ get_limit_value(Name, Default, LimitOpts) ->
 
 iq_disco_info_extras(From, State) ->
     SenderT = sender_type(From),
-    io:format("se: ~p~n", [SenderT]),
     case iq_disco_info_extras2(SenderT, State) of
 	[] -> [];
 	List_limits_xmpp ->
