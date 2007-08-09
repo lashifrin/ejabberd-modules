@@ -42,7 +42,6 @@ if ($_POST) {
 
 	}
 	$do_not_log_list = mysql_escape_string($do_not_log_list);
-	if ($do_not_log_list=="") { $do_not_log_list="NULL"; }
 	$query="update logdb_settings_jabber_autocom_pl set donotlog_list='$do_not_log_list' where owner_id='$user_id'";
 	mysql_query($query) or die ("Error");
 	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 150pt;">'.$con_saved[$lang].'</div></center><br>';
@@ -76,12 +75,13 @@ for ($lt = 0; $lt < pg_numrows($res); $lt++) {
 	if ($col=="e0e9f7") { $col="e8eef7"; } else { $col="e0e9f7"; }
 	$predefined="from:$jid";
 	$predefined=encode_url($predefined,$token,$url_key);
+	if (in_array($jid,$do_notlog_list) == TRUE ) { $selected="selected=selected"; } else { $selected=""; }
+	if ($selected!="") { $col="b7b7b7"; }
 	print '<tr style="cursor: pointer;" bgcolor="'.$col.'" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#'.$col.'\';">'."\n";
 	print '<td title="'.$con_title[$lang].'" style="padding-left:7px" onclick="window.open(\'search_v2.php?b='.$predefined.'\');"><b>'.cut_nick(htmlspecialchars($nick)).'</b></td>'."\n";
 	print '<td title="'.$con_title[$lang].'" onclick="window.open(\'search_v2.php?b='.$predefined.'\');">(<i>'.htmlspecialchars($jid).'</i>)</td>'."\n";
 	print '<td title="'.$con_title[$lang].'" onclick="window.open(\'search_v2.php?b='.$predefined.'\');" style="text-align: center;">'.cut_nick(htmlspecialchars($grp)).'</td>'."\n";
 	print '<td style="text-align: center;">'."\n";
-	if (in_array($jid,$do_notlog_list) == TRUE ) { $selected="selected=selected"; } else { $selected=""; }
 	// temporary solution we should put integers here instead of full jids
 	$prepared_jid=str_replace("+", "kezyt2s0", base64_encode($jid)); 
 	print '<select class="cc2" name="'.$prepared_jid.'">'."\n";
