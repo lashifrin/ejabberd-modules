@@ -55,8 +55,6 @@ print '<form action="settings.php" method="post"><input class="btn" type="submit
 if ($sess->get('log_status') == "0") { print $arch_on[$lang]; } else { print $arch_off[$lang]; }
 print '"></form>'."\n";
 
-
-print '<input class="btn" type="button" value="'.$change_pass[$lang].'"><br /><br />';
 print '<input class="btn" type="button" value="'.$settings_del[$lang].'"><br />';
 
 print '</center>';

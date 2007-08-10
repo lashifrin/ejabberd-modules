@@ -250,6 +250,12 @@ $search_prev[eng] = "Previous results...";
 $change_pass[pol] = pl_znaczki("Zmieñ has³o");
 $change_pass[eng] = "Change password";
 
+$no_contacts[pol] = pl_znaczki("Brak kontaktów na li¶cie");
+$no_contacts[eng] = "Your contacts list is currently empty";
+
+$no_archives[pol] = pl_znaczki("W tej chwili nie masz zapisanych ¿adnych rozmów");
+$no_archives[eng] = "Currently you dont have any chats saved";
+
 $con_tab1[pol] = pl_znaczki("Lp.");
 $con_tab1[eng] = "No.";
 

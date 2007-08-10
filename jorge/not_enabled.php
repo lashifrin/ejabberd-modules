@@ -35,6 +35,11 @@ if ($action==$activate_m[$lang]) {
 		print '<center><b>'.$act_su[$lang].'</b><br />';
 		print '<small>'.$act_su2[$lang].'</small><hr>';
 		print '<form action="index.php?act=logout" method="post"><input class="red" type="submit" name="logout" value="'.$log_out_b[$lang].'"></form></center>';
+
+		// only now we can call get_user_id() - as there can be situation where there is no user_id in database so we must fetch it *atfer* insert ;)
+		$user_id=get_user_id($user_name,$xmpp_host);
+		$query="insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time) values ('$user_id',7,1,NOW())";
+		mysql_query($query) or die;
 		}
 		else {
 				print 'Ooops something goes wrong...its still beta...';

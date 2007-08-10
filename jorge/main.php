@@ -87,64 +87,68 @@ if ($action=="del") {
 // some validation things...
 if ($start) { if ((validate_start($start))!="t") { $start="0";  }  }
 
-
-// main table
-print '<table class="ff" border="0">'."\n";
-print '<tr class="main_s"><td colspan="1" style="text-align:left;">'.$archives_t[$lang].'</td>';
-if ($tslice) { print '<td>'.$talks[$lang].'</td>';}
-if ($talker) { print '<td>'.$thread[$lang].'</td>';}
-
-print '<tr>'."\n";
-
-// list of available chats (general)
-print '<td valign="top"><table border="0" class="ff">'."\n";
-print '<tr>'."\n";
-print '<td rowspan="3" valign="top">'."\n";
-print '<ul id="treemenu2" class="treeview" style="padding: 0px;">'."\n";
-
 $result=mysql_query("select substring(at,1,7) as at_m, at as verb from `logdb_stats_$xmpp_host` where owner_id='$user_id' group by at_m order by at desc");
 
-while ($entry=mysql_fetch_array($result)) {
+if (mysql_num_rows($result) !=0) {
 
-	$cl_entry = pl_znaczki(verbose_mo($entry[verb],$lang));
+	// main table
+	print '<table class="ff" border="0">'."\n";
+	print '<tr class="main_s"><td colspan="1" style="text-align:left;">'.$archives_t[$lang].'</td>';
+		if ($tslice) { print '<td>'.$talks[$lang].'</td>';}
+		if ($talker) { print '<td>'.$thread[$lang].'</td>';}
+	print '<tr>'."\n";
 
-if ($entry[at_m]==substr($tslice,0,7)) { $rel="open"; $bop="<b>"; $bcl="</b>"; } else { $rel=""; $bop=""; $bcl=""; } // ugly hack...
+	// list of available chats (general)
+	print '<td valign="top"><table border="0" class="ff">'."\n";
+	print '<tr>'."\n";
+	print '<td rowspan="3" valign="top">'."\n";
+	print '<ul id="treemenu2" class="treeview" style="padding: 0px;">'."\n";
 
-print '<li>'.$bop.$cl_entry.$bcl.''."\n"; // folder - begin
+	while ($entry=mysql_fetch_array($result)) {
 
-  print '<ul rel="'.$rel.'">'."\n"; // folder content
-	
-	$query="select at from `logdb_stats_$xmpp_host` where owner_id = '$user_id' and substring(at,1,7) = '$entry[at_m]' order by str_to_date(at,'%Y-%m-%d') desc";
-	$result2=mysql_query($query);
-	while ($ent=mysql_fetch_array($result2)) {
+		$cl_entry = pl_znaczki(verbose_mo($entry[verb],$lang));
+		if ($entry[at_m]==substr($tslice,0,7)) { $rel="open"; $bop="<b>"; $bcl="</b>"; } else { $rel=""; $bop=""; $bcl=""; } // ugly hack...
+		print '<li>'.$bop.$cl_entry.$bcl.''."\n"; // folder - begin
+  		print '<ul rel="'.$rel.'">'."\n"; // folder content
+		$query="select at from `logdb_stats_$xmpp_host` where owner_id = '$user_id' and substring(at,1,7) = '$entry[at_m]' order by str_to_date(at,'%Y-%m-%d') desc";
+		$result2=mysql_query($query);
+			while ($ent=mysql_fetch_array($result2)) {
 
-		$to_base = "$ent[at]@";
-		$to_base = encode_url($to_base,$token,$url_key);
-		$st=get_stats($user_id,$ent["at"],$xmpp_host);
-		if ($tslice==$ent["at"]) { $bold_b = "<b>"; $bold_e="</b>"; } else { $bold_b=""; $bold_e=""; }
-		print '<li><a href="?a='.$to_base.'">'.$bold_b.pl_znaczki(verbose_date($ent["at"],$lang,"m")).$bold_e.' - <small>'.$st.'</small></a></li>'."\n"; // days..
+			$to_base = "$ent[at]@";
+			$to_base = encode_url($to_base,$token,$url_key);
+			$st=get_stats($user_id,$ent["at"],$xmpp_host);
+			if ($tslice==$ent["at"]) { $bold_b = "<b>"; $bold_e="</b>"; } else { $bold_b=""; $bold_e=""; }
+			print '<li><a href="?a='.$to_base.'">'.$bold_b.pl_znaczki(verbose_date($ent["at"],$lang,"m")).$bold_e.' - <small>'.$st.'</small></a></li>'."\n"; // days..
+
+			}
+
+  		print '</ul>'."\n"; // end folder content
+		print '</li>'."\n"; // folder - end
+
+		} // end - arch
+
+	?>
+
+	</ul>
+
+	<script type="text/javascript">
+		ddtreemenu.createTree("treemenu2", false, 1)
+	</script>
+
+	<?
+
+	print '</td></tr></table>';
 
 	}
 
-  print '</ul>'."\n"; // end folder content
+	else 
+	
+	{
 
-print '</li>'."\n"; // folder - end
+		print '<p align="center"><b>'.$no_archives[$lang].'</b></p>';
 
 
-} // end - arch
-
-
-?>
-
-</ul>
-
-<script type="text/javascript">
-ddtreemenu.createTree("treemenu2", false, 1)
-</script>
-
-<?
-
-print '</td></tr></table>';
+	}
 
 // lets generate table name...
 $tslice_table='logdb_messages_'.$tslice.'_'.$xmpp_host;
@@ -280,6 +284,7 @@ print '</td></tr>';
 
 	print '</tr></table></td>'."\n";
 }
+
 print '</td></tr>'."\n";
 print '</table>'."\n";
 include("footer.php");
