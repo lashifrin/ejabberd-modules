@@ -33,7 +33,7 @@
 -include("ejabberd.hrl").
 -include("jlib.hrl").
 
--record(state, {lserver, lservice, access, max_receivers, service_limits}).
+-record(state, {lserver, lservice, access, service_limits}).
 
 -record(multicastc, {rserver, response, ts}).
 %% ts: timestamp (in seconds) when the cache item was last updated
@@ -130,7 +130,6 @@ stop(LServerS) ->
 init([LServerS, Opts]) ->
     LServiceS = gen_mod:get_opt(host, Opts, "multicast." ++ LServerS),
     Access = gen_mod:get_opt(access, Opts, all),
-    Max_receivers = gen_mod:get_opt(max_receivers, Opts, 50),
     SLimits = build_service_limit_record(gen_mod:get_opt(limits, Opts, [])),
     create_cache(),
     try_start_loop(),
@@ -139,7 +138,6 @@ init([LServerS, Opts]) ->
     {ok, #state{lservice = LServiceS,
 		lserver = LServerS,
 		access = Access,
-		max_receivers = Max_receivers,
 		service_limits = SLimits}}.
 
 %%--------------------------------------------------------------------
@@ -194,11 +192,10 @@ handle_info({route, From, To, {xmlelement, Stanza_type, _, _} = Packet},
 	    #state{lservice = LServiceS,
 		   lserver = LServerS,
 		   access = Access,
-		   max_receivers = Max_receivers,
 		   service_limits = SLimits} = State)
   when (Stanza_type == "message") or (Stanza_type == "presence") ->
     %%io:format("Multicast packet: ~nFrom: ~p~nTo: ~p~nPacket: ~p~n", [From, To, Packet]),
-    case catch do_route(LServiceS, LServerS, Access, Max_receivers, From, To, Packet) of
+    case catch do_route(LServiceS, LServerS, Access, SLimits, From, To, Packet) of
 	{'EXIT', Reason} ->
 	    ?ERROR_MSG("~p", [Reason]);
 	_ ->
@@ -306,10 +303,10 @@ iq_version() ->
 %%% Route 0: Check user
 %%%-------------------------
 
-do_route(LServiceS, LServerS, Access, Max_receivers, From, To, Packet) ->
+do_route(LServiceS, LServerS, Access, SLimits, From, To, Packet) ->
     case acl:match_rule(LServerS, Access, From) of
 	allow ->
-	    do_route1(LServiceS, LServerS, Max_receivers, From, To, Packet);
+	    do_route1(LServiceS, LServerS, SLimits, From, To, Packet);
 	_ ->
 	    route_error(To, From, Packet, forbidden, "Access denied by service policy")
     end.
@@ -319,10 +316,10 @@ do_route(LServiceS, LServerS, Access, Max_receivers, From, To, Packet) ->
 %%% Route 1: Check packet
 %%%-------------------------
 
-do_route1(LServiceS, LServerS, Max_receivers, From, To, Packet) ->
+do_route1(LServiceS, LServerS, SLimits, From, To, Packet) ->
     case get_adrs_el(Packet) of
 	{correct, Addresses_xml} ->
-	    do_route2(LServiceS, LServerS, Max_receivers, From, To, Packet, Addresses_xml);
+	    do_route2(LServiceS, LServerS, SLimits, From, To, Packet, Addresses_xml);
 	{error, Error_text} ->
 	    route_error(To, From, Packet, bad_request, Error_text)
     end.
@@ -370,16 +367,26 @@ get_address_els(Addresses_xml) ->
 %%% Route 2: Format list of destinations
 %%%-------------------------
 
-do_route2(LServiceS, LServerS, Max_receivers, From1, To, Packet, Addresses) ->
+do_route2(LServiceS, LServerS, SLimits, From1, To, Packet, Addresses) ->
     From = jlib:jid_to_string(From1),
-
-    case length(Addresses) > Max_receivers of
-	false -> ok;
+    SenderT = sender_type(From1),
+    Limits = get_slimit_group(SenderT, SLimits),
+    Type_of_stanza = type_of_stanza(Packet),
+    {_Type, Limit_number} = get_limit_number(Type_of_stanza, Limits),
+    case length(Addresses) > Limit_number of
+	false -> 
+	    do_route2b(LServiceS, LServerS, From1, From, To, Packet, Addresses);
 	true ->
-	    route_error(To, From, Packet, not_acceptable,
+	    route_error(To, From1, Packet, not_acceptable,
 			"Too many receiver fields were specified")
-    end,
+    end.
 
+
+%%%-------------------------
+%%% Route 2b: Format list of destinations
+%%%-------------------------
+
+do_route2b(LServiceS, LServerS, From1, From, To, Packet, Addresses) ->
     {JIDs, URIs, Others} = split_dests(Addresses),
 
     send_error_address(From1, Packet, URIs, Others),
@@ -487,7 +494,7 @@ process_group(LServiceS, From, Packet, Group) ->
 			       packet = Packet
 			      });
 
-	{obsolete, {multicast_supported, Old_service, RLimits}} ->
+	{obsolete, {multicast_supported, Old_service, _RLimits}} ->
 	    send_query_info(Old_service, LServiceS),
 	    add_waiter(#waiter{awaiting = {[Old_service], LServiceS, info},
 			       group = Group,
@@ -756,7 +763,7 @@ get_limits_fields(Fields) ->
     {Head, Tail} = lists:partition(
 		     fun(Field) -> 
 			     case Field of 
-				 {xmlelement, "field", Attrs, SubEls} ->
+				 {xmlelement, "field", Attrs, _SubEls} ->
 				     ("FORM_TYPE" == xml:get_attr_s("var", Attrs)) and
 										     ("hidden" == xml:get_attr_s("type", Attrs));
 				 _ -> false
@@ -775,7 +782,7 @@ get_limits_values(Values) ->
 	      case Value of 
 		  {xmlelement, "field", Attrs, SubEls} -> 
 		      %% TODO: Only one subel is expected here, but there may be several
-		      [{xmlelement, "value", AttrsV, SubElsV}] = SubEls,
+		      [{xmlelement, "value", _AttrsV, SubElsV}] = SubEls,
 		      Number = xml:get_cdata(SubElsV),
 		      Name = xml:get_attr_s("var", Attrs),
 		      [{list_to_atom(Name), list_to_integer(Number)} | R];
@@ -1022,34 +1029,47 @@ search_waiter(JID, LServiceS, Type) ->
 %% Number = integer() | infinite
 
 list_of_limits(local) ->
-    [{local_message, ?DEFAULT_LIMIT_LOCAL_MESSAGE},
-     {local_presence, ?DEFAULT_LIMIT_LOCAL_PRESENCE}];
+    [{message, ?DEFAULT_LIMIT_LOCAL_MESSAGE},
+     {presence, ?DEFAULT_LIMIT_LOCAL_PRESENCE}];
 
 list_of_limits(remote) ->
-    [{remote_message, ?DEFAULT_LIMIT_REMOTE_MESSAGE},
-     {remote_presence, ?DEFAULT_LIMIT_REMOTE_PRESENCE}];
+    [{message, ?DEFAULT_LIMIT_REMOTE_MESSAGE},
+     {presence, ?DEFAULT_LIMIT_REMOTE_PRESENCE}];
+
+list_of_limits(unrestricted) ->
+    [{message, ?DEFAULT_LIMIT_UNRESTRICTED_MESSAGE},
+     {presence, ?DEFAULT_LIMIT_UNRESTRICTED_PRESENCE}];
 
 list_of_limits(all) ->
     list_of_limits(local) ++
 	list_of_limits(remote) ++
-	[{unrestricted_message, ?DEFAULT_LIMIT_UNRESTRICTED_MESSAGE},
-	 {unrestricted_presence, ?DEFAULT_LIMIT_UNRESTRICTED_PRESENCE}].
+	list_of_limits(unrestricted).
+
+build_service_limit_record(LimitOpts) -> 
+    LimitOptsL = get_from_limitopts(LimitOpts, local),
+    LimitOptsR = get_from_limitopts(LimitOpts, remote),
+    LimitOptsU = get_from_limitopts(LimitOpts, unrestricted),
+    {service_limits,
+     build_limit_record(LimitOptsL, local),
+     build_limit_record(LimitOptsR, remote),
+     build_limit_record(LimitOptsU, unrestricted)
+    }.
+
+get_from_limitopts(LimitOpts, SenderT) ->
+    [{StanzaT, Number} || {SenderT2, StanzaT, Number} <- LimitOpts, SenderT =:= SenderT2].
 
 %% Build a record of type #limits{}
 %% In fact, it builds a list and then converts to tuple
 %% It is important to put the elements in the list in 
 %% the same order than the elements in record #limits
-build_service_limit_record(LimitOpts) ->
-    build_limit_record(LimitOpts, all, service_limits).
-
 build_remote_limit_record(LimitOpts, SenderT) ->
-    build_limit_record(LimitOpts, SenderT, limits).
+    build_limit_record(LimitOpts, SenderT).
 
-build_limit_record(LimitOpts, SenderT, Record_name) ->
+build_limit_record(LimitOpts, SenderT) ->
     Limits = [
 	      get_limit_value(Name, Default, LimitOpts) 
 	      || {Name, Default} <- list_of_limits(SenderT)],
-    list_to_tuple([Record_name | Limits]).
+    list_to_tuple([limits | Limits]).
 
 get_limit_value(Name, Default, LimitOpts) ->
     case lists:keysearch(Name, 1, LimitOpts) of
@@ -1064,6 +1084,10 @@ type_of_stanza({xmlelement, "presence", _, _}) -> presence.
 
 get_limit_number(message, Limits) -> Limits#limits.message;
 get_limit_number(presence, Limits) -> Limits#limits.presence.
+
+get_slimit_group(unrestricted, SLimits) -> SLimits#service_limits.unrestricted;
+get_slimit_group(local, SLimits) -> SLimits#service_limits.local;
+get_slimit_group(remote, SLimits) -> SLimits#service_limits.remote.
 
 fragment_dests(Dests, Limit_number) ->
     {R, _} = lists:foldl(
@@ -1099,7 +1123,8 @@ fragment_dests(Dests, Limit_number) ->
 
 iq_disco_info_extras(From, State) ->
     SenderT = sender_type(From),
-    case iq_disco_info_extras2(SenderT, State) of
+    Service_limits = State#state.service_limits,
+    case iq_disco_info_extras2(SenderT, Service_limits) of
 	[] -> [];
 	List_limits_xmpp ->
 	    [{xmlelement, "x", [{"xmlns", ?NS_XDATA}, {"type", "result"}],
@@ -1114,16 +1139,21 @@ sender_type(From) ->
 	false -> remote
     end.
 
-iq_disco_info_extras2(SenderT, State) ->
-    [limits | Limits_values] = tuple_to_list(State#state.service_limits),
-    Limits_all = lists:zip(list_of_limits(all), Limits_values),
-    Limits_sender = list_of_limits(SenderT),
-    [?RFIELDV(to_string(Name1), to_string(Number)) || 
-	%% Report only custom limits
-	{{Name1, _Default}, {custom, Number}} <- Limits_all,
-	%% And report only the limits that are interesting for this sender
-	{Name2, _} <- Limits_sender,
-	Name1 == Name2].
+iq_disco_info_extras2(SenderT, SLimits) ->
+    %% And report only the limits that are interesting for this sender
+    Limits = get_slimit_group(SenderT, SLimits),
+    Stanza_types = [message, presence],
+    lists:foldl(
+      fun(Type_of_stanza, R) ->
+	      %% Report only custom limits
+	      case get_limit_number(Type_of_stanza, Limits) of
+		  {custom, Number} ->
+		      [?RFIELDV(to_string(Type_of_stanza), to_string(Number)) | R];
+		  {default, _} -> R
+	      end
+      end,
+      [],
+      Stanza_types).
 
 to_string(A) ->
     hd(io_lib:format("~p",[A])).
