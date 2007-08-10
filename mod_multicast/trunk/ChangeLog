@@ -1,3 +1,7 @@
+2007-08-10  Badlop  <badlop@ono.com>
+
+	* src/mod_multicast.erl: Implement XEP33 limits: 4) store limits, use them when sending to remote service.
+
 2007-08-09  Badlop  <badlop@ono.com>
 
 	* src/mod_multicast.erl: Implement XEP33 limits: 3) receive remote limits.
