@@ -14,9 +14,9 @@
 
 
 %% External exports
--export([start_link/7,
+-export([start_link/8,
 	 start_link/6,
-	 start/7,
+	 start/8,
 	 start/6,
 	 route/4]).
 
@@ -90,18 +90,18 @@
 %%%----------------------------------------------------------------------
 %%% API
 %%%----------------------------------------------------------------------
-start(Host, ServerHost, Access, Room, HistorySize, Creator, Nick) ->
+start(Host, ServerHost, Access, Room, HistorySize, Creator, Nick, DefRoomOpts) ->
     Supervisor = gen_mod:get_module_proc(ServerHost, ejabberd_mod_muc_sup),
     supervisor:start_child(
-      Supervisor, [Host, ServerHost, Access, Room, HistorySize, Creator, Nick]).
+      Supervisor, [Host, ServerHost, Access, Room, HistorySize, Creator, Nick, DefRoomOpts]).
 
 start(Host, ServerHost, Access, Room, HistorySize, Opts) ->
     Supervisor = gen_mod:get_module_proc(ServerHost, ejabberd_mod_muc_sup),
     supervisor:start_child(
       Supervisor, [Host, ServerHost, Access, Room, HistorySize, Opts]).
 
-start_link(Host, ServerHost, Access, Room, HistorySize, Creator, Nick) ->
-    gen_fsm:start_link(?MODULE, [Host, ServerHost, Access, Room, HistorySize, Creator, Nick],
+start_link(Host, ServerHost, Access, Room, HistorySize, Creator, Nick, DefRoomOpts) ->
+    gen_fsm:start_link(?MODULE, [Host, ServerHost, Access, Room, HistorySize, Creator, Nick, DefRoomOpts],
 		       ?FSMOPTS).
 
 start_link(Host, ServerHost, Access, Room, HistorySize, Opts) ->
@@ -119,7 +119,7 @@ start_link(Host, ServerHost, Access, Room, HistorySize, Opts) ->
 %%          ignore                              |
 %%          {stop, StopReason}                   
 %%----------------------------------------------------------------------
-init([Host, ServerHost, Access, Room, HistorySize, Creator, _Nick]) ->
+init([Host, ServerHost, Access, Room, HistorySize, Creator, _Nick, DefRoomOpts]) ->
     State = set_affiliation(Creator, owner,
 			    #state{host = Host,
 				   server_host = ServerHost,
@@ -128,7 +128,8 @@ init([Host, ServerHost, Access, Room, HistorySize, Creator, _Nick]) ->
 				   history = lqueue_new(HistorySize),
 				   jid = jlib:make_jid(Room, Host, ""),
 				   just_created = true}),
-    {ok, normal_state, State};
+    State1 = set_opts(DefRoomOpts, State),
+    {ok, normal_state, State1};
 init([Host, ServerHost, Access, Room, HistorySize, Opts]) ->
     State = set_opts(Opts, #state{host = Host,
 				  server_host = ServerHost,
@@ -205,7 +206,7 @@ normal_state({route, From, "",
 		      From, Err),
 		    {next_state, normal_state, StateData};
 		Type when (Type == "") or (Type == "normal") ->
-		    case catch check_invitation(From, Els, StateData) of
+		    case catch check_invitation(From, Els, Lang, StateData) of
 			{error, Error} ->
 			    Err = jlib:make_error_reply(
 				    Packet, Error),
@@ -315,7 +316,7 @@ normal_state({route, From, "",
     end;
 
 normal_state({route, From, Nick,
-	      {xmlelement, "presence", Attrs, _Els} = Packet},
+	      {xmlelement, "presence", _Attrs, _Els} = Packet},
 	     StateData) ->
     Activity = case ?DICT:find(jlib:jid_tolower(From),
 			       StateData#state.activity) of
@@ -500,11 +501,14 @@ handle_event({service_message, Msg}, _StateName, StateData) ->
     MessagePkt = {xmlelement, "message",
 		  [{"type", "groupchat"}],
 		  [{xmlelement, "body", [], [{xmlcdata, Msg}]}]},
-    route_packet(
-      StateData#state.server_host,
-      StateData#state.jid,
-      ?DICT:to_list(StateData#state.users),
-      MessagePkt),
+    lists:foreach(
+      fun({_LJID, Info}) ->
+	      ejabberd_router:route(
+		StateData#state.jid,
+		Info#user.jid,
+		MessagePkt)
+      end,
+      ?DICT:to_list(StateData#state.users)),
     NSD = add_message_to_history("",
 				 MessagePkt,
 				 StateData),
@@ -590,7 +594,7 @@ code_change(_OldVsn, StateName, StateData, _Extra) ->
 %%          {next_state, NextStateName, NextStateData, Timeout} |
 %%          {stop, Reason, NewStateData}                         
 %%----------------------------------------------------------------------
-handle_info({process_presence, From}, normal_state = StateName, StateData) ->
+handle_info({process_presence, From}, normal_state = _StateName, StateData) ->
     Activity = case ?DICT:find(jlib:jid_tolower(From),
 			       StateData#state.activity) of
 		   {ok, A} -> A;
@@ -664,11 +668,16 @@ process_groupchat_message(From, {xmlelement, "message", Attrs, _Els} = Packet,
 		end,
 	    case IsAllowed of
 		true ->
-		    route_packet(
-		      StateData#state.server_host,
-		      jlib:jid_replace_resource(StateData#state.jid, FromNick),
-		      ?DICT:to_list(StateData#state.users),
-		      Packet),
+		    lists:foreach(
+		      fun({_LJID, Info}) ->
+			      ejabberd_router:route(
+				jlib:jid_replace_resource(
+				  StateData#state.jid,
+				  FromNick),
+				Info#user.jid,
+				Packet)
+		      end,
+		      ?DICT:to_list(StateData#state.users)),
 		    NewStateData2 =
 			add_message_to_history(FromNick,
 					       Packet,
@@ -2617,7 +2626,7 @@ get_title(StateData) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Invitation support
 
-check_invitation(From, Els, StateData) ->
+check_invitation(From, Els, Lang, StateData) ->
     FAffiliation = get_affiliation(From, StateData),
     CanInvite = (StateData#state.config)#config.allow_user_invites
 	orelse (FAffiliation == admin) orelse (FAffiliation == owner),
@@ -2667,6 +2676,32 @@ check_invitation(From, Els, StateData) ->
 		    _ ->
 			[]
 		end,
+	    Body =
+		{xmlelement, "body", [],
+		 [{xmlcdata,
+		   lists:flatten(
+		     io_lib:format(
+		       translate:translate(
+			 Lang,
+			 "You have been invited to ~s by ~s"),
+		       [jlib:jid_to_string({StateData#state.room,
+					    StateData#state.host,
+					    ""}),
+			jlib:jid_to_string(From)])) ++
+		   case (StateData#state.config)#config.password_protected of
+		       true ->
+			   ", " ++
+			       translate:translate(Lang, "the password is") ++
+			       " '" ++
+			       (StateData#state.config)#config.password ++ "'";
+		       _ ->
+			   ""
+		   end ++
+		   case Reason of
+		       "" -> "";
+		       _ -> " (" ++ Reason ++ ") "
+		   end
+		  }]},
 	    Msg =
 		{xmlelement, "message",
 		 [{"type", "normal"}],
@@ -2677,7 +2712,8 @@ check_invitation(From, Els, StateData) ->
 			      {StateData#state.room,
 			       StateData#state.host,
 			       ""})}],
-		   [{xmlcdata, Reason}]}]},
+		   [{xmlcdata, Reason}]},
+		  Body]},
 	    ejabberd_router:route(StateData#state.jid, JID, Msg),
 	    JID
     end.
@@ -2695,14 +2731,3 @@ add_to_log(Type, Data, StateData) ->
 	false ->
 	    ok
     end.
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Multicast
-
-%% Server_host = string()
-%% From = #jid
-%% Destinations = [{_, #info}]
-route_packet(Server_host, From, Destinations, Packet) ->
-    Destinations2 = [Info#user.jid || {_LJID, Info} <- Destinations],
-    ejabberd_router:route_multiple(Server_host, From, Destinations2, Packet).
