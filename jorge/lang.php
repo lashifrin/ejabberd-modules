@@ -30,6 +30,9 @@ if (__FILE__==$_SERVER['SCRIPT_FILENAME']) {
 
 }
 
+$no_script[pol] = pl_znaczki("Twoja przegl±darka ma wy³±czon± obs³ugê JavaScript. Jorge wymaga aby obs³uga Javascript-u by³a w³±czona!");
+$no_script[eng] = "Your browser dont support Javascript. Jorge require to have Javascript enabled!";
+
 $act_su[pol] = pl_znaczki("Zapisywanie rozmów na serwerze zosta³o w³±czone!");
 $act_su[eng] = "Message archiving activated succesfuly!";
 
@@ -150,6 +153,15 @@ $print_t[eng] = "print";
 
 $del_t[pol] = pl_znaczki("usuñ");
 $del_t[eng] = "delete";
+
+$del_all_conf[pol] = pl_znaczki("Czy napewno chcesz usun±æ *CA£E* swoje archiwum wiadomo¶ci?\\nUWAGA: Nie bêdzie mo¿liwo¶ci przywrócenia archiwum!");
+$del_all_conf[eng] = "You are about to delete all your message archives. Are you *really* sure?\\nWARNING: It would be impossible to recover your archives!";
+
+$deleted_all[pol] = pl_znaczki("Ca³e Twoje archiwum zosta³o usuniête");
+$deleted_all[eng] = "All your message archive has been deleted";
+
+$delete_nothing[pol] = pl_znaczki("Twoje archiwum jest puste. Nic nie usuniêto");
+$delete_nothing[eng] = "Your message archive is empty. Nothing was deleted";
 
 $search_w1[pol] = pl_znaczki("Wyszukiwany ci±g nie mo¿e byæ krótszy ni¿ 3 i d³u¿szy ni¿ 70 znaków...");
 $search_w1[eng] = "Search string cannot be shorter than 3 and longer than 70 characters...";

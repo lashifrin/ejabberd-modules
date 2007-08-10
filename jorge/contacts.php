@@ -42,7 +42,7 @@ if ($_POST) {
 
 	}
 	$do_not_log_list = mysql_escape_string($do_not_log_list);
-	$query="update logdb_settings_jabber_autocom_pl set donotlog_list='$do_not_log_list' where owner_id='$user_id'";
+	$query="update logdb_settings_$xmpp_host set donotlog_list='$do_not_log_list' where owner_id='$user_id'";
 	mysql_query($query) or die ("Error");
 	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 150pt;">'.$con_saved[$lang].'</div></center><br>';
 

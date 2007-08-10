@@ -8,7 +8,7 @@ ToDo list for beta front-end for mod_logdb:
 - option for deleting chats (done) *
 - profiled message saving (done) *
 - tree view in archive browser (done) *
-- more search options: time, time&from, time&from&keyword (done)
+- more search options: time, time&from, time&from&keyword (done) *
 - possible jQuery interface? (not for now)
 - switch to AES encryption  (done) *
 - new look (done) *
@@ -21,14 +21,12 @@ ToDo list for beta front-end for mod_logdb:
 - multi language support (done) *
 - unique all links (now missing in my_links and some parts of main)
 - add config file (done) *
-- finish account managment
+- finish account managment *
 - finish exports(done) *
 - code cleanups
 
 Sumarizing before bumping to beta stage:
 - "bug hunt session"
-- optimize main.php - code can be execuded 4 times faster - there is bug in design
-
 
 Amusements:
 

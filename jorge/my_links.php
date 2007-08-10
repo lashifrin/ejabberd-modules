@@ -62,7 +62,7 @@ if ($tigger==$my_links_commit[$lang]) {
 	$desc=substr($desc,0,120);
 	$query="insert into jorge_mylinks (owner_id,peer_name_id,peer_server_id,datat,link,description) values ('$user_id','$peer_user','$peer_server','$datat','$aaa','$desc')";
 	$result = mysql_query($query) or die ("Ooops...Error.");
-	print '<center><p style="background-color: yellow;">'.$my_links_added[$lang].'</p>';
+	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 150pt;">'.$my_links_added[$lang].'</div></center><br>';
 	print '<a href="main.php?a='.$aaa.'"><b>'.$my_links_back[$lang].'</b></a></center>';
 	print '<br /><br />';
 }

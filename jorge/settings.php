@@ -23,13 +23,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 require ("headers.php");
 
 $tgle=$_POST['toggle'];
-
-// czy archiwizacja w³±czona?
-if ($sess->get('enabled') == "f") { header ("Location: not_enabled.php"); }
+$del_a=$_POST['del_all'];
 
 include("upper.php");
 
-// zmiana w profilu logowania
+// toggle message saving
 if ($tgle) { 
 	$rres=update_set_log_tgle($user_id,$xmpp_host);
 	if ($rres=="on") {
@@ -48,16 +46,40 @@ if ($tgle) {
 		}
 }
 
-print '<center>';
-print '<br><b>'.$menu_item4[$lang].'</b><br /><br />';
+// delete entire archive
+if ($del_a) {
 
+	$result=mysql_query("select at from `logdb_stats_$xmpp_host` where owner_id='$user_id'");
+		if (mysql_num_rows($result)!=0) {
+		while ($row=mysql_fetch_array($result)) {
+		
+			mysql_query("delete from `logdb_messages_$row[at]_$xmpp_host` where owner_id='$user_id'");
+		}
+		mysql_query("delete from `logdb_stats_$xmpp_host` where owner_id='$user_id'");
+		mysql_query("delete from jorge_mylinks where owner_id='$user_id'");
+		mysql_query("insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time) values ('$user_id',9,2,NOW())");
+		print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 250pt;">'.$deleted_all[$lang].'</div></center>';
+	
+	}
+
+	else
+
+	{
+
+	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 250pt;">'.$delete_nothing[$lang].'</div></center>';
+
+	}
+
+}
+
+
+print '<center>'."\n";
+print '<br><b>'.$menu_item4[$lang].'</b><br /><br />'."\n";
 print '<form action="settings.php" method="post"><input class="btn" type="submit" name="toggle" value="';
 if ($sess->get('log_status') == "0") { print $arch_on[$lang]; } else { print $arch_off[$lang]; }
 print '"></form>'."\n";
-
-print '<input class="btn" type="button" value="'.$settings_del[$lang].'"><br />';
-
-print '</center>';
+print '<form action="settings.php" method="post"><input class="btn" type="submit" name="del_all" value="'.$settings_del[$lang].'" onClick="if (!confirm(\''.$del_all_conf[$lang].'\')) return false;"></form>'."\n";
+print '</center>'."\n";
 print '<br /><br /><br />';
 include("footer.php");
 ?>

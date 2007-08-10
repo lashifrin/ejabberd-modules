@@ -59,6 +59,7 @@ $licz="";
 $old_d="";
 $add_tl="";
 $aa="";
+$inpLogin="";
 
 define('pol','pol');
 define('eng','eng');
@@ -190,6 +191,18 @@ if ($token==$admin_name) {
 	</script>
 </head>
 <body>
+
+<noscript>
+
+	<? 
+	
+	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 500pt;">'.$no_script[$lang].'</div></center><br>';
+
+	?>
+
+</noscript>
+
+
 
 <?
 
