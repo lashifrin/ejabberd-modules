@@ -1101,7 +1101,7 @@ get_collection(Index) ->
 			 ["select direction_to, secs, utc, name, jid, body "
 			  "from archive_message "
 			  "where sid = '", SSID, "' ",
-			  "sort by ser"]) of
+			  "order by ser"]) of
 		{selected, ["direction_to", "secs", "utc",
 			    "name", "jid", "body"], Rs} ->
 		    Msgs = lists:map(
@@ -1145,7 +1145,9 @@ get_collection(Index) ->
 index_from_argument(LUser, LServer,  Attrs) ->
     case parse_root_argument(Attrs) of
         {error, E} ->  {error, E};
-        {interval, Start, _, JID} -> {LUser, LServer, JID, Start};
+        {interval, Start, _, JID} when Start /= undefined,
+				       JID /= undefined ->
+	    {LUser, LServer, JID, Start};
         _ -> {error, ?ERR_BAD_REQUEST}
     end.
 
