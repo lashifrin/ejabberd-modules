@@ -26,7 +26,6 @@
 	]).
 
 -export([
-	 route_packet_multicast/4,
 	 purge_loop/1
 	]).
 
@@ -134,6 +133,7 @@ init([LServerS, Opts]) ->
     create_cache(),
     try_start_loop(),
     create_pool(),
+    ejabberd_router_multicast:register_route(LServerS),
     ejabberd_router:register_route(LServiceS),
     {ok, #state{lservice = LServiceS,
 		lserver = LServerS,
@@ -203,12 +203,30 @@ handle_info({route, From, To, {xmlelement, Stanza_type, _, _} = Packet},
     end,
     {noreply, State};
 
+%% Handle multicast packets sent by trusted local services
+%% TODO: investigate if it's possible to send directly to do_route2
+handle_info({route_trusted, From, Destinations, Packet},
+	    #state{lservice = LServiceS,
+		   lserver = LServerS,
+		   access = Access,
+		   service_limits = SLimits} = State) ->
+    %%io:format("Multicast packet2: ~nFrom: ~p~nDestinations: ~p~nPacket: ~p~n", [From, Destinations, Packet]),
+    Packet2 = build_packet(Destinations, Packet),
+    case catch do_route(LServiceS, LServerS, Access, SLimits, From, aaaTo, Packet2) of
+	{'EXIT', Reason} ->
+	    ?ERROR_MSG("~p", [Reason]);
+	_ ->
+	    ok
+    end,
+    {noreply, State};
+
 handle_info({get_host, Pid}, State) ->
     Pid ! {my_host, State#state.lservice},
     {noreply, State};
 
 handle_info(_Info, State) ->
     {noreply, State}.
+
 
 %%--------------------------------------------------------------------
 %% Function: terminate(Reason, State) -> void()
@@ -218,6 +236,7 @@ handle_info(_Info, State) ->
 %% The return value is ignored.
 %%--------------------------------------------------------------------
 terminate(_Reason, State) ->
+    ejabberd_router_multicast:unregister_route(State#state.lserver),
     ejabberd_router:unregister_route(State#state.lservice),
     ok.
 
@@ -1186,10 +1205,8 @@ stj(String) -> jlib:string_to_jid(String).
 %%% Exported multicast functions 
 %%%-------------------------
 
-%% From = jid()
 %% Destinations = [jid()]
-%% Multicast_service = string()
-route_packet_multicast(From, Destinations, Multicast_service, Packet) ->
+build_packet(Destinations, Packet) ->
     %% Build and addresses element
     Ad_list = [build_address_element(jlib:jid_to_string(JID)) || JID <- Destinations],
     Element = build_addresses_element(Ad_list),
@@ -1197,13 +1214,7 @@ route_packet_multicast(From, Destinations, Multicast_service, Packet) ->
     %% Add element to original packet
     {xmlelement, Type, Attrs, Els} = Packet,
     Els2 = [Element | Els],
-    Packet_multicast = {xmlelement, Type, Attrs, Els2},
-
-    %% Finally, send the packet to the multicast service
-    ejabberd_router:route(
-      From,
-      jlib:string_to_jid(Multicast_service),
-      Packet_multicast).
+    {xmlelement, Type, Attrs, Els2}.
 
 build_address_element(Jid_string) ->
     {xmlelement, "address", 

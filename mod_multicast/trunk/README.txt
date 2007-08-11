@@ -34,9 +34,15 @@ host
 access:
     Specify who can send packets to the multicast service.
     Default value: all
-max_receivers:
-    Base filename, including absolute path
-    Default value: 50
+limits:
+    Specify a list of custom limits which override the default ones defined 
+    in XEP-0033.
+    Limits are defined with this syntax: {Sender_type, Stanza_type, Number}
+    Where:
+      Sender_type can have values: local or remote.
+      Stanza_type can have values: message or presence.
+      Number can be a positive integer or the key word infinite.
+    Default value: []
 
 
 	EXAMPLE CONFIGURATION
@@ -59,7 +65,11 @@ max_receivers:
   {mod_multicast, [
      %{host, "multicast.example.org"},
      {access, multicast},
-     {max_receivers, 50}
+     {limits, [
+       {local, message, 40},
+       {local, presence, infinite},
+       {remote, message, 150}
+     ]}
   ]},
   ...
 ]}.
@@ -69,9 +79,7 @@ max_receivers:
 	-----
 
 Tasks to do:
- - Implement XEP33 addresses limits
- - Document on the guide and ejabberd.cfg.example
- - Find a better solution to know if a local multicast service exists (ejabberd_router) for the sender component
+ - Add option to enable/disable multicast service features
  - Consider anti-spam requirements
  
 Feature requests:

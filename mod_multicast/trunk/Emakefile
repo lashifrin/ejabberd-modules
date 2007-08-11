@@ -1,6 +1,6 @@
 {'../../ejabberd-dev/trunk/src/gen_mod', [{outdir, "../../ejabberd-dev/trunk/ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
 {'src/mod_multicast',     [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
-{'src/ejabberd_router',     [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
+{'src/ejabberd_router_multicast',     [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
 {'src/ejabberd_c2s',     [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
 {'src/mod_muc_room',     [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
 {'src/ejabberd_sup',     [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.

@@ -1481,87 +1481,69 @@ presence_track(From, To, Packet, StateData) ->
 			    pres_a = A}
     end.
 
+%% Send presence when disconnecting
 presence_broadcast(StateData, From, JIDSet, Packet) ->
-    lists:foreach(fun(JID) ->
-			  FJID = jlib:make_jid(JID),
-			  case ejabberd_hooks:run_fold(
-				 privacy_check_packet, StateData#state.server,
-				 allow,
-				 [StateData#state.user,
-				  StateData#state.server,
-				  StateData#state.privacy_list,
-				  {From, FJID, Packet},
-				  out]) of
-			      deny ->
-				  ok;
-			      allow ->
-				  ejabberd_router:route(From, FJID, Packet)
-			  end
-		  end, ?SETS:to_list(JIDSet)).
+    JIDs = ?SETS:to_list(JIDSet),
+    JIDs2 = format_and_check_privacy(From, StateData, Packet, JIDs),
+    Server = StateData#state.server,
+    send_multiple(From, Server, JIDs2, Packet).
 
-presence_broadcast_to_trusted(StateData, From, T, A, Packet) ->
-    lists:foreach(
-      fun(JID) ->
-	      case ?SETS:is_element(JID, T) of
-		  true ->
-		      FJID = jlib:make_jid(JID),
-		      case ejabberd_hooks:run_fold(
-			     privacy_check_packet, StateData#state.server,
-			     allow,
-			     [StateData#state.user,
-			      StateData#state.server,
-			      StateData#state.privacy_list,
-			      {From, FJID, Packet},
-			      out]) of
-			  deny ->
-			      ok;
-			  allow ->
-			      ejabberd_router:route(From, FJID, Packet)
-		      end;
-		  _ ->
-		      ok
-	      end
-      end, ?SETS:to_list(A)).
+%% Send presence when updating presence
+presence_broadcast_to_trusted(StateData, From, Trusted, JIDSet, Packet) ->
+    JIDs = ?SETS:to_list(JIDSet),
+    JIDs_trusted = [JID || JID <- JIDs, ?SETS:is_element(JID, Trusted)],
+    JIDs2 = format_and_check_privacy(From, StateData, Packet, JIDs_trusted),
+    Server = StateData#state.server,
+    send_multiple(From, Server, JIDs2, Packet).
 
-
+%% Send presence when connecting
 presence_broadcast_first(From, StateData, Packet) ->
-    ?SETS:fold(fun(JID, X) ->
-		       ejabberd_router:route(
-			 From,
-			 jlib:make_jid(JID),
-			 {xmlelement, "presence",
-			  [{"type", "probe"}],
-			  []}),
-		       X
-	       end,
-	       [],
-	       StateData#state.pres_t),
+    JIDsProbe = 
+	?SETS:fold(
+	   fun(JID, L) -> [JID | L] end,
+	   [],
+	   StateData#state.pres_t),
+    PacketProbe = {xmlelement, "presence", [{"type", "probe"}], []},
+    JIDs2Probe = format_and_check_privacy(From, StateData, Packet, JIDsProbe),
+    Server = StateData#state.server,
+    send_multiple(From, Server, JIDs2Probe, PacketProbe),
     if
 	StateData#state.pres_invis ->
 	    StateData;
 	true ->
-	    As = ?SETS:fold(
-		    fun(JID, A) ->
-			    FJID = jlib:make_jid(JID),
-			    case ejabberd_hooks:run_fold(
-				   privacy_check_packet, StateData#state.server,
-				   allow,
-				   [StateData#state.user,
-				    StateData#state.server,
-				    StateData#state.privacy_list,
-				    {From, FJID, Packet},
-				    out]) of
-				deny ->
-				    ok;
-				allow ->
-				    ejabberd_router:route(From, FJID, Packet)
-			    end,
-			    ?SETS:add_element(JID, A)
-		    end,
-		    StateData#state.pres_a,
-		    StateData#state.pres_f),
+	    {As, JIDs} = 
+		?SETS:fold(
+		   fun(JID, {A, JID_list}) ->
+			   {?SETS:add_element(JID, A), JID_list++[JID]}
+		   end,
+		   {StateData#state.pres_a, []},
+		   StateData#state.pres_f),
+	    JIDs2 = format_and_check_privacy(From, StateData, Packet, JIDs),
+	    Server = StateData#state.server,
+	    send_multiple(From, Server, JIDs2, Packet),
 	    StateData#state{pres_a = As}
     end.
+ 
+format_and_check_privacy(From, StateData, Packet, JIDs) ->
+    FJIDs = [jlib:make_jid(JID) || JID <- JIDs],
+    lists:filter(
+      fun(FJID) ->
+	      case ejabberd_hooks:run_fold(
+		     privacy_check_packet, StateData#state.server,
+		     allow,
+		     [StateData#state.user,
+		      StateData#state.server,
+		      StateData#state.privacy_list,
+		      {From, FJID, Packet},
+		      out]) of
+		  deny -> false;
+		  allow -> true
+	      end
+      end,
+      FJIDs).
+
+send_multiple(From, Server, JIDs, Packet) ->
+    ejabberd_router_multicast:route_multicast(From, Server, JIDs, Packet).
 
 
 remove_element(E, Set) ->

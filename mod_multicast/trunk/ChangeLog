@@ -1,5 +1,16 @@
 2007-08-11  Badlop  <badlop@ono.com>
 
+	* src/ejabberd_route_multicast.erl: New router for multicast packets.
+	* src/ejabberd_route.erl: Removed.
+	* Emakefile: Updated.
+	* src/ejabberd.app: Updated.
+	* src/ejabberd_sup.erl: Updated.
+	* README.txt: Updated. 
+	
+	* src/mod_multicast.erl: Use the new multicast router.
+	* src/ejabberd_c2s.erl: Idem.
+	* src/mod_muc_room.erl: Idem.
+
 	* src/ejabberd.app: Added from ejabberd trunk.
 	* src/ejabberd_sup.erl: Idem.
 	* Emakefile: Updated.
