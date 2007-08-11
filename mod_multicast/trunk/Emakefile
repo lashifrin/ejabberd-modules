@@ -3,3 +3,4 @@
 {'src/ejabberd_router',     [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
 {'src/ejabberd_c2s',     [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
 {'src/mod_muc_room',     [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
+{'src/ejabberd_sup',     [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
