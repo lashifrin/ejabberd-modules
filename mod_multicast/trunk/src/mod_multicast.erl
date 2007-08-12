@@ -179,7 +179,7 @@ handle_info({route, From, To, {xmlelement, "iq", Attrs, _Els} = Packet}, State) 
 	    Err = jlib:make_error_reply(Packet, ?ERR_INTERNAL_SERVER_ERROR),
 	    ejabberd_router:route(To, From, Err);
 	reply ->
-	    LServiceS = jlib:jid_to_string(To),
+	    LServiceS = jts(To),
 	    case xml:get_attr_s("type", Attrs) of
 		"result" -> process_iqreply_result(From, LServiceS, Packet, State);
 		"error" -> process_iqreply_error(From, LServiceS, Packet)
@@ -204,15 +204,13 @@ handle_info({route, From, To, {xmlelement, Stanza_type, _, _} = Packet},
     {noreply, State};
 
 %% Handle multicast packets sent by trusted local services
-%% TODO: investigate if it's possible to send directly to do_route2
 handle_info({route_trusted, From, Destinations, Packet},
 	    #state{lservice = LServiceS,
-		   lserver = LServerS,
-		   access = Access,
-		   service_limits = SLimits} = State) ->
+		   lserver = LServerS} = State) ->
     %%io:format("Multicast packet2: ~nFrom: ~p~nDestinations: ~p~nPacket: ~p~n", [From, Destinations, Packet]),
     Packet2 = build_packet(Destinations, Packet),
-    case catch do_route(LServiceS, LServerS, Access, SLimits, From, aaaTo, Packet2) of
+    Grouped_addresses = group_dests_by_servers(Destinations),
+    case catch do_route3(LServiceS, LServerS, From, Packet2, Grouped_addresses) of
 	{'EXIT', Reason} ->
 	    ?ERROR_MSG("~p", [Reason]);
 	_ ->
@@ -387,7 +385,7 @@ get_address_els(Addresses_xml) ->
 %%%-------------------------
 
 do_route2(LServiceS, LServerS, SLimits, From1, To, Packet, Addresses) ->
-    From = jlib:jid_to_string(From1),
+    From = jts(From1),
     SenderT = sender_type(From1),
     Limits = get_slimit_group(SenderT, SLimits),
     Type_of_stanza = type_of_stanza(Packet),
@@ -410,7 +408,8 @@ do_route2b(LServiceS, LServerS, From1, From, To, Packet, Addresses) ->
 
     send_error_address(From1, Packet, URIs, Others),
 
-    Grouped_addresses = group_dests_by_servers(JIDs),
+    JIDs2 = [stj(JID) || JID <- JIDs],
+    Grouped_addresses = group_dests_by_servers(JIDs2),
 
     %% Check if this packet requires relay
     FromJID = jlib:string_to_jid(From),
@@ -453,8 +452,8 @@ split_dests(Addresses) ->
 group_dests_by_servers(Jids) ->
     D = lists:foldl(
 	  fun(Jid, Dict) ->
-		  ServerS = (stj(Jid))#jid.server,
-		  dict:append(ServerS, Jid, Dict)
+		  ServerS = Jid#jid.server,
+		  dict:append(ServerS, jts(Jid), Dict)
 	  end,
 	  dict:new(),
 	  Jids),
@@ -550,7 +549,11 @@ route_packet(From, To, {Dests, Limits}, Packet) ->
 route_packet2(From, To, Dests, Packet) ->
     Packet2 = update_addresses_xml(Packet, Dests),
     Packet3 = xml:replace_tag_attr("to", To, Packet2),
-    ejabberd_router:route(From, stj(To), Packet3).
+    To2 = case To of
+	      ToS when is_list(ToS) -> stj(ToS);
+	      ToJID -> ToJID
+	  end,
+    ejabberd_router:route(From, To2, Packet3).
 
 
 %%%-------------------------
@@ -657,7 +660,7 @@ process_iqreply_error(From, LServiceS, _Packet) ->
     %% We do not change the FROM attribute in the outgoing XMPP packet,
     %% this way the user will know what server reported the error
 
-    FromS = jlib:jid_to_string(From),
+    FromS = jts(From),
     case search_waiter(FromS, LServiceS, info) of
 	{found_waiter, Waiter} ->
 	    received_awaiter(FromS, Waiter, LServiceS);
@@ -684,7 +687,7 @@ process_iqreply_result(From, LServiceS, Packet, State) ->
 %%%-------------------------
 
 process_discoinfo_result(From, LServiceS, Els, _State) ->
-    FromS = jlib:jid_to_string(From),
+    FromS = jts(From),
     case search_waiter(FromS, LServiceS, info) of
 	{found_waiter, Waiter} ->
 	    process_discoinfo_result2(From, FromS, LServiceS, Els, Waiter);
@@ -835,7 +838,7 @@ process_discoitems_result(From, LServiceS, Els) ->
     [send_query_info(Item, LServiceS) || Item <- List],
 
     %% Search who was awaiting a disco#items response from this JID
-    FromS = jlib:jid_to_string(From),
+    FromS = jts(From),
     {found_waiter, Waiter} = search_waiter(FromS, LServiceS, items),
 
     delo_waiter(Waiter),
@@ -1199,6 +1202,7 @@ make_reply(forbidden, Lang, ErrText) ->
     ?ERRT_FORBIDDEN(Lang, ErrText).
 
 stj(String) -> jlib:string_to_jid(String).
+jts(String) -> jlib:jid_to_string(String).
 
 
 %%%-------------------------
@@ -1208,7 +1212,7 @@ stj(String) -> jlib:string_to_jid(String).
 %% Destinations = [jid()]
 build_packet(Destinations, Packet) ->
     %% Build and addresses element
-    Ad_list = [build_address_element(jlib:jid_to_string(JID)) || JID <- Destinations],
+    Ad_list = [build_address_element(jts(JID)) || JID <- Destinations],
     Element = build_addresses_element(Ad_list),
 
     %% Add element to original packet

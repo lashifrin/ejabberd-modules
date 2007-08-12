@@ -79,7 +79,6 @@ limits:
 	-----
 
 Tasks to do:
- - Add option to enable/disable multicast service features
  - Consider anti-spam requirements
  
 Feature requests:

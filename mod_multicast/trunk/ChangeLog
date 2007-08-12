@@ -1,3 +1,7 @@
+2007-08-12  Badlop  <badlop@ono.com>
+
+	* src/mod_multicast.erl: Local services are not inspected for ACL and Limits. Usage of stj() and jts() functions.
+
 2007-08-11  Badlop  <badlop@ono.com>
 
 	* src/ejabberd_route_multicast.erl: New router for multicast packets.
