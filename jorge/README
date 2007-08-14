@@ -20,9 +20,9 @@ Patches are most welcome.
 
 Requirements:
 - working ejabberd server with current mod_logdb (compatibile version is bundled with Jorge)
-- ejabberd backend requirements: postgresql (other backends are not supported)
-- mysql server 4.1+ (developed on mysql5)
-- any http server supporting php 4.4+ (developed for php5) with gd, mcrypt support
+- ejabberd backend requirements: postgresql (other backends are not supported for now)
+- mysql5 server
+- any http server supporting php5 with gd, mcrypt, mb_string support
 
 Client Requirements:
 - Jorge is tested and compatibile with: IE6+,Firefox 2+, Opera (..and Firefox is most recomended)
@@ -32,9 +32,6 @@ Installing:
 - copy Jorge files into your http server (sugested vhost over SSL connection). There is sample .htaccess file - showing how to rewrite port 80 to 443
 - set up database for Jorge (install/jorge.sql)
 - copy config.php.inc to config.php and edit file
-- convert mod_logdb database tables (*messages*) into MyISAM and add fulltext indexes. Script for that is provided into install direstory
-  edit it and run from console by invoke 'php convert.php'
-- patch mod_logdb - it is needed becouse by default mod_logdb use InnoDB engine witch does not support fulltext indexes. Patch available in install directory
 - that's it!
 
 Archive usage:
