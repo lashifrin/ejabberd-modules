@@ -85,7 +85,7 @@ recv_byte(Sock, Timeout) ->
 string(String) when list(String) ->
     Bin = list_to_binary(String),
     <<Bin/binary, 0/integer>>;
-string(Bin) when binary(String) ->
+string(Bin) when binary(Bin) ->
     <<Bin/binary, 0/integer>>.
 
 %%% Two zero terminated strings.
@@ -98,8 +98,8 @@ make_pair(Key, Value) when list(Key), list(Value) ->
     BinValue = list_to_binary(Value),
     make_pair(BinKey, BinValue);
 make_pair(Key, Value) when binary(Key), binary(Value) ->
-    <<BinKey/binary, 0/integer, 
-     BinValue/binary, 0/integer>>.
+    <<Key/binary, 0/integer, 
+     Value/binary, 0/integer>>.
 
 split_pair(Bin) when binary(Bin) ->
     split_pair(binary_to_list(Bin));
