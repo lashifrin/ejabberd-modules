@@ -34,7 +34,7 @@
 -include("jlib.hrl").
 -include("ejabberd_http.hrl").
 
--record(http_bind, {id, pid, to, hold, wait}).
+-record(http_bind, {id, pid, to, hold, wait, version}).
 
 %% http binding request
 -record(hbr, {rid,
@@ -162,9 +162,9 @@ process_request(Data) ->
                                                       pid = Pid,
                                                       to = {XmppDomain, 
                                                             XmppVersion},
-                                                      version = Version,
                                                       wait = Wait,
-                                                      hold = Hold})
+                                                      hold = Hold,
+                                                      version = Version})
                       end),
                     handle_http_put(Sid, Rid, Key, NewKey, Wait, Hold, 
                                     Attrs, Packet, true)
