@@ -154,7 +154,11 @@ process_request(Data) ->
                                            CHold
                                    end
                            end,
-                    Version = xml:get_attr_s("ver", Attrs),
+                    Version = 
+                        case list_to_float(xml:get_attr_s("ver", Attrs)) of
+                            {'EXIT', _} -> 0.0;
+                            V -> V
+                        end,
                     XmppVersion = xml:get_attr_s("xmpp:version", Attrs),
                     mnesia:transaction(
                       fun() ->
