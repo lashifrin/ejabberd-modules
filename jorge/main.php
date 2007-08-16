@@ -198,7 +198,7 @@ if ($talker) {
 	if ($nickname=="f") { $nickname=$not_in_r[$lang]; }
 	print '<table id="maincontent" border="0" cellspacing="0" class="ff">'."\n";
 	if ($resource_id) {
-	$res_display=get_resource_name(mysql_escape_string($resource_id),$xmpp_host);
+	$res_display=get_resource_name($resource_id,$xmpp_host);
 	print '<tr><td colspan="4"><div style="background-color: #fad163; text-align: center; font-weight: bold;">'.$resource_warn[$lang].cut_nick(htmlspecialchars($res_display)).'. ';
 	print $resource_discard[$lang].'<a class="export" href="?a='.$e_string.'">'.$resource_discard2[$lang].'</a>';
 	print '</div></td></tr>';
@@ -216,7 +216,7 @@ if ($talker) {
 	while ($entry = mysql_fetch_array($result))
 		{
 
-		$resource=get_resource_name(mysql_escape_string($entry[peer_resource_id]),$xmpp_host);
+		$resource=get_resource_name($entry[peer_resource_id],$xmpp_host);
 		$licz++;	
 		if ($entry["direction"] == 0) { $col="main_row_a"; } else { $col="main_row_b"; }
 
