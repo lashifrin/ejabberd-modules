@@ -164,7 +164,7 @@ $resource_discard[pol] = pl_znaczki("Poka¿ ");
 $resource_discard[eng] = "Show ";
 
 $resource_discard2[pol] = pl_znaczki("ca³± romowê.");
-$resource_discard2[eng] = "all chat thread.";
+$resource_discard2[eng] = "entire chat thread.";
 
 $del_all_conf[pol] = pl_znaczki("Czy napewno chcesz usun±æ *CA£E* swoje archiwum wiadomo¶ci?\\nUWAGA: Nie bêdzie mo¿liwo¶ci przywrócenia archiwum!");
 $del_all_conf[eng] = "You are about to delete all your message archives. Are you *really* sure?\\nWARNING: It would be impossible to recover your archives!";
