@@ -163,7 +163,7 @@ $resource_warn[eng] = "Showing chat only with resource: ";
 $resource_discard[pol] = pl_znaczki("Poka¿ ");
 $resource_discard[eng] = "Show ";
 
-$resource_discard2[pol] = pl_znaczki("ca³± romowê.");
+$resource_discard2[pol] = pl_znaczki("ca³± rozmowê.");
 $resource_discard2[eng] = "entire chat thread.";
 
 $del_all_conf[pol] = pl_znaczki("Czy napewno chcesz usun±æ *CA£E* swoje archiwum wiadomo¶ci?\\nUWAGA: Nie bêdzie mo¿liwo¶ci przywrócenia archiwum!");
