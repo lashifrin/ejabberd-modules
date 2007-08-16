@@ -154,6 +154,18 @@ $print_t[eng] = "print";
 $del_t[pol] = pl_znaczki("usuñ");
 $del_t[eng] = "delete";
 
+$resource_only[pol] = pl_znaczki("Poka¿ rozmowê tylko z tym zasobem");
+$resource_only[eng] = "Show chat only with this resource";
+
+$resource_warn[pol] = pl_znaczki("Pokazujê rozmowê z zasobem: ");
+$resource_warn[eng] = "Showing chat only with resource: ";
+
+$resource_discard[pol] = pl_znaczki("Poka¿ ");
+$resource_discard[eng] = "Show ";
+
+$resource_discard2[pol] = pl_znaczki("ca³± romowê.");
+$resource_discard2[eng] = "show all chat thread.";
+
 $del_all_conf[pol] = pl_znaczki("Czy napewno chcesz usun±æ *CA£E* swoje archiwum wiadomo¶ci?\\nUWAGA: Nie bêdzie mo¿liwo¶ci przywrócenia archiwum!");
 $del_all_conf[eng] = "You are about to delete all your message archives. Are you *really* sure?\\nWARNING: It would be impossible to recover your archives!";
 
@@ -331,7 +343,7 @@ $time_range_from[eng] = "from";
 $time_range_to[pol] = pl_znaczki("do");
 $time_range_to[eng] = "to";
 
-$export_link[pol] = pl_znaczki("exportuj");
+$export_link[pol] = pl_znaczki("eksportuj");
 $export_link[eng] = "export";
 
 $export_head1[pol] = pl_znaczki("Historia rozmowy miêdzy Tob± a ");

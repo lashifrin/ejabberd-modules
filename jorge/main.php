@@ -26,6 +26,11 @@ $sess->set('image_w','');
 
 // fetch some date from encoded url...
 $e_string=mysql_escape_string($_GET['a']);
+$resource_id=mysql_escape_string($_GET['b']);
+
+// validate resource_id
+if (!ctype_digit($resource_id)) { unset($resource_id); }
+
 $start=$_GET['start'];
 
 // decompose link
@@ -185,13 +190,19 @@ if ($talker) {
 	if (!$start) { $start="0"; } // are we in the first page?
 	$nume=get_num_lines($tslice_table,$user_id,$talker,$server); // number of chat lines
 	if ($start>$nume) { $start=$nume-$num_lines_bro; } // checking start variable
-	$result=db_q($user_id,$server,$tslice_table,$talker,$search_p,"3",$start,$xmpp_host,$num_lines_bro);
+	$result=db_q($user_id,$server,$tslice_table,$talker,$search_p,"3",$start,$xmpp_host,$num_lines_bro,$time_s="",$end_s="",$resource_id);
 	if ($result=="f") { header ("Location: main.php");  }
 	$talker_name = get_user_name($talker,$xmpp_host);
 	$server_name = get_server_name($server,$xmpp_host);
 	$nickname = query_nick_name($bazaj,$token,$talker_name,$server_name);
 	if ($nickname=="f") { $nickname=$not_in_r[$lang]; }
 	print '<table id="maincontent" border="0" cellspacing="0" class="ff">'."\n";
+	if ($resource_id) {
+	$res_display=get_resource_name(mysql_escape_string($resource_id),$xmpp_host);
+	print '<tr><td colspan="4"><div style="background-color: #fad163; text-align: center; font-weight: bold;">'.$resource_warn[$lang].cut_nick(htmlspecialchars($res_display)).'. ';
+	print $resource_discard[$lang].'<a class="export" href="?a='.$e_string.'">'.$resource_discard2[$lang].'</a>';
+	print '</div></td></tr>';
+	}
 	print '<tr class="maint">'."\n";
 	print '<td><b> '.$time_t[$lang].' </b></td><td><b> '.$user_t[$lang].' </b></td><td><b> '.$thread[$lang].'</b></td>'."\n";
 	$server_id=get_server_id($server_name,$xmpp_host);
@@ -205,6 +216,7 @@ if ($talker) {
 	while ($entry = mysql_fetch_array($result))
 		{
 
+		$resource=get_resource_name(mysql_escape_string($entry[peer_resource_id]),$xmpp_host);
 		$licz++;	
 		if ($entry["direction"] == 0) { $col="main_row_a"; } else { $col="main_row_b"; }
 
@@ -242,7 +254,18 @@ if ($talker) {
 
 		if ($aa<2 AND $tt<2) {
 			
-				print '<td style="padding-left: 5px; padding-right: 10px; nowrap="nowrap">'.cut_nick(htmlspecialchars($out)).'<a name="'.$licz.'"></a></td>'."\n"; 
+				print '<td style="padding-left: 5px; padding-right: 10px; nowrap="nowrap">'.cut_nick(htmlspecialchars($out));
+				print '<a name="'.$licz.'"></a>';
+
+				if ($out!=$token) {
+
+				print '<br><div style="text-align: left; padding-left: 5px;"><a class="export" id="pretty" title="'.$resource_only[$lang].'" href="?a='.$e_string.'&b='.$entry[peer_resource_id].'">';
+				print '<small><i>'.cut_nick(htmlspecialchars($resource)).'</i></small></a></div>';
+					
+				}
+				
+				print '</td>'."\n"; 
+				
 				$here="1"; 
 			} 
 			else 
@@ -272,7 +295,9 @@ print '<tr class="maint"><td style="text-align: center;" colspan="9">';
 for($i=0;$i < $nume;$i=$i+$num_lines_bro){
 
 	if ($i!=$start) {
-            print '<a href="?a='.$e_string.'&start='.$i.'"> <b>['.$i.']</b> </font></a>';
+		
+	    if ($resource_id) { $add_res="&b=$resource_id"; } else { $add_res=""; }
+            print '<a href="?a='.$e_string.$add_res.'&start='.$i.'"> <b>['.$i.']</b> </font></a>';
 	    }
 	    else { print ' -'.$i.'- '; }
 

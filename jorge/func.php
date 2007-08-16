@@ -276,7 +276,7 @@ function is_query_from($query) {
 }
 
 
-function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type,$start="",$xmpp_host,$num_lines_bro="",$time_s="",$end_s="") {
+function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type,$start="",$xmpp_host,$num_lines_bro="",$time_s="",$end_s="",$res_id="") {
 
 	$start_set=$start;
 	if ($start_set=="") { $start_set="0"; }
@@ -302,7 +302,9 @@ function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type
 
 	// rozmowy z danym u¿ytkownikiem
 	if ($type=="3") {
-		$query="select from_unixtime(timestamp+0) as ts,direction, peer_name_id, peer_server_id, body from `$tslice_table` where owner_id = '$user_id' and peer_name_id='$talker' and peer_server_id='$server' order by ts limit $start_set,$end_set";
+
+		if ($res_id>1) { $sel_resource="and (peer_resource_id='$res_id' OR peer_resource_id='1')"; }
+		$query="select from_unixtime(timestamp+0) as ts,direction, peer_name_id, peer_server_id, peer_resource_id, body from `$tslice_table` where owner_id = '$user_id' and peer_name_id='$talker' and peer_server_id='$server' $sel_resource order by ts limit $start_set,$end_set";
 	}
 
 	// wyszukiwanie frazy
@@ -372,6 +374,14 @@ function get_server_name ($server_id,$xmpp_host) {
 
 }
 
+function get_resource_name ($resource_id,$xmpp_host) {
+
+	$result=mysql_query("select resource from `logdb_resources_$xmpp_host` where resource_id = '$resource_id'");
+	$row=mysql_fetch_row($result);
+	$resource=$row[0];
+	if ($resource) { return $resource; } else { return "f"; }
+
+}
 
 function get_stats($user_id,$tslice,$xmpp_host) {
 
