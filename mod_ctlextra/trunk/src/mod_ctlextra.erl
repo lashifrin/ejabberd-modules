@@ -359,16 +359,8 @@ stringize(String) ->
     element(2, regexp:gsub(String, "\n", "\\n")).
 
 add_rosteritem(LU, LS, RU, RS, Nick, Group, Subscription, Xattrs) ->
-    subscribe(LU, LS, RU, RS, Nick, Group, Subscription, Xattrs),
-    %% TODO: if the server is not local and Subs=to or both: send subscription request
-    %% TODO: check if the "remote server" is a virtual host here, else do nothing
-    %%add_rosteritem2(RU, RS, LU, LS, LU, "", invert_subs(Subscription), Xattrs, Host).
-    subscribe(RU, RS, LU, LS, LU, "", invert_subs(Subscription), Xattrs).
-
-invert_subs(none) -> none;
-invert_subs(to) -> none;
-invert_subs(from) -> to;
-invert_subs(both) -> both.
+    subscribe(LU, LS, RU, RS, Nick, Group, Subscription, Xattrs).
+    %% TODO: if the remote server is not local and Subs=to or both: send subscription request
 
 subscribe(LocalUser, LocalServer, RemoteUser, RemoteServer, Nick, Group, Subscription, Xattrs) ->
     mnesia:transaction(
