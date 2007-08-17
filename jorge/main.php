@@ -160,14 +160,14 @@ $tslice_table='logdb_messages_'.$tslice.'_'.$xmpp_host;
 
 // Chats in selected days:
 if ($tslice) {
-	$result=db_q($user_id,$server,$tslice_table,$talker,$search_p,"2");
+	$result=db_q($user_id,$server,$tslice_table,$talker,$search_p,"2",$start,$xmpp_host);
 	if ($result=="f") { header ("Location: main.php");  }
 	print '<td valign="top" style="padding-top: 15px;">'."\n";
 	print '<table class="ff">'."\n";
 	while ($entry = mysql_fetch_array($result))
 	{
-		$user_name = get_user_name($entry["todaytalk"],$xmpp_host);
-		$server_name = get_server_name($entry[server],$xmpp_host);
+		$user_name = $entry[username];
+		$server_name = $entry[server_name];
 		if ($talker==$entry["todaytalk"] AND $server==$entry[server]) { $bold_b="<b>"; $bold_e="</b>"; } else { $bold_b=""; $bold_e=""; }
 			$nickname = query_nick_name($bazaj,$token,$user_name,$server_name);
 			if ($nickname=="f") { $nickname=$not_in_r[$lang]; }

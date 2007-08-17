@@ -297,7 +297,9 @@ function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type
 
 	// rozmowy w danym dniu
 	if ($type=="2") {
-		$query = "select peer_name_id as todaytalk, peer_server_id as server from `$tslice_table` where owner_id='$user_id' group by peer_name_id,peer_server_id";
+
+		$query = "select a.username, b.server as server_name, c.peer_name_id as todaytalk, c.peer_server_id as server from `logdb_users_$xmpp_host` a, `logdb_servers_$xmpp_host` b, `$tslice_table` c where c.owner_id='$user_id' and a.user_id=c.peer_name_id and b.server_id=c.peer_server_id group by a.username,b.server order by lower(username)";
+	
 	}
 
 	// rozmowy z danym u¿ytkownikiem
@@ -305,6 +307,7 @@ function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type
 
 		if ($res_id>1) { $sel_resource="and (peer_resource_id='$res_id' OR peer_resource_id='1')"; }
 		$query="select from_unixtime(timestamp+0) as ts,direction, peer_name_id, peer_server_id, peer_resource_id, body from `$tslice_table` where owner_id = '$user_id' and peer_name_id='$talker' and peer_server_id='$server' $sel_resource order by ts limit $start_set,$end_set";
+
 	}
 
 	// wyszukiwanie frazy
