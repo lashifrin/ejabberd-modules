@@ -55,8 +55,8 @@
 -record(limits, {message, presence}).
 %% message = presence = integer() | infinite
 
--record(service_limits, {local, remote, unrestricted}).
-%% local = remote = unrestricted = limits()
+-record(service_limits, {local, remote}).
+%% local = remote = limits()
 
 %% All the elements are of type value()
 
@@ -82,8 +82,6 @@
 -define(DEFAULT_LIMIT_LOCAL_PRESENCE, 100).
 -define(DEFAULT_LIMIT_REMOTE_MESSAGE, 20).
 -define(DEFAULT_LIMIT_REMOTE_PRESENCE,20).
--define(DEFAULT_LIMIT_UNRESTRICTED_MESSAGE,  infinite).
--define(DEFAULT_LIMIT_UNRESTRICTED_PRESENCE, infinite).
 
 
 %%====================================================================
@@ -1056,25 +1054,14 @@ list_of_limits(local) ->
 
 list_of_limits(remote) ->
     [{message, ?DEFAULT_LIMIT_REMOTE_MESSAGE},
-     {presence, ?DEFAULT_LIMIT_REMOTE_PRESENCE}];
-
-list_of_limits(unrestricted) ->
-    [{message, ?DEFAULT_LIMIT_UNRESTRICTED_MESSAGE},
-     {presence, ?DEFAULT_LIMIT_UNRESTRICTED_PRESENCE}];
-
-list_of_limits(all) ->
-    list_of_limits(local) ++
-	list_of_limits(remote) ++
-	list_of_limits(unrestricted).
+     {presence, ?DEFAULT_LIMIT_REMOTE_PRESENCE}].
 
 build_service_limit_record(LimitOpts) -> 
     LimitOptsL = get_from_limitopts(LimitOpts, local),
     LimitOptsR = get_from_limitopts(LimitOpts, remote),
-    LimitOptsU = get_from_limitopts(LimitOpts, unrestricted),
     {service_limits,
      build_limit_record(LimitOptsL, local),
-     build_limit_record(LimitOptsR, remote),
-     build_limit_record(LimitOptsU, unrestricted)
+     build_limit_record(LimitOptsR, remote)
     }.
 
 get_from_limitopts(LimitOpts, SenderT) ->
@@ -1107,7 +1094,6 @@ type_of_stanza({xmlelement, "presence", _, _}) -> presence.
 get_limit_number(message, Limits) -> Limits#limits.message;
 get_limit_number(presence, Limits) -> Limits#limits.presence.
 
-get_slimit_group(unrestricted, SLimits) -> SLimits#service_limits.unrestricted;
 get_slimit_group(local, SLimits) -> SLimits#service_limits.local;
 get_slimit_group(remote, SLimits) -> SLimits#service_limits.remote.
 
