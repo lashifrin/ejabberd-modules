@@ -136,7 +136,7 @@ ImageFilledRectangle($im,0,0,$width,$height,$bg);
 
 // randomly morph each character on x-axis
 // copies enlarged text back to original image
-$morph_factor = 1;
+$morph_factor = 2;
 $y_chunk = 1;
 for($i=0 ; $i<=$height_scaled ; $i+=$y_chunk)
 {

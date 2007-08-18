@@ -127,6 +127,7 @@ print '<a href="index.php?lng_sw='.$lang_o.'">'.$ch_lan2[$lang].$lang_sw2[$lang]
 print '<tr height="12" class="maint"><td colspan="2" width="100%"></td></tr>'."\n";
 print '<tr height="3" class="spacer"><td colspan="2" width="100%"></td></tr>'."\n";
 print '</tr></table>';
+print '<br><div align="center"><img alt="Jorge logo" src="img/jorge_logo.png"></div>';
 
     echo '<center>'."\n";
     echo '<form action="index.php" method="post">'."\n";
