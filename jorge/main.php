@@ -210,8 +210,8 @@ if ($talker) {
 	$action_link = "$tslice@$talker@$server_id@0@null@$loc_link@del@";
 	$action_link = encode_url($action_link,$token,$url_key);
 	print '<td align="right" style="padding-right: 5px;">[ <a class="export" href="export.php?a='.$e_string.'">'.$export_link[$lang].'</a>&nbsp; | &nbsp;';
-	print '<a class="delq" href="main.php?a='.$action_link.'" onClick="if (!confirm(\''.$del_conf[$lang].'\')) return false;">'.$del_t[$lang].'</a> ]</td></tr>'."\n";
-	print '<tr class="spacer"><td colspan="4"></td></tr>';
+	print '<a class="delq" href="main.php?a='.$action_link.'" onClick="if (!confirm(\''.$del_conf[$lang].'\')) return false;">'.$del_t[$lang].'</a> ]</td></tr>';
+	print '<tr class="spacer"><td colspan="5"></td></tr>';
 	print '<tbody id="searchfield">'."\n";
 	while ($entry = mysql_fetch_array($result))
 		{
@@ -305,6 +305,7 @@ for($i=0;$i < $nume;$i=$i+$num_lines_bro){
 print '</td></tr>';
 // limiting code - end
 
+	if (($nume-$start)>40) { print '<tr><td colspan="5" style="text-align: right; padding-right: 5px;"><a href="#top"><small>'.$back_t[$lang].'</small></a></td></tr>'."\n"; }
 	print '</table>'."\n";
 
 	print '</tr></table></td>'."\n";

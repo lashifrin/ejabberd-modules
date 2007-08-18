@@ -470,5 +470,11 @@ $logger_f4[eng] = "Additional info:";
 $logger_f_ip[pol] = pl_znaczki("z adresu IP: ");
 $logger_f_ip[eng] = "from IP address: ";
 
+$refresh[pol] = pl_znaczki("Od¶wie¿");
+$refresh[eng] = "Refresh";
+
+$back_t[pol] = pl_znaczki("Wróæ na góre strony");
+$back_t[eng] = "Back to top of the page";
+
 
 ?>
