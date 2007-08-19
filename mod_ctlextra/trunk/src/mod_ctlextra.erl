@@ -358,9 +358,9 @@ stringize(String) ->
     %% Replace newline characters with other code
     element(2, regexp:gsub(String, "\n", "\\n")).
 
+%% TODO: if the remote server is not local and Subs=to or both: send subscription request
 add_rosteritem(LU, LS, RU, RS, Nick, Group, Subscription, Xattrs) ->
     subscribe(LU, LS, RU, RS, Nick, Group, Subscription, Xattrs).
-    %% TODO: if the remote server is not local and Subs=to or both: send subscription request
 
 subscribe(LocalUser, LocalServer, RemoteUser, RemoteServer, Nick, Group, Subscription, Xattrs) ->
     mnesia:transaction(
@@ -414,9 +414,20 @@ build_list_users(Group, [{User, Server}|Users], Res) ->
     build_list_users(Group, Users, [{User, Server, Group, User}|Res]).
 
 vcard_get(User, Server, DataX) ->
-    [{_, _, A1}] = mnesia:dirty_read(vcard, {User, Server}),
-    Elem = vcard_get(DataX, A1),
-    {ok, xml:get_tag_cdata(Elem)}.
+    [{_, Module, Function, _Opts}] = ets:lookup(sm_iqtable, {?NS_VCARD, Server}),
+    JID = jlib:make_jid(User, Server, ""),
+    IQ = #iq{type = get, xmlns = ?NS_VCARD},
+    IQr = Module:Function(JID, JID, IQ),
+    Res = case IQr#iq.sub_el of
+	      [A1] ->
+		  case vcard_get(DataX, A1) of
+		      false -> no_value;
+		      Elem -> xml:get_tag_cdata(Elem)
+		  end;
+	      [] -> 
+		  no_vcard
+	  end,
+    {ok, Res}.
 
 vcard_get({Data1, Data2}, A1) ->
     A2 = xml:get_subtag(A1, Data1),
@@ -439,24 +450,27 @@ vcard_set(User, Server, Data, Content) ->
     vcard_set2(User, Server, R, Data).
 
 vcard_set2(User, Server, R, Data) ->
+    [{_, Module, Function, _Opts}] = ets:lookup(sm_iqtable, {?NS_VCARD, Server}),
+    JID = jlib:make_jid(User, Server, ""),
+    IQ = #iq{type = get, xmlns = ?NS_VCARD},
+    IQr = Module:Function(JID, JID, IQ),
+
     %% Get old vcard
-    A4 = case mnesia:dirty_read(vcard, {User, Server}) of
-	     [] -> 
-		 [R];
-	     [{_, _, A1}] ->
+    A4 = case IQr#iq.sub_el of
+	     [A1] ->
 		 {_, _, _, A2} = A1,
 		 A3 = lists:keydelete(Data, 2, A2),
-		 [R | A3]
+		 [R | A3];
+	     [] -> 
+		 [R]
 	 end,
 
     %% Build new vcard
     SubEl = {xmlelement, "vCard", [{"xmlns","vcard-temp"}], A4},
-    IQ = #iq{type=set, sub_el = SubEl},
-    JID = jlib:make_jid(User, Server, ""),
+    IQ2 = #iq{type=set, sub_el = SubEl},
 
-    mod_vcard:process_sm_iq(JID, JID, IQ),
+    Module:Function(JID, JID, IQ2),
     {ok, "done"}.
-
 
 -record(last_activity, {us, timestamp, status}).
 
