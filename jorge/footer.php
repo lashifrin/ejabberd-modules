@@ -46,7 +46,7 @@ print '<div align="right"><a href="mailto:zzolkiewski@aster.com.pl">'.$quest1[$l
 
 ?>
 <br><br><br><br><br>
-<div align="center"><small>&copy;2007</small></div>
+<div align="center"><small>&copy;2007 ($Rev$)</small></div>
 
 <?
 

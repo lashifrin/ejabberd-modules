@@ -165,7 +165,7 @@ if ($token==$admin_name) {
 <?
 }
 ?>
-	<title>Jorge - alpha release</title>
+	<title>Jorge (beta) $Rev$</title>
         <script type="text/javascript">
             $(function() {
 		$('table#maincontent tbody#searchfield tr').quicksearch({

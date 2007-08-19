@@ -86,7 +86,7 @@ if ($_GET['act']=='logout') {
 
 		}
 
-	$error_m="<br /><span class=\"hlt\"><b>$wrong_data[$lang]</b></span>";
+	$error_m='<div style="background-color: #fad163; text-align: center; font-weight: bold; width: 300pt;">'.$wrong_data[$lang].'</div>';
 	$ui_fail=get_user_id($inpLogin,$xmpp_host);
 	$query = "select count(id_user) as log_number from jorge_logger where id_user = '$ui_fail' and log_time > date_sub(now(),interval 1 minute)";
 	$result = mysql_query($query);
@@ -120,28 +120,28 @@ function new_freecap()
 <?
 
 if ($lang=="eng") { $lang_o="pol"; } elseif($lang=="pol") { $lang_o="eng"; }
-print '<table class="ff" cellspacing="0" width="100%">';
-print '<tr>';
+print '<table class="ff" cellspacing="0" width="100%">'."\n";
+print '<tr>'."\n";
 print '<td style="text-align: left;">'.$welcome_1[$lang].'</td><td style="text-align: right;">';
 print '<a href="index.php?lng_sw='.$lang_o.'">'.$ch_lan2[$lang].$lang_sw2[$lang].'</a></td>';
 print '<tr height="12" class="maint"><td colspan="2" width="100%"></td></tr>'."\n";
 print '<tr height="3" class="spacer"><td colspan="2" width="100%"></td></tr>'."\n";
-print '</tr></table>';
-print '<br><div align="center"><img alt="Jorge logo" src="img/jorge_logo.png"></div>';
+print '</tr></table>'."\n";
+print '<br><div align="center"><img alt="Jorge logo" src="img/jorge_logo.png"></div>'."\n";
 
     echo '<center>'."\n";
     echo '<form action="index.php" method="post">'."\n";
-    echo '<br /><br /><table class="ff" border="0" cellspacing="0" cellpadding="0">'."\n";
+    echo '<br><br><table class="ff" border="0" cellspacing="0" cellpadding="0">'."\n";
     echo '<tr><td align="right">'.$login_w[$lang].'&nbsp;</td><td><input name="inpLogin" value="'.$_POST[inpLogin].'" class="log" ></td><td>@'.$xmpp_host_dotted.'</td></tr>'."\n";
-    echo '<tr height="3" ><td></td></tr>';
+    echo '<tr height="3" ><td></td></tr>'."\n";
     echo '<tr><td align="right">'.$passwd_w[$lang].'&nbsp;</td><td><input name="inpPass" type="password" class="log"></td></tr>'."\n";
-    echo '<tr height="10"><td></td></tr>';
-	echo '<tr><td></td><td colspan="2"><img src="freecap.php" id="freecap" name="pic"></td></tr>';
-	echo '<tr height="3" ><td></td></tr>';
-	echo '<tr><td></td><td colspan="2" style="text-align: center;"><a href="#" onClick="new_freecap();return false;"><small>'.$cap_cant[$lang].'</small></a></td></tr>';
-	echo '<tr height="3" ><td></td></tr>';
+    echo '<tr height="10"><td></td></tr>'."\n";
+	echo '<tr><td></td><td colspan="2"><img src="freecap.php" id="freecap" name="pic"></td></tr>'."\n";
+	echo '<tr height="3" ><td></td></tr>'."\n";
+	echo '<tr><td></td><td colspan="2" style="text-align: center;"><a href="#" onClick="new_freecap();return false;"><small>'.$cap_cant[$lang].'</small></a></td></tr>'."\n";
+	echo '<tr height="3" ><td></td></tr>'."\n";
 	echo '<tr><td align="right">'.$cap_w[$lang].'&nbsp;</td><td><input name="word" type="text" class="log" ></td>'."\n";
-	echo '<tr height="15" ><td></td></tr>';
+	echo '<tr height="15" ><td></td></tr>'."\n";
     echo '<tr><td colspan="2" align="right"><input class="red" type="submit" name="sublogin" value="'.$login_act[$lang].'"></td></tr>'."\n";
     echo '</table>'."\n";
     echo '</form>'."\n";
