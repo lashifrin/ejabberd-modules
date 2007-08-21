@@ -1,0 +1,29 @@
+2007-08-21  Badlop  <badlop@ono.com>
+
+	* mod_xmlrpc/*: Initial commit.
+
+Old Changelog:
+
+0.2.4 - 7 November 2006
+  * Fixed a bug that required clients to provide attributes in a fixed order
+
+0.2.3 - 22 September 2006
+  * New feature: bind to a specific IP address, requires the patched XML-RPC-Erlang-1.13-IP (thanks to Zeank)
+
+0.2.2 - 15 August 2006
+  * Fixed small bug on resource_num (thanks to Flipkick)
+
+0.2.1 - 20 July 2006
+  * Fixed small bug on add_rosteritem (thanks to Leonexis)
+
+0.2.0 - 16 April 2006
+  * Added two new calls: num_resources and resouce_num
+  * Added support for vhosts
+
+0.1.2 - 28 December 2005
+  * Now compatible with ejabberd 1.0.0
+  * The XMLRPC server is started only once, not once for every virtual host
+  * Added comments for handlers. Every available handler must be explained
+
+0.1.0 - 4 April 2005
+  * Initial version
