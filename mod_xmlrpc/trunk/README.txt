@@ -1,8 +1,8 @@
 
         mod_xmlrpc - XML-RPC server
 
-        http://ejabberd.jabber.ru/mod_xmlrpc
-        (C) 2005-2006 by Badlop 
+        Homepage: http://ejabberd.jabber.ru/mod_xmlrpc
+        Author: Badlop 
 
 
 	DESCRIPTION
@@ -27,9 +27,9 @@ directly the database are:
 	REQUIREMENTS
 	------------
 
+    ejabberd 1.1.2 or newer
     Xmerl 0.20
-    XML-RPC-Erlang 1.13 with the IP patch
-    optional: mod_stats2 for statistics
+    XML-RPC-Erlang 1.13 with IP and Ruby patch
 
  - Install XMERL
 
@@ -42,34 +42,27 @@ cd ..
 
  - Install XMLRPC-E
 
-wget http://ejabberd.jabber.ru/files/contributions/xmlrpc-1.13-ip.tgz
-tar -xzvf xmlrpc-1.13-ip.tgz
+wget http://ejabberd.jabber.ru/files/contributions/xmlrpc-1.13-ipr.tgz
+tar -xzvf xmlrpc-1.13-ipr.tgz
 cd xmlrpc-1.13/src
 make
 cd ../../
 
 
-	INSTALL
-	-------
+	
+	CONFIGURE EJABBERD
+	------------------
 
-1. Copy mod_xmlrpc.erl to the ejabberd src directory.
-
-2. Compile ejabberd. The proccess will show:
-
-	...
-	Recompile: mod_xmlrpc
-	...
-
-3. Add an option like this to the ejabberd execution script:
+1. Add an option like this to the ejabberd start script:
 
 $ erl -pa '/home/jabber/xmlrpc-1.13/ebin' ...
 
-4. Configure ejabberd to start this module at startup: 
+2. Configure ejabberd to start this module at startup: 
 edit ejabberd.cfg and add on 'modules' section:
 
 	{mod_xmlrpc,      []},
 
-5. Now start ejabberd. If everything went ok, no mention to mod_xmlrpc 
+3. Now start ejabberd. If everything went ok, no mention to mod_xmlrpc 
 will be shown on the error log.
 
 
@@ -180,5 +173,20 @@ This is an example XML-RPC client in Python that you can use to get started (tha
 
   result = server.create_account(params)
   print result
+-------
+
+
+	TEST 3: RUBY
+	--------------
+
+This is an example XML-RPC client in Ruby that you can use to get started (thanks to Diddek):
+-------
+require 'xmlrpc/client'
+
+host = "172.16.29.6:4560"
+timeout = 3000000
+client = XMLRPC::Client.new2("http://#{host}", "#{host}", timeout)
+result = client.call("echothis", "800")
+puts result 
 -------
 

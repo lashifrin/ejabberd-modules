@@ -1,5 +1,8 @@
 2007-08-21  Badlop  <badlop@ono.com>
 
+	* README.txt: New Ruby example (thanks to Diddek). Patched xmlrpc 
+	Erlang library for Ruby compatibility (thanks to Cstar).
+
 	* mod_xmlrpc/*: Initial commit.
 
 Old Changelog:
