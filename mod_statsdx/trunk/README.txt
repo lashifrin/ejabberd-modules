@@ -1,8 +1,9 @@
 
-	mod_statsdx
-	===========
+	mod_statsdx - Calculates and gathers statistics actively
 
-	Calculates and gathers statistics actively
+        Homepage: http://ejabberd.jabber.ru/mod_statsdx
+        Author: Badlop
+        Module for ejabberd SVN
 
 
 	CONFIGURE

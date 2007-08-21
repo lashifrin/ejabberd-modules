@@ -1499,7 +1499,6 @@ get_statsdx(global, Lang) ->
      ?XC("h3", "Users"),
      ?XAE("table", [],
       [?XE("tbody", [
-	     do_stat(global, Lang, "authusers"),
 	     do_stat(global, Lang, "onlineusers"),
 	     do_stat(global, Lang, "offlinemsg"),
 	     do_stat(global, Lang, "vcards")
@@ -1575,7 +1574,6 @@ get_statsdx(Host, Lang) ->
      ?XC("h3", "Users"),
      ?XAE("table", [],
       [?XE("tbody", [
-	     do_stat(global, Lang, "authusers", Host),
 	     do_stat(global, Lang, "onlineusers", Host),
 	     do_stat(global, Lang, "offlinemsg", Host),
 	     do_stat(global, Lang, "vcards", Host)
@@ -2356,7 +2354,7 @@ get_node(global, Node, ["statsdx"], Query, Lang) ->
      ?XC("h3", "Connections"),
      ?XAE("table", [],
 	  [?XE("tbody", [
-	     do_stat(global, Lang, "authusers"),
+	     do_stat(global, Lang, "onlineusers"),
 		do_stat(Node, Lang, "httppollusers"),
 		do_stat(Node, Lang, "httpbindusers"),
 		do_stat(Node, Lang, "s2sconnections"),

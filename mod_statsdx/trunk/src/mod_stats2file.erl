@@ -1,14 +1,14 @@
 %%%----------------------------------------------------------------------
 %%% File    : mod_stats2file.erl
-%%% Author  : Badlop
+%%% Author  : Badlop <badlop@ono.com>
 %%% Purpose : Generates files with all kind of statistics
 %%% Created :
 %%% Id      : $Id$
 %%%----------------------------------------------------------------------
 
 -module(mod_stats2file).
--author('').
--vsn('$Revision$').
+-author('badlop@ono.com').
+-vsn('$Revision$ ').
 
 -behaviour(gen_mod).
 
@@ -123,7 +123,6 @@ write_stats(I, server, _Name, F, T) ->
 
 	fwh(F, "Users", 2, T),
 	fwbl1(F, T),
-	fwttl(F, "authusers", T),
 	fwttl(F, "onlineusers", T),
 	fwttl(F, "offlinemsg", T),
 	fwttl(F, "vcards", T),
@@ -268,7 +267,6 @@ write_stats(I, vhost, Host, F, T) ->
 
 	fwh(F, "Users", 2, T),
 	fwbl1(F, T),
-	fwttl(F, "authusers", Host, T),
 	fwttl(F, "onlineusers", Host, T),
 	fwttl(F, "offlinemsg", Host, T),
 	fwttl(F, "vcards", Host, T),

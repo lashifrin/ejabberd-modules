@@ -1,14 +1,14 @@
 %%%----------------------------------------------------------------------
 %%% File    : mod_statsdx.erl
-%%% Author  : Badlop
+%%% Author  : Badlop <badlop@ono.com>
 %%% Purpose : Calculates and gathers statistics actively
 %%% Created :
 %%% Id      : $Id$
 %%%----------------------------------------------------------------------
 
 -module(mod_statsdx).
--author('').
--vsn('$Revision$').
+-author('badlop@ono.com').
+-vsn('$Revision$ ').
 
 -behaviour(gen_mod).
 
@@ -278,11 +278,8 @@ get(_, ["sslusers"]) -> {_, _, R} = get_connectiontype(), R;
 get(_, ["registeredusers", title]) -> "Registered users";
 get(N, ["registeredusers"]) -> rpc:call(N, mnesia, table_info, [passwd, size]);
 get(_, ["registeredusers", Host]) -> length(ejabberd_auth:get_vh_registered_users(Host));
-get(_, ["authusers", title]) -> "Authenticated users";
-get(N, ["authusers"]) -> rpc:call(N, mnesia, table_info, [session, size]);
-get(_, ["authusers", Host]) -> get_authusers(Host);
 get(_, ["onlineusers", title]) -> "Online users";
-get(N, ["onlineusers"]) -> rpc:call(N, mnesia, table_info, [presence, size]);
+get(N, ["onlineusers"]) -> rpc:call(N, mnesia, table_info, [session, size]);
 get(_, ["onlineusers", Host]) -> length(ejabberd_sm:get_vh_session_list(Host));
 get(_, ["httppollusers", title]) -> "HTTP-Poll users (aprox)";
 get(N, ["httppollusers"]) -> rpc:call(N, mnesia, table_info, [http_poll, size]);

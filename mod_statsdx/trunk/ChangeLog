@@ -1,0 +1,7 @@
+2007-08-21  Badlop  <badlop@ono.com>
+
+	* src/*.erl: Removed authusers statistic.
+	
+	* src/*.erl: Fixed credits.
+
+	* ChangeLog: New file to track changes.
