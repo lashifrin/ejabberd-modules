@@ -608,4 +608,21 @@ function get_do_log_list($user_id,$xmpp_host) {
 	return $splited_list;
 
 }
+
+
+function new_parse_url($text) {
+
+	$text = ereg_replace("([[:alpha:]]+://www|[[:alpha:]]+://)[^<>[:space:]]+[[:alnum:]/]",
+
+                     "<a class=\"clickl\" href=\"\\0\" target=\"_blank\">\\0</a>", $text);
+
+	// disabled for now
+	#$text = ereg_replace("[^://]?www[^<>[:space:]]+[[:alnum:]/]",
+        #            "<a class=\"clickl\" href=\"http://\\0\" target=\"_blank\">\\0</a>", $text);
+	
+	return $text;
+}
+
+
+
 ?>

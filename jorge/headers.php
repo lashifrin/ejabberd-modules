@@ -32,7 +32,7 @@ ob_start();
 // error reporting to off
 error_reporting(E_NONE);
 
-// some definitions it seams there are needed in some moments...
+// some definitions it seams there are needed in some moments..
 $token=""; 
 $user_id="";
 $owner_id="";

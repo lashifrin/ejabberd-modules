@@ -278,6 +278,7 @@ if ($talker) {
 		$t_ro = array("<br>");
 		$new_s=str_replace($to_r,$t_ro,$new_s);
 		$new_s=wordwrap($new_s,107,"<br>",true);
+		$new_s=new_parse_url($new_s);
 		print '<td width="800" colspan="2">'.$new_s.'</td>'."\n";
 		$lnk=encode_url("$tslice@$entry[peer_name_id]@$entry[peer_server_id]@",$ee,$url_key);
 		$to_base2 = "$tslice@$entry[peer_name_id]@$entry[peer_server_id]@1@$licz@$lnk@NULL@$start@";

@@ -101,6 +101,10 @@ a.export {
 
 }
 
+a.clickl {
+	color: #4145ff;
+	text-decoration: underline;
+	}
 
 input.btn{
    color:#000000;
