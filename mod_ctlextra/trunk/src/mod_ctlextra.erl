@@ -21,6 +21,7 @@
 -include("ejabberd.hrl").
 -include("ejabberd_ctl.hrl").
 -include("jlib.hrl").
+-include("mod_roster.hrl").
 
 -record(session, {sid, usr, us, priority}). % copied from ejabberd_sm.erl
 
@@ -61,10 +62,11 @@ start(Host, _Opts) ->
 				    {"muc-online-rooms", "list existing rooms"},
 
 				    %% mod_roster
-				    {"add-rosteritem user1 server1 user2 server2 nick group subs", "Add user2@server2 to user1@server1"},
+				    {"add-rosteritem user1 server1 user2 server2 nick group subs", "Add user2@server2 to user1@server1's roster"},
 				    %%{"", "subs= none, from, to or both"},
 				    %%{"", "example: add-roster peter localhost mike server.com MiKe Employees both"},
 				    %%{"", "will add mike@server.com to peter@localhost roster"},
+				    {"rem-rosteritem user1 server1 user2 server2", "Remove user2@server2 from user1@server1's roster"},
 				    {"pushroster file user server", "push template roster in file to user@server"},
 				    {"pushroster-all file", "push template roster in file to all those users"},
 				    {"push-alltoall server group", "adds all the users to all the users in Group"},
@@ -196,6 +198,20 @@ ctl_process(_Val, ["add-rosteritem", LocalUser, LocalServer, RemoteUser, RemoteS
 	    ?STATUS_ERROR;
 	{badrpc, Reason} ->
 	    io:format("Can't add roster item to user ~p: ~p~n",
+		      [LocalUser, Reason]),
+	    ?STATUS_BADRPC
+    end;
+
+ctl_process(_Val, ["rem-rosteritem", LocalUser, LocalServer, RemoteUser, RemoteServer]) ->
+    case rem_rosteritem(LocalUser, LocalServer, RemoteUser, RemoteServer) of
+	{atomic, ok} ->
+	    ?STATUS_SUCCESS;
+	{error, Reason} ->
+	    io:format("Can't remove ~p@~p to ~p@~p: ~p~n",
+		      [RemoteUser, RemoteServer, LocalUser, LocalServer, Reason]),
+	    ?STATUS_ERROR;
+	{badrpc, Reason} ->
+	    io:format("Can't remove roster item to user ~p: ~p~n",
 		      [LocalUser, Reason]),
 	    ?STATUS_BADRPC
     end;
@@ -358,24 +374,47 @@ stringize(String) ->
     %% Replace newline characters with other code
     element(2, regexp:gsub(String, "\n", "\\n")).
 
-%% TODO: if the remote server is not local and Subs=to or both: send subscription request
 add_rosteritem(LU, LS, RU, RS, Nick, Group, Subscription, Xattrs) ->
-    subscribe(LU, LS, RU, RS, Nick, Group, Subscription, Xattrs).
+    subscribe(LU, LS, RU, RS, Nick, Group, Subscription, Xattrs),
+    route_rosteritem(LU, LS, RU, RS, Nick, Group, Subscription),
+    {atomic, ok}.
 
 subscribe(LocalUser, LocalServer, RemoteUser, RemoteServer, Nick, Group, Subscription, Xattrs) ->
-    mnesia:transaction(
-      fun() -> mnesia:write({roster,
-			     {LocalUser,LocalServer,{RemoteUser,RemoteServer,[]}}, % usj
-			     {LocalUser,LocalServer},                 % us
-			     {RemoteUser,RemoteServer,[]},      % jid
-			     Nick,                  % name: "Mom", []
-			     Subscription,  % subscription: none, to=you see him, from=he sees you, both
-			     none,          % ask: out=send request, in=somebody requests you, none
-			     [Group],       % groups: ["Family"]
-			     Xattrs,        % xattrs: [{"category","conference"}]
-			     []             % xs: []
-			    })
-      end).
+    R = #roster{usj = {LocalUser,LocalServer,{RemoteUser,RemoteServer,[]}},
+		us = {LocalUser,LocalServer},
+		jid = {RemoteUser,RemoteServer,[]},
+		name = Nick,
+		subscription = Subscription, % none, to=you see him, from=he sees you, both
+		ask = none, % out=send request, in=somebody requests you, none
+		groups = [Group],
+		askmessage = Xattrs, % example: [{"category","conference"}]
+		xs = []},
+    mnesia:transaction(fun() -> mnesia:write(R) end).
+
+rem_rosteritem(LU, LS, RU, RS) ->
+    unsubscribe(LU, LS, RU, RS),
+    route_rosteritem(LU, LS, RU, RS, "", "", "remove"),
+    {atomic, ok}.
+
+unsubscribe(LocalUser, LocalServer, RemoteUser, RemoteServer) ->
+    Key = {{LocalUser,LocalServer,{RemoteUser,RemoteServer,[]}},
+	   {LocalUser,LocalServer}},
+    mnesia:transaction(fun() -> mnesia:delete(roster, Key, write) end).
+
+route_rosteritem(LocalUser, LocalServer, RemoteUser, RemoteServer, Nick, Group, Subscription) ->
+    LJID = jlib:make_jid(LocalUser, LocalServer, ""),
+    RJID = jlib:make_jid(RemoteUser, RemoteServer, ""),
+    ToS = jlib:jid_to_string(LJID),
+    ItemJIDS = jlib:jid_to_string(RJID),
+    GroupXML = {xmlelement, "group", [], [{xmlcdata, Group}]},
+    Item = {xmlelement, "item", 
+	    [{"jid", ItemJIDS},
+	     {"name", Nick},
+	     {"subscription", Subscription}], 
+	    [GroupXML]},
+    Query = {xmlelement, "query", [{"xmlns", ?NS_ROSTER}], [Item]},
+    Packet = {xmlelement, "iq", [{"type", "set"}, {"to", ToS}], [Query]},
+    ejabberd_router:route(LJID, LJID, Packet).
 
 pushroster(File, User, Server) ->
     {ok, [Roster]} = file:consult(File),
