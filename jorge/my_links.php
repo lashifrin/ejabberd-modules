@@ -108,10 +108,12 @@ $result=mysql_query($query);
 if (mysql_num_rows($result) == "0") { print '<br /><br /><center><b>'.$my_links_no_links[$lang].'</b></center>'; }
 	else {
 
+		print '<h2>'.$my_links_desc_m[$lang].'</h2>';
 		print '<center>'."\n";
 		print '<br /><br />'."\n";
-		print '<table class="ff">'."\n";
+		print '<table class="ff" cellspacing="0">'."\n";
 		print '<tr class="maint"><td>'.$my_links_link[$lang].'</td><td>'.$my_links_chat[$lang].'</td><td>'.$my_links_desc[$lang].'</td></tr>'."\n";
+		print '<tr class="spacer" height="1px"><td colspan="4"></td></tr>';
 		while ($entry = mysql_fetch_array($result)) {
 
 			print '<tr style="cursor: pointer;" bgcolor="#e8eef7" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#e8eef7\';">'."\n";

@@ -148,6 +148,12 @@ $user_t[eng] = "User:";
 $my_links_save[pol] = pl_znaczki("MyLinks");
 $my_links_save[eng] = "MyLinks";
 
+$my_links_desc_m[pol] = pl_znaczki("Zapisane linki z archiwum");
+$my_links_desc_m[eng] = "Saved links from archive";
+
+$settings_desc[pol] = pl_znaczki("Ustawienia archiwum");
+$settings_desc[eng] = "Archive settings";
+
 $print_t[pol] = pl_znaczki("drukuj");
 $print_t[eng] = "print";
 

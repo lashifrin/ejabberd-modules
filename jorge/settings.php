@@ -72,12 +72,12 @@ if ($del_a) {
 
 }
 
-
+print '<h2>'.$settings_desc[$lang].'</h2>';
 print '<center>'."\n";
-print '<br><b>'.$menu_item4[$lang].'</b><br /><br />'."\n";
 print '<form action="settings.php" method="post"><input class="btn" type="submit" name="toggle" value="';
 if ($sess->get('log_status') == "0") { print $arch_on[$lang]; } else { print $arch_off[$lang]; }
 print '"></form>'."\n";
+print '<hr size="1" width="100px" noshade="" color="#cccccc"/>'."\n";
 print '<form action="settings.php" method="post"><input class="btn" type="submit" name="del_all" value="'.$settings_del[$lang].'" onClick="if (!confirm(\''.$del_all_conf[$lang].'\')) return false;"></form>'."\n";
 print '</center>'."\n";
 print '<br /><br /><br />';
