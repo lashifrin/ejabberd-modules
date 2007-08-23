@@ -66,3 +66,10 @@ For example:
 This module provides two new commands on the ejabberd-ctl command line tool:
  * cron-list: list scheduled tasks
  * cron-del taskid: delete this task from the schedule
+
+
+	WEB ADMIN
+	=========
+
+This module provides a page in the Host section of the Web Admin.
+Currently that page only allows to view the tasks scheduled for that host.

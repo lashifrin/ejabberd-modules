@@ -14,11 +14,14 @@
 
 -export([ctl_process/3,
 	 run_task/3,
+	 web_menu_host/2, web_page_host/3,
 	 start/2, 
 	 stop/1]).
 
 -include("ejabberd_ctl.hrl").
 -include("ejabberd.hrl").
+-include("ejabberd_http.hrl").
+-include("ejabberd_web_admin.hrl").
 
 -record(task, {taskid, timerref, host, task}).
 
@@ -29,12 +32,16 @@
 
 start(Host, Opts) -> 
     ejabberd_ctl:register_commands(Host, command_list(), ?MODULE, ctl_process),
+    ejabberd_hooks:add(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
+    ejabberd_hooks:add(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
     Tasks = gen_mod:get_opt(tasks, Opts, []),
     catch ets:new(cron_tasks, [ordered_set, named_table, public, {keypos, 2}]),
     [add_task(Host, Task) || Task <- Tasks].
 
 stop(Host) ->
     ejabberd_ctl:unregister_commands(Host, command_list(), ?MODULE, ctl_process),
+    ejabberd_hooks:remove(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
+    ejabberd_hooks:remove(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
     %% Delete tasks of this host
     [delete_task(Task) || Task <- get_tasks(Host)].
 
@@ -133,3 +140,36 @@ ctl_process(_Val, _Host, ["cron-del", TaskId_string]) ->
 
 ctl_process(Val, _Host, _Args) ->
     Val.
+
+
+%% ---------------------
+%% Web Admin
+%% ---------------------
+
+web_menu_host(Acc, _Host) ->
+    [{"cron", "Cron Tasks"} | Acc].
+
+web_page_host(_, Host, 
+	      #request{path = ["cron"],
+		       lang = Lang} = _Request) ->
+    Tasks = get_tasks(Host),
+    Tasks_table = make_tasks_table(Tasks, Lang),
+    Res = [?XC("h1", "Cron Tasks")] ++ Tasks_table,
+    {stop, Res};
+web_page_host(Acc, _, _) -> Acc. 
+
+make_tasks_table(Tasks, Lang) ->
+    TList = lists:map(
+	      fun(T) ->
+		      TID = integer_to_list(T#task.taskid),
+		      TDef = io_lib:format("~p", [T#task.task]),
+		      ?XE("tr",
+			  [?XC("td", TID),
+			   ?XC("td", TDef)])
+	      end, Tasks),
+    [?XE("table",
+	 [?XE("thead",
+	      [?XE("tr",
+		   [?XCT("td", "Task ID"),
+		    ?XCT("td", "Task def")])]),
+	  ?XE("tbody", TList)])].

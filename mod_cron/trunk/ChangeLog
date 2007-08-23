@@ -1,3 +1,8 @@
+2007-08-23  Badlop  <badlop@ono.com>
+
+	* src/mod_cron.erl: Added page in Web Admin; currently only tasks view is possible.
+	* README.txt: Idem.
+
 2007-08-05  Badlop  <badlop@ono.com>
 
 	* ChangeLog: New file to track changes.
