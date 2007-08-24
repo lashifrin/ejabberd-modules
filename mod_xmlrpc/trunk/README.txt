@@ -28,22 +28,13 @@ directly the database are:
 	------------
 
     ejabberd 1.1.2 or newer
-    Xmerl 0.20
-    XML-RPC-Erlang 1.13 with IP and Ruby patch
+    XMLRPC-Erlang 1.13 with IP, Ruby and Xmerl 1.x patches
 
- - Install XMERL
 
-wget http://kent.dl.sourceforge.net/sourceforge/sowap/xmerl-0.20.tar.gz              
-tar -xzvf xmerl-0.20.tar.gz
-mv xmerl-0.20 xmerl
-cd xmerl
-make
-cd ..
+ - Install XMLRPC-Erlang
 
- - Install XMLRPC-E
-
-wget http://ejabberd.jabber.ru/files/contributions/xmlrpc-1.13-ipr.tgz
-tar -xzvf xmlrpc-1.13-ipr.tgz
+wget http://ejabberd.jabber.ru/files/contributions/xmlrpc-1.13-ipr2.tgz
+tar -xzvf xmlrpc-1.13-ipr2.tgz
 cd xmlrpc-1.13/src
 make
 cd ../../
