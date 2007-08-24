@@ -135,22 +135,22 @@ ctl_process(_Val, ["set-password", User, Server, Password]) ->
     ?STATUS_SUCCESS;
 
 ctl_process(_Val, ["vcard-get", User, Server, Data]) ->
-    {ok, Res} = vcard_get(User, Server, {Data}),
+    {ok, Res} = vcard_get(User, Server, [Data]),
     io:format("~s~n", [Res]),
     ?STATUS_SUCCESS;
 
 ctl_process(_Val, ["vcard-get", User, Server, Data1, Data2]) ->
-    {ok, Res} = vcard_get(User, Server, {Data1, Data2}),
+    {ok, Res} = vcard_get(User, Server, [Data1, Data2]),
     io:format("~s~n", [Res]),
     ?STATUS_SUCCESS;
 
-ctl_process(_Val, ["vcard-set", User, Server, Data, Content]) ->
-    {ok, Res} = vcard_set(User, Server, Data, Content),
+ctl_process(_Val, ["vcard-set", User, Server, Data1, Content]) ->
+    {ok, Res} = vcard_set(User, Server, [Data1], Content),
     io:format("~s~n", [Res]),
     ?STATUS_SUCCESS;
 
 ctl_process(_Val, ["vcard-set", User, Server, Data1, Data2, Content]) ->
-    {ok, Res} = vcard_set(User, Server, Data1, Data2, Content),
+    {ok, Res} = vcard_set(User, Server, [Data1, Data2], Content),
     io:format("~s~n", [Res]),
     ?STATUS_SUCCESS;
 
@@ -452,14 +452,14 @@ build_list_users(_Group, [], Res) ->
 build_list_users(Group, [{User, Server}|Users], Res) ->
     build_list_users(Group, Users, [{User, Server, Group, User}|Res]).
 
-vcard_get(User, Server, DataX) ->
+vcard_get(User, Server, Data) ->
     [{_, Module, Function, _Opts}] = ets:lookup(sm_iqtable, {?NS_VCARD, Server}),
     JID = jlib:make_jid(User, Server, ""),
     IQ = #iq{type = get, xmlns = ?NS_VCARD},
     IQr = Module:Function(JID, JID, IQ),
     Res = case IQr#iq.sub_el of
 	      [A1] ->
-		  case vcard_get(DataX, A1) of
+		  case vcard_get(Data, A1) of
 		      false -> no_value;
 		      Elem -> xml:get_tag_cdata(Elem)
 		  end;
@@ -468,27 +468,16 @@ vcard_get(User, Server, DataX) ->
 	  end,
     {ok, Res}.
 
-vcard_get({Data1, Data2}, A1) ->
-    A2 = xml:get_subtag(A1, Data1),
-    A3 = xml:get_subtag(A2, Data2),
-    case A3 of
-	"" -> A2;
-	_ -> A3
+vcard_get([Data1, Data2], A1) ->
+    case xml:get_subtag(A1, Data1) of
+    	false -> false;
+	A2 -> vcard_get([Data2], A2)
     end;
 
-vcard_get({Data}, A1) ->
+vcard_get([Data], A1) ->
     xml:get_subtag(A1, Data).
 
-vcard_set(User, Server, Data1, Data2, Content) ->
-    Content2 = {xmlelement, Data2, [], [{xmlcdata,Content}]},
-    R = {xmlelement, Data1, [], [Content2]},
-    vcard_set2(User, Server, R, Data1).
-
 vcard_set(User, Server, Data, Content) ->
-    R = {xmlelement, Data, [], [{xmlcdata,Content}]},
-    vcard_set2(User, Server, R, Data).
-
-vcard_set2(User, Server, R, Data) ->
     [{_, Module, Function, _Opts}] = ets:lookup(sm_iqtable, {?NS_VCARD, Server}),
     JID = jlib:make_jid(User, Server, ""),
     IQ = #iq{type = get, xmlns = ?NS_VCARD},
@@ -498,10 +487,9 @@ vcard_set2(User, Server, R, Data) ->
     A4 = case IQr#iq.sub_el of
 	     [A1] ->
 		 {_, _, _, A2} = A1,
-		 A3 = lists:keydelete(Data, 2, A2),
-		 [R | A3];
+		 update_vcard_els(Data, Content, A2);
 	     [] -> 
-		 [R]
+		 update_vcard_els(Data, Content, [])
 	 end,
 
     %% Build new vcard
@@ -510,6 +498,27 @@ vcard_set2(User, Server, R, Data) ->
 
     Module:Function(JID, JID, IQ2),
     {ok, "done"}.
+
+update_vcard_els(Data, Content, Els1) ->
+    Els2 = lists:keysort(2, Els1),
+    [Data1 | Data2] = Data,
+    NewEl = case Data2 of
+		[] ->
+		    {xmlelement, Data1, [], [{xmlcdata,Content}]};
+		[D2] ->
+		    OldEl = case lists:keysearch(Data1, 2, Els2) of
+				{value, A} -> A;
+				false -> {xmlelement, Data1, [], []}
+			    end,
+		    {xmlelement, _, _, ContentOld1} = OldEl,
+		    Content2 = [{xmlelement, D2, [], [{xmlcdata,Content}]}],
+		    ContentOld2 = lists:keysort(2, ContentOld1),
+		    ContentOld3 = lists:keydelete(D2, 2, ContentOld2),
+		    ContentNew = lists:keymerge(2, Content2, ContentOld3),
+		    {xmlelement, Data1, [], ContentNew}
+	    end,
+    Els3 = lists:keydelete(Data1, 2, Els2),
+    lists:keymerge(2, [NewEl], Els3).
 
 -record(last_activity, {us, timestamp, status}).
 

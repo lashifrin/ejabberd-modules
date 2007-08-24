@@ -1,3 +1,7 @@
+2007-08-24  Badlop  <badlop@ono.com>
+
+	* src/mod_ctlextra.erl: Fixed bug in vcard-set command that forgot second level attributes.
+
 2007-08-23  Badlop  <badlop@ono.com>
 
 	* src/mod_ctlextra.erl: Command add-rosteritem now pushes the roster item to the client. New command rem-rosteritem.
