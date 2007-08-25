@@ -452,9 +452,7 @@ get_presences({status, LUser, LServer}) ->
             Highest#presence.status;
         _ ->
             "unavailable"
-    end;
-get_presences(_) ->
-    [].
+    end.
 
 -define(XML_HEADER, "<?xml version='1.0' encoding='utf-8'?>").
 
@@ -474,9 +472,7 @@ available_themes(xdata) ->
       fun(Theme) ->
               {xmlelement, "option", [{"label", Theme}],
                [{xmlelement, "value", [], [{xmlcdata, Theme}]}]}
-      end, available_themes(list));
-available_themes(_) ->
-    [].
+      end, available_themes(list)).
 
 -define(XE(Name, Els), {xmlelement, Name, [], Els}).
 -define(C(Text), {xmlcdata, Text}).
