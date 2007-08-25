@@ -1,6 +1,7 @@
 2007-08-26  Badlop  <badlop@ono.com>
 
-	* src/mod_presence.erl: Preliminary support for hashed JIDs. 
+	* src/mod_presence.erl: Preliminary support for hashed JIDs. Added support for HOST keyword, and removed unusued Access variables.
+	
 
 2007-08-25  Badlop  <badlop@ono.com>
 

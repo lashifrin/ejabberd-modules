@@ -91,14 +91,12 @@ init([Host, Opts]) ->
 			 {attributes, record_info(fields, presence_registered)}]),
     mnesia:add_table_index(presence_registered, id),
     update_table(),
-    MyHost = gen_mod:get_opt(host, Opts, "presence." ++ Host),
-    Access = gen_mod:get_opt(access, Opts, all),
-    AccessCreate = gen_mod:get_opt(access_create, Opts, all),
-    AccessAdmin = gen_mod:get_opt(access_admin, Opts, none),
+    MyHost = gen_mod:get_opt_host(Host, Opts, "presence.@HOST@"),
+    Access = gen_mod:get_opt(access, Opts, local),
     ejabberd_router:register_route(MyHost),
     {ok, #state{host = MyHost,
 		server_host = Host,
-		access = {Access, AccessCreate, AccessAdmin}}}.
+		access = Access}}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -164,10 +162,9 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 
 do_route(Host, ServerHost, Access, From, To, Packet) ->
-    {AccessRoute, _AccessCreate, _AccessAdmin} = Access,
-    case acl:match_rule(ServerHost, AccessRoute, From) of
+    case acl:match_rule(ServerHost, Access, From) of
 	allow ->
-	    do_route1(Host, ServerHost, Access, From, To, Packet);
+	    do_route1(Host, ServerHost, From, To, Packet);
 	_ ->
 	    {xmlelement, _Name, Attrs, _Els} = Packet,
 	    Lang = xml:get_attr_s("xml:lang", Attrs),
@@ -177,8 +174,8 @@ do_route(Host, ServerHost, Access, From, To, Packet) ->
 	    ejabberd_router:route(To, From, Err)
     end.
 
-do_route1(Host, _ServerHost, Access, From, To, Packet) ->
-    {_AccessRoute, _AccessCreate, _AccessAdmin} = Access,
+%% TODO: Remove the nested case
+do_route1(Host, _ServerHost, From, To, Packet) ->
     {xmlelement, Name, Attrs, _Els} = Packet,
     case Name of
         "iq" ->
