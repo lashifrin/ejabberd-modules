@@ -25,6 +25,8 @@
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
+-include("ejabberd_web_admin.hrl").
+-include("ejabberd_http.hrl").
 
 -record(presence_registered, {us, id, xml, icon}).
 -record(state, {host, server_host, access}).
@@ -455,7 +457,9 @@ get_pixmaps_directory() ->
 available_themes(list) ->
     case file:list_dir(get_pixmaps_directory()) of
         {ok, List} ->
-            lists:sort(List);
+            L2 = lists:sort(List),
+	    %% Remove from the list of themes the directories that start with a dot
+	    [T || T <- L2, hd(T) =/= 46];
         {error, _} ->
             []
     end;
@@ -465,10 +469,6 @@ available_themes(xdata) ->
               {xmlelement, "option", [{"label", Theme}],
                [{xmlelement, "value", [], [{xmlcdata, Theme}]}]}
       end, available_themes(list)).
-
--define(XE(Name, Els), {xmlelement, Name, [], Els}).
--define(C(Text), {xmlcdata, Text}).
--define(XC(Name, Text), ?XE(Name, [?C(Text)])).
 
 show_presence({xml, LUser, LServer}) ->
     {true, _} = get_info(LUser, LServer),
@@ -485,6 +485,14 @@ show_presence({image, LUser, LServer, Theme}) ->
     "disabled" =/= Icon,
     show_presence({image_no_check, LUser, LServer, Theme});
 
+show_presence({image_example, Theme, Show}) ->
+    Dir = get_pixmaps_directory(),
+    Image = Show ++ ".{gif,png,jpg}",
+    [First | _Rest] = filelib:wildcard(filename:join([Dir, Theme, Image])),
+    Mime = string:substr(First, string:len(First) - 2, 3),
+    {ok, Content} = file:read_file(First),
+    {200, [{"Content-Type", "image/" ++ Mime}], binary_to_list(Content)};
+
 show_presence({image_no_check, LUser, LServer, Theme}) ->
     Dir = get_pixmaps_directory(),
     Image = get_presences({show, LUser, LServer}) ++ ".{gif,png,jpg}",
@@ -493,13 +501,15 @@ show_presence({image_no_check, LUser, LServer, Theme}) ->
     {ok, Content} = file:read_file(First),
     {200, [{"Content-Type", "image/" ++ Mime}], binary_to_list(Content)}.
 
-make_xhtml(Els) ->
+make_xhtml(Els) -> make_xhtml([], Els).
+make_xhtml(Title, Els) ->
     {xmlelement, "html", [{"xmlns", "http://www.w3.org/1999/xhtml"},
 			  {"xml:lang", "en"},
 			  {"lang", "en"}],
      [{xmlelement, "head", [],
        [{xmlelement, "meta", [{"http-equiv", "Content-Type"},
-			      {"content", "text/html; charset=utf-8"}], []}]},
+			      {"content", "text/html; charset=utf-8"}], []}]
+       ++ Title},
       {xmlelement, "body", [], Els}
      ]}.
 
@@ -510,6 +520,36 @@ process(LocalPath, _Request) ->
 	Res ->
 	    Res
     end.
+
+
+themes_to_xhtml(Themes) ->
+    ShowL = ["chat", "available", "away", "xa", "dnd"],
+    THeadL = [""] ++ ShowL,
+    [?XAE("table", [], 
+	  [?XE("tr", [?XC("th", T) || T <- THeadL])] ++
+	  [?XE("tr", [?XC("td", Theme) |
+		      [?XE("td", [?XA("img", [{"src", "image/"++Theme++"/"++T}])]) || T <- ShowL]
+		     ]
+	      ) || Theme <- Themes]
+	 )
+    ].
+
+process2(["themes"], _Request) ->
+    Title = [?XC("title", "Icon Themes")],
+    Themes = available_themes(list),
+    Icon_themes = themes_to_xhtml(Themes),
+    Body = [?XC("h1", "Icon Themes")] ++ Icon_themes,
+    make_xhtml(Title, Body);
+
+process2([], _Request) ->
+    Title = [?XC("title", "Web Presence")],
+    Link_themes = [?AC("themes", "Icon Themes")],
+    Body = [?XC("h1", "Web Presence")] ++ Link_themes,
+    make_xhtml(Title, Body);
+
+process2(["image", Theme, Show], _Request) ->
+    Args = {image_example, Theme, Show},
+    show_presence(Args);
 
 process2([User, Server | Tail], _Request) ->
     LServer = jlib:nameprep(Server),
