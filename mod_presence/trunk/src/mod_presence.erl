@@ -28,7 +28,7 @@
 -include("ejabberd.hrl").
 -include("jlib.hrl").
 
--record(presence_registered, {us, xml, icon}).
+-record(presence_registered, {us, id, xml, icon}).
 -record(state, {host, server_host, access}).
 -record(presence, {resource, show, priority, status}).
 
@@ -89,6 +89,8 @@ init([Host, Opts]) ->
     mnesia:create_table(presence_registered,
 			[{disc_copies, [node()]},
 			 {attributes, record_info(fields, presence_registered)}]),
+    mnesia:add_table_index(presence_registered, id),
+    update_table(),
     MyHost = gen_mod:get_opt(host, Opts, "presence." ++ Host),
     Access = gen_mod:get_opt(access, Opts, all),
     AccessCreate = gen_mod:get_opt(access_create, Opts, all),
@@ -564,4 +566,42 @@ process(LocalPath, _Request) ->
         _ ->
             {404, [], make_xhtml([?XC("h1", "Not found")])}
     end.
+
+%%%--------------------------------
+%%% Update table schema and content from older versions
+%%%--------------------------------
+
+update_table() ->
+    Fields = record_info(fields, presence_registered),
+    case mnesia:table_info(presence_registered, attributes) of
+	Fields ->
+	    ok;
+	[us_host, xml, icon] ->
+	    convert_table_004(Fields)
+    end.
+
+convert_table_004(Fields) ->
+    mnesia:del_table_index(presence_registered, xml),
+    mnesia:del_table_index(presence_registered, icon),
+
+    FixRecords = fun(Old) ->
+			 {presence_registered, {US, Host}, XML, Icon} = Old,
+			 #presence_registered{
+									  us = {US, Host},
+									  xml = list_to_atom(XML),
+									  icon = list_to_atom(Icon)}
+		 end,
+    {atomic, ok} = mnesia:transform_table(presence_registered, FixRecords, Fields, presence_registered),
+
+    F = fun() ->
+		FixKey = fun(Old, Acc) ->
+				 {US, _Host} = Old#presence_registered.us,
+				 New = Old#presence_registered{us = US},
+				 mnesia:delete_object(Old),
+				 mnesia:write(New),
+				 Acc
+			 end,
+		mnesia:foldl(FixKey, none, presence_registered)
+	end,
+    mnesia:transaction(F).
 

@@ -1,7 +1,6 @@
 2007-08-25  Badlop  <badlop@ono.com>
 
-	* src/mod_presence.erl: Fixed compilation warnings. Fixed two warnings reported by Dialyzer. Renamed Status and Text to Show and Status. Table index key only needs User and Server.
-	
+	* src/mod_presence.erl: Fixed compilation warnings. Fixed two warnings reported by Dialyzer. Renamed Status and Text to Show and Status. Table index key only needs User and Server. Added id table field and update_table function.
 
 2007-08-05  Badlop  <badlop@ono.com>
 
