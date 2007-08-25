@@ -30,7 +30,7 @@
 
 -record(presence_registered, {us_host, xml, icon}).
 -record(state, {host, server_host, access}).
--record(presence, {resource, status, priority, text}).
+-record(presence, {resource, show, priority, status}).
 
 %% Copied from ejabberd_sm.erl
 -record(session, {sid, usr, us, priority, info}).
@@ -393,8 +393,8 @@ get_info(LUser, LServer) ->
             {X1, list_to_atom(I)}
     end.
 
-get_status_weight(Status) ->
-    case Status of
+get_status_weight(Show) ->
+    case Show of
         "chat"      -> 0;
         "available" -> 1;
         "away"      -> 2;
@@ -412,13 +412,13 @@ get_presences({bare, LUser, LServer}) ->
                                                   {LUser, LServer, Resource},
                                                   #session.usr),
               Pid = element(2, Session#session.sid),
-              {_User, _Resource, Status, Text} =
+              {_User, _Resource, Show, Status} =
                   rpc:call(node(Pid), ejabberd_c2s, get_presence, [Pid]),
               Priority = Session#session.priority,
               #presence{resource = Resource,
-                        status = Status,
+                        show = Show,
                         priority = Priority,
-                        text = Text}
+                        status = Status}
       end,
       Resources);
 get_presences({sorted, LUser, LServer}) ->
@@ -426,8 +426,8 @@ get_presences({sorted, LUser, LServer}) ->
       fun(A, B) ->
               if
                   A#presence.priority == B#presence.priority ->
-                      WA = get_status_weight(A#presence.status),
-                      WB = get_status_weight(B#presence.status),
+                      WA = get_status_weight(A#presence.show),
+                      WB = get_status_weight(B#presence.show),
                       WA < WB;
                   true ->
                       A#presence.priority > B#presence.priority
@@ -441,15 +441,15 @@ get_presences({xml, LUser, LServer}) ->
        fun(Presence) ->
                {xmlelement, "resource",
                 [{"name", Presence#presence.resource},
-                 {"status", Presence#presence.status},
+                 {"show", Presence#presence.show},
                  {"priority", integer_to_list(Presence#presence.priority)}],
-                [{xmlcdata, Presence#presence.text}]}
+                [{xmlcdata, Presence#presence.status}]}
        end,
        get_presences({sorted, LUser, LServer}))};
-get_presences({status, LUser, LServer}) ->
+get_presences({show, LUser, LServer}) ->
     case get_presences({sorted, LUser, LServer}) of
         [Highest | _Rest] ->
-            Highest#presence.status;
+            Highest#presence.show;
         _ ->
             "unavailable"
     end.
@@ -510,7 +510,7 @@ show_presence({image_no_check, LUser, LServer, Theme}) ->
             case filelib:wildcard(
                    filename:join([get_pixmaps_directory(), Theme,
                                   get_presences(
-                                    {status, LUser, LServer}) ++ ".{gif,png,jpg}"])) of
+                                    {show, LUser, LServer}) ++ ".{gif,png,jpg}"])) of
                 [First | _Rest] ->
                     CT = case string:substr(First, string:len(First) - 2, 3) of
                              "gif" -> "gif";
