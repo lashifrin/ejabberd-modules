@@ -28,7 +28,7 @@
 -include("ejabberd.hrl").
 -include("jlib.hrl").
 
--record(presence_registered, {us_host, xml, icon}).
+-record(presence_registered, {us, xml, icon}).
 -record(state, {host, server_host, access}).
 -record(presence, {resource, show, priority, status}).
 
@@ -36,7 +36,6 @@
 -record(session, {sid, usr, us, priority, info}).
 
 -define(PROCNAME, ejabberd_mod_presence).
--define(SERVICE_NAME(Host), "presence." ++ Host).
 
 -define(PIXMAPS_DIR, "pixmaps").
 
@@ -90,9 +89,7 @@ init([Host, Opts]) ->
     mnesia:create_table(presence_registered,
 			[{disc_copies, [node()]},
 			 {attributes, record_info(fields, presence_registered)}]),
-    MyHost = gen_mod:get_opt(host, Opts, ?SERVICE_NAME(Host)),
-    mnesia:add_table_index(presence_registered, xml),
-    mnesia:add_table_index(presence_registered, icon),
+    MyHost = gen_mod:get_opt(host, Opts, "presence." ++ Host),
     Access = gen_mod:get_opt(access, Opts, all),
     AccessCreate = gen_mod:get_opt(access_create, Opts, all),
     AccessAdmin = gen_mod:get_opt(access_admin, Opts, none),
@@ -213,7 +210,7 @@ do_route1(Host, _ServerHost, Access, From, To, Packet) ->
                     xmlns = ?NS_REGISTER = XMLNS,
                     lang = Lang,
                     sub_el = SubEl} = IQ ->
-                    case process_iq_register_set(Host, From, SubEl, Lang) of
+                    case process_iq_register_set(From, SubEl, Lang) of
                         {result, IQRes} ->
                             Res = IQ#iq{type = result,
                                         sub_el =
@@ -279,7 +276,7 @@ iq_get_register_info(Host, From, Lang) ->
     {LUser, LServer, _} = jlib:jid_tolower(From),
     LUS = {LUser, LServer},
     {XML, Icon, Registered} =
-	case catch mnesia:dirty_read(presence_registered, {LUS, Host}) of
+	case catch mnesia:dirty_read(presence_registered, LUS) of
 	    {'EXIT', _Reason} ->
 		{"false", "disabled", []};
 	    [] ->
@@ -311,12 +308,12 @@ iq_get_register_info(Host, From, Lang) ->
             ] ++ available_themes(xdata)},
 	   ?XFIELD("boolean", "Raw XML", "xml", XML)]}].
 
-iq_set_register_info(Host, From, XML, Icon, _Lang) ->
+iq_set_register_info(From, XML, Icon, _Lang) ->
     {LUser, LServer, _} = jlib:jid_tolower(From),
     LUS = {LUser, LServer},
     F = fun() ->
 		mnesia:write(
-		  #presence_registered{us_host = {LUS, Host},
+		  #presence_registered{us = LUS,
 				       xml = XML,
 				       icon = Icon})
 	end,
@@ -327,7 +324,7 @@ iq_set_register_info(Host, From, XML, Icon, _Lang) ->
 	    {error, ?ERR_INTERNAL_SERVER_ERROR}
     end.
 
-process_iq_register_set(Host, From, SubEl, Lang) ->
+process_iq_register_set(From, SubEl, Lang) ->
     {xmlelement, _Name, _Attrs, Els} = SubEl,
     case xml:get_subtag(SubEl, "remove") of
 	false ->
@@ -353,7 +350,7 @@ process_iq_register_set(Host, From, SubEl, Lang) ->
                                                     ErrText = "You must fill in field \"Icon\" in the form",
                                                     {error, ?ERRT_NOT_ACCEPTABLE(Lang, ErrText)};
                                                 {value, {_, [Icon]}} ->
-                                                    iq_set_register_info(Host, From, XML, Icon, Lang)
+                                                    iq_set_register_info(From, XML, Icon, Lang)
                                             end
 				    end
 			    end;
@@ -364,7 +361,7 @@ process_iq_register_set(Host, From, SubEl, Lang) ->
 		    {error, ?ERR_BAD_REQUEST}
 	    end;
 	_ ->
-	    iq_set_register_info(Host, From, "false", "disabled", Lang)
+	    iq_set_register_info(From, "false", "disabled", Lang)
     end.
 
 iq_get_vcard(Lang) ->
@@ -379,7 +376,7 @@ iq_get_vcard(Lang) ->
 
 get_info(LUser, LServer) ->
     LUS = {LUser, LServer},
-    case catch mnesia:dirty_read(presence_registered, {LUS, ?SERVICE_NAME(LServer)}) of
+    case catch mnesia:dirty_read(presence_registered, LUS) of
         {'EXIT', _Reason} ->
             {false, disabled};
         [] ->
