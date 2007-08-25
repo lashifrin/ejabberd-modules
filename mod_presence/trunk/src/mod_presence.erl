@@ -17,9 +17,7 @@
 -export([start_link/2,
          start/2,
          stop/1,
-         get_info/2,
-         process/2,
-         show_presence/1]).
+         process/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -473,60 +471,27 @@ available_themes(xdata) ->
 -define(XC(Name, Text), ?XE(Name, [?C(Text)])).
 
 show_presence({xml, LUser, LServer}) ->
-    {XML, _Icon} = get_info(LUser, LServer),
-    case XML of
-        true ->
-            {200, [{"Content-Type", "text/xml; charset=utf-8"}],
-             ?XML_HEADER ++ xml:element_to_string(
-                              get_presences({xml, LUser, LServer}))};
-        false ->
-            {404, [], ejabberd_web:make_xhtml([?XC("h1", "Not found")])}
-    end;
-show_presence({image, LUser, LServer}) ->
-    {_XML, Icon} = get_info(LUser, LServer),
-    case Icon of
-        "disabled" ->
-            {404, [], ejabberd_web:make_xhtml([?XC("h1", "Not found")])};
-        _ ->
-            show_presence({image_no_check, LUser, LServer, Icon})
-    end;
-show_presence({image, LUser, LServer, Theme}) ->
-    {_XML, Icon} = get_info(LUser, LServer),
-    case Icon of
-        "disabled" ->
-            {404, [], ejabberd_web:make_xhtml([?XC("h1", "Not found")])};
-        _ ->
-            show_presence({image_no_check, LUser, LServer, Theme})
-    end;
-show_presence({image_no_check, LUser, LServer, Theme}) ->
-    case lists:member(Theme, available_themes(list)) of
-        true ->
-            case filelib:wildcard(
-                   filename:join([get_pixmaps_directory(), Theme,
-                                  get_presences(
-                                    {show, LUser, LServer}) ++ ".{gif,png,jpg}"])) of
-                [First | _Rest] ->
-                    CT = case string:substr(First, string:len(First) - 2, 3) of
-                             "gif" -> "gif";
-                             "png" -> "png";
-                             "jpg" -> "jpeg"
-                         end,
-                    case file:read_file(First) of
-                        {ok, Content} ->
-                            {200, [{"Content-Type", "image/" ++ CT}],
-                             binary_to_list(Content)};
-                        _ ->
-                            {404, [], ejabberd_web:make_xhtml([?XC("h1", "Not found")])}
-                    end;
-                _ ->
-                    {404, [], ejabberd_web:make_xhtml([?XC("h1", "Not found")])}
-            end;
-        false ->
-            {404, [], ejabberd_web:make_xhtml([?XC("h1", "Not found")])}
-    end;
-show_presence(_) ->
-    {404, [], ejabberd_web:make_xhtml([?XC("h1", "Not found")])}.
+    {true, _} = get_info(LUser, LServer),
+    Presence_xml = xml:element_to_string(get_presences({xml, LUser, LServer})),
+    {200, [{"Content-Type", "text/xml; charset=utf-8"}], ?XML_HEADER ++ Presence_xml};
 
+show_presence({image, LUser, LServer}) ->
+    {_, Icon} = get_info(LUser, LServer),
+    "disabled" =/= Icon,
+    show_presence({image_no_check, LUser, LServer, Icon});
+
+show_presence({image, LUser, LServer, Theme}) ->
+    {_, Icon} = get_info(LUser, LServer),
+    "disabled" =/= Icon,
+    show_presence({image_no_check, LUser, LServer, Theme});
+
+show_presence({image_no_check, LUser, LServer, Theme}) ->
+    Dir = get_pixmaps_directory(),
+    Image = get_presences({show, LUser, LServer}) ++ ".{gif,png,jpg}",
+    [First | _Rest] = filelib:wildcard(filename:join([Dir, Theme, Image])),
+    Mime = string:substr(First, string:len(First) - 2, 3),
+    {ok, Content} = file:read_file(First),
+    {200, [{"Content-Type", "image/" ++ Mime}], binary_to_list(Content)}.
 
 make_xhtml(Els) ->
     {xmlelement, "html", [{"xmlns", "http://www.w3.org/1999/xhtml"},
@@ -539,28 +504,27 @@ make_xhtml(Els) ->
      ]}.
 
 process(LocalPath, _Request) ->
-    case LocalPath of
-        [User, Server | Tail] ->
-            LServer = jlib:nameprep(Server),
-            case lists:member(LServer, ?MYHOSTS) of
-                true ->
-                    LUser = jlib:nodeprep(User),
-                    case Tail of
-                        ["xml"] ->
-                            mod_presence:show_presence({xml, LUser, LServer});
-                        ["image"] ->
-                            mod_presence:show_presence({image, LUser, LServer});
-                        ["image", Theme] ->
-                            mod_presence:show_presence({image, LUser, LServer, Theme});
-                        _ ->
-                            {404, [], make_xhtml([?XC("h1", "Not found")])}
-                    end;
-                false ->
-                    {404, [], make_xhtml([?XC("h1", "Not found")])}
-            end;
-        _ ->
-            {404, [], make_xhtml([?XC("h1", "Not found")])}
+    case catch process2(LocalPath, _Request) of
+	{'EXIT', _Reason} ->
+	    {404, [], make_xhtml([?XC("h1", "Not found")])};
+	Res ->
+	    Res
     end.
+
+process2([User, Server | Tail], _Request) ->
+    LServer = jlib:nameprep(Server),
+    true = lists:member(LServer, ?MYHOSTS),
+    LUser = jlib:nodeprep(User),
+    Args = case Tail of
+	       ["xml"] -> 
+		   {xml, LUser, LServer};
+	       ["image"] -> 
+		   {image, LUser, LServer};
+	       ["image", Theme] -> 
+		   {image, LUser, LServer, Theme}
+	   end,
+    show_presence(Args).
+
 
 %%%--------------------------------
 %%% Update table schema and content from older versions
