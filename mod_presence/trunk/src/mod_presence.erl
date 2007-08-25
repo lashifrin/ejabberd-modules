@@ -178,8 +178,8 @@ do_route(Host, ServerHost, Access, From, To, Packet) ->
 	    ejabberd_router:route(To, From, Err)
     end.
 
-do_route1(Host, ServerHost, Access, From, To, Packet) ->
-    {_AccessRoute, AccessCreate, AccessAdmin} = Access,
+do_route1(Host, _ServerHost, Access, From, To, Packet) ->
+    {_AccessRoute, _AccessCreate, _AccessAdmin} = Access,
     {xmlelement, Name, Attrs, _Els} = Packet,
     case Name of
         "iq" ->
@@ -194,7 +194,7 @@ do_route1(Host, ServerHost, Access, From, To, Packet) ->
                                           From,
                                           jlib:iq_to_xml(Res));
                 #iq{type = get,
-                    xmlns = ?NS_DISCO_ITEMS} = IQ ->
+                    xmlns = ?NS_DISCO_ITEMS} = _IQ ->
                     ok;
                 #iq{type = get,
                     xmlns = ?NS_REGISTER = XMLNS,
@@ -548,7 +548,7 @@ make_xhtml(Els) ->
       {xmlelement, "body", [], Els}
      ]}.
 
-process(LocalPath, Request) ->
+process(LocalPath, _Request) ->
     case LocalPath of
         [User, Server | Tail] ->
             LServer = jlib:nameprep(Server),
@@ -571,3 +571,4 @@ process(LocalPath, Request) ->
         _ ->
             {404, [], make_xhtml([?XC("h1", "Not found")])}
     end.
+

@@ -1,3 +1,7 @@
+2007-08-25  Badlop  <badlop@ono.com>
+
+	* src/mod_presence.erl: Fixed compilation warnings.
+
 2007-08-05  Badlop  <badlop@ono.com>
 
 	* ChangeLog: New file to track changes.
