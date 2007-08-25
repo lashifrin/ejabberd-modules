@@ -280,9 +280,9 @@ iq_get_register_info(Host, From, Lang) ->
     {XML, Icon, Registered} =
 	case catch mnesia:dirty_read(presence_registered, LUS) of
 	    {'EXIT', _Reason} ->
-		{"false", "disabled", []};
+		{false, "disabled", []};
 	    [] ->
-		{"false", "disabled", []};
+		{false, "disabled", []};
 	    [#presence_registered{xml = X, icon = I}] ->
 		{X, I, [{xmlelement, "registered", [], []}]}
 	end,
@@ -308,7 +308,7 @@ iq_get_register_info(Host, From, Lang) ->
              {xmlelement, "option", [{"label", "disabled"}],
               [{xmlelement, "value", [], [{xmlcdata, "disabled"}]}]}             
             ] ++ available_themes(xdata)},
-	   ?XFIELD("boolean", "Raw XML", "xml", XML)]}].
+	   ?XFIELD("boolean", "Raw XML", "xml", atom_to_list(XML))]}].
 
 iq_set_register_info(From, XML, Icon, _Lang) ->
     {LUser, LServer, _} = jlib:jid_tolower(From),
@@ -346,13 +346,13 @@ process_iq_register_set(From, SubEl, Lang) ->
 					false ->
 					    ErrText = "You must fill in field \"Xml\" in the form",
 					    {error, ?ERRT_NOT_ACCEPTABLE(Lang, ErrText)};
-					{value, {_, [XML]}} ->
+					{value, {_, [XMLs]}} ->
                                             case lists:keysearch("icon", 1, XData) of
                                                 false ->
                                                     ErrText = "You must fill in field \"Icon\" in the form",
                                                     {error, ?ERRT_NOT_ACCEPTABLE(Lang, ErrText)};
                                                 {value, {_, [Icon]}} ->
-                                                    iq_set_register_info(From, XML, Icon, Lang)
+                                                    iq_set_register_info(From, list_to_atom(XMLs), Icon, Lang)
                                             end
 				    end
 			    end;
@@ -363,7 +363,7 @@ process_iq_register_set(From, SubEl, Lang) ->
 		    {error, ?ERR_BAD_REQUEST}
 	    end;
 	_ ->
-	    iq_set_register_info(From, "false", "disabled", Lang)
+	    iq_set_register_info(From, false, "disabled", Lang)
     end.
 
 iq_get_vcard(Lang) ->
@@ -380,16 +380,11 @@ get_info(LUser, LServer) ->
     LUS = {LUser, LServer},
     case catch mnesia:dirty_read(presence_registered, LUS) of
         {'EXIT', _Reason} ->
-            {false, disabled};
+            {false, "disabled"};
         [] ->
-            {false, disabled};
-        [#presence_registered{xml = X, icon = I}] ->
-            X1 = case X of
-                     "0" -> false;
-                     "1" -> true;
-                     _   -> list_to_atom(X)
-                 end,
-            {X1, list_to_atom(I)}
+            {false, "disabled"};
+        [#presence_registered{xml = XML, icon = Icon}] ->
+            {XML, Icon}
     end.
 
 get_status_weight(Show) ->
@@ -484,21 +479,21 @@ show_presence({xml, LUser, LServer}) ->
             {200, [{"Content-Type", "text/xml; charset=utf-8"}],
              ?XML_HEADER ++ xml:element_to_string(
                               get_presences({xml, LUser, LServer}))};
-        _ ->
+        false ->
             {404, [], ejabberd_web:make_xhtml([?XC("h1", "Not found")])}
     end;
 show_presence({image, LUser, LServer}) ->
     {_XML, Icon} = get_info(LUser, LServer),
     case Icon of
-        disabled ->
+        "disabled" ->
             {404, [], ejabberd_web:make_xhtml([?XC("h1", "Not found")])};
         _ ->
-            show_presence({image_no_check, LUser, LServer, atom_to_list(Icon)})
+            show_presence({image_no_check, LUser, LServer, Icon})
     end;
 show_presence({image, LUser, LServer, Theme}) ->
     {_XML, Icon} = get_info(LUser, LServer),
     case Icon of
-        disabled ->
+        "disabled" ->
             {404, [], ejabberd_web:make_xhtml([?XC("h1", "Not found")])};
         _ ->
             show_presence({image_no_check, LUser, LServer, Theme})
@@ -586,10 +581,9 @@ convert_table_004(Fields) ->
 
     FixRecords = fun(Old) ->
 			 {presence_registered, {US, Host}, XML, Icon} = Old,
-			 #presence_registered{
-									  us = {US, Host},
-									  xml = list_to_atom(XML),
-									  icon = list_to_atom(Icon)}
+			 #presence_registered{us = {US, Host},
+					      xml = list_to_atom(XML),
+					      icon = Icon}
 		 end,
     {atomic, ok} = mnesia:transform_table(presence_registered, FixRecords, Fields, presence_registered),
 
