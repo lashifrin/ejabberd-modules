@@ -274,17 +274,28 @@ iq_disco_info() ->
                                {"var", Var}],
          [{xmlelement, "value", [], [{xmlcdata, Val}]}]}).
 
+%% @spec id_out(id()) -> true | false
+%% @type id() = string() | false
+%%id_out(false) -> false;
+%%id_out(Id) when is_list(Id) -> true.
+
+%% @spec id_in(Id_bool, Hash) -> Hash | false
+%% ID_bool = true | false
+%% Hash = string()
+id_in(false, _) -> false;
+id_in(true, Hash) -> Hash.
+
 iq_get_register_info(Host, From, Lang) ->
     {LUser, LServer, _} = jlib:jid_tolower(From),
     LUS = {LUser, LServer},
-    {XML, Icon, Registered} =
+    {_Id, XML, Icon, Registered} =
 	case catch mnesia:dirty_read(presence_registered, LUS) of
 	    {'EXIT', _Reason} ->
-		{false, "disabled", []};
+		{false, false, "disabled", []};
 	    [] ->
-		{false, "disabled", []};
-	    [#presence_registered{xml = X, icon = I}] ->
-		{X, I, [{xmlelement, "registered", [], []}]}
+		{false, false, "disabled", []};
+	    [#presence_registered{id = ID, xml = X, icon = I}] ->
+		{ID, X, I, [{xmlelement, "registered", [], []}]}
 	end,
     Registered ++
 	[{xmlelement, "instructions", [],
@@ -310,12 +321,13 @@ iq_get_register_info(Host, From, Lang) ->
             ] ++ available_themes(xdata)},
 	   ?XFIELD("boolean", "Raw XML", "xml", atom_to_list(XML))]}].
 
-iq_set_register_info(From, XML, Icon, _Lang) ->
+iq_set_register_info(From, Id, XML, Icon, _Lang) ->
     {LUser, LServer, _} = jlib:jid_tolower(From),
     LUS = {LUser, LServer},
     F = fun() ->
 		mnesia:write(
 		  #presence_registered{us = LUS,
+				       id = Id,
 				       xml = XML,
 				       icon = Icon})
 	end,
@@ -326,6 +338,7 @@ iq_set_register_info(From, XML, Icon, _Lang) ->
 	    {error, ?ERR_INTERNAL_SERVER_ERROR}
     end.
 
+%% TODO: Remove the nested cases
 process_iq_register_set(From, SubEl, Lang) ->
     {xmlelement, _Name, _Attrs, Els} = SubEl,
     case xml:get_subtag(SubEl, "remove") of
@@ -352,7 +365,9 @@ process_iq_register_set(From, SubEl, Lang) ->
                                                     ErrText = "You must fill in field \"Icon\" in the form",
                                                     {error, ?ERRT_NOT_ACCEPTABLE(Lang, ErrText)};
                                                 {value, {_, [Icon]}} ->
-                                                    iq_set_register_info(From, list_to_atom(XMLs), Icon, Lang)
+						    Id = "false",
+						    Hash = "aaaa",
+						    iq_set_register_info(From, id_in(list_to_atom(Id), Hash), list_to_atom(XMLs), Icon, Lang)
                                             end
 				    end
 			    end;
@@ -363,7 +378,7 @@ process_iq_register_set(From, SubEl, Lang) ->
 		    {error, ?ERR_BAD_REQUEST}
 	    end;
 	_ ->
-	    iq_set_register_info(From, false, "disabled", Lang)
+	    iq_set_register_info(From, false, false, "disabled", Lang)
     end.
 
 iq_get_vcard(Lang) ->
@@ -371,10 +386,10 @@ iq_get_vcard(Lang) ->
       [{xmlcdata, "ejabberd/mod_presence"}]},
      {xmlelement, "URL", [],
       [{xmlcdata,
-	"http://ejabberd.jabberstudio.org/"}]},
+	"http://ejabberd.jabber.ru/mod_presence"}]},
      {xmlelement, "DESC", [],
-      [{xmlcdata, translate:translate(Lang, "ejabberd presence module\n"
-                                      "Copyright (c) 2006 Igor Goryachev")}]}].
+      [{xmlcdata, translate:translate(Lang, "ejabberd web presence module\n"
+                                      "Copyright (c) 2006-2007 Igor Goryachev")}]}].
 
 get_info(LUser, LServer) ->
     LUS = {LUser, LServer},
