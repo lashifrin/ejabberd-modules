@@ -9,15 +9,18 @@
 	DESCRIPTION
 	-----------
 
-This module provides web-presence/status of the user on the web, like
- * ICQ (http://www.icq.com/features/web/indicator.html) 
- * Edgar (http://edgar.netflint.net/).
+This module allows any local user of the ejabberd server to publish his
+presence information in the web.
+
+This service is similar to other web-presence/status like
+ * ICQ: http://www.icq.com/features/web/indicator.html
+ * Edgar: http://edgar.netflint.net/
 
 Allowed output methods are
  * icons (various themes available): http://www.goryachev.org/jabber-status/image/
  * raw XML: http://www.goryachev.org/jabber-status/xml/
 
-No web server or additinal libraries or programs are required.
+No web server, database, additional libraries or programs are required.
 
 
 	INSTALL
@@ -72,7 +75,7 @@ There are two switches for web-presence: xml and icon exports.
 
 Login to an account on your ejabberd server using a powerful Jabber client.
 Open the Service Discovery on your Jabber client, and you should see
-a new service called "presence.yourhost".
+a new service called "webpresence.yourhost".
 Try to register on it. A formulary appears allowing the user to 
 allow image publishing, and XML publishing.
 

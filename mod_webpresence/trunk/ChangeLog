@@ -1,6 +1,5 @@
 2007-08-26  Badlop  <badlop@ono.com>
 
-
 	* src/mod_webpresence.erl: Renamed mod_presence.erl to mod_webpresence.erl.
 	* Emakefile: Idem.
 	* README.txt: Idem.

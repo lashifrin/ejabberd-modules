@@ -1,12 +1,12 @@
 %%%----------------------------------------------------------------------
-%%% File    : mod_presence.erl
+%%% File    : mod_webpresence.erl
 %%% Author  : Igor Goryachev <igor@goryachev.org>
-%%% Purpose : Module for showing presences via web
+%%% Purpose : Allow user to show presence in the web
 %%% Created : 30 Apr 2006 by Igor Goryachev <igor@goryachev.org>
 %%% Id      : $Id$
 %%%----------------------------------------------------------------------
 
--module(mod_presence).
+-module(mod_webpresence).
 -author('igor@goryachev.org').
 -vsn('$Revision$ ').
 
@@ -36,7 +36,7 @@
 %% Copied from ejabberd_sm.erl
 -record(session, {sid, usr, us, priority, info}).
 
--define(PROCNAME, ejabberd_mod_presence).
+-define(PROCNAME, ejabberd_mod_webpresence).
 
 -define(PIXMAPS_DIR, "pixmaps").
 
@@ -92,7 +92,7 @@ init([Host, Opts]) ->
 			 {attributes, record_info(fields, presence_registered)}]),
     mnesia:add_table_index(presence_registered, id),
     update_table(),
-    MyHost = gen_mod:get_opt_host(Host, Opts, "presence.@HOST@"),
+    MyHost = gen_mod:get_opt_host(Host, Opts, "webpresence.@HOST@"),
     Access = gen_mod:get_opt(access, Opts, local),
     ejabberd_router:register_route(MyHost),
     ejabberd_hooks:add(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
@@ -385,10 +385,10 @@ process_iq_register_set(From, SubEl, Lang) ->
 
 iq_get_vcard(Lang) ->
     [{xmlelement, "FN", [],
-      [{xmlcdata, "ejabberd/mod_presence"}]},
+      [{xmlcdata, "ejabberd/mod_webpresence"}]},
      {xmlelement, "URL", [],
       [{xmlcdata,
-	"http://ejabberd.jabber.ru/mod_presence"}]},
+	"http://ejabberd.jabber.ru/mod_webpresence"}]},
      {xmlelement, "DESC", [],
       [{xmlcdata, translate:translate(Lang, "ejabberd web presence module\n"
                                       "Copyright (c) 2006-2007 Igor Goryachev")}]}].
