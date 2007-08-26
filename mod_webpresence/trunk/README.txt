@@ -1,9 +1,9 @@
 
-	mod_presence - Show user's presence information on the web
+	mod_webpresence - Allow user to show presence in the web
 
 	Author: Igor Goryachev
 	Requires: ejabberd SVN (not possible with 1.1.x)
-	http://ejabberd.jabber.ru/mod_presence
+	http://ejabberd.jabber.ru/mod_webpresence
 
 
 	DESCRIPTION
@@ -27,7 +27,7 @@ No web server or additinal libraries or programs are required.
  * On Windows: build.bat
  * On other systems: ./build.sh
 
-2. Copy ebin/mod_presence.beam to your ejabberd ebin directory.
+2. Copy ebin/mod_webpresence.beam to your ejabberd ebin directory.
 
 3. Copy the directory data/pixmaps to a directory you prefer.
 
@@ -43,14 +43,14 @@ and make sure the user than runs ejabberd has read access to that directory.
     ...
     {request_handlers, [
       ...
-      {["presence"], mod_presence}
+      {["presence"], mod_webpresence}
     ]}
   ]}
 ]}.
 
 {modules, [
   ...
-  {mod_presence, [
+  {mod_webpresence, [
     {access, local}, 
     {pixmaps_path, "/path/to/pixmaps"}
   ]}
