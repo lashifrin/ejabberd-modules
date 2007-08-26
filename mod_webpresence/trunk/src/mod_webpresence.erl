@@ -214,7 +214,7 @@ do_route1(Host, _ServerHost, From, To, Packet) ->
                     xmlns = ?NS_REGISTER = XMLNS,
                     lang = Lang,
                     sub_el = SubEl} = IQ ->
-                    case process_iq_register_set(From, SubEl, Lang) of
+                    case process_iq_register_set(From, SubEl, Host, Lang) of
                         {result, IQRes} ->
                             Res = IQ#iq{type = result,
                                         sub_el =
@@ -288,7 +288,9 @@ hashurl_out(false) -> "false";
 hashurl_out(Id) when is_list(Id) -> "true".
 
 to_bool("false") -> false;
-to_bool("true") -> true.
+to_bool("true") -> true;
+to_bool("0") -> false;
+to_bool("1") -> true.
 
 get_pr(LUS) ->
     case catch mnesia:dirty_read(webpresence, LUS) of
@@ -336,7 +338,7 @@ iq_get_register_info(Host, From, Lang) ->
 	   ?XFIELD("boolean", "Raw XML", "xml", atom_to_list(XML))]}].
 
 %% TODO: Check if remote users are allowed to reach here: they should not be allowed
-iq_set_register_info(From, JidUrl, HashUrl, XML, Icon, _Lang) ->
+iq_set_register_info(From, Host, JidUrl, HashUrl, XML, Icon, _Lang) ->
     {LUser, LServer, _} = jlib:jid_tolower(From),
     LUS = {LUser, LServer},
     HashUrl2 = get_hashurl_final_value(HashUrl, LUS),
@@ -350,7 +352,7 @@ iq_set_register_info(From, JidUrl, HashUrl, XML, Icon, _Lang) ->
 	end,
     case mnesia:transaction(F) of
 	{atomic, ok} ->
-	    send_hash_message(HashUrl2, From),
+	    send_hash_message(HashUrl2, From, Host),
 	    {result, []};
 	_ ->
 	    {error, ?ERR_INTERNAL_SERVER_ERROR}
@@ -365,10 +367,10 @@ get_hashurl_final_value(true, LUS) ->
 	    H
     end.
 
-send_hash_message(false, _) -> ok;
-send_hash_message(Hash, To) ->
+send_hash_message(false, _, _) -> ok;
+send_hash_message(Hash, To, Host) ->
     ejabberd_router:route(
-      jlib:make_jid("", To#jid.lserver, ""),
+      jlib:make_jid("", Host, ""),
       To,
       {xmlelement, "message", [{"type", "headline"}],
        [{xmlelement, "subject", [], [{xmlcdata, "Hash for your Web Presence"}]},
@@ -378,7 +380,7 @@ send_hash_message(Hash, To) ->
 				   "http://example.org:5280/presence/"++Hash++"/image/"}]}]}).
 
 %% TODO: Remove the nested cases
-process_iq_register_set(From, SubEl, Lang) ->
+process_iq_register_set(From, SubEl, Host, Lang) ->
     {xmlelement, _Name, _Attrs, Els} = SubEl,
     case xml:get_subtag(SubEl, "remove") of
 	false ->
@@ -414,7 +416,7 @@ process_iq_register_set(From, SubEl, Lang) ->
 								    ErrText = "You must fill in field \"JIDUrl\" in the form",
 								    {error, ?ERRT_NOT_ACCEPTABLE(Lang, ErrText)};
 								{value, {_, [JidUrl]}} ->
-								    iq_set_register_info(From, to_bool(JidUrl), to_bool(HashUrl), to_bool(XMLs), Icon, Lang)
+								    iq_set_register_info(From, Host, to_bool(JidUrl), to_bool(HashUrl), to_bool(XMLs), Icon, Lang)
 							    end
 						    end
                                             end
@@ -427,7 +429,7 @@ process_iq_register_set(From, SubEl, Lang) ->
 		    {error, ?ERR_BAD_REQUEST}
 	    end;
 	_ ->
-	    iq_set_register_info(From, true, false, false, "disabled", Lang)
+	    iq_set_register_info(From, Host, true, false, false, "disabled", Lang)
     end.
 
 iq_get_vcard(Lang) ->
