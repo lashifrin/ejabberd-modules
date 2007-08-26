@@ -4,6 +4,16 @@
 	Author: Igor Goryachev
 	Requires: ejabberd SVN (not possible with 1.1.x)
 	http://ejabberd.jabber.ru/mod_presence
+	http://ejabberd.jabber.ru/mod_webpresence
+
+
+	=========
+	IMPORTANT
+	=========
+
+mod_presence was renamed to mod_webpresence. 
+The development of mod_presence has stoped.
+Use the new mod_webpresence instead.
 
 
 	DESCRIPTION
