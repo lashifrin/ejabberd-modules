@@ -29,7 +29,7 @@
 -include("ejabberd_web_admin.hrl").
 -include("ejabberd_http.hrl").
 
--record(presence_registered, {us, hashurl, jidurl, xml, icon}).
+-record(webpresence, {us, hashurl, jidurl, xml, icon}).
 -record(state, {host, server_host, access}).
 -record(presence, {resource, show, priority, status}).
 
@@ -87,10 +87,10 @@ stop(Host) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([Host, Opts]) ->
-    mnesia:create_table(presence_registered,
+    mnesia:create_table(webpresence,
 			[{disc_copies, [node()]},
-			 {attributes, record_info(fields, presence_registered)}]),
-    mnesia:add_table_index(presence_registered, hashurl),
+			 {attributes, record_info(fields, webpresence)}]),
+    mnesia:add_table_index(webpresence, hashurl),
     update_table(),
     MyHost = gen_mod:get_opt_host(Host, Opts, "webpresence.@HOST@"),
     Access = gen_mod:get_opt(access, Opts, local),
@@ -291,8 +291,8 @@ to_bool("false") -> false;
 to_bool("true") -> true.
 
 get_pr(LUS) ->
-    case catch mnesia:dirty_read(presence_registered, LUS) of
-	[#presence_registered{jidurl = J, hashurl = H, xml = X, icon = I}] ->
+    case catch mnesia:dirty_read(webpresence, LUS) of
+	[#webpresence{jidurl = J, hashurl = H, xml = X, icon = I}] ->
 	    {J, H, X, I, true};
 	_ ->
 	    {true, false, false, "disabled", false}
@@ -342,11 +342,11 @@ iq_set_register_info(From, JidUrl, HashUrl, XML, Icon, _Lang) ->
     HashUrl2 = get_hashurl_final_value(HashUrl, LUS),
     F = fun() ->
 		mnesia:write(
-		  #presence_registered{us = LUS,
-				       jidurl = JidUrl,
-				       hashurl = HashUrl2,
-				       xml = XML,
-				       icon = Icon})
+		  #webpresence{us = LUS,
+			       jidurl = JidUrl,
+			       hashurl = HashUrl2,
+			       xml = XML,
+			       icon = Icon})
 	end,
     case mnesia:transaction(F) of
 	{atomic, ok} ->
@@ -442,12 +442,12 @@ iq_get_vcard(Lang) ->
 
 get_info(LUser, LServer) ->
     LUS = {LUser, LServer},
-    case catch mnesia:dirty_read(presence_registered, LUS) of
+    case catch mnesia:dirty_read(webpresence, LUS) of
         {'EXIT', _Reason} ->
             {false, "disabled"};
         [] ->
             {false, "disabled"};
-        [#presence_registered{xml = XML, icon = Icon}] ->
+        [#webpresence{xml = XML, icon = Icon}] ->
             {XML, Icon}
     end.
 
@@ -618,8 +618,8 @@ process2(["jid", User, Server | Tail], _Request) ->
     serve_web_presence(User, Server, Tail);
 
 process2(["hash", Hash | Tail], _Request) ->
-    [Pr] = mnesia:dirty_index_read(presence_registered, Hash, #presence_registered.hashurl),
-    {User, Server} = Pr#presence_registered.us,
+    [Pr] = mnesia:dirty_index_read(webpresence, Hash, #webpresence.hashurl),
+    {User, Server} = Pr#webpresence.us,
     serve_web_presence(User, Server, Tail);
 
 %% Compatibility with old mod_presence
@@ -668,15 +668,16 @@ web_page_host(_, Host,
 web_page_host(Acc, _, _) -> Acc. 
 
 get_users(Host) ->
-    Select = [{{presence_registered, {'$1', Host}, '$2', '$3', '$4'}, [], ['$$']}],
-    mnesia:dirty_select(presence_registered, Select).
+    Select = [{{webpresence, {'$1', Host}, '$2', '$3', '$4', '$5'}, [], ['$$']}],
+    mnesia:dirty_select(webpresence, Select).
 
 make_users_table(Records, Lang) ->
     TList = lists:map(
-	      fun([User, Id, XML, Icon]) ->
+	      fun([User, HashUrl, JIDUrl, XML, Icon]) ->
 		      ?XE("tr",
-			  [?XC("td", User),
-			   ?XC("td", hashurl_out(Id)),
+			  [?XE("td", [?AC("../user/"++User++"/", User)]),
+			   ?XC("td", atom_to_list(JIDUrl)),
+			   ?XC("td", hashurl_out(HashUrl)),
 			   ?XC("td", atom_to_list(XML)),
 			   ?XC("td", Icon)])
 	      end, Records),
@@ -684,7 +685,8 @@ make_users_table(Records, Lang) ->
 	 [?XE("thead",
 	      [?XE("tr",
 		   [?XCT("td", "User"),
-		    ?XCT("td", "Id"),
+		    ?XCT("td", "JID"),
+		    ?XCT("td", "Hash"),
 		    ?XCT("td", "XML"),
 		    ?XCT("td", "Icon")
 		   ])]),
@@ -696,37 +698,23 @@ make_users_table(Records, Lang) ->
 %%%--------------------------------
 
 update_table() ->
-    Fields = record_info(fields, presence_registered),
-    case mnesia:table_info(presence_registered, attributes) of
-	Fields ->
-	    ok;
-	[us_host, xml, icon] ->
-	    convert_table_004(Fields)
+    case catch mnesia:table_info(presence_registered, size) of
+	Size when is_integer(Size) -> catch migrate_data_mod_presence(Size);
+	_ -> ok
     end.
 
-convert_table_004(Fields) ->
-    mnesia:del_table_index(presence_registered, xml),
-    mnesia:del_table_index(presence_registered, icon),
-
-    FixRecords = fun(Old) ->
-			 {presence_registered, {US, Host}, XML, Icon} = Old,
-			 #presence_registered{us = {US, Host},
-					      hashurl = false,
-					      jidurl = true,
-					      xml = list_to_atom(XML),
-					      icon = Icon}
-		 end,
-    {atomic, ok} = mnesia:transform_table(presence_registered, FixRecords, Fields, presence_registered),
-
-    F = fun() ->
-		FixKey = fun(Old, Acc) ->
-				 {US, _Host} = Old#presence_registered.us,
-				 New = Old#presence_registered{us = US},
-				 mnesia:delete_object(Old),
-				 mnesia:write(New),
-				 Acc
-			 end,
-		mnesia:foldl(FixKey, none, presence_registered)
-	end,
-    mnesia:transaction(F).
-
+migrate_data_mod_presence(Size) ->
+    Migrate = fun(Old, S) ->
+		      {presence_registered, {US, _Host}, XML, Icon} = Old,
+		      New = #webpresence{us = US,
+					 hashurl = false,
+					 jidurl = true,
+					 xml = list_to_atom(XML),
+					 icon = Icon},
+		      mnesia:write(New),
+		      mnesia:delete_object(Old),
+		      S-1
+	      end,
+    F = fun() -> mnesia:foldl(Migrate, Size, presence_registered) end,
+    {atomic, 0} = mnesia:transaction(F),
+    {atomic, ok} = mnesia:delete_table(presence_registered).
