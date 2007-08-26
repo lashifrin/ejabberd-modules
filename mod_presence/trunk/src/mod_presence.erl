@@ -17,6 +17,7 @@
 -export([start_link/2,
          start/2,
          stop/1,
+         web_menu_host/2, web_page_host/3,
          process/2]).
 
 %% gen_server callbacks
@@ -94,6 +95,8 @@ init([Host, Opts]) ->
     MyHost = gen_mod:get_opt_host(Host, Opts, "presence.@HOST@"),
     Access = gen_mod:get_opt(access, Opts, local),
     ejabberd_router:register_route(MyHost),
+    ejabberd_hooks:add(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
+    ejabberd_hooks:add(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
     {ok, #state{host = MyHost,
 		server_host = Host,
 		access = Access}}.
@@ -146,8 +149,10 @@ handle_info(_Info, State) ->
 %% cleaning up. When it returns, the gen_server terminates with Reason.
 %% The return value is ignored.
 %%--------------------------------------------------------------------
-terminate(_Reason, State) ->
-    ejabberd_router:unregister_route(State#state.host),
+terminate(_Reason, #state{host = Host}) ->
+    ejabberd_router:unregister_route(Host),
+    ejabberd_hooks:remove(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
+    ejabberd_hooks:remove(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
     ok.
 
 %%--------------------------------------------------------------------
@@ -271,10 +276,10 @@ iq_disco_info() ->
                                {"var", Var}],
          [{xmlelement, "value", [], [{xmlcdata, Val}]}]}).
 
-%% @spec id_out(id()) -> true | false
+%% @spec id_out(id()) -> "true" | "false"
 %% @type id() = string() | false
-%%id_out(false) -> false;
-%%id_out(Id) when is_list(Id) -> true.
+id_out(false) -> "false";
+id_out(Id) when is_list(Id) -> "true".
 
 %% @spec id_in(Id_bool, Hash) -> Hash | false
 %% ID_bool = true | false
@@ -576,6 +581,55 @@ process2([User, Server | Tail], _Request) ->
 		   {image, LUser, LServer, Theme}
 	   end,
     show_presence(Args).
+
+
+%% ---------------------
+%% Web Admin
+%% ---------------------
+
+web_menu_host(Acc, _Host) ->
+    [{"webpresence", "Web Presence"} | Acc].
+
+web_page_host(_, _Host, 
+	      #request{path = ["webpresence"],
+		       lang = Lang} = _Request) ->
+    Res = [?XC("h1", "Web Presence"),
+	   ?ACT("users", "Registered Users")],
+    {stop, Res};
+
+web_page_host(_, Host, 
+	      #request{path = ["webpresence", "users"],
+		       lang = Lang} = _Request) ->
+    Users = get_users(Host),
+    Table = make_users_table(Users, Lang),
+    Res = [?XC("h1", "Web Presence"),
+	   ?XC("h2", "Registered Users")] ++ Table,
+    {stop, Res};
+
+web_page_host(Acc, _, _) -> Acc. 
+
+get_users(Host) ->
+    Select = [{{presence_registered, {'$1', Host}, '$2', '$3', '$4'}, [], ['$$']}],
+    mnesia:dirty_select(presence_registered, Select).
+
+make_users_table(Records, Lang) ->
+    TList = lists:map(
+	      fun([User, Id, XML, Icon]) ->
+		      ?XE("tr",
+			  [?XC("td", User),
+			   ?XC("td", id_out(Id)),
+			   ?XC("td", atom_to_list(XML)),
+			   ?XC("td", Icon)])
+	      end, Records),
+    [?XE("table",
+	 [?XE("thead",
+	      [?XE("tr",
+		   [?XCT("td", "User"),
+		    ?XCT("td", "Id"),
+		    ?XCT("td", "XML"),
+		    ?XCT("td", "Icon")
+		   ])]),
+	  ?XE("tbody", TList)])].
 
 
 %%%--------------------------------
