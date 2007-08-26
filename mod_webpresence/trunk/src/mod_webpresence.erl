@@ -29,7 +29,7 @@
 -include("ejabberd_web_admin.hrl").
 -include("ejabberd_http.hrl").
 
--record(presence_registered, {us, id, xml, icon}).
+-record(presence_registered, {us, jidurl, hashurl, xml, icon}).
 -record(state, {host, server_host, access}).
 -record(presence, {resource, show, priority, status}).
 
@@ -270,36 +270,47 @@ iq_disco_info() ->
      {xmlelement, "feature", [{"var", ?NS_REGISTER}], []},
      {xmlelement, "feature", [{"var", ?NS_VCARD}], []}].
 
--define(XFIELD(Type, Label, Var, Val),
+-define(XFIELDS(Type, Label, Var, Vals),
         {xmlelement, "field", [{"type", Type},
                                {"label", translate:translate(Lang, Label)},
                                {"var", Var}],
-         [{xmlelement, "value", [], [{xmlcdata, Val}]}]}).
+         Vals}).
 
-%% @spec id_out(id()) -> "true" | "false"
+-define(XFIELD(Type, Label, Var, Val),
+	?XFIELDS(Type, Label, Var, 
+		 [{xmlelement, "value", [], [{xmlcdata, Val}]}])
+       ).
+
+%% @spec hashurl_out(id()) -> hash()
 %% @type id() = string() | false
-id_out(false) -> "false";
-id_out(Id) when is_list(Id) -> "true".
+%% @type hash() = "true" | "false"
+hashurl_out(false) -> "false";
+hashurl_out(Id) when is_list(Id) -> "true".
 
-%% @spec id_in(Id_bool, Hash) -> Hash | false
-%% ID_bool = true | false
-%% Hash = string()
-id_in(false, _) -> false;
-id_in(true, Hash) -> Hash.
+to_bool("false") -> false;
+to_bool("true") -> true.
+
+get_pr(LUS) ->
+    case catch mnesia:dirty_read(presence_registered, LUS) of
+	[#presence_registered{jidurl = J, hashurl = H, xml = X, icon = I}] ->
+	    {J, H, X, I, true};
+	_ ->
+	    {true, false, false, "disabled", false}
+    end.
+
+get_pr_hash(LUS) ->
+    {_, H, _, _, _} = get_pr(LUS),
+    H.
 
 iq_get_register_info(Host, From, Lang) ->
     {LUser, LServer, _} = jlib:jid_tolower(From),
     LUS = {LUser, LServer},
-    {_Id, XML, Icon, Registered} =
-	case catch mnesia:dirty_read(presence_registered, LUS) of
-	    {'EXIT', _Reason} ->
-		{false, false, "disabled", []};
-	    [] ->
-		{false, false, "disabled", []};
-	    [#presence_registered{id = ID, xml = X, icon = I}] ->
-		{ID, X, I, [{xmlelement, "registered", [], []}]}
-	end,
-    Registered ++
+    {JidUrl, HashUrl, XML, Icon, Registered} = get_pr(LUS),
+    RegisteredXML = case Registered of 
+			true -> [{xmlelement, "registered", [], []}];
+			false -> []
+		    end,
+    RegisteredXML ++
 	[{xmlelement, "instructions", [],
 	  [{xmlcdata,
 	    translate:translate(
@@ -314,31 +325,57 @@ iq_get_register_info(Host, From, Lang) ->
 	    [{xmlcdata,
 	      translate:translate(
 		Lang, "What presence features do you want to register?")}]},
-           {xmlelement, "field", [{"type", "list-single"},
-                                  {"label", "Icon theme"},
-                                  {"var", "icon"}],
-            [{xmlelement, "value", [], [{xmlcdata, Icon}]},
-             {xmlelement, "option", [{"label", "disabled"}],
-              [{xmlelement, "value", [], [{xmlcdata, "disabled"}]}]}             
-            ] ++ available_themes(xdata)},
+	   ?XFIELD("boolean", "Allow JID URL", "jidurl", atom_to_list(JidUrl)),
+	   ?XFIELD("boolean", "Allow Hash URL", "hashurl", hashurl_out(HashUrl)),
+	   ?XFIELDS("list-single", "Icon theme", "icon", 
+		    [{xmlelement, "value", [], [{xmlcdata, Icon}]},
+		     {xmlelement, "option", [{"label", "disabled"}],
+		      [{xmlelement, "value", [], [{xmlcdata, "disabled"}]}]}             
+		    ] ++ available_themes(xdata)
+		   ),
 	   ?XFIELD("boolean", "Raw XML", "xml", atom_to_list(XML))]}].
 
-iq_set_register_info(From, Id, XML, Icon, _Lang) ->
+%% TODO: Check if remote users are allowed to reach here: they should not be allowed
+iq_set_register_info(From, JidUrl, HashUrl, XML, Icon, _Lang) ->
     {LUser, LServer, _} = jlib:jid_tolower(From),
     LUS = {LUser, LServer},
+    HashUrl2 = get_hashurl_final_value(HashUrl, LUS),
     F = fun() ->
 		mnesia:write(
 		  #presence_registered{us = LUS,
-				       id = Id,
+				       jidurl = JidUrl,
+				       hashurl = HashUrl2,
 				       xml = XML,
 				       icon = Icon})
 	end,
     case mnesia:transaction(F) of
 	{atomic, ok} ->
+	    send_hash_message(HashUrl2, From),
 	    {result, []};
 	_ ->
 	    {error, ?ERR_INTERNAL_SERVER_ERROR}
     end.
+
+get_hashurl_final_value(false, _) -> false;
+get_hashurl_final_value(true, LUS) ->
+    case get_pr_hash(LUS) of
+	false ->
+	    randoms:get_string();
+	H when is_list(H) ->
+	    H
+    end.
+
+send_hash_message(false, _) -> ok;
+send_hash_message(Hash, To) ->
+    ejabberd_router:route(
+      jlib:make_jid("", To#jid.lserver, ""),
+      To,
+      {xmlelement, "message", [{"type", "headline"}],
+       [{xmlelement, "subject", [], [{xmlcdata, "Hash for your Web Presence"}]},
+	{xmlelement, "body", [], [{xmlcdata, "You enabled Hash URL in Web Presence.\r\n"
+				   "Your Hash value is: "++Hash++"\r\n"
+				   "The URL that you can use looks similar to: "
+				   "http://example.org:5280/presence/"++Hash++"/image/"}]}]}).
 
 %% TODO: Remove the nested cases
 process_iq_register_set(From, SubEl, Lang) ->
@@ -367,9 +404,19 @@ process_iq_register_set(From, SubEl, Lang) ->
                                                     ErrText = "You must fill in field \"Icon\" in the form",
                                                     {error, ?ERRT_NOT_ACCEPTABLE(Lang, ErrText)};
                                                 {value, {_, [Icon]}} ->
-						    Id = "false",
-						    Hash = "aaaa",
-						    iq_set_register_info(From, id_in(list_to_atom(Id), Hash), list_to_atom(XMLs), Icon, Lang)
+						    case lists:keysearch("hashurl", 1, XData) of
+							false ->
+							    ErrText = "You must fill in field \"HashUrl\" in the form",
+							    {error, ?ERRT_NOT_ACCEPTABLE(Lang, ErrText)};
+							{value, {_, [HashUrl]}} ->
+							    case lists:keysearch("jidurl", 1, XData) of
+								false ->
+								    ErrText = "You must fill in field \"JIDUrl\" in the form",
+								    {error, ?ERRT_NOT_ACCEPTABLE(Lang, ErrText)};
+								{value, {_, [JidUrl]}} ->
+								    iq_set_register_info(From, to_bool(JidUrl), to_bool(HashUrl), to_bool(XMLs), Icon, Lang)
+							    end
+						    end
                                             end
 				    end
 			    end;
@@ -380,7 +427,7 @@ process_iq_register_set(From, SubEl, Lang) ->
 		    {error, ?ERR_BAD_REQUEST}
 	    end;
 	_ ->
-	    iq_set_register_info(From, false, false, "disabled", Lang)
+	    iq_set_register_info(From, true, false, false, "disabled", Lang)
     end.
 
 iq_get_vcard(Lang) ->
@@ -617,7 +664,7 @@ make_users_table(Records, Lang) ->
 	      fun([User, Id, XML, Icon]) ->
 		      ?XE("tr",
 			  [?XC("td", User),
-			   ?XC("td", id_out(Id)),
+			   ?XC("td", hashurl_out(Id)),
 			   ?XC("td", atom_to_list(XML)),
 			   ?XC("td", Icon)])
 	      end, Records),
@@ -652,6 +699,8 @@ convert_table_004(Fields) ->
     FixRecords = fun(Old) ->
 			 {presence_registered, {US, Host}, XML, Icon} = Old,
 			 #presence_registered{us = {US, Host},
+					      jidurl = true,
+					      hashurl = false,
 					      xml = list_to_atom(XML),
 					      icon = Icon}
 		 end,
