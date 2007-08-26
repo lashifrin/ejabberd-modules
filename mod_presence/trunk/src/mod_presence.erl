@@ -17,8 +17,9 @@
 -export([start_link/2,
          start/2,
          stop/1,
-         web_menu_host/2, web_page_host/3,
-         process/2]).
+         get_info/2,
+         process/2,
+         show_presence/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -26,10 +27,8 @@
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
--include("ejabberd_web_admin.hrl").
--include("ejabberd_http.hrl").
 
--record(presence_registered, {us, id, xml, icon}).
+-record(presence_registered, {us_host, xml, icon}).
 -record(state, {host, server_host, access}).
 -record(presence, {resource, show, priority, status}).
 
@@ -37,6 +36,7 @@
 -record(session, {sid, usr, us, priority, info}).
 
 -define(PROCNAME, ejabberd_mod_presence).
+-define(SERVICE_NAME(Host), "presence." ++ Host).
 
 -define(PIXMAPS_DIR, "pixmaps").
 
@@ -90,16 +90,16 @@ init([Host, Opts]) ->
     mnesia:create_table(presence_registered,
 			[{disc_copies, [node()]},
 			 {attributes, record_info(fields, presence_registered)}]),
-    mnesia:add_table_index(presence_registered, id),
-    update_table(),
-    MyHost = gen_mod:get_opt_host(Host, Opts, "presence.@HOST@"),
-    Access = gen_mod:get_opt(access, Opts, local),
+    MyHost = gen_mod:get_opt(host, Opts, ?SERVICE_NAME(Host)),
+    mnesia:add_table_index(presence_registered, xml),
+    mnesia:add_table_index(presence_registered, icon),
+    Access = gen_mod:get_opt(access, Opts, all),
+    AccessCreate = gen_mod:get_opt(access_create, Opts, all),
+    AccessAdmin = gen_mod:get_opt(access_admin, Opts, none),
     ejabberd_router:register_route(MyHost),
-    ejabberd_hooks:add(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
-    ejabberd_hooks:add(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
     {ok, #state{host = MyHost,
 		server_host = Host,
-		access = Access}}.
+		access = {Access, AccessCreate, AccessAdmin}}}.
 
 %%--------------------------------------------------------------------
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -149,10 +149,8 @@ handle_info(_Info, State) ->
 %% cleaning up. When it returns, the gen_server terminates with Reason.
 %% The return value is ignored.
 %%--------------------------------------------------------------------
-terminate(_Reason, #state{host = Host}) ->
-    ejabberd_router:unregister_route(Host),
-    ejabberd_hooks:remove(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
-    ejabberd_hooks:remove(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
+terminate(_Reason, State) ->
+    ejabberd_router:unregister_route(State#state.host),
     ok.
 
 %%--------------------------------------------------------------------
@@ -167,9 +165,10 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 
 do_route(Host, ServerHost, Access, From, To, Packet) ->
-    case acl:match_rule(ServerHost, Access, From) of
+    {AccessRoute, _AccessCreate, _AccessAdmin} = Access,
+    case acl:match_rule(ServerHost, AccessRoute, From) of
 	allow ->
-	    do_route1(Host, ServerHost, From, To, Packet);
+	    do_route1(Host, ServerHost, Access, From, To, Packet);
 	_ ->
 	    {xmlelement, _Name, Attrs, _Els} = Packet,
 	    Lang = xml:get_attr_s("xml:lang", Attrs),
@@ -179,8 +178,8 @@ do_route(Host, ServerHost, Access, From, To, Packet) ->
 	    ejabberd_router:route(To, From, Err)
     end.
 
-%% TODO: Remove the nested case
-do_route1(Host, _ServerHost, From, To, Packet) ->
+do_route1(Host, _ServerHost, Access, From, To, Packet) ->
+    {_AccessRoute, _AccessCreate, _AccessAdmin} = Access,
     {xmlelement, Name, Attrs, _Els} = Packet,
     case Name of
         "iq" ->
@@ -214,7 +213,7 @@ do_route1(Host, _ServerHost, From, To, Packet) ->
                     xmlns = ?NS_REGISTER = XMLNS,
                     lang = Lang,
                     sub_el = SubEl} = IQ ->
-                    case process_iq_register_set(From, SubEl, Lang) of
+                    case process_iq_register_set(Host, From, SubEl, Lang) of
                         {result, IQRes} ->
                             Res = IQ#iq{type = result,
                                         sub_el =
@@ -276,28 +275,17 @@ iq_disco_info() ->
                                {"var", Var}],
          [{xmlelement, "value", [], [{xmlcdata, Val}]}]}).
 
-%% @spec id_out(id()) -> "true" | "false"
-%% @type id() = string() | false
-id_out(false) -> "false";
-id_out(Id) when is_list(Id) -> "true".
-
-%% @spec id_in(Id_bool, Hash) -> Hash | false
-%% ID_bool = true | false
-%% Hash = string()
-id_in(false, _) -> false;
-id_in(true, Hash) -> Hash.
-
 iq_get_register_info(Host, From, Lang) ->
     {LUser, LServer, _} = jlib:jid_tolower(From),
     LUS = {LUser, LServer},
-    {_Id, XML, Icon, Registered} =
-	case catch mnesia:dirty_read(presence_registered, LUS) of
+    {XML, Icon, Registered} =
+	case catch mnesia:dirty_read(presence_registered, {LUS, Host}) of
 	    {'EXIT', _Reason} ->
-		{false, false, "disabled", []};
+		{"false", "disabled", []};
 	    [] ->
-		{false, false, "disabled", []};
-	    [#presence_registered{id = ID, xml = X, icon = I}] ->
-		{ID, X, I, [{xmlelement, "registered", [], []}]}
+		{"false", "disabled", []};
+	    [#presence_registered{xml = X, icon = I}] ->
+		{X, I, [{xmlelement, "registered", [], []}]}
 	end,
     Registered ++
 	[{xmlelement, "instructions", [],
@@ -321,15 +309,14 @@ iq_get_register_info(Host, From, Lang) ->
              {xmlelement, "option", [{"label", "disabled"}],
               [{xmlelement, "value", [], [{xmlcdata, "disabled"}]}]}             
             ] ++ available_themes(xdata)},
-	   ?XFIELD("boolean", "Raw XML", "xml", atom_to_list(XML))]}].
+	   ?XFIELD("boolean", "Raw XML", "xml", XML)]}].
 
-iq_set_register_info(From, Id, XML, Icon, _Lang) ->
+iq_set_register_info(Host, From, XML, Icon, _Lang) ->
     {LUser, LServer, _} = jlib:jid_tolower(From),
     LUS = {LUser, LServer},
     F = fun() ->
 		mnesia:write(
-		  #presence_registered{us = LUS,
-				       id = Id,
+		  #presence_registered{us_host = {LUS, Host},
 				       xml = XML,
 				       icon = Icon})
 	end,
@@ -340,8 +327,7 @@ iq_set_register_info(From, Id, XML, Icon, _Lang) ->
 	    {error, ?ERR_INTERNAL_SERVER_ERROR}
     end.
 
-%% TODO: Remove the nested cases
-process_iq_register_set(From, SubEl, Lang) ->
+process_iq_register_set(Host, From, SubEl, Lang) ->
     {xmlelement, _Name, _Attrs, Els} = SubEl,
     case xml:get_subtag(SubEl, "remove") of
 	false ->
@@ -361,15 +347,13 @@ process_iq_register_set(From, SubEl, Lang) ->
 					false ->
 					    ErrText = "You must fill in field \"Xml\" in the form",
 					    {error, ?ERRT_NOT_ACCEPTABLE(Lang, ErrText)};
-					{value, {_, [XMLs]}} ->
+					{value, {_, [XML]}} ->
                                             case lists:keysearch("icon", 1, XData) of
                                                 false ->
                                                     ErrText = "You must fill in field \"Icon\" in the form",
                                                     {error, ?ERRT_NOT_ACCEPTABLE(Lang, ErrText)};
                                                 {value, {_, [Icon]}} ->
-						    Id = "false",
-						    Hash = "aaaa",
-						    iq_set_register_info(From, id_in(list_to_atom(Id), Hash), list_to_atom(XMLs), Icon, Lang)
+                                                    iq_set_register_info(Host, From, XML, Icon, Lang)
                                             end
 				    end
 			    end;
@@ -380,7 +364,7 @@ process_iq_register_set(From, SubEl, Lang) ->
 		    {error, ?ERR_BAD_REQUEST}
 	    end;
 	_ ->
-	    iq_set_register_info(From, false, false, "disabled", Lang)
+	    iq_set_register_info(Host, From, "false", "disabled", Lang)
     end.
 
 iq_get_vcard(Lang) ->
@@ -388,20 +372,25 @@ iq_get_vcard(Lang) ->
       [{xmlcdata, "ejabberd/mod_presence"}]},
      {xmlelement, "URL", [],
       [{xmlcdata,
-	"http://ejabberd.jabber.ru/mod_presence"}]},
+	"http://ejabberd.jabberstudio.org/"}]},
      {xmlelement, "DESC", [],
-      [{xmlcdata, translate:translate(Lang, "ejabberd web presence module\n"
-                                      "Copyright (c) 2006-2007 Igor Goryachev")}]}].
+      [{xmlcdata, translate:translate(Lang, "ejabberd presence module\n"
+                                      "Copyright (c) 2006 Igor Goryachev")}]}].
 
 get_info(LUser, LServer) ->
     LUS = {LUser, LServer},
-    case catch mnesia:dirty_read(presence_registered, LUS) of
+    case catch mnesia:dirty_read(presence_registered, {LUS, ?SERVICE_NAME(LServer)}) of
         {'EXIT', _Reason} ->
-            {false, "disabled"};
+            {false, disabled};
         [] ->
-            {false, "disabled"};
-        [#presence_registered{xml = XML, icon = Icon}] ->
-            {XML, Icon}
+            {false, disabled};
+        [#presence_registered{xml = X, icon = I}] ->
+            X1 = case X of
+                     "0" -> false;
+                     "1" -> true;
+                     _   -> list_to_atom(X)
+                 end,
+            {X1, list_to_atom(I)}
     end.
 
 get_status_weight(Show) ->
@@ -474,9 +463,7 @@ get_pixmaps_directory() ->
 available_themes(list) ->
     case file:list_dir(get_pixmaps_directory()) of
         {ok, List} ->
-            L2 = lists:sort(List),
-	    %% Remove from the list of themes the directories that start with a dot
-	    [T || T <- L2, hd(T) =/= 46];
+            lists:sort(List);
         {error, _} ->
             []
     end;
@@ -487,185 +474,97 @@ available_themes(xdata) ->
                [{xmlelement, "value", [], [{xmlcdata, Theme}]}]}
       end, available_themes(list)).
 
+-define(XE(Name, Els), {xmlelement, Name, [], Els}).
+-define(C(Text), {xmlcdata, Text}).
+-define(XC(Name, Text), ?XE(Name, [?C(Text)])).
+
 show_presence({xml, LUser, LServer}) ->
-    {true, _} = get_info(LUser, LServer),
-    Presence_xml = xml:element_to_string(get_presences({xml, LUser, LServer})),
-    {200, [{"Content-Type", "text/xml; charset=utf-8"}], ?XML_HEADER ++ Presence_xml};
-
+    {XML, _Icon} = get_info(LUser, LServer),
+    case XML of
+        true ->
+            {200, [{"Content-Type", "text/xml; charset=utf-8"}],
+             ?XML_HEADER ++ xml:element_to_string(
+                              get_presences({xml, LUser, LServer}))};
+        _ ->
+            {404, [], ejabberd_web:make_xhtml([?XC("h1", "Not found")])}
+    end;
 show_presence({image, LUser, LServer}) ->
-    {_, Icon} = get_info(LUser, LServer),
-    "disabled" =/= Icon,
-    show_presence({image_no_check, LUser, LServer, Icon});
-
+    {_XML, Icon} = get_info(LUser, LServer),
+    case Icon of
+        disabled ->
+            {404, [], ejabberd_web:make_xhtml([?XC("h1", "Not found")])};
+        _ ->
+            show_presence({image_no_check, LUser, LServer, atom_to_list(Icon)})
+    end;
 show_presence({image, LUser, LServer, Theme}) ->
-    {_, Icon} = get_info(LUser, LServer),
-    "disabled" =/= Icon,
-    show_presence({image_no_check, LUser, LServer, Theme});
-
-show_presence({image_example, Theme, Show}) ->
-    Dir = get_pixmaps_directory(),
-    Image = Show ++ ".{gif,png,jpg}",
-    [First | _Rest] = filelib:wildcard(filename:join([Dir, Theme, Image])),
-    Mime = string:substr(First, string:len(First) - 2, 3),
-    {ok, Content} = file:read_file(First),
-    {200, [{"Content-Type", "image/" ++ Mime}], binary_to_list(Content)};
-
+    {_XML, Icon} = get_info(LUser, LServer),
+    case Icon of
+        disabled ->
+            {404, [], ejabberd_web:make_xhtml([?XC("h1", "Not found")])};
+        _ ->
+            show_presence({image_no_check, LUser, LServer, Theme})
+    end;
 show_presence({image_no_check, LUser, LServer, Theme}) ->
-    Dir = get_pixmaps_directory(),
-    Image = get_presences({show, LUser, LServer}) ++ ".{gif,png,jpg}",
-    [First | _Rest] = filelib:wildcard(filename:join([Dir, Theme, Image])),
-    Mime = string:substr(First, string:len(First) - 2, 3),
-    {ok, Content} = file:read_file(First),
-    {200, [{"Content-Type", "image/" ++ Mime}], binary_to_list(Content)}.
+    case lists:member(Theme, available_themes(list)) of
+        true ->
+            case filelib:wildcard(
+                   filename:join([get_pixmaps_directory(), Theme,
+                                  get_presences(
+                                    {show, LUser, LServer}) ++ ".{gif,png,jpg}"])) of
+                [First | _Rest] ->
+                    CT = case string:substr(First, string:len(First) - 2, 3) of
+                             "gif" -> "gif";
+                             "png" -> "png";
+                             "jpg" -> "jpeg"
+                         end,
+                    case file:read_file(First) of
+                        {ok, Content} ->
+                            {200, [{"Content-Type", "image/" ++ CT}],
+                             binary_to_list(Content)};
+                        _ ->
+                            {404, [], ejabberd_web:make_xhtml([?XC("h1", "Not found")])}
+                    end;
+                _ ->
+                    {404, [], ejabberd_web:make_xhtml([?XC("h1", "Not found")])}
+            end;
+        false ->
+            {404, [], ejabberd_web:make_xhtml([?XC("h1", "Not found")])}
+    end;
+show_presence(_) ->
+    {404, [], ejabberd_web:make_xhtml([?XC("h1", "Not found")])}.
 
-make_xhtml(Els) -> make_xhtml([], Els).
-make_xhtml(Title, Els) ->
+
+make_xhtml(Els) ->
     {xmlelement, "html", [{"xmlns", "http://www.w3.org/1999/xhtml"},
 			  {"xml:lang", "en"},
 			  {"lang", "en"}],
      [{xmlelement, "head", [],
        [{xmlelement, "meta", [{"http-equiv", "Content-Type"},
-			      {"content", "text/html; charset=utf-8"}], []}]
-       ++ Title},
+			      {"content", "text/html; charset=utf-8"}], []}]},
       {xmlelement, "body", [], Els}
      ]}.
 
 process(LocalPath, _Request) ->
-    case catch process2(LocalPath, _Request) of
-	{'EXIT', _Reason} ->
-	    {404, [], make_xhtml([?XC("h1", "Not found")])};
-	Res ->
-	    Res
+    case LocalPath of
+        [User, Server | Tail] ->
+            LServer = jlib:nameprep(Server),
+            case lists:member(LServer, ?MYHOSTS) of
+                true ->
+                    LUser = jlib:nodeprep(User),
+                    case Tail of
+                        ["xml"] ->
+                            mod_presence:show_presence({xml, LUser, LServer});
+                        ["image"] ->
+                            mod_presence:show_presence({image, LUser, LServer});
+                        ["image", Theme] ->
+                            mod_presence:show_presence({image, LUser, LServer, Theme});
+                        _ ->
+                            {404, [], make_xhtml([?XC("h1", "Not found")])}
+                    end;
+                false ->
+                    {404, [], make_xhtml([?XC("h1", "Not found")])}
+            end;
+        _ ->
+            {404, [], make_xhtml([?XC("h1", "Not found")])}
     end.
-
-
-themes_to_xhtml(Themes) ->
-    ShowL = ["chat", "available", "away", "xa", "dnd"],
-    THeadL = [""] ++ ShowL,
-    [?XAE("table", [], 
-	  [?XE("tr", [?XC("th", T) || T <- THeadL])] ++
-	  [?XE("tr", [?XC("td", Theme) |
-		      [?XE("td", [?XA("img", [{"src", "image/"++Theme++"/"++T}])]) || T <- ShowL]
-		     ]
-	      ) || Theme <- Themes]
-	 )
-    ].
-
-process2(["themes"], _Request) ->
-    Title = [?XC("title", "Icon Themes")],
-    Themes = available_themes(list),
-    Icon_themes = themes_to_xhtml(Themes),
-    Body = [?XC("h1", "Icon Themes")] ++ Icon_themes,
-    make_xhtml(Title, Body);
-
-process2([], _Request) ->
-    Title = [?XC("title", "Web Presence")],
-    Link_themes = [?AC("themes", "Icon Themes")],
-    Body = [?XC("h1", "Web Presence")] ++ Link_themes,
-    make_xhtml(Title, Body);
-
-process2(["image", Theme, Show], _Request) ->
-    Args = {image_example, Theme, Show},
-    show_presence(Args);
-
-process2([User, Server | Tail], _Request) ->
-    LServer = jlib:nameprep(Server),
-    true = lists:member(LServer, ?MYHOSTS),
-    LUser = jlib:nodeprep(User),
-    Args = case Tail of
-	       ["xml"] -> 
-		   {xml, LUser, LServer};
-	       ["image"] -> 
-		   {image, LUser, LServer};
-	       ["image", Theme] -> 
-		   {image, LUser, LServer, Theme}
-	   end,
-    show_presence(Args).
-
-
-%% ---------------------
-%% Web Admin
-%% ---------------------
-
-web_menu_host(Acc, _Host) ->
-    [{"webpresence", "Web Presence"} | Acc].
-
-web_page_host(_, _Host, 
-	      #request{path = ["webpresence"],
-		       lang = Lang} = _Request) ->
-    Res = [?XC("h1", "Web Presence"),
-	   ?ACT("users", "Registered Users")],
-    {stop, Res};
-
-web_page_host(_, Host, 
-	      #request{path = ["webpresence", "users"],
-		       lang = Lang} = _Request) ->
-    Users = get_users(Host),
-    Table = make_users_table(Users, Lang),
-    Res = [?XC("h1", "Web Presence"),
-	   ?XC("h2", "Registered Users")] ++ Table,
-    {stop, Res};
-
-web_page_host(Acc, _, _) -> Acc. 
-
-get_users(Host) ->
-    Select = [{{presence_registered, {'$1', Host}, '$2', '$3', '$4'}, [], ['$$']}],
-    mnesia:dirty_select(presence_registered, Select).
-
-make_users_table(Records, Lang) ->
-    TList = lists:map(
-	      fun([User, Id, XML, Icon]) ->
-		      ?XE("tr",
-			  [?XC("td", User),
-			   ?XC("td", id_out(Id)),
-			   ?XC("td", atom_to_list(XML)),
-			   ?XC("td", Icon)])
-	      end, Records),
-    [?XE("table",
-	 [?XE("thead",
-	      [?XE("tr",
-		   [?XCT("td", "User"),
-		    ?XCT("td", "Id"),
-		    ?XCT("td", "XML"),
-		    ?XCT("td", "Icon")
-		   ])]),
-	  ?XE("tbody", TList)])].
-
-
-%%%--------------------------------
-%%% Update table schema and content from older versions
-%%%--------------------------------
-
-update_table() ->
-    Fields = record_info(fields, presence_registered),
-    case mnesia:table_info(presence_registered, attributes) of
-	Fields ->
-	    ok;
-	[us_host, xml, icon] ->
-	    convert_table_004(Fields)
-    end.
-
-convert_table_004(Fields) ->
-    mnesia:del_table_index(presence_registered, xml),
-    mnesia:del_table_index(presence_registered, icon),
-
-    FixRecords = fun(Old) ->
-			 {presence_registered, {US, Host}, XML, Icon} = Old,
-			 #presence_registered{us = {US, Host},
-					      xml = list_to_atom(XML),
-					      icon = Icon}
-		 end,
-    {atomic, ok} = mnesia:transform_table(presence_registered, FixRecords, Fields, presence_registered),
-
-    F = fun() ->
-		FixKey = fun(Old, Acc) ->
-				 {US, _Host} = Old#presence_registered.us,
-				 New = Old#presence_registered{us = US},
-				 mnesia:delete_object(Old),
-				 mnesia:write(New),
-				 Acc
-			 end,
-		mnesia:foldl(FixKey, none, presence_registered)
-	end,
-    mnesia:transaction(F).
 

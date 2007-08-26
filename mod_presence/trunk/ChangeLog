@@ -1,5 +1,7 @@
 2007-08-26  Badlop  <badlop@ono.com>
 
+	* src/mod_presence.erl: Revert to the old SVN r306 to guarantee table consistency.
+
 	* README.txt: Added important message to encourage users to move to mod_webpresence.
 
 	* src/mod_presence.erl: Preliminary support for hashed JIDs. Added support for HOST keyword, and removed unusued Access variables. Added basic page to Web Admin.
