@@ -29,7 +29,7 @@
 -include("ejabberd_web_admin.hrl").
 -include("ejabberd_http.hrl").
 
--record(webpresence, {us, hashurl, jidurl, xml, icon}).
+-record(webpresence, {us, hashurl = false, jidurl = false, xml = false, icon = "disabled"}).
 -record(state, {host, server_host, access}).
 -record(presence, {resource, show, priority, status}).
 
@@ -389,15 +389,15 @@ iq_get_vcard(Lang) ->
       [{xmlcdata, translate:translate(Lang, "ejabberd web presence module\n"
                                       "Copyright (c) 2006-2007 Igor Goryachev")}]}].
 
-get_info(LUser, LServer) ->
+get_wp(LUser, LServer) ->
     LUS = {LUser, LServer},
     case catch mnesia:dirty_read(webpresence, LUS) of
-        {'EXIT', _Reason} ->
-            {false, "disabled"};
-        [] ->
-            {false, "disabled"};
-        [#webpresence{xml = XML, icon = Icon}] ->
-            {XML, Icon}
+        {'EXIT', _Reason} -> 
+	    #webpresence{};
+        [] -> 
+	    #webpresence{};
+	[WP] when is_record(WP, webpresence) ->
+	    WP
     end.
 
 get_status_weight(Show) ->
@@ -483,18 +483,18 @@ available_themes(xdata) ->
                [{xmlelement, "value", [], [{xmlcdata, Theme}]}]}
       end, available_themes(list)).
 
-show_presence({xml, LUser, LServer}) ->
-    {true, _} = get_info(LUser, LServer),
+show_presence({xml, WP, LUser, LServer}) ->
+    true = WP#webpresence.xml,
     Presence_xml = xml:element_to_string(get_presences({xml, LUser, LServer})),
     {200, [{"Content-Type", "text/xml; charset=utf-8"}], ?XML_HEADER ++ Presence_xml};
 
-show_presence({image, LUser, LServer}) ->
-    {_, Icon} = get_info(LUser, LServer),
+show_presence({image, WP, LUser, LServer}) ->
+    Icon = WP#webpresence.icon,
     "disabled" =/= Icon,
     show_presence({image_no_check, LUser, LServer, Icon});
 
-show_presence({image, LUser, LServer, Theme}) ->
-    {_, Icon} = get_info(LUser, LServer),
+show_presence({image, WP, LUser, LServer, Theme}) ->
+    Icon = WP#webpresence.icon,
     "disabled" =/= Icon,
     show_presence({image_no_check, LUser, LServer, Theme});
 
@@ -564,29 +564,34 @@ process2(["image", Theme, Show], _Request) ->
     show_presence(Args);
 
 process2(["jid", User, Server | Tail], _Request) ->
-    serve_web_presence(User, Server, Tail);
+    serve_web_presence(jid, User, Server, Tail);
 
 process2(["hash", Hash | Tail], _Request) ->
     [Pr] = mnesia:dirty_index_read(webpresence, Hash, #webpresence.hashurl),
     {User, Server} = Pr#webpresence.us,
-    serve_web_presence(User, Server, Tail);
+    serve_web_presence(hash, User, Server, Tail);
 
 %% Compatibility with old mod_presence
 process2([User, Server | Tail], _Request) ->
-    serve_web_presence(User, Server, Tail).
+    serve_web_presence(jid, User, Server, Tail).
 
 
-serve_web_presence(User, Server, Tail) ->
+serve_web_presence(TypeURL, User, Server, Tail) ->
     LServer = jlib:nameprep(Server),
     true = lists:member(LServer, ?MYHOSTS),
     LUser = jlib:nodeprep(User),
+    WP = get_wp(LUser, LServer),
+    case TypeURL of
+	jid -> true = WP#webpresence.jidurl;
+	hash -> false =/= WP#webpresence.hashurl
+    end,
     Args = case Tail of
 	       ["xml"] -> 
-		   {xml, LUser, LServer};
+		   {xml, WP, LUser, LServer};
 	       ["image"] -> 
-		   {image, LUser, LServer};
+		   {image, WP, LUser, LServer};
 	       ["image", Theme] -> 
-		   {image, LUser, LServer, Theme}
+		   {image, WP, LUser, LServer, Theme}
 	   end,
     show_presence(Args).
 

@@ -1,3 +1,7 @@
+2007-08-27  Badlop  <badlop@ono.com>
+
+	* src/mod_webpresence.erl: Enforce Hash and JID options in a web request.
+
 2007-08-26  Badlop  <badlop@ono.com>
 
 	* src/mod_webpresence.erl: Improved table format and conversion from old mod_presence. Small fixes. Replace nested cases with call to funcions.
