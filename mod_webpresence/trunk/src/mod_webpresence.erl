@@ -29,7 +29,7 @@
 -include("ejabberd_web_admin.hrl").
 -include("ejabberd_http.hrl").
 
--record(presence_registered, {us, jidurl, hashurl, xml, icon}).
+-record(presence_registered, {us, hashurl, jidurl, xml, icon}).
 -record(state, {host, server_host, access}).
 -record(presence, {resource, show, priority, status}).
 
@@ -90,7 +90,7 @@ init([Host, Opts]) ->
     mnesia:create_table(presence_registered,
 			[{disc_copies, [node()]},
 			 {attributes, record_info(fields, presence_registered)}]),
-    mnesia:add_table_index(presence_registered, id),
+    mnesia:add_table_index(presence_registered, hashurl),
     update_table(),
     MyHost = gen_mod:get_opt_host(Host, Opts, "webpresence.@HOST@"),
     Access = gen_mod:get_opt(access, Opts, local),
@@ -577,15 +577,6 @@ make_xhtml(Title, Els) ->
       {xmlelement, "body", [], Els}
      ]}.
 
-process(LocalPath, _Request) ->
-    case catch process2(LocalPath, _Request) of
-	{'EXIT', _Reason} ->
-	    {404, [], make_xhtml([?XC("h1", "Not found")])};
-	Res ->
-	    Res
-    end.
-
-
 themes_to_xhtml(Themes) ->
     ShowL = ["chat", "available", "away", "xa", "dnd"],
     THeadL = [""] ++ ShowL,
@@ -598,12 +589,13 @@ themes_to_xhtml(Themes) ->
 	 )
     ].
 
-process2(["themes"], _Request) ->
-    Title = [?XC("title", "Icon Themes")],
-    Themes = available_themes(list),
-    Icon_themes = themes_to_xhtml(Themes),
-    Body = [?XC("h1", "Icon Themes")] ++ Icon_themes,
-    make_xhtml(Title, Body);
+process(LocalPath, _Request) ->
+    case catch process2(LocalPath, _Request) of
+	{'EXIT', _Reason} ->
+	    {404, [], make_xhtml([?XC("h1", "Not found")])};
+	Res ->
+	    Res
+    end.
 
 process2([], _Request) ->
     Title = [?XC("title", "Web Presence")],
@@ -611,11 +603,31 @@ process2([], _Request) ->
     Body = [?XC("h1", "Web Presence")] ++ Link_themes,
     make_xhtml(Title, Body);
 
+process2(["themes"], _Request) ->
+    Title = [?XC("title", "Icon Themes")],
+    Themes = available_themes(list),
+    Icon_themes = themes_to_xhtml(Themes),
+    Body = [?XC("h1", "Icon Themes")] ++ Icon_themes,
+    make_xhtml(Title, Body);
+
 process2(["image", Theme, Show], _Request) ->
     Args = {image_example, Theme, Show},
     show_presence(Args);
 
+process2(["jid", User, Server | Tail], _Request) ->
+    serve_web_presence(User, Server, Tail);
+
+process2(["hash", Hash | Tail], _Request) ->
+    [Pr] = mnesia:dirty_index_read(presence_registered, Hash, #presence_registered.hashurl),
+    {User, Server} = Pr#presence_registered.us,
+    serve_web_presence(User, Server, Tail);
+
+%% Compatibility with old mod_presence
 process2([User, Server | Tail], _Request) ->
+    serve_web_presence(User, Server, Tail).
+
+
+serve_web_presence(User, Server, Tail) ->
     LServer = jlib:nameprep(Server),
     true = lists:member(LServer, ?MYHOSTS),
     LUser = jlib:nodeprep(User),
@@ -699,8 +711,8 @@ convert_table_004(Fields) ->
     FixRecords = fun(Old) ->
 			 {presence_registered, {US, Host}, XML, Icon} = Old,
 			 #presence_registered{us = {US, Host},
-					      jidurl = true,
 					      hashurl = false,
+					      jidurl = true,
 					      xml = list_to_atom(XML),
 					      icon = Icon}
 		 end,

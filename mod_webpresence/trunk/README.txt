@@ -69,31 +69,40 @@ ejabberd.log and sasl.log since they may provide some valuable information.
 	-----
 
 The web-presence feature by default is switched off for every user. If
-user wants to use it, he should register on service presence.yourhost,
-which is accessible from disco. 
-There are two switches for web-presence: xml and icon exports. 
+user wants to use it, he should register on service webpresence.example.org,
+which is accessible from Service Discovery. 
+There are several switches for web-presence:
+ * JID: allow URI using JID.
+ * Hash: allow URI using Hash.
+ * XML: allow XML output.
+ * Icon: allow icon output.
 
 Login to an account on your ejabberd server using a powerful Jabber client.
 Open the Service Discovery on your Jabber client, and you should see
-a new service called "webpresence.yourhost".
+a new service called "webpresence.example.org".
 Try to register on it. A formulary appears allowing the user to 
 allow image publishing, and XML publishing.
 
 Once you enabled some of those options, 
 on a web browser open the corresponding URI:
  * for XML output:
-	http://yourhost:5280/presence/<user>/<server>/xml/ 
+	http://example.org:5280/presence/jid/<user>/<server>/xml/ 
  * for image output:
-	http://yourhost:5280/presence/<user>/<server>/image/
+	http://example.org:5280/presence/jid/<user>/<server>/image/
  * for image output with theme:
-	http://yourhost:5280/presence/<user>/<server>/image/<theme>/
+	http://example.org:5280/presence/jid/<user>/<server>/image/<theme>/
+
+If you don't want to reveal your Jabber ID, you can enable Hash URI.
+After the registration the user gets a message with his Hash.
+The URI can be formed this way:
+  http://example.org:5280/presence/hash/<hash>/image/
 
 
 	EXAMPLE PHP CODE
 	----------------
 
 Tobias Markmann wrote this PHP script that generates HTML code.
-This example assumes that the URL of the presence is
+This example assumes that the URI of the presence is
   http://example.org:5280/presence/tom/example.org
 
 <?php
