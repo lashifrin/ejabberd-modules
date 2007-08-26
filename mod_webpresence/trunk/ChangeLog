@@ -1,6 +1,6 @@
 2007-08-26  Badlop  <badlop@ono.com>
 
-	* src/mod_webpresence.erl: Improved table format and conversion from old mod_presence. Small fixes. 
+	* src/mod_webpresence.erl: Improved table format and conversion from old mod_presence. Small fixes. Replace nested cases with call to funcions.
 
 	* src/mod_webpresence.erl: Renamed mod_presence.erl to mod_webpresence.erl. Updated table format. XForm support for Hash and JID URLs. Added complete support for 'jid' and 'hash' URIs.
 	* README.txt: Document 'jid' and 'hash' type of URIs.

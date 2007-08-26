@@ -169,98 +169,67 @@ code_change(_OldVsn, State, _Extra) ->
 do_route(Host, ServerHost, Access, From, To, Packet) ->
     case acl:match_rule(ServerHost, Access, From) of
 	allow ->
-	    do_route1(Host, ServerHost, From, To, Packet);
+	    do_route1(Host, From, To, Packet);
 	_ ->
 	    {xmlelement, _Name, Attrs, _Els} = Packet,
 	    Lang = xml:get_attr_s("xml:lang", Attrs),
 	    ErrText = "Access denied by service policy",
-	    Err = jlib:make_error_reply(Packet,
-					?ERRT_FORBIDDEN(Lang, ErrText)),
+	    Err = jlib:make_error_reply(Packet, ?ERRT_FORBIDDEN(Lang, ErrText)),
 	    ejabberd_router:route(To, From, Err)
     end.
 
-%% TODO: Remove the nested case
-do_route1(Host, _ServerHost, From, To, Packet) ->
+do_route1(Host, From, To, Packet) ->
     {xmlelement, Name, Attrs, _Els} = Packet,
     case Name of
-        "iq" ->
-            case jlib:iq_query_info(Packet) of
-                #iq{type = get, xmlns = ?NS_DISCO_INFO = XMLNS,
-                    sub_el = _SubEl} = IQ ->
-                    Res = IQ#iq{type = result,
-                                sub_el = [{xmlelement, "query",
-                                           [{"xmlns", XMLNS}],
-                                           iq_disco_info()}]},
-                    ejabberd_router:route(To,
-                                          From,
-                                          jlib:iq_to_xml(Res));
-                #iq{type = get,
-                    xmlns = ?NS_DISCO_ITEMS} = _IQ ->
-                    ok;
-                #iq{type = get,
-                    xmlns = ?NS_REGISTER = XMLNS,
-                    lang = Lang,
-                    sub_el = _SubEl} = IQ ->
-                    Res = IQ#iq{type = result,
-                                sub_el =
-                                [{xmlelement, "query",
-                                  [{"xmlns", XMLNS}],
-                                  iq_get_register_info(
-                                    Host, From, Lang)}]},
-                    ejabberd_router:route(To,
-                                          From,
-                                          jlib:iq_to_xml(Res));
-                #iq{type = set,
-                    xmlns = ?NS_REGISTER = XMLNS,
-                    lang = Lang,
-                    sub_el = SubEl} = IQ ->
-                    case process_iq_register_set(From, SubEl, Host, Lang) of
-                        {result, IQRes} ->
-                            Res = IQ#iq{type = result,
-                                        sub_el =
-                                        [{xmlelement, "query",
-                                          [{"xmlns", XMLNS}],
-                                          IQRes}]},
-                            ejabberd_router:route(
-                              To, From, jlib:iq_to_xml(Res));
-                        {error, Error} ->
-                            Err = jlib:make_error_reply(
-                                    Packet, Error),
-                            ejabberd_router:route(
-                              To, From, Err)
-                    end;
-                #iq{type = get,
-                    xmlns = ?NS_VCARD = XMLNS,
-                    lang = Lang,
-                    sub_el = _SubEl} = IQ ->
-                    Res = IQ#iq{type = result,
-                                sub_el =
-                                [{xmlelement, "vCard",
-                                  [{"xmlns", XMLNS}],
-                                  iq_get_vcard(Lang)}]},
-                    ejabberd_router:route(To,
-                                          From,
-                                          jlib:iq_to_xml(Res));
-                #iq{} ->
-                    Err = jlib:make_error_reply(
-                            Packet,
-                            ?ERR_FEATURE_NOT_IMPLEMENTED),
-                    ejabberd_router:route(To, From, Err);
-                _ ->
-                    ok
-            end;
-        _ ->
-            case xml:get_attr_s("type", Attrs) of
-                "error" ->
-                    ok;
-                "result" ->
-                    ok;
-                _ ->
-                    Err = jlib:make_error_reply(
-                            Packet, ?ERR_ITEM_NOT_FOUND),
-                    ejabberd_router:route(To, From, Err)
-            end
+        "iq" -> do_route1_iq(Host, From, To, Packet, jlib:iq_query_info(Packet));
+        _ -> case xml:get_attr_s("type", Attrs) of
+		 "error" -> ok;
+		 "result" -> ok;
+		 _ -> Err = jlib:make_error_reply(Packet, ?ERR_ITEM_NOT_FOUND),
+		      ejabberd_router:route(To, From, Err)
+	     end
     end.
+
+do_route1_iq(_, From, To, _,
+	     #iq{type = get, xmlns = ?NS_DISCO_INFO} = IQ) ->
+    SubEl2 = {xmlelement, "query", [{"xmlns", ?NS_DISCO_INFO}], iq_disco_info()},
+    Res = IQ#iq{type = result, sub_el = [SubEl2]},
+    ejabberd_router:route(To, From, jlib:iq_to_xml(Res));
+
+do_route1_iq(_, _, _, _,
+	     #iq{type = get, xmlns = ?NS_DISCO_ITEMS}) ->
+    ok;
+
+do_route1_iq(Host, From, To, _,
+	     #iq{type = get, xmlns = ?NS_REGISTER, lang = Lang} = IQ) ->
+    SubEl2 = {xmlelement, "query", [{"xmlns", ?NS_REGISTER}], iq_get_register_info(Host, From, Lang)},
+    Res = IQ#iq{type = result, sub_el = [SubEl2]},
+    ejabberd_router:route(To, From, jlib:iq_to_xml(Res));
+
+do_route1_iq(Host, From, To, Packet,
+	     #iq{type = set, xmlns = ?NS_REGISTER, lang = Lang, sub_el = SubEl} = IQ) ->
+    case process_iq_register_set(From, SubEl, Host, Lang) of
+	{result, IQRes} ->
+	    SubEl2 = {xmlelement, "query", [{"xmlns", ?NS_REGISTER}], IQRes},
+	    Res = IQ#iq{type = result, sub_el = [SubEl2]},
+	    ejabberd_router:route(To, From, jlib:iq_to_xml(Res));
+	{error, Error} ->
+	    Err = jlib:make_error_reply(Packet, Error),
+	    ejabberd_router:route(To, From, Err)
+    end;
+
+do_route1_iq(_Host, From, To, _,
+	     #iq{type = get, xmlns = ?NS_VCARD = XMLNS, lang = Lang} = IQ) ->
+    SubEl2 = {xmlelement, "vCard", [{"xmlns", XMLNS}], iq_get_vcard(Lang)},
+    Res = IQ#iq{type = result, sub_el = [SubEl2]},
+    ejabberd_router:route(To, From, jlib:iq_to_xml(Res));
+
+do_route1_iq(_Host, From, To, Packet, #iq{}) ->
+    Err = jlib:make_error_reply( Packet, ?ERR_FEATURE_NOT_IMPLEMENTED),
+    ejabberd_router:route(To, From, Err);
+
+do_route1_iq(_, _, _, _, _) ->
+    ok.
 
 iq_disco_info() ->
     [{xmlelement, "identity",
@@ -379,57 +348,35 @@ send_hash_message(Hash, To, Host) ->
 				   "The URL that you can use looks similar to: "
 				   "http://example.org:5280/presence/"++Hash++"/image/"}]}]}).
 
-%% TODO: Remove the nested cases
+get_attr(Attr, XData, Default) ->
+    case lists:keysearch(Attr, 1, XData) of
+	{value, {_, [Value]}} -> Value;
+	false -> Default
+    end.
+
 process_iq_register_set(From, SubEl, Host, Lang) ->
     {xmlelement, _Name, _Attrs, Els} = SubEl,
     case xml:get_subtag(SubEl, "remove") of
-	false ->
-	    case xml:remove_cdata(Els) of
-		[{xmlelement, "x", _Attrs1, _Els1} = XEl] ->
-		    case {xml:get_tag_attr_s("xmlns", XEl),
-			  xml:get_tag_attr_s("type", XEl)} of
-			{?NS_XDATA, "cancel"} ->
-			    {result, []};
-			{?NS_XDATA, "submit"} ->
-			    XData = jlib:parse_xdata_submit(XEl),
-			    case XData of
-				invalid ->
-				    {error, ?ERR_BAD_REQUEST};
-				_ ->
-				    case lists:keysearch("xml", 1, XData) of
-					false ->
-					    ErrText = "You must fill in field \"Xml\" in the form",
-					    {error, ?ERRT_NOT_ACCEPTABLE(Lang, ErrText)};
-					{value, {_, [XMLs]}} ->
-                                            case lists:keysearch("icon", 1, XData) of
-                                                false ->
-                                                    ErrText = "You must fill in field \"Icon\" in the form",
-                                                    {error, ?ERRT_NOT_ACCEPTABLE(Lang, ErrText)};
-                                                {value, {_, [Icon]}} ->
-						    case lists:keysearch("hashurl", 1, XData) of
-							false ->
-							    ErrText = "You must fill in field \"HashUrl\" in the form",
-							    {error, ?ERRT_NOT_ACCEPTABLE(Lang, ErrText)};
-							{value, {_, [HashUrl]}} ->
-							    case lists:keysearch("jidurl", 1, XData) of
-								false ->
-								    ErrText = "You must fill in field \"JIDUrl\" in the form",
-								    {error, ?ERRT_NOT_ACCEPTABLE(Lang, ErrText)};
-								{value, {_, [JidUrl]}} ->
-								    iq_set_register_info(From, Host, to_bool(JidUrl), to_bool(HashUrl), to_bool(XMLs), Icon, Lang)
-							    end
-						    end
-                                            end
-				    end
-			    end;
-			_ ->
-			    {error, ?ERR_BAD_REQUEST}
-		    end;
-		_ ->
-		    {error, ?ERR_BAD_REQUEST}
-	    end;
-	_ ->
-	    iq_set_register_info(From, Host, true, false, false, "disabled", Lang)
+	false -> case catch process_iq_register_set2(From, Els, Host, Lang) of
+		     {'EXIT', _} -> {error, ?ERR_BAD_REQUEST};
+		     R -> R
+		 end;
+	_ -> iq_set_register_info(From, Host, true, false, false, "disabled", Lang)
+    end.
+
+process_iq_register_set2(From, Els, Host, Lang) ->
+    [{xmlelement, "x", _Attrs1, _Els1} = XEl] = xml:remove_cdata(Els),
+    case {xml:get_tag_attr_s("xmlns", XEl), xml:get_tag_attr_s("type", XEl)} of
+	{?NS_XDATA, "cancel"} ->
+	    {result, []};
+	{?NS_XDATA, "submit"} ->
+	    XData = jlib:parse_xdata_submit(XEl),
+	    invalid =/= XData,
+	    JidUrl = get_attr("jidurl", XData, "false"),
+	    HashUrl = get_attr("hashurl", XData, "false"),
+	    XML = get_attr("xml", XData, "false"),
+	    Icon = get_attr("icon", XData, "disabled"),
+	    iq_set_register_info(From, Host, to_bool(JidUrl), to_bool(HashUrl), to_bool(XML), Icon, Lang)
     end.
 
 iq_get_vcard(Lang) ->
