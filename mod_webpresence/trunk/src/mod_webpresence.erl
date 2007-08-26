@@ -328,10 +328,13 @@ iq_set_register_info(From, Host, JidUrl, HashUrl, XML, Icon, _Lang) ->
     end.
 
 get_hashurl_final_value(false, _) -> false;
-get_hashurl_final_value(true, LUS) ->
+get_hashurl_final_value(true, {U, S} = LUS) ->
     case get_pr_hash(LUS) of
 	false ->
-	    randoms:get_string();
+	    integer_to_list(erlang:phash2(U) * erlang:phash2(S) 
+			    * calendar:datetime_to_gregorian_seconds(
+				calendar:local_time())) 
+		++ randoms:get_string();
 	H when is_list(H) ->
 	    H
     end.
