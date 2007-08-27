@@ -35,11 +35,62 @@ No web server, database, additional libraries or programs are required.
 
 3. Copy the directory data/pixmaps to a directory you prefer.
 
-4. To configure ejabberd, edit ejabberd.cfg and put something like this.
-Take special care with commas and dots: if this module does not seem to work
-correctly, the problem may be that the configuration file has syntax errors.
-Remember to put the correct path to the pixmaps directory,
-and make sure the user than runs ejabberd has read access to that directory.
+4. Edit ejabberd.cfg and add the HTTP and module definitions:
+{listen, [
+  ...
+  {5280, ejabberd_http, [
+    ...
+    {request_handlers, [
+      ...
+      {["presence"], mod_webpresence}
+    ]}
+  ]}
+]}.
+
+{modules, [
+  ...
+  {mod_webpresence, [
+    {pixmaps_path, "/path/to/pixmaps"}
+  ]}
+]}.
+
+5. Restart ejabberd.
+If problems appear, remember to always look first the ejabberd log files
+ejabberd.log and sasl.log since they may provide some valuable information.
+
+
+	CONFIGURABLE PARAMETERS
+	-----------------------
+
+host 
+    Define the hostname of the service.
+    You can use the keyword @HOST@.
+    Default value: "webpresence.@HOST@"
+access:
+    Specify who can register in the webpresence service.
+    Don't specify all because it will not work.
+    Default value: local
+pixmaps_path:
+    Take special care with commas and dots: if this module does not seem to work
+    correctly, the problem may be that the configuration file has syntax errors.
+    Remember to put the correct path to the pixmaps directory,
+    and make sure the user than runs ejabberd has read access to that directory.
+    Default value: "./pixmaps"
+port:
+    This port value is used to send a message to the user.
+    If you set a different port in the 'listen' section, set this option.
+    Default value: 5280
+path:
+    This path value is used to send a message to the user.
+    If you set a different path in the 'listen' section, set this option.
+    Default value: "presence"
+
+
+	EXAMPLE CONFIGURATION
+	---------------------
+
+	Example 1
+	---------
 
 {listen, [
   ...
@@ -55,15 +106,35 @@ and make sure the user than runs ejabberd has read access to that directory.
 {modules, [
   ...
   {mod_webpresence, [
-    {access, local}, 
     {pixmaps_path, "/path/to/pixmaps"}
   ]}
 ]}.
 
 
-5. Restart ejabberd.
-If problems appear, remember to always look first the ejabberd log files
-ejabberd.log and sasl.log since they may provide some valuable information.
+	Example 2
+	---------
+
+{listen, [
+  ...
+  {80, ejabberd_http, [
+    ...
+    {request_handlers, [
+      ...
+      {["status"], mod_webpresence}
+    ]}
+  ]}
+]}.
+
+{modules, [
+  ...
+  {mod_webpresence, [
+    {host, "webstatus.@HOST@"},
+    {access, local},
+    {pixmaps_path, "/path/to/pixmaps"},
+    {port, 80},
+    {path, "status"}
+  ]}
+]}.
 
 
 	USAGE

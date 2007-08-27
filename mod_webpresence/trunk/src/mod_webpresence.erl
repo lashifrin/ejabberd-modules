@@ -30,7 +30,7 @@
 -include("web/ejabberd_http.hrl").
 
 -record(webpresence, {us, hashurl = false, jidurl = false, xml = false, avatar = false, icon = "---"}).
--record(state, {host, server_host, access}).
+-record(state, {host, server_host, base_url, access}).
 -record(presence, {resource, show, priority, status}).
 
 %% Copied from ejabberd_sm.erl
@@ -94,11 +94,15 @@ init([Host, Opts]) ->
     update_table(),
     MyHost = gen_mod:get_opt_host(Host, Opts, "webpresence.@HOST@"),
     Access = gen_mod:get_opt(access, Opts, local),
+    Port = gen_mod:get_opt(port, Opts, 5280),
+    Path = gen_mod:get_opt(path, Opts, "presence"),
+    BaseURL = io_lib:format("http://~s:~p/~s/",[Host, Port, Path]),
     ejabberd_router:register_route(MyHost),
     ejabberd_hooks:add(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
     ejabberd_hooks:add(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
     {ok, #state{host = MyHost,
 		server_host = Host,
+		base_url = BaseURL,
 		access = Access}}.
 
 %%--------------------------------------------------------------------
@@ -131,8 +135,9 @@ handle_cast(_Msg, State) ->
 handle_info({route, From, To, Packet},
 	    #state{host = Host,
 		   server_host = ServerHost,
+		   base_url = BaseURL,
 		   access = Access} = State) ->
-    case catch do_route(Host, ServerHost, Access, From, To, Packet) of
+    case catch do_route(Host, ServerHost, Access, From, To, Packet, BaseURL) of
 	{'EXIT', Reason} ->
 	    ?ERROR_MSG("~p", [Reason]);
 	_ ->
@@ -166,10 +171,10 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%--------------------------------------------------------------------
 
-do_route(Host, ServerHost, Access, From, To, Packet) ->
+do_route(Host, ServerHost, Access, From, To, Packet, BaseURL) ->
     case acl:match_rule(ServerHost, Access, From) of
 	allow ->
-	    do_route1(Host, From, To, Packet);
+	    do_route1(Host, From, To, Packet, BaseURL);
 	_ ->
 	    {xmlelement, _Name, Attrs, _Els} = Packet,
 	    Lang = xml:get_attr_s("xml:lang", Attrs),
@@ -178,10 +183,10 @@ do_route(Host, ServerHost, Access, From, To, Packet) ->
 	    ejabberd_router:route(To, From, Err)
     end.
 
-do_route1(Host, From, To, Packet) ->
+do_route1(Host, From, To, Packet, BaseURL) ->
     {xmlelement, Name, Attrs, _Els} = Packet,
     case Name of
-        "iq" -> do_route1_iq(Host, From, To, Packet, jlib:iq_query_info(Packet));
+        "iq" -> do_route1_iq(Host, From, To, Packet, BaseURL, jlib:iq_query_info(Packet));
         _ -> case xml:get_attr_s("type", Attrs) of
 		 "error" -> ok;
 		 "result" -> ok;
@@ -190,25 +195,25 @@ do_route1(Host, From, To, Packet) ->
 	     end
     end.
 
-do_route1_iq(_, From, To, _,
+do_route1_iq(_, From, To, _, _,
 	     #iq{type = get, xmlns = ?NS_DISCO_INFO, lang = Lang} = IQ) ->
     SubEl2 = {xmlelement, "query", [{"xmlns", ?NS_DISCO_INFO}], iq_disco_info(Lang)},
     Res = IQ#iq{type = result, sub_el = [SubEl2]},
     ejabberd_router:route(To, From, jlib:iq_to_xml(Res));
 
-do_route1_iq(_, _, _, _,
+do_route1_iq(_, _, _, _, _,
 	     #iq{type = get, xmlns = ?NS_DISCO_ITEMS}) ->
     ok;
 
-do_route1_iq(Host, From, To, _,
+do_route1_iq(Host, From, To, _, _,
 	     #iq{type = get, xmlns = ?NS_REGISTER, lang = Lang} = IQ) ->
     SubEl2 = {xmlelement, "query", [{"xmlns", ?NS_REGISTER}], iq_get_register_info(Host, From, Lang)},
     Res = IQ#iq{type = result, sub_el = [SubEl2]},
     ejabberd_router:route(To, From, jlib:iq_to_xml(Res));
 
-do_route1_iq(Host, From, To, Packet,
+do_route1_iq(Host, From, To, Packet, BaseURL,
 	     #iq{type = set, xmlns = ?NS_REGISTER, lang = Lang, sub_el = SubEl} = IQ) ->
-    case process_iq_register_set(From, SubEl, Host, Lang) of
+    case process_iq_register_set(From, SubEl, Host, BaseURL, Lang) of
 	{result, IQRes} ->
 	    SubEl2 = {xmlelement, "query", [{"xmlns", ?NS_REGISTER}], IQRes},
 	    Res = IQ#iq{type = result, sub_el = [SubEl2]},
@@ -218,17 +223,17 @@ do_route1_iq(Host, From, To, Packet,
 	    ejabberd_router:route(To, From, Err)
     end;
 
-do_route1_iq(_Host, From, To, _,
+do_route1_iq(_Host, From, To, _, _,
 	     #iq{type = get, xmlns = ?NS_VCARD = XMLNS} = IQ) ->
     SubEl2 = {xmlelement, "vCard", [{"xmlns", XMLNS}], iq_get_vcard()},
     Res = IQ#iq{type = result, sub_el = [SubEl2]},
     ejabberd_router:route(To, From, jlib:iq_to_xml(Res));
 
-do_route1_iq(_Host, From, To, Packet, #iq{}) ->
+do_route1_iq(_Host, From, To, Packet, _, #iq{}) ->
     Err = jlib:make_error_reply( Packet, ?ERR_FEATURE_NOT_IMPLEMENTED),
     ejabberd_router:route(To, From, Err);
 
-do_route1_iq(_, _, _, _, _) ->
+do_route1_iq(_, _, _, _, _, _) ->
     ok.
 
 iq_disco_info(Lang) ->
@@ -305,7 +310,7 @@ iq_get_register_info(_Host, From, Lang) ->
 	   ?XFIELD("boolean", ?T("XML"), "xml", atom_to_list(XML))]}].
 
 %% TODO: Check if remote users are allowed to reach here: they should not be allowed
-iq_set_register_info(From, Host, JidUrl, HashUrl, XML, Avatar, Icon, Lang) ->
+iq_set_register_info(From, Host, JidUrl, HashUrl, XML, Avatar, Icon, BaseURL, Lang) ->
     {LUser, LServer, _} = jlib:jid_tolower(From),
     LUS = {LUser, LServer},
     HashUrl2 = get_hashurl_final_value(HashUrl, LUS),
@@ -318,7 +323,7 @@ iq_set_register_info(From, Host, JidUrl, HashUrl, XML, Avatar, Icon, Lang) ->
     F = fun() -> mnesia:write(WP) end,
     case mnesia:transaction(F) of
 	{atomic, ok} ->
-	    send_message(WP, From, Host, Lang),
+	    send_message(WP, From, Host, BaseURL, Lang),
 	    {result, []};
 	_ ->
 	    {error, ?ERR_INTERNAL_SERVER_ERROR}
@@ -336,61 +341,54 @@ get_hashurl_final_value(true, {U, S} = LUS) ->
 	    H
     end.
 
-send_message(WP, To, Host, Lang) ->
-    BaseURL="http://atenea:5280/presence/", %+++++
-
+send_message(WP, To, Host, BaseURL, Lang) ->
     {User, Server} = WP#webpresence.us,
     JID = jlib:make_jid(User, Server, ""),
     JIDS = jlib:jid_to_string(JID),
-
+    Oavatar = case WP#webpresence.avatar of
+		  false -> "";
+		  true -> "  avatar\n"
+	      end,
+    Oimage = case WP#webpresence.icon of
+		 "---" -> "";
+		 I when is_list(I) -> 
+		     "  image\n"
+			 "  image/res/<"++?T("Resource")++">\n"
+			 "  image/<"++?T("Icon theme")++">\n"
+			 "  image/<"++?T("Icon theme")++">/res/<"++?T("Resource")++">\n"
+	     end,
+    Oxml = case WP#webpresence.xml of
+	       false -> "";
+	       true -> "  xml\n"
+	   end,
+    Allowed_type = case {Oimage, Oxml, Oavatar} of
+		       {"", "", _} -> "avatar";
+		       {"", _, _} -> "xml";
+		       {_, _, _} -> "image"
+		   end,
     {USERID_jid, Example_jid} = case WP#webpresence.jidurl of
 				    false -> {"", ""};
 				    true -> 
 					JIDT = "jid/"++User++"/"++Server,
 					{"  "++JIDT++"\n",
-					 "  "++BaseURL++JIDT++"/image/\n"
-					 "  "++BaseURL++JIDT++"/image/jsf-jabber-text/\n"}
+					 "  "++BaseURL++JIDT++"/"++Allowed_type++"/\n"}
 				end,
-
     {USERID_hash, Example_hash} = case WP#webpresence.hashurl of
 				      false -> {"", ""};
 				      Hash when is_list(Hash) -> 
 					  HashT = "hash/"++Hash,
 					  {"  "++HashT++"\n",
-					   "  "++BaseURL++HashT++"/image/res/Working/\n"
-					   "  "++BaseURL++HashT++"/xml/\n"}
+					   "  "++BaseURL++HashT++"/"++Allowed_type++"/\n"}
 				  end,
-
-    OUTPUT_avatar = case WP#webpresence.avatar of
-			false -> "";
-			true -> "  avatar\n"
-		    end,
-
-    OUTPUT_image = case WP#webpresence.icon of
-		       "---" -> "";
-		       I when is_list(I) -> 
-			   "  image\n"
-			       "  image/res/<"++?T("Resource")++">\n"
-			       "  image/<"++?T("Icon theme")++">\n"
-			       "  image/<"++?T("Icon theme")++">/res/<"++?T("Resource")++">\n"
-		   end,
-
-    OUTPUT_xml = case WP#webpresence.xml of
-		     false -> "";
-		     true -> "  xml\n"
-		 end,
-
-    Body = "You have registered the Jabber ID "++JIDS++" in "++?T("Web Presence")++".\n"
-	"\n"
-	"You can use URLs like:\n"
+    Body = ?T("You have registered the Jabber ID")++" "++JIDS++" in "++?T("Web Presence")++".\n\n"
+	++?T("Use URLs like")++":\n"
 	"  "++BaseURL++"USERID/OUTPUT/\n"
 	"\n"
 	"USERID:\n"++USERID_jid++USERID_hash++"\n"
-	"OUTPUT:\n"++OUTPUT_avatar++OUTPUT_xml++OUTPUT_image++"\n"
-	"Examples:\n"++Example_jid++Example_hash++"\n"
-	"If you forget your Hash, register again to receive this message.\n"
-	"To get a new Hash, disable the option and enable it again. A new Hash will be generated for you.\n",
-
+	"OUTPUT:\n"++Oavatar++Oxml++Oimage++"\n"
+	++?T("Example")++":\n"++Example_jid++Example_hash++"\n"
+	++?T("If you forget your Hash, register again to receive this message.")++"\n"
+	++?T("To get a new Hash, disable the option and enable it again. A new Hash will be generated for you.")++"\n",
     ejabberd_router:route(
       jlib:make_jid("", Host, ""),
       To,
@@ -404,17 +402,17 @@ get_attr(Attr, XData, Default) ->
 	false -> Default
     end.
 
-process_iq_register_set(From, SubEl, Host, Lang) ->
+process_iq_register_set(From, SubEl, Host, BaseURL, Lang) ->
     {xmlelement, _Name, _Attrs, Els} = SubEl,
     case xml:get_subtag(SubEl, "remove") of
-	false -> case catch process_iq_register_set2(From, Els, Host, Lang) of
+	false -> case catch process_iq_register_set2(From, Els, Host, BaseURL, Lang) of
 		     {'EXIT', _} -> {error, ?ERR_BAD_REQUEST};
 		     R -> R
 		 end;
-	_ -> iq_set_register_info(From, Host, true, false, false, false, "---", Lang)
+	_ -> iq_set_register_info(From, Host, true, false, false, false, "---", BaseURL, Lang)
     end.
 
-process_iq_register_set2(From, Els, Host, Lang) ->
+process_iq_register_set2(From, Els, Host, BaseURL, Lang) ->
     [{xmlelement, "x", _Attrs1, _Els1} = XEl] = xml:remove_cdata(Els),
     case {xml:get_tag_attr_s("xmlns", XEl), xml:get_tag_attr_s("type", XEl)} of
 	{?NS_XDATA, "cancel"} ->
@@ -427,7 +425,7 @@ process_iq_register_set2(From, Els, Host, Lang) ->
 	    XML = get_attr("xml", XData, "false"),
 	    Avatar = get_attr("avatar", XData, "false"),
 	    Icon = get_attr("icon", XData, "---"),
-	    iq_set_register_info(From, Host, to_bool(JidUrl), to_bool(HashUrl), to_bool(XML), to_bool(Avatar), Icon, Lang)
+	    iq_set_register_info(From, Host, to_bool(JidUrl), to_bool(HashUrl), to_bool(XML), to_bool(Avatar), Icon, BaseURL, Lang)
     end.
 
 iq_get_vcard() ->
