@@ -17,6 +17,7 @@
 -export([start_link/2,
          start/2,
          stop/1,
+	 remove_user/2,
          web_menu_host/2, web_page_host/3,
          process/2]).
 
@@ -98,6 +99,7 @@ init([Host, Opts]) ->
     Path = gen_mod:get_opt(path, Opts, "presence"),
     BaseURL = io_lib:format("http://~s:~p/~s/",[Host, Port, Path]),
     ejabberd_router:register_route(MyHost),
+    ejabberd_hooks:add(remove_user, Host, ?MODULE, remove_user, 50),
     ejabberd_hooks:add(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
     ejabberd_hooks:add(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
     {ok, #state{host = MyHost,
@@ -156,6 +158,7 @@ handle_info(_Info, State) ->
 %%--------------------------------------------------------------------
 terminate(_Reason, #state{host = Host}) ->
     ejabberd_router:unregister_route(Host),
+    ejabberd_hooks:remove(remove_user, Host, ?MODULE, remove_user, 50),
     ejabberd_hooks:remove(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
     ejabberd_hooks:remove(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
     ok.
@@ -306,8 +309,8 @@ iq_get_register_info(_Host, From, Lang) ->
 		      [{xmlelement, "value", [], [{xmlcdata, "---"}]}]}             
 		    ] ++ available_themes(xdata)
 		   ),
-	   ?XFIELD("boolean", ?T("Avatar"), "avatar", atom_to_list(Avatar)),
-	   ?XFIELD("boolean", ?T("XML"), "xml", atom_to_list(XML))]}].
+	   ?XFIELD("boolean", ?T("XML"), "xml", atom_to_list(XML)),
+	   ?XFIELD("boolean", ?T("Avatar"), "avatar", atom_to_list(Avatar))]}].
 
 %% TODO: Check if remote users are allowed to reach here: they should not be allowed
 iq_set_register_info(From, {Host, JidUrl, RidUrl, XML, Avatar, Icon, _, Lang} = Opts) ->
@@ -381,13 +384,16 @@ send_message_registered(WP, To, Host, BaseURL, Lang) ->
 					{"  "++JIDT++"\n",
 					 "  "++BaseURL++JIDT++"/"++Allowed_type++"/\n"}
 				end,
-    {USERID_rid, Example_rid} = case WP#webpresence.ridurl of
-				    false -> {"", ""};
-				    RID when is_list(RID) -> 
-					RIDT = "rid/"++RID,
-					{"  "++RIDT++"\n",
-					 "  "++BaseURL++RIDT++"/"++Allowed_type++"/\n"}
-				end,
+    {USERID_rid, Example_rid, Text_rid} = case WP#webpresence.ridurl of
+					      false -> {"", "", ""};
+					      RID when is_list(RID) -> 
+						  RIDT = "rid/"++RID,
+						  {"  "++RIDT++"\n",
+						   "  "++BaseURL++RIDT++"/"++Allowed_type++"/\n",
+						   ?T("If you forget your RandomID, register again to receive this message.")++"\n"
+						   ++?T("To get a new RandomID, disable the option and register again.")++"\n"
+						  }
+					  end,
     Subject = ?T("Web Presence")++": "++?T("registered"),
     Body = ?T("You have registered")++" "++JIDS++" "++?T("in")++" "++?T("Web Presence")++".\n\n"
 	++?T("Use URLs like")++":\n"
@@ -396,8 +402,7 @@ send_message_registered(WP, To, Host, BaseURL, Lang) ->
 	"USERID:\n"++USERID_jid++USERID_rid++"\n"
 	"OUTPUT:\n"++Oavatar++Oxml++Oimage++"\n"
 	++?T("Example")++":\n"++Example_jid++Example_rid++"\n"
-	++?T("If you forget your RandomID, register again to receive this message.")++"\n"
-	++?T("To get a new RandomID, disable the option and register again.")++"\n",
+	++Text_rid,
     send_headline(Host, To, Subject, Body).
 
 send_message_unregistered(To, Host, Lang) ->
@@ -447,10 +452,12 @@ process_iq_register_set2(From, Els, Host, BaseURL, Lang) ->
 
 unregister_webpresence(From, Host, Lang) ->
     {LUser, LServer, _} = jlib:jid_tolower(From),
-    LUS = {LUser, LServer},
-    mnesia:dirty_delete(webpresence, LUS),
+    remove_user(LUser, LServer),
     send_message_unregistered(From, Host, Lang),
     {result, []}.
+
+remove_user(User, Server) ->
+    mnesia:dirty_delete(webpresence, {User, Server}).
 
 iq_get_vcard() ->
     [{xmlelement, "FN", [],
