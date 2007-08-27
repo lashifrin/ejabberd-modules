@@ -310,9 +310,17 @@ iq_get_register_info(_Host, From, Lang) ->
 	   ?XFIELD("boolean", ?T("XML"), "xml", atom_to_list(XML))]}].
 
 %% TODO: Check if remote users are allowed to reach here: they should not be allowed
-iq_set_register_info(From, Host, JidUrl, RidUrl, XML, Avatar, Icon, BaseURL, Lang) ->
+iq_set_register_info(From, {Host, JidUrl, RidUrl, XML, Avatar, Icon, _, Lang} = Opts) ->
     {LUser, LServer, _} = jlib:jid_tolower(From),
     LUS = {LUser, LServer},
+    Check_URLTypes = (JidUrl == true) or (RidUrl =/= false),
+    Check_OutputTypes = (XML == true) or (Avatar == true) or (Icon =/= "---"),
+    case Check_URLTypes and Check_OutputTypes of
+	true -> iq_set_register_info2(From, LUS, Opts);
+	false -> unregister_webpresence(From, Host, Lang)
+    end.
+
+iq_set_register_info2(From, LUS, {Host, JidUrl, RidUrl, XML, Avatar, Icon, BaseURL, Lang}) ->
     RidUrl2 = get_rid_final_value(RidUrl, LUS),
     WP = #webpresence{us = LUS,
 		      jidurl = JidUrl,
@@ -323,7 +331,7 @@ iq_set_register_info(From, Host, JidUrl, RidUrl, XML, Avatar, Icon, BaseURL, Lan
     F = fun() -> mnesia:write(WP) end,
     case mnesia:transaction(F) of
 	{atomic, ok} ->
-	    send_message(WP, From, Host, BaseURL, Lang),
+	    send_message_registered(WP, From, Host, BaseURL, Lang),
 	    {result, []};
 	_ ->
 	    {error, ?ERR_INTERNAL_SERVER_ERROR}
@@ -341,7 +349,7 @@ get_rid_final_value(true, {U, S} = LUS) ->
 	    H
     end.
 
-send_message(WP, To, Host, BaseURL, Lang) ->
+send_message_registered(WP, To, Host, BaseURL, Lang) ->
     {User, Server} = WP#webpresence.us,
     JID = jlib:make_jid(User, Server, ""),
     JIDS = jlib:jid_to_string(JID),
@@ -380,7 +388,8 @@ send_message(WP, To, Host, BaseURL, Lang) ->
 					{"  "++RIDT++"\n",
 					 "  "++BaseURL++RIDT++"/"++Allowed_type++"/\n"}
 				end,
-    Body = ?T("You have registered")++" "++JIDS++" in "++?T("Web Presence")++".\n\n"
+    Subject = ?T("Web Presence")++": "++?T("registered"),
+    Body = ?T("You have registered")++" "++JIDS++" "++?T("in")++" "++?T("Web Presence")++".\n\n"
 	++?T("Use URLs like")++":\n"
 	"  "++BaseURL++"USERID/OUTPUT/\n"
 	"\n"
@@ -388,12 +397,20 @@ send_message(WP, To, Host, BaseURL, Lang) ->
 	"OUTPUT:\n"++Oavatar++Oxml++Oimage++"\n"
 	++?T("Example")++":\n"++Example_jid++Example_rid++"\n"
 	++?T("If you forget your RandomID, register again to receive this message.")++"\n"
-	++?T("To get a new RandomID, disable the option and enable it again. A new RandomID will be generated for you.")++"\n",
+	++?T("To get a new RandomID, disable the option and register again.")++"\n",
+    send_headline(Host, To, Subject, Body).
+
+send_message_unregistered(To, Host, Lang) ->
+    Subject = ?T("Web Presence")++": "++?T("unregistered"),
+    Body = ?T("You have unregistered")++" "++?T("from")++" "++?T("Web Presence")++".\n\n",
+    send_headline(Host, To, Subject, Body).
+
+send_headline(Host, To, Subject, Body) ->
     ejabberd_router:route(
       jlib:make_jid("", Host, ""),
       To,
       {xmlelement, "message", [{"type", "headline"}],
-       [{xmlelement, "subject", [], [{xmlcdata, ?T("Web Presence")}]},
+       [{xmlelement, "subject", [], [{xmlcdata, Subject}]},
 	{xmlelement, "body", [], [{xmlcdata, Body}]}]}).
 
 get_attr(Attr, XData, Default) ->
@@ -409,7 +426,7 @@ process_iq_register_set(From, SubEl, Host, BaseURL, Lang) ->
 		     {'EXIT', _} -> {error, ?ERR_BAD_REQUEST};
 		     R -> R
 		 end;
-	_ -> iq_set_register_info(From, Host, true, false, false, false, "---", BaseURL, Lang)
+	_ -> unregister_webpresence(From, Host, Lang)
     end.
 
 process_iq_register_set2(From, Els, Host, BaseURL, Lang) ->
@@ -425,8 +442,15 @@ process_iq_register_set2(From, Els, Host, BaseURL, Lang) ->
 	    XML = get_attr("xml", XData, "false"),
 	    Avatar = get_attr("avatar", XData, "false"),
 	    Icon = get_attr("icon", XData, "---"),
-	    iq_set_register_info(From, Host, to_bool(JidUrl), to_bool(RidUrl), to_bool(XML), to_bool(Avatar), Icon, BaseURL, Lang)
+	    iq_set_register_info(From, {Host, to_bool(JidUrl), to_bool(RidUrl), to_bool(XML), to_bool(Avatar), Icon, BaseURL, Lang})
     end.
+
+unregister_webpresence(From, Host, Lang) ->
+    {LUser, LServer, _} = jlib:jid_tolower(From),
+    LUS = {LUser, LServer},
+    mnesia:dirty_delete(webpresence, LUS),
+    send_message_unregistered(From, Host, Lang),
+    {result, []}.
 
 iq_get_vcard() ->
     [{xmlelement, "FN", [],
@@ -637,16 +661,16 @@ process2([], #request{lang = Lang1}) ->
     Desc = [?XC("p", ?T("To publish your presence in this web you need a Jabber account in this Jabber server.")++" "++
 		?T("Login with a Jabber client, open")++" "++?T("Service Discovery")++" "++?T("and register in")++" "++?T("Web Presence")++". "++
 		?T("You will receive a message with further instructions."))],
-    Link_themes = [?AC("themes", ?T("Icon Themes"))],
+    Link_themes = [?AC("themes", ?T("Icon Theme"))],
     Body = [?XC("h1", ?T("Web Presence"))] ++ Desc ++ Link_themes,
     make_xhtml(Title, Body);
 
 process2(["themes"], #request{lang = Lang1}) ->
     Lang = parse_lang(Lang1),
-    Title = [?XC("title", ?T("Web Presence")++" - "++?T("Icon Themes"))],
+    Title = [?XC("title", ?T("Web Presence")++" - "++?T("Icon Theme"))],
     Themes = available_themes(list),
     Icon_themes = themes_to_xhtml(Themes),
-    Body = [?XC("h1", ?T("Icon Themes"))] ++ Icon_themes,
+    Body = [?XC("h1", ?T("Icon Theme"))] ++ Icon_themes,
     make_xhtml(Title, Body);
 
 process2(["image", Theme, Show], _Request) ->
@@ -737,11 +761,11 @@ make_users_table(Records, Lang) ->
 	 [?XE("thead",
 	      [?XE("tr",
 		   [?XCT("td", "User"),
-		    ?XCT("td", "JabberID-URL"),
-		    ?XCT("td", "RandomID-URL"),
+		    ?XCT("td", "Jabber ID"),
+		    ?XCT("td", "Random ID"),
 		    ?XCT("td", "XML"),
 		    ?XCT("td", "Avatar"),
-		    ?XCT("td", "Icon")
+		    ?XCT("td", "Icon theme")
 		   ])]),
 	  ?XE("tbody", TList)])].
 
