@@ -17,7 +17,7 @@
 -export([start_link/2,
          start/2,
          stop/1,
-	 remove_user/2,
+         remove_user/2,
          web_menu_host/2, web_page_host/3,
          process/2]).
 
@@ -299,10 +299,10 @@ iq_get_register_info(_Host, From, Lang) ->
 	      ?T("Web Presence")}]},
 	   {xmlelement, "instructions", [], [{xmlcdata, ?T("This form allows you to register in")++" "++?T("Web Presence")++". "++
 					      ?T("You will receive a message with usage instructions once registered.")}]},
-	   ?XFIELD("fixed", ?T("What types of URL will you use?")++" "++?T("Select one at least"), [], []),
+	   ?XFIELD("fixed", ?T("URL Type")++" "++?T("Select one at least"), [], []),
 	   ?XFIELD("boolean", "Jabber ID", "jidurl", atom_to_list(JidUrl)),
 	   ?XFIELD("boolean", "Random ID", "ridurl", ridurl_out(RidUrl)),
-	   ?XFIELD("fixed", ?T("What types of output do you want to allow?")++" "++?T("Select one at least"), [], []),
+	   ?XFIELD("fixed", ?T("Output Type")++" "++?T("Select one at least"), [], []),
 	   ?XFIELDS("list-single", ?T("Icon Theme"), "icon", 
 		    [{xmlelement, "value", [], [{xmlcdata, Icon}]},
 		     {xmlelement, "option", [{"label", "---"}],
@@ -754,6 +754,7 @@ web_page_host(_, Host,
 		       lang = Lang} = _Request) ->
     Users = get_users(Host),
     Res = [?XCT("h1", "Web Presence"),
+	   css_table(),
 	   ?XCT("h2", "Stats")]
 	++ make_stats_options(Users, Lang)
 	++ make_stats_iconthemes(Users, Lang),
@@ -789,36 +790,29 @@ make_users_table(Records, Lang) ->
 	  ?XE("tbody", TList)])].
 
 make_stats_options(Records, Lang) ->
-    ResN = lists:foldl(
-	     fun([_User, RidUrl, JidUrl, XML, Avatar, Icon], [N, J, R, X, A, I]) ->
-		     J2 = J + case JidUrl of false -> 0; true -> 1 end,
-		     R2 = R + case RidUrl of false -> 0; _ -> 1 end,
-		     X2 = X + case XML of false -> 0; true -> 1 end,
-		     A2 = A + case Avatar of false -> 0; true -> 1 end,
-		     I2 = I + case Icon of "---" -> 0; _ -> 1 end,
-		     [N+1, J2, R2, X2, A2, I2]
-	     end, 
-	     [0, 0, 0, 0, 0, 0],
-	     Records),
-    ResS = [integer_to_list(N) || N <- ResN],
-    Fun = fun(Name, Value) ->
-		  ?XE("tr", [?XCT("td", Name++":"), % the name is translated
-			     ?XAC("td", [{"class", "alignright"}],
-				  Value)])
-	  end,
-    [RegisteredN, JIDN, RIDN, XMLN, AvatarN, IconN] = ResS,
-    [?XCT("h3", "Options"),
-     ?XAE("table", [],
-	  [?XE("tbody",
-	       [
-		Fun("Registered Users", RegisteredN),
-		Fun("Jabber ID", JIDN),
-		Fun("Random ID", RIDN),
-		Fun("XML", XMLN),
-		Fun("Avatar", AvatarN),
-		Fun("Icon Theme", IconN)
-	       ])
-	  ])].
+    [RegUsers, JJ, RR, XX, AA, II] = lists:foldl(
+				       fun([_User, RidUrl, JidUrl, XML, Avatar, Icon], [N, J, R, X, A, I]) ->
+					       J2 = J + case JidUrl of false -> 0; true -> 1 end,
+					       R2 = R + case RidUrl of false -> 0; _ -> 1 end,
+					       X2 = X + case XML of false -> 0; true -> 1 end,
+					       A2 = A + case Avatar of false -> 0; true -> 1 end,
+					       I2 = I + case Icon of "---" -> 0; _ -> 1 end,
+					       [N+1, J2, R2, X2, A2, I2]
+				       end, 
+				       [0, 0, 0, 0, 0, 0],
+				       Records),
+    URLTList = [{"Jabber ID", JJ}, {"Random ID", RR}],
+    OutputTList = [{"XML", XX}, {"Avatar", AA}, {"Icon Theme", II}],
+    [
+     ?C("Registered Users" ++": "++ integer_to_list(RegUsers)),
+     ?XCT("h3", "URL Type"),
+     ?XAE("table", [{"class", "stats"}],
+	  [?XE("tbody", do_stat_table_with(URLTList, RegUsers))]
+	 ),
+     ?XCT("h3", "Output Type"),
+     ?XAE("table", [{"class", "stats"}],
+	  [?XE("tbody", do_stat_table_with(OutputTList, RegUsers))]
+	 )].
 
 make_stats_iconthemes(Records, Lang) ->
     Themes1 = [{T, 0} || T <- available_themes(list)],
@@ -828,16 +822,65 @@ make_stats_iconthemes(Records, Lang) ->
 	     end, 
 	     dict:from_list(Themes1),
 	     Records),
-    Fun = fun(Name, Value) ->
-		  ?XE("tr", [?XC("td", Name++":"), % the theme name must NOT be translated
-			     ?XAC("td", [{"class", "alignright"}],
-				  Value)])
-	  end,
     Themes = lists:keysort(1, dict:to_list(Dict)),
     [?XCT("h3", "Icon Theme"),
-     ?XAE("table", [],
-	  [?XE("tbody", [Fun(TName, integer_to_list(TNumber)) || {TName, TNumber} <- Themes])
-	  ])].
+     ?XAE("table", [{"class", "stats"}],
+	  [?XE("tbody", do_stat_table_with(Themes))]
+	 )].
+
+%% Do table with bars
+do_stat_table_with(Values) ->
+    Ns = [Ni || {_, Ni} <- Values],
+    Total = lists:sum(Ns),
+    do_stat_table_with(Values, Total).
+
+do_stat_table_with(Values, Total) ->
+    lists:map(
+      fun({L, N}) -> 
+	      Perc = case Total of
+			 0 -> "0";
+			 _ -> integer_to_list(trunc(100 * N / Total))
+		     end,
+	      do_table_element(?C(L), io_lib:format("~p", [N]), Perc)
+      end,
+      Values).
+do_table_element(L, [N], Perc) ->
+    ?XE("tr", 
+	[?XE("td", [L]),
+	 ?XAC("td", [{"class", "alignright"}], [N]),
+	 ?XE("td", 
+	     [?XAE("div", 
+		   [{"class", "graph"}], 
+		   [?XAC("div", 
+			 [{"class", "bar"}, {"style", "width: " ++ Perc ++ "%;"}],
+			 []
+			)]
+		  )]
+	    ),
+	 ?XAC("td", [{"class", "alignright"}], [Perc++"%"])
+	]).
+css_table()->
+    ?XAE("style", [{"type", "text/css"}],
+	 [?C(".stats {
+             padding-left: 20px;
+	     padding-top: 10px;
+	    };
+	  .graph {
+	     position: relative;
+	     width: 200px;
+	     border: 1px solid #D47911;
+	     padding: 1px;
+	    }
+	  .graph .bar {
+		    display: block;
+		    position: relative;
+		    background: #FFE3C9;
+		    text-align: center;
+		    color: #333;
+		    height: 1.5em;
+		    line-height: 1.5em;
+		   }
+	  .graph .bar span { position: absolute; left: 1em; }")]).
 
 
 %%%--------------------------------
@@ -845,10 +888,10 @@ make_stats_iconthemes(Records, Lang) ->
 %%%--------------------------------
 
 update_table() ->
-    case catch mnesia:table_info(presence_registered, size) of
-	Size when is_integer(Size) -> catch migrate_data_mod_presence(Size);
-	_ -> ok
-    end.
+		 case catch mnesia:table_info(presence_registered, size) of
+		     Size when is_integer(Size) -> catch migrate_data_mod_presence(Size);
+		     _ -> ok
+		 end.
 
 migrate_data_mod_presence(Size) ->
     Migrate = fun(Old, S) ->

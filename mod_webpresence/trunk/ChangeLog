@@ -1,6 +1,7 @@
 2007-08-28  Badlop  <badlop@ono.com>
 
-	* src/mod_webpresence.erl: Added registration and theme statistics.
+	* src/mod_webpresence.erl: Added registration and theme statistics. Improved statistics: icon theme, and percentages.
+	
 
 2007-08-27  Badlop  <badlop@ono.com>
 
