@@ -29,7 +29,7 @@
 -include("ejabberd_web_admin.hrl").
 -include("ejabberd_http.hrl").
 
--record(webpresence, {us, hashurl = false, jidurl = false, xml = false, icon = "disabled"}).
+-record(webpresence, {us, hashurl = false, jidurl = false, xml = false, avatar = false, icon = "disabled"}).
 -record(state, {host, server_host, access}).
 -record(presence, {resource, show, priority, status}).
 
@@ -263,20 +263,20 @@ to_bool("1") -> true.
 
 get_pr(LUS) ->
     case catch mnesia:dirty_read(webpresence, LUS) of
-	[#webpresence{jidurl = J, hashurl = H, xml = X, icon = I}] ->
-	    {J, H, X, I, true};
+	[#webpresence{jidurl = J, hashurl = H, xml = X, avatar = A, icon = I}] ->
+	    {J, H, X, A, I, true};
 	_ ->
-	    {true, false, false, "disabled", false}
+	    {true, false, false, false, "disabled", false}
     end.
 
 get_pr_hash(LUS) ->
-    {_, H, _, _, _} = get_pr(LUS),
+    {_, H, _, _, _, _} = get_pr(LUS),
     H.
 
 iq_get_register_info(Host, From, Lang) ->
     {LUser, LServer, _} = jlib:jid_tolower(From),
     LUS = {LUser, LServer},
-    {JidUrl, HashUrl, XML, Icon, Registered} = get_pr(LUS),
+    {JidUrl, HashUrl, XML, Avatar, Icon, Registered} = get_pr(LUS),
     RegisteredXML = case Registered of 
 			true -> [{xmlelement, "registered", [], []}];
 			false -> []
@@ -304,10 +304,11 @@ iq_get_register_info(Host, From, Lang) ->
 		      [{xmlelement, "value", [], [{xmlcdata, "disabled"}]}]}             
 		    ] ++ available_themes(xdata)
 		   ),
+	   ?XFIELD("boolean", "Avatar", "avatar", atom_to_list(Avatar)),
 	   ?XFIELD("boolean", "Raw XML", "xml", atom_to_list(XML))]}].
 
 %% TODO: Check if remote users are allowed to reach here: they should not be allowed
-iq_set_register_info(From, Host, JidUrl, HashUrl, XML, Icon, _Lang) ->
+iq_set_register_info(From, Host, JidUrl, HashUrl, XML, Avatar, Icon, _Lang) ->
     {LUser, LServer, _} = jlib:jid_tolower(From),
     LUS = {LUser, LServer},
     HashUrl2 = get_hashurl_final_value(HashUrl, LUS),
@@ -317,6 +318,7 @@ iq_set_register_info(From, Host, JidUrl, HashUrl, XML, Icon, _Lang) ->
 			       jidurl = JidUrl,
 			       hashurl = HashUrl2,
 			       xml = XML,
+			       avatar = Avatar,
 			       icon = Icon})
 	end,
     case mnesia:transaction(F) of
@@ -349,7 +351,7 @@ send_hash_message(Hash, To, Host) ->
 	{xmlelement, "body", [], [{xmlcdata, "You enabled Hash URL in Web Presence.\r\n"
 				   "Your Hash value is: "++Hash++"\r\n"
 				   "The URL that you can use looks similar to: "
-				   "http://example.org:5280/presence/"++Hash++"/image/"}]}]}).
+				   "http://example.org:5280/presence/hash/"++Hash++"/image/"}]}]}).
 
 get_attr(Attr, XData, Default) ->
     case lists:keysearch(Attr, 1, XData) of
@@ -364,7 +366,7 @@ process_iq_register_set(From, SubEl, Host, Lang) ->
 		     {'EXIT', _} -> {error, ?ERR_BAD_REQUEST};
 		     R -> R
 		 end;
-	_ -> iq_set_register_info(From, Host, true, false, false, "disabled", Lang)
+	_ -> iq_set_register_info(From, Host, true, false, false, false, "disabled", Lang)
     end.
 
 process_iq_register_set2(From, Els, Host, Lang) ->
@@ -378,8 +380,9 @@ process_iq_register_set2(From, Els, Host, Lang) ->
 	    JidUrl = get_attr("jidurl", XData, "false"),
 	    HashUrl = get_attr("hashurl", XData, "false"),
 	    XML = get_attr("xml", XData, "false"),
+	    Avatar = get_attr("avatar", XData, "false"),
 	    Icon = get_attr("icon", XData, "disabled"),
-	    iq_set_register_info(From, Host, to_bool(JidUrl), to_bool(HashUrl), to_bool(XML), Icon, Lang)
+	    iq_set_register_info(From, Host, to_bool(JidUrl), to_bool(HashUrl), to_bool(XML), to_bool(Avatar), Icon, Lang)
     end.
 
 iq_get_vcard(Lang) ->
@@ -486,10 +489,13 @@ available_themes(xdata) ->
                [{xmlelement, "value", [], [{xmlcdata, Theme}]}]}
       end, available_themes(list)).
 
-show_presence({xml, WP, LUser, LServer}) ->
-    true = WP#webpresence.xml,
-    Presence_xml = xml:element_to_string(get_presences({xml, LUser, LServer})),
-    {200, [{"Content-Type", "text/xml; charset=utf-8"}], ?XML_HEADER ++ Presence_xml};
+show_presence({image_no_check, LUser, LServer, Theme}) ->
+    Dir = get_pixmaps_directory(),
+    Image = get_presences({show, LUser, LServer}) ++ ".{gif,png,jpg}",
+    [First | _Rest] = filelib:wildcard(filename:join([Dir, Theme, Image])),
+    Mime = string:substr(First, string:len(First) - 2, 3),
+    {ok, Content} = file:read_file(First),
+    {200, [{"Content-Type", "image/" ++ Mime}], binary_to_list(Content)};
 
 show_presence({image, WP, LUser, LServer}) ->
     Icon = WP#webpresence.icon,
@@ -501,21 +507,31 @@ show_presence({image, WP, LUser, LServer, Theme}) ->
     "disabled" =/= Icon,
     show_presence({image_no_check, LUser, LServer, Theme});
 
+show_presence({xml, WP, LUser, LServer}) ->
+    true = WP#webpresence.xml,
+    Presence_xml = xml:element_to_string(get_presences({xml, LUser, LServer})),
+    {200, [{"Content-Type", "text/xml; charset=utf-8"}], ?XML_HEADER ++ Presence_xml};
+
+show_presence({avatar, WP, LUser, LServer}) ->
+    true = WP#webpresence.avatar,
+    [{_, Module, Function, _Opts}] = ets:lookup(sm_iqtable, {?NS_VCARD, LServer}),
+    JID = jlib:make_jid(LUser, LServer, ""),
+    IQ = #iq{type = get, xmlns = ?NS_VCARD},
+    IQr = Module:Function(JID, JID, IQ),
+    [VCard] = IQr#iq.sub_el,
+    Mime = xml:get_path_s(VCard, [{elem, "PHOTO"}, {elem, "TYPE"}, cdata]),
+    BinVal = xml:get_path_s(VCard, [{elem, "PHOTO"}, {elem, "BINVAL"}, cdata]),
+    Photo = jlib:decode_base64(BinVal),
+    {200, [{"Content-Type", Mime}], Photo};
+
 show_presence({image_example, Theme, Show}) ->
     Dir = get_pixmaps_directory(),
     Image = Show ++ ".{gif,png,jpg}",
     [First | _Rest] = filelib:wildcard(filename:join([Dir, Theme, Image])),
     Mime = string:substr(First, string:len(First) - 2, 3),
     {ok, Content} = file:read_file(First),
-    {200, [{"Content-Type", "image/" ++ Mime}], binary_to_list(Content)};
-
-show_presence({image_no_check, LUser, LServer, Theme}) ->
-    Dir = get_pixmaps_directory(),
-    Image = get_presences({show, LUser, LServer}) ++ ".{gif,png,jpg}",
-    [First | _Rest] = filelib:wildcard(filename:join([Dir, Theme, Image])),
-    Mime = string:substr(First, string:len(First) - 2, 3),
-    {ok, Content} = file:read_file(First),
     {200, [{"Content-Type", "image/" ++ Mime}], binary_to_list(Content)}.
+
 
 make_xhtml(Els) -> make_xhtml([], Els).
 make_xhtml(Title, Els) ->
@@ -589,12 +605,14 @@ serve_web_presence(TypeURL, User, Server, Tail) ->
 	hash -> false =/= WP#webpresence.hashurl
     end,
     Args = case Tail of
-	       ["xml"] -> 
-		   {xml, WP, LUser, LServer};
 	       ["image"] -> 
 		   {image, WP, LUser, LServer};
 	       ["image", Theme] -> 
-		   {image, WP, LUser, LServer, Theme}
+		   {image, WP, LUser, LServer, Theme};
+	       ["xml"] -> 
+		   {xml, WP, LUser, LServer};
+	       ["avatar"] -> 
+		   {avatar, WP, LUser, LServer}
 	   end,
     show_presence(Args).
 
@@ -630,12 +648,13 @@ get_users(Host) ->
 
 make_users_table(Records, Lang) ->
     TList = lists:map(
-	      fun([User, HashUrl, JIDUrl, XML, Icon]) ->
+	      fun([User, HashUrl, JIDUrl, XML, Avatar, Icon]) ->
 		      ?XE("tr",
 			  [?XE("td", [?AC("../user/"++User++"/", User)]),
 			   ?XC("td", atom_to_list(JIDUrl)),
 			   ?XC("td", hashurl_out(HashUrl)),
 			   ?XC("td", atom_to_list(XML)),
+			   ?XC("td", atom_to_list(Avatar)),
 			   ?XC("td", Icon)])
 	      end, Records),
     [?XE("table",
@@ -645,6 +664,7 @@ make_users_table(Records, Lang) ->
 		    ?XCT("td", "JID"),
 		    ?XCT("td", "Hash"),
 		    ?XCT("td", "XML"),
+		    ?XCT("td", "Avatar"),
 		    ?XCT("td", "Icon")
 		   ])]),
 	  ?XE("tbody", TList)])].
@@ -667,6 +687,7 @@ migrate_data_mod_presence(Size) ->
 					 hashurl = false,
 					 jidurl = true,
 					 xml = list_to_atom(XML),
+					 avatar = false,
 					 icon = Icon},
 		      mnesia:write(New),
 		      mnesia:delete_object(Old),

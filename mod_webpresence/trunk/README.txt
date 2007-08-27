@@ -76,6 +76,7 @@ There are several switches for web-presence:
  * Hash: allow URI using Hash.
  * XML: allow XML output.
  * Icon: allow icon output.
+ * Avatar: allow Avatar output.
 
 Login to an account on your ejabberd server using a powerful Jabber client.
 Open the Service Discovery on your Jabber client, and you should see
@@ -91,11 +92,17 @@ on a web browser open the corresponding URI:
 	http://example.org:5280/presence/jid/<user>/<server>/image/
  * for image output with theme:
 	http://example.org:5280/presence/jid/<user>/<server>/image/<theme>/
+ * for avatar output:
+	http://example.org:5280/presence/jid/<user>/<server>/avatar/ 
 
 If you don't want to reveal your Jabber ID, you can enable Hash URI.
-After the registration the user gets a message with his Hash.
+After the registration the user gets a message with his a pseudo-random Hash.
 The URI can be formed this way:
   http://example.org:5280/presence/hash/<hash>/image/
+If the user forgets his Hash, he can get another message by just registering again,
+there is no need to change the values.
+If the user wants to get a new Hash, he must disable Hash in the registration form,
+and later enable Hash again. A new hash will be generated for him.
 
 
 	EXAMPLE PHP CODE
