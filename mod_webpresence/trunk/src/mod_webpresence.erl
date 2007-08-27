@@ -864,7 +864,7 @@ css_table()->
 	 [?C(".stats {
              padding-left: 20px;
 	     padding-top: 10px;
-	    };
+	    }
 	  .graph {
 	     position: relative;
 	     width: 200px;
