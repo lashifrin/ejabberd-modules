@@ -1,3 +1,7 @@
+2007-08-28  Badlop  <badlop@ono.com>
+
+	* src/mod_webpresence.erl: Added registration and theme statistics.
+
 2007-08-27  Badlop  <badlop@ono.com>
 
 	* README.txt: Updated description of configurable options.

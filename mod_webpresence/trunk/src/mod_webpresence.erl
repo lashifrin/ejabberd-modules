@@ -303,7 +303,7 @@ iq_get_register_info(_Host, From, Lang) ->
 	   ?XFIELD("boolean", "Jabber ID", "jidurl", atom_to_list(JidUrl)),
 	   ?XFIELD("boolean", "Random ID", "ridurl", ridurl_out(RidUrl)),
 	   ?XFIELD("fixed", ?T("What types of output do you want to allow?")++" "++?T("Select one at least"), [], []),
-	   ?XFIELDS("list-single", ?T("Icon theme"), "icon", 
+	   ?XFIELDS("list-single", ?T("Icon Theme"), "icon", 
 		    [{xmlelement, "value", [], [{xmlcdata, Icon}]},
 		     {xmlelement, "option", [{"label", "---"}],
 		      [{xmlelement, "value", [], [{xmlcdata, "---"}]}]}             
@@ -365,8 +365,8 @@ send_message_registered(WP, To, Host, BaseURL, Lang) ->
 		 I when is_list(I) -> 
 		     "  image\n"
 			 "  image/res/<"++?T("Resource")++">\n"
-			 "  image/<"++?T("Icon theme")++">\n"
-			 "  image/<"++?T("Icon theme")++">/res/<"++?T("Resource")++">\n"
+			 "  image/<"++?T("Icon Theme")++">\n"
+			 "  image/<"++?T("Icon Theme")++">/res/<"++?T("Resource")++">\n"
 	     end,
     Oxml = case WP#webpresence.xml of
 	       false -> "";
@@ -735,7 +735,9 @@ web_page_host(_, _Host,
 	      #request{path = ["webpresence"],
 		       lang = Lang} = _Request) ->
     Res = [?XCT("h1", "Web Presence"),
-	   ?ACT("users", "Registered Users")],
+	   ?XE("ul", [
+		      ?LI([?ACT("stats", "Statistics")]),
+		      ?LI([?ACT("users", "Registered Users")])])],
     {stop, Res};
 
 web_page_host(_, Host, 
@@ -745,6 +747,16 @@ web_page_host(_, Host,
     Table = make_users_table(Users, Lang),
     Res = [?XCT("h1", "Web Presence"),
 	   ?XCT("h2", "Registered Users")] ++ Table,
+    {stop, Res};
+
+web_page_host(_, Host, 
+	      #request{path = ["webpresence", "stats"],
+		       lang = Lang} = _Request) ->
+    Users = get_users(Host),
+    Res = [?XCT("h1", "Web Presence"),
+	   ?XCT("h2", "Stats")]
+	++ make_stats_options(Users, Lang)
+	++ make_stats_iconthemes(Users, Lang),
     {stop, Res};
 
 web_page_host(Acc, _, _) -> Acc. 
@@ -772,9 +784,60 @@ make_users_table(Records, Lang) ->
 		    ?XCT("td", "Random ID"),
 		    ?XCT("td", "XML"),
 		    ?XCT("td", "Avatar"),
-		    ?XCT("td", "Icon theme")
+		    ?XCT("td", "Icon Theme")
 		   ])]),
 	  ?XE("tbody", TList)])].
+
+make_stats_options(Records, Lang) ->
+    ResN = lists:foldl(
+	     fun([_User, RidUrl, JidUrl, XML, Avatar, Icon], [N, J, R, X, A, I]) ->
+		     J2 = J + case JidUrl of false -> 0; true -> 1 end,
+		     R2 = R + case RidUrl of false -> 0; _ -> 1 end,
+		     X2 = X + case XML of false -> 0; true -> 1 end,
+		     A2 = A + case Avatar of false -> 0; true -> 1 end,
+		     I2 = I + case Icon of "---" -> 0; _ -> 1 end,
+		     [N+1, J2, R2, X2, A2, I2]
+	     end, 
+	     [0, 0, 0, 0, 0, 0],
+	     Records),
+    ResS = [integer_to_list(N) || N <- ResN],
+    Fun = fun(Name, Value) ->
+		  ?XE("tr", [?XCT("td", Name++":"), % the name is translated
+			     ?XAC("td", [{"class", "alignright"}],
+				  Value)])
+	  end,
+    [RegisteredN, JIDN, RIDN, XMLN, AvatarN, IconN] = ResS,
+    [?XCT("h3", "Options"),
+     ?XAE("table", [],
+	  [?XE("tbody",
+	       [
+		Fun("Registered Users", RegisteredN),
+		Fun("Jabber ID", JIDN),
+		Fun("Random ID", RIDN),
+		Fun("XML", XMLN),
+		Fun("Avatar", AvatarN),
+		Fun("Icon Theme", IconN)
+	       ])
+	  ])].
+
+make_stats_iconthemes(Records, Lang) ->
+    Themes1 = [{T, 0} || T <- available_themes(list)],
+    Dict = lists:foldl(
+	     fun([_, _, _, _, _, Icon], D) ->
+		     dict:update_counter(Icon, 1, D)
+	     end, 
+	     dict:from_list(Themes1),
+	     Records),
+    Fun = fun(Name, Value) ->
+		  ?XE("tr", [?XC("td", Name++":"), % the theme name must NOT be translated
+			     ?XAC("td", [{"class", "alignright"}],
+				  Value)])
+	  end,
+    Themes = lists:keysort(1, dict:to_list(Dict)),
+    [?XCT("h3", "Icon Theme"),
+     ?XAE("table", [],
+	  [?XE("tbody", [Fun(TName, integer_to_list(TNumber)) || {TName, TNumber} <- Themes])
+	  ])].
 
 
 %%%--------------------------------

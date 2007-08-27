@@ -188,15 +188,15 @@ and later enable Random ID again. A new Random ID will be generated for him.
 
 Tobias Markmann wrote this PHP script that generates HTML code.
 This example assumes that the URI of the presence is
-  http://example.org:5280/presence/tom/example.org
+  http://example.org:5280/presence/jid/tom/example.org
 
 <?php
 	$doc = new DOMDocument();
-	$doc->load('http://example.org:5280/presence/tom/example.org/xml');
+	$doc->load('http://example.org:5280/presence/jid/tom/example.org/xml');
 	$presences = $doc->getElementsByTagName("presence");
 	foreach ($presences as $presence) {
 		echo "<p style='bottom-margin: 1px;'>";
-		echo "<img src='http://example.org:5280/presence/tom/example.org/image' />";
+		echo "<img src='http://example.org:5280/presence/jid/tom/example.org/image' />";
 		echo "<a href='xmpp:".$presence->getAttribute('user').'@'.$presence->getAttribute('server')."/";
 		$resources = $presence->getElementsByTagName("resource");
 		foreach ($resources as $resource) {
