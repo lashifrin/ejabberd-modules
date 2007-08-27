@@ -2,7 +2,7 @@
 
 	* README.txt: Updated description of configurable options.
 	
-	* src/mod_webpresence.erl: Enforce Hash and JID options in a web request. The Hash is now a pseudo random integer. Added support for avatar output. Added support to show image of a specific resource. Improved Form, Message and Web. Added module options Port and Path. Improved message with instructions. Replaced the misleading term 'Hash' with 'Random ID'.
+	* src/mod_webpresence.erl: Enforce Hash and JID options in a web request. The Hash is now a pseudo random integer. Added support for avatar output. Added support to show image of a specific resource. Improved Form, Message and Web. Added module options Port and Path. Improved message with instructions. Replaced the misleading term 'Hash' with 'Random ID'. Only show the JID in XML output if JabberID is used in the URI.
 
 2007-08-26  Badlop  <badlop@ono.com>
 

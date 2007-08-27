@@ -26,8 +26,8 @@
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
--include("web/ejabberd_web_admin.hrl").
--include("web/ejabberd_http.hrl").
+-include("ejabberd_web_admin.hrl").
+-include("ejabberd_http.hrl").
 
 -record(webpresence, {us, ridurl = false, jidurl = false, xml = false, avatar = false, icon = "---"}).
 -record(state, {host, server_host, base_url, access}).
@@ -488,9 +488,12 @@ get_presences({sorted, LUser, LServer}) ->
               end
       end,
       get_presences({bare, LUser, LServer}));
-get_presences({xml, LUser, LServer}) ->
+get_presences({xml, LUser, LServer, Show_us}) ->
     {xmlelement, "presence",
-     [{"user", LUser}, {"server", LServer}],
+     case Show_us of 
+	 true -> [{"user", LUser}, {"server", LServer}];
+	 false -> []
+     end,
      lists:map(
        fun(Presence) ->
                {xmlelement, "resource",
@@ -564,9 +567,9 @@ show_presence({image_res, WP, LUser, LServer, Theme, LResource}) ->
     Pr = get_presences({show, LUser, LServer, LResource}),
     show_presence({image_no_check, Theme, Pr});
 
-show_presence({xml, WP, LUser, LServer}) ->
+show_presence({xml, WP, LUser, LServer, Show_us}) ->
     true = WP#webpresence.xml,
-    Presence_xml = xml:element_to_string(get_presences({xml, LUser, LServer})),
+    Presence_xml = xml:element_to_string(get_presences({xml, LUser, LServer, Show_us})),
     {200, [{"Content-Type", "text/xml; charset=utf-8"}], ?XML_HEADER ++ Presence_xml};
 
 show_presence({avatar, WP, LUser, LServer}) ->
@@ -669,7 +672,7 @@ serve_web_presence(TypeURL, User, Server, Tail) ->
     LUser = jlib:nodeprep(User),
     WP = get_wp(LUser, LServer),
     case TypeURL of
-	jid -> true = WP#webpresence.jidurl;
+	jid -> true =:= WP#webpresence.jidurl;
 	rid -> false =/= WP#webpresence.ridurl
     end,
     Args = case Tail of
@@ -682,7 +685,8 @@ serve_web_presence(TypeURL, User, Server, Tail) ->
 	       ["image", Theme, "res", Resource] -> 
 		   {image_res, WP, LUser, LServer, Theme, Resource};
 	       ["xml"] -> 
-		   {xml, WP, LUser, LServer};
+		   Show_us = (TypeURL == jid),
+		   {xml, WP, LUser, LServer, Show_us};
 	       ["avatar"] -> 
 		   {avatar, WP, LUser, LServer}
 	   end,
