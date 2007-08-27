@@ -459,6 +459,10 @@ get_presences({xml, LUser, LServer}) ->
                 [{xmlcdata, Presence#presence.status}]}
        end,
        get_presences({sorted, LUser, LServer}))};
+get_presences({show, LUser, LServer, LResource}) ->
+    Rs = get_presences({sorted, LUser, LServer}),
+    {value, R} = lists:keysearch(LResource, 2, Rs),
+    R#presence.show;
 get_presences({show, LUser, LServer}) ->
     case get_presences({sorted, LUser, LServer}) of
         [Highest | _Rest] ->
@@ -489,9 +493,9 @@ available_themes(xdata) ->
                [{xmlelement, "value", [], [{xmlcdata, Theme}]}]}
       end, available_themes(list)).
 
-show_presence({image_no_check, LUser, LServer, Theme}) ->
+show_presence({image_no_check, Theme, Pr}) ->
     Dir = get_pixmaps_directory(),
-    Image = get_presences({show, LUser, LServer}) ++ ".{gif,png,jpg}",
+    Image = Pr ++ ".{gif,png,jpg}",
     [First | _Rest] = filelib:wildcard(filename:join([Dir, Theme, Image])),
     Mime = string:substr(First, string:len(First) - 2, 3),
     {ok, Content} = file:read_file(First),
@@ -500,12 +504,24 @@ show_presence({image_no_check, LUser, LServer, Theme}) ->
 show_presence({image, WP, LUser, LServer}) ->
     Icon = WP#webpresence.icon,
     "disabled" =/= Icon,
-    show_presence({image_no_check, LUser, LServer, Icon});
+    Pr = get_presences({show, LUser, LServer}),
+    show_presence({image_no_check, Icon, Pr});
 
 show_presence({image, WP, LUser, LServer, Theme}) ->
+    "disabled" =/= WP#webpresence.icon,
+    Pr = get_presences({show, LUser, LServer}),
+    show_presence({image_no_check, Theme, Pr});
+
+show_presence({image_res, WP, LUser, LServer, LResource}) ->
     Icon = WP#webpresence.icon,
     "disabled" =/= Icon,
-    show_presence({image_no_check, LUser, LServer, Theme});
+    Pr = get_presences({show, LUser, LServer, LResource}),
+    show_presence({image_no_check, Icon, Pr});
+
+show_presence({image_res, WP, LUser, LServer, Theme, LResource}) ->
+    "disabled" =/= WP#webpresence.icon,
+    Pr = get_presences({show, LUser, LServer, LResource}),
+    show_presence({image_no_check, Theme, Pr});
 
 show_presence({xml, WP, LUser, LServer}) ->
     true = WP#webpresence.xml,
@@ -609,6 +625,10 @@ serve_web_presence(TypeURL, User, Server, Tail) ->
 		   {image, WP, LUser, LServer};
 	       ["image", Theme] -> 
 		   {image, WP, LUser, LServer, Theme};
+	       ["image", "res", Resource] -> 
+		   {image_res, WP, LUser, LServer, Resource};
+	       ["image", Theme, "res", Resource] -> 
+		   {image_res, WP, LUser, LServer, Theme, Resource};
 	       ["xml"] -> 
 		   {xml, WP, LUser, LServer};
 	       ["avatar"] -> 
@@ -643,7 +663,7 @@ web_page_host(_, Host,
 web_page_host(Acc, _, _) -> Acc. 
 
 get_users(Host) ->
-    Select = [{{webpresence, {'$1', Host}, '$2', '$3', '$4', '$5'}, [], ['$$']}],
+    Select = [{{webpresence, {'$1', Host}, '$2', '$3', '$4', '$5', '$6'}, [], ['$$']}],
     mnesia:dirty_select(webpresence, Select).
 
 make_users_table(Records, Lang) ->

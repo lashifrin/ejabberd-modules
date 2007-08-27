@@ -17,8 +17,9 @@ This service is similar to other web-presence/status like
  * Edgar: http://edgar.netflint.net/
 
 Allowed output methods are
- * icons (various themes available): http://www.goryachev.org/jabber-status/image/
- * raw XML: http://www.goryachev.org/jabber-status/xml/
+ * Icons (various themes available): http://www.goryachev.org/jabber-status/image/
+ * Raw XML: http://www.goryachev.org/jabber-status/xml/
+ * Avatar, stored in the user's vCard
 
 No web server, database, additional libraries or programs are required.
 
@@ -94,6 +95,12 @@ on a web browser open the corresponding URI:
 	http://example.org:5280/presence/jid/<user>/<server>/image/<theme>/
  * for avatar output:
 	http://example.org:5280/presence/jid/<user>/<server>/avatar/ 
+
+If you want to show the image output of a specific resource, use those URIs:
+ * for image output:
+	http://example.org:5280/presence/jid/<user>/<server>/image/res/<resource>
+ * for image output with theme:
+	http://example.org:5280/presence/jid/<user>/<server>/image/<theme>/res/<resource>
 
 If you don't want to reveal your Jabber ID, you can enable Hash URI.
 After the registration the user gets a message with his a pseudo-random Hash.
