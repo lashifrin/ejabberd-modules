@@ -26,10 +26,10 @@
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
--include("ejabberd_web_admin.hrl").
--include("ejabberd_http.hrl").
+-include("web/ejabberd_web_admin.hrl").
+-include("web/ejabberd_http.hrl").
 
--record(webpresence, {us, hashurl = false, jidurl = false, xml = false, avatar = false, icon = "disabled"}).
+-record(webpresence, {us, hashurl = false, jidurl = false, xml = false, avatar = false, icon = "---"}).
 -record(state, {host, server_host, access}).
 -record(presence, {resource, show, priority, status}).
 
@@ -191,8 +191,8 @@ do_route1(Host, From, To, Packet) ->
     end.
 
 do_route1_iq(_, From, To, _,
-	     #iq{type = get, xmlns = ?NS_DISCO_INFO} = IQ) ->
-    SubEl2 = {xmlelement, "query", [{"xmlns", ?NS_DISCO_INFO}], iq_disco_info()},
+	     #iq{type = get, xmlns = ?NS_DISCO_INFO, lang = Lang} = IQ) ->
+    SubEl2 = {xmlelement, "query", [{"xmlns", ?NS_DISCO_INFO}], iq_disco_info(Lang)},
     Res = IQ#iq{type = result, sub_el = [SubEl2]},
     ejabberd_router:route(To, From, jlib:iq_to_xml(Res));
 
@@ -219,8 +219,8 @@ do_route1_iq(Host, From, To, Packet,
     end;
 
 do_route1_iq(_Host, From, To, _,
-	     #iq{type = get, xmlns = ?NS_VCARD = XMLNS, lang = Lang} = IQ) ->
-    SubEl2 = {xmlelement, "vCard", [{"xmlns", XMLNS}], iq_get_vcard(Lang)},
+	     #iq{type = get, xmlns = ?NS_VCARD = XMLNS} = IQ) ->
+    SubEl2 = {xmlelement, "vCard", [{"xmlns", XMLNS}], iq_get_vcard()},
     Res = IQ#iq{type = result, sub_el = [SubEl2]},
     ejabberd_router:route(To, From, jlib:iq_to_xml(Res));
 
@@ -231,17 +231,17 @@ do_route1_iq(_Host, From, To, Packet, #iq{}) ->
 do_route1_iq(_, _, _, _, _) ->
     ok.
 
-iq_disco_info() ->
+iq_disco_info(Lang) ->
     [{xmlelement, "identity",
       [{"category", "presence"},
        {"type", "text"},
-       {"name", "Web Presence"}], []},
+       {"name", ?T("Web Presence")}], []},
      {xmlelement, "feature", [{"var", ?NS_REGISTER}], []},
      {xmlelement, "feature", [{"var", ?NS_VCARD}], []}].
 
 -define(XFIELDS(Type, Label, Var, Vals),
         {xmlelement, "field", [{"type", Type},
-                               {"label", translate:translate(Lang, Label)},
+                               {"label", ?T(Label)},
                                {"var", Var}],
          Vals}).
 
@@ -266,14 +266,14 @@ get_pr(LUS) ->
 	[#webpresence{jidurl = J, hashurl = H, xml = X, avatar = A, icon = I}] ->
 	    {J, H, X, A, I, true};
 	_ ->
-	    {true, false, false, false, "disabled", false}
+	    {true, false, false, false, "---", false}
     end.
 
 get_pr_hash(LUS) ->
     {_, H, _, _, _, _} = get_pr(LUS),
     H.
 
-iq_get_register_info(Host, From, Lang) ->
+iq_get_register_info(_Host, From, Lang) ->
     {LUser, LServer, _} = jlib:jid_tolower(From),
     LUS = {LUser, LServer},
     {JidUrl, HashUrl, XML, Avatar, Icon, Registered} = get_pr(LUS),
@@ -283,47 +283,42 @@ iq_get_register_info(Host, From, Lang) ->
 		    end,
     RegisteredXML ++
 	[{xmlelement, "instructions", [],
-	  [{xmlcdata,
-	    translate:translate(
-	      Lang, "You need an x:data capable client to register presence")}]},
+	  [{xmlcdata, ?T("You need an x:data capable client to register presence")}]},
 	 {xmlelement, "x",
 	  [{"xmlns", ?NS_XDATA}],
 	  [{xmlelement, "title", [],
 	    [{xmlcdata,
-	      translate:translate(
-		Lang, "Presence registration at ") ++ Host}]},
-	   {xmlelement, "instructions", [],
-	    [{xmlcdata,
-	      translate:translate(
-		Lang, "What presence features do you want to register?")}]},
-	   ?XFIELD("boolean", "Allow JID URL", "jidurl", atom_to_list(JidUrl)),
-	   ?XFIELD("boolean", "Allow Hash URL", "hashurl", hashurl_out(HashUrl)),
-	   ?XFIELDS("list-single", "Icon theme", "icon", 
+	      ?T("Web Presence")}]},
+	   {xmlelement, "instructions", [], [{xmlcdata, ?T("This form allows you to register in")++" "++?T("Web Presence")++". "++
+					      ?T("You will receive a message with usage instructions once registered.")}]},
+	   ?XFIELD("fixed", ?T("What types of URL will you use?")++" "++?T("Select one at least"), [], []),
+	   ?XFIELD("boolean", "JID", "jidurl", atom_to_list(JidUrl)),
+	   ?XFIELD("boolean", "Hash", "hashurl", hashurl_out(HashUrl)),
+	   ?XFIELD("fixed", ?T("What types of output do you want to allow?")++" "++?T("Select one at least"), [], []),
+	   ?XFIELDS("list-single", ?T("Icon theme"), "icon", 
 		    [{xmlelement, "value", [], [{xmlcdata, Icon}]},
-		     {xmlelement, "option", [{"label", "disabled"}],
-		      [{xmlelement, "value", [], [{xmlcdata, "disabled"}]}]}             
+		     {xmlelement, "option", [{"label", "---"}],
+		      [{xmlelement, "value", [], [{xmlcdata, "---"}]}]}             
 		    ] ++ available_themes(xdata)
 		   ),
-	   ?XFIELD("boolean", "Avatar", "avatar", atom_to_list(Avatar)),
-	   ?XFIELD("boolean", "Raw XML", "xml", atom_to_list(XML))]}].
+	   ?XFIELD("boolean", ?T("Avatar"), "avatar", atom_to_list(Avatar)),
+	   ?XFIELD("boolean", ?T("XML"), "xml", atom_to_list(XML))]}].
 
 %% TODO: Check if remote users are allowed to reach here: they should not be allowed
-iq_set_register_info(From, Host, JidUrl, HashUrl, XML, Avatar, Icon, _Lang) ->
+iq_set_register_info(From, Host, JidUrl, HashUrl, XML, Avatar, Icon, Lang) ->
     {LUser, LServer, _} = jlib:jid_tolower(From),
     LUS = {LUser, LServer},
     HashUrl2 = get_hashurl_final_value(HashUrl, LUS),
-    F = fun() ->
-		mnesia:write(
-		  #webpresence{us = LUS,
-			       jidurl = JidUrl,
-			       hashurl = HashUrl2,
-			       xml = XML,
-			       avatar = Avatar,
-			       icon = Icon})
-	end,
+    WP = #webpresence{us = LUS,
+		      jidurl = JidUrl,
+		      hashurl = HashUrl2,
+		      xml = XML,
+		      avatar = Avatar,
+		      icon = Icon},
+    F = fun() -> mnesia:write(WP) end,
     case mnesia:transaction(F) of
 	{atomic, ok} ->
-	    send_hash_message(HashUrl2, From, Host),
+	    send_message(WP, From, Host, Lang),
 	    {result, []};
 	_ ->
 	    {error, ?ERR_INTERNAL_SERVER_ERROR}
@@ -341,17 +336,67 @@ get_hashurl_final_value(true, {U, S} = LUS) ->
 	    H
     end.
 
-send_hash_message(false, _, _) -> ok;
-send_hash_message(Hash, To, Host) ->
+send_message(WP, To, Host, Lang) ->
+    BaseURL="http://atenea:5280/presence/", %+++++
+
+    {User, Server} = WP#webpresence.us,
+    JID = jlib:make_jid(User, Server, ""),
+    JIDS = jlib:jid_to_string(JID),
+
+    {USERID_jid, Example_jid} = case WP#webpresence.jidurl of
+				    false -> {"", ""};
+				    true -> 
+					JIDT = "jid/"++User++"/"++Server,
+					{"  "++JIDT++"\n",
+					 "  "++BaseURL++JIDT++"/image/\n"
+					 "  "++BaseURL++JIDT++"/image/jsf-jabber-text/\n"}
+				end,
+
+    {USERID_hash, Example_hash} = case WP#webpresence.hashurl of
+				      false -> {"", ""};
+				      Hash when is_list(Hash) -> 
+					  HashT = "hash/"++Hash,
+					  {"  "++HashT++"\n",
+					   "  "++BaseURL++HashT++"/image/res/Working/\n"
+					   "  "++BaseURL++HashT++"/xml/\n"}
+				  end,
+
+    OUTPUT_avatar = case WP#webpresence.avatar of
+			false -> "";
+			true -> "  avatar\n"
+		    end,
+
+    OUTPUT_image = case WP#webpresence.icon of
+		       "---" -> "";
+		       I when is_list(I) -> 
+			   "  image\n"
+			       "  image/res/<"++?T("Resource")++">\n"
+			       "  image/<"++?T("Icon theme")++">\n"
+			       "  image/<"++?T("Icon theme")++">/res/<"++?T("Resource")++">\n"
+		   end,
+
+    OUTPUT_xml = case WP#webpresence.xml of
+		     false -> "";
+		     true -> "  xml\n"
+		 end,
+
+    Body = "You have registered the Jabber ID "++JIDS++" in "++?T("Web Presence")++".\n"
+	"\n"
+	"You can use URLs like:\n"
+	"  "++BaseURL++"USERID/OUTPUT/\n"
+	"\n"
+	"USERID:\n"++USERID_jid++USERID_hash++"\n"
+	"OUTPUT:\n"++OUTPUT_avatar++OUTPUT_xml++OUTPUT_image++"\n"
+	"Examples:\n"++Example_jid++Example_hash++"\n"
+	"If you forget your Hash, register again to receive this message.\n"
+	"To get a new Hash, disable the option and enable it again. A new Hash will be generated for you.\n",
+
     ejabberd_router:route(
       jlib:make_jid("", Host, ""),
       To,
       {xmlelement, "message", [{"type", "headline"}],
-       [{xmlelement, "subject", [], [{xmlcdata, "Hash for your Web Presence"}]},
-	{xmlelement, "body", [], [{xmlcdata, "You enabled Hash URL in Web Presence.\r\n"
-				   "Your Hash value is: "++Hash++"\r\n"
-				   "The URL that you can use looks similar to: "
-				   "http://example.org:5280/presence/hash/"++Hash++"/image/"}]}]}).
+       [{xmlelement, "subject", [], [{xmlcdata, ?T("Web Presence")}]},
+	{xmlelement, "body", [], [{xmlcdata, Body}]}]}).
 
 get_attr(Attr, XData, Default) ->
     case lists:keysearch(Attr, 1, XData) of
@@ -366,7 +411,7 @@ process_iq_register_set(From, SubEl, Host, Lang) ->
 		     {'EXIT', _} -> {error, ?ERR_BAD_REQUEST};
 		     R -> R
 		 end;
-	_ -> iq_set_register_info(From, Host, true, false, false, false, "disabled", Lang)
+	_ -> iq_set_register_info(From, Host, true, false, false, false, "---", Lang)
     end.
 
 process_iq_register_set2(From, Els, Host, Lang) ->
@@ -381,19 +426,17 @@ process_iq_register_set2(From, Els, Host, Lang) ->
 	    HashUrl = get_attr("hashurl", XData, "false"),
 	    XML = get_attr("xml", XData, "false"),
 	    Avatar = get_attr("avatar", XData, "false"),
-	    Icon = get_attr("icon", XData, "disabled"),
+	    Icon = get_attr("icon", XData, "---"),
 	    iq_set_register_info(From, Host, to_bool(JidUrl), to_bool(HashUrl), to_bool(XML), to_bool(Avatar), Icon, Lang)
     end.
 
-iq_get_vcard(Lang) ->
+iq_get_vcard() ->
     [{xmlelement, "FN", [],
       [{xmlcdata, "ejabberd/mod_webpresence"}]},
      {xmlelement, "URL", [],
-      [{xmlcdata,
-	"http://ejabberd.jabber.ru/mod_webpresence"}]},
+      [{xmlcdata, "http://ejabberd.jabber.ru/mod_webpresence"}]},
      {xmlelement, "DESC", [],
-      [{xmlcdata, translate:translate(Lang, "ejabberd web presence module\n"
-                                      "Copyright (c) 2006-2007 Igor Goryachev")}]}].
+      [{xmlcdata, "ejabberd web presence module\nCopyright (c) 2006-2007 Igor Goryachev"}]}].
 
 get_wp(LUser, LServer) ->
     LUS = {LUser, LServer},
@@ -503,23 +546,23 @@ show_presence({image_no_check, Theme, Pr}) ->
 
 show_presence({image, WP, LUser, LServer}) ->
     Icon = WP#webpresence.icon,
-    "disabled" =/= Icon,
+    "---" =/= Icon,
     Pr = get_presences({show, LUser, LServer}),
     show_presence({image_no_check, Icon, Pr});
 
 show_presence({image, WP, LUser, LServer, Theme}) ->
-    "disabled" =/= WP#webpresence.icon,
+    "---" =/= WP#webpresence.icon,
     Pr = get_presences({show, LUser, LServer}),
     show_presence({image_no_check, Theme, Pr});
 
 show_presence({image_res, WP, LUser, LServer, LResource}) ->
     Icon = WP#webpresence.icon,
-    "disabled" =/= Icon,
+    "---" =/= Icon,
     Pr = get_presences({show, LUser, LServer, LResource}),
     show_presence({image_no_check, Icon, Pr});
 
 show_presence({image_res, WP, LUser, LServer, Theme, LResource}) ->
-    "disabled" =/= WP#webpresence.icon,
+    "---" =/= WP#webpresence.icon,
     Pr = get_presences({show, LUser, LServer, LResource}),
     show_presence({image_no_check, Theme, Pr});
 
@@ -549,6 +592,10 @@ show_presence({image_example, Theme, Show}) ->
     {200, [{"Content-Type", "image/" ++ Mime}], binary_to_list(Content)}.
 
 
+%% ---------------------
+%% Web Publish
+%% ---------------------
+
 make_xhtml(Els) -> make_xhtml([], Els).
 make_xhtml(Title, Els) ->
     {xmlelement, "html", [{"xmlns", "http://www.w3.org/1999/xhtml"},
@@ -573,25 +620,32 @@ themes_to_xhtml(Themes) ->
 	 )
     ].
 
-process(LocalPath, _Request) ->
-    case catch process2(LocalPath, _Request) of
+parse_lang(Lang) -> hd(string:tokens(Lang,"-")).
+
+process(LocalPath, Request) ->
+    case catch process2(LocalPath, Request) of
 	{'EXIT', _Reason} ->
 	    {404, [], make_xhtml([?XC("h1", "Not found")])};
 	Res ->
 	    Res
     end.
 
-process2([], _Request) ->
-    Title = [?XC("title", "Web Presence")],
-    Link_themes = [?AC("themes", "Icon Themes")],
-    Body = [?XC("h1", "Web Presence")] ++ Link_themes,
+process2([], #request{lang = Lang1}) ->
+    Lang = parse_lang(Lang1),
+    Title = [?XC("title", ?T("Web Presence"))],
+    Desc = [?XC("p", ?T("To publish your presence in this web you need a Jabber account in this Jabber server.")++" "++
+		?T("Login with a Jabber client, open")++" "++?T("Service Discovery")++" "++?T("and register in")++" "++?T("Web Presence")++". "++
+		?T("You will receive a message with further instructions."))],
+    Link_themes = [?AC("themes", ?T("Icon Themes"))],
+    Body = [?XC("h1", ?T("Web Presence"))] ++ Desc ++ Link_themes,
     make_xhtml(Title, Body);
 
-process2(["themes"], _Request) ->
-    Title = [?XC("title", "Icon Themes")],
+process2(["themes"], #request{lang = Lang1}) ->
+    Lang = parse_lang(Lang1),
+    Title = [?XC("title", ?T("Web Presence")++" - "++?T("Icon Themes"))],
     Themes = available_themes(list),
     Icon_themes = themes_to_xhtml(Themes),
-    Body = [?XC("h1", "Icon Themes")] ++ Icon_themes,
+    Body = [?XC("h1", ?T("Icon Themes"))] ++ Icon_themes,
     make_xhtml(Title, Body);
 
 process2(["image", Theme, Show], _Request) ->
@@ -647,7 +701,7 @@ web_menu_host(Acc, _Host) ->
 web_page_host(_, _Host, 
 	      #request{path = ["webpresence"],
 		       lang = Lang} = _Request) ->
-    Res = [?XC("h1", "Web Presence"),
+    Res = [?XCT("h1", "Web Presence"),
 	   ?ACT("users", "Registered Users")],
     {stop, Res};
 
@@ -656,8 +710,8 @@ web_page_host(_, Host,
 		       lang = Lang} = _Request) ->
     Users = get_users(Host),
     Table = make_users_table(Users, Lang),
-    Res = [?XC("h1", "Web Presence"),
-	   ?XC("h2", "Registered Users")] ++ Table,
+    Res = [?XCT("h1", "Web Presence"),
+	   ?XCT("h2", "Registered Users")] ++ Table,
     {stop, Res};
 
 web_page_host(Acc, _, _) -> Acc. 
