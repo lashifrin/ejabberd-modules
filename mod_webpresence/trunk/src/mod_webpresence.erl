@@ -29,7 +29,7 @@
 -include("web/ejabberd_web_admin.hrl").
 -include("web/ejabberd_http.hrl").
 
--record(webpresence, {us, hashurl = false, jidurl = false, xml = false, avatar = false, icon = "---"}).
+-record(webpresence, {us, ridurl = false, jidurl = false, xml = false, avatar = false, icon = "---"}).
 -record(state, {host, server_host, base_url, access}).
 -record(presence, {resource, show, priority, status}).
 
@@ -90,7 +90,7 @@ init([Host, Opts]) ->
     mnesia:create_table(webpresence,
 			[{disc_copies, [node()]},
 			 {attributes, record_info(fields, webpresence)}]),
-    mnesia:add_table_index(webpresence, hashurl),
+    mnesia:add_table_index(webpresence, ridurl),
     update_table(),
     MyHost = gen_mod:get_opt_host(Host, Opts, "webpresence.@HOST@"),
     Access = gen_mod:get_opt(access, Opts, local),
@@ -255,11 +255,11 @@ iq_disco_info(Lang) ->
 		 [{xmlelement, "value", [], [{xmlcdata, Val}]}])
        ).
 
-%% @spec hashurl_out(id()) -> hash()
-%% @type id() = string() | false
-%% @type hash() = "true" | "false"
-hashurl_out(false) -> "false";
-hashurl_out(Id) when is_list(Id) -> "true".
+%% @spec ridurl_out(ridurl()) -> boolean_string()
+%% @type ridurl() = string() | false
+%% @type boolean_string() = "true" | "false"
+ridurl_out(false) -> "false";
+ridurl_out(Id) when is_list(Id) -> "true".
 
 to_bool("false") -> false;
 to_bool("true") -> true;
@@ -268,20 +268,20 @@ to_bool("1") -> true.
 
 get_pr(LUS) ->
     case catch mnesia:dirty_read(webpresence, LUS) of
-	[#webpresence{jidurl = J, hashurl = H, xml = X, avatar = A, icon = I}] ->
+	[#webpresence{jidurl = J, ridurl = H, xml = X, avatar = A, icon = I}] ->
 	    {J, H, X, A, I, true};
 	_ ->
 	    {true, false, false, false, "---", false}
     end.
 
-get_pr_hash(LUS) ->
+get_pr_rid(LUS) ->
     {_, H, _, _, _, _} = get_pr(LUS),
     H.
 
 iq_get_register_info(_Host, From, Lang) ->
     {LUser, LServer, _} = jlib:jid_tolower(From),
     LUS = {LUser, LServer},
-    {JidUrl, HashUrl, XML, Avatar, Icon, Registered} = get_pr(LUS),
+    {JidUrl, RidUrl, XML, Avatar, Icon, Registered} = get_pr(LUS),
     RegisteredXML = case Registered of 
 			true -> [{xmlelement, "registered", [], []}];
 			false -> []
@@ -297,8 +297,8 @@ iq_get_register_info(_Host, From, Lang) ->
 	   {xmlelement, "instructions", [], [{xmlcdata, ?T("This form allows you to register in")++" "++?T("Web Presence")++". "++
 					      ?T("You will receive a message with usage instructions once registered.")}]},
 	   ?XFIELD("fixed", ?T("What types of URL will you use?")++" "++?T("Select one at least"), [], []),
-	   ?XFIELD("boolean", "JID", "jidurl", atom_to_list(JidUrl)),
-	   ?XFIELD("boolean", "Hash", "hashurl", hashurl_out(HashUrl)),
+	   ?XFIELD("boolean", "Jabber ID", "jidurl", atom_to_list(JidUrl)),
+	   ?XFIELD("boolean", "Random ID", "ridurl", ridurl_out(RidUrl)),
 	   ?XFIELD("fixed", ?T("What types of output do you want to allow?")++" "++?T("Select one at least"), [], []),
 	   ?XFIELDS("list-single", ?T("Icon theme"), "icon", 
 		    [{xmlelement, "value", [], [{xmlcdata, Icon}]},
@@ -310,13 +310,13 @@ iq_get_register_info(_Host, From, Lang) ->
 	   ?XFIELD("boolean", ?T("XML"), "xml", atom_to_list(XML))]}].
 
 %% TODO: Check if remote users are allowed to reach here: they should not be allowed
-iq_set_register_info(From, Host, JidUrl, HashUrl, XML, Avatar, Icon, BaseURL, Lang) ->
+iq_set_register_info(From, Host, JidUrl, RidUrl, XML, Avatar, Icon, BaseURL, Lang) ->
     {LUser, LServer, _} = jlib:jid_tolower(From),
     LUS = {LUser, LServer},
-    HashUrl2 = get_hashurl_final_value(HashUrl, LUS),
+    RidUrl2 = get_rid_final_value(RidUrl, LUS),
     WP = #webpresence{us = LUS,
 		      jidurl = JidUrl,
-		      hashurl = HashUrl2,
+		      ridurl = RidUrl2,
 		      xml = XML,
 		      avatar = Avatar,
 		      icon = Icon},
@@ -329,9 +329,9 @@ iq_set_register_info(From, Host, JidUrl, HashUrl, XML, Avatar, Icon, BaseURL, La
 	    {error, ?ERR_INTERNAL_SERVER_ERROR}
     end.
 
-get_hashurl_final_value(false, _) -> false;
-get_hashurl_final_value(true, {U, S} = LUS) ->
-    case get_pr_hash(LUS) of
+get_rid_final_value(false, _) -> false;
+get_rid_final_value(true, {U, S} = LUS) ->
+    case get_pr_rid(LUS) of
 	false ->
 	    integer_to_list(erlang:phash2(U) * erlang:phash2(S) 
 			    * calendar:datetime_to_gregorian_seconds(
@@ -373,22 +373,22 @@ send_message(WP, To, Host, BaseURL, Lang) ->
 					{"  "++JIDT++"\n",
 					 "  "++BaseURL++JIDT++"/"++Allowed_type++"/\n"}
 				end,
-    {USERID_hash, Example_hash} = case WP#webpresence.hashurl of
-				      false -> {"", ""};
-				      Hash when is_list(Hash) -> 
-					  HashT = "hash/"++Hash,
-					  {"  "++HashT++"\n",
-					   "  "++BaseURL++HashT++"/"++Allowed_type++"/\n"}
-				  end,
-    Body = ?T("You have registered the Jabber ID")++" "++JIDS++" in "++?T("Web Presence")++".\n\n"
+    {USERID_rid, Example_rid} = case WP#webpresence.ridurl of
+				    false -> {"", ""};
+				    RID when is_list(RID) -> 
+					RIDT = "rid/"++RID,
+					{"  "++RIDT++"\n",
+					 "  "++BaseURL++RIDT++"/"++Allowed_type++"/\n"}
+				end,
+    Body = ?T("You have registered")++" "++JIDS++" in "++?T("Web Presence")++".\n\n"
 	++?T("Use URLs like")++":\n"
 	"  "++BaseURL++"USERID/OUTPUT/\n"
 	"\n"
-	"USERID:\n"++USERID_jid++USERID_hash++"\n"
+	"USERID:\n"++USERID_jid++USERID_rid++"\n"
 	"OUTPUT:\n"++Oavatar++Oxml++Oimage++"\n"
-	++?T("Example")++":\n"++Example_jid++Example_hash++"\n"
-	++?T("If you forget your Hash, register again to receive this message.")++"\n"
-	++?T("To get a new Hash, disable the option and enable it again. A new Hash will be generated for you.")++"\n",
+	++?T("Example")++":\n"++Example_jid++Example_rid++"\n"
+	++?T("If you forget your RandomID, register again to receive this message.")++"\n"
+	++?T("To get a new RandomID, disable the option and enable it again. A new RandomID will be generated for you.")++"\n",
     ejabberd_router:route(
       jlib:make_jid("", Host, ""),
       To,
@@ -421,11 +421,11 @@ process_iq_register_set2(From, Els, Host, BaseURL, Lang) ->
 	    XData = jlib:parse_xdata_submit(XEl),
 	    invalid =/= XData,
 	    JidUrl = get_attr("jidurl", XData, "false"),
-	    HashUrl = get_attr("hashurl", XData, "false"),
+	    RidUrl = get_attr("ridurl", XData, "false"),
 	    XML = get_attr("xml", XData, "false"),
 	    Avatar = get_attr("avatar", XData, "false"),
 	    Icon = get_attr("icon", XData, "---"),
-	    iq_set_register_info(From, Host, to_bool(JidUrl), to_bool(HashUrl), to_bool(XML), to_bool(Avatar), Icon, BaseURL, Lang)
+	    iq_set_register_info(From, Host, to_bool(JidUrl), to_bool(RidUrl), to_bool(XML), to_bool(Avatar), Icon, BaseURL, Lang)
     end.
 
 iq_get_vcard() ->
@@ -653,10 +653,10 @@ process2(["image", Theme, Show], _Request) ->
 process2(["jid", User, Server | Tail], _Request) ->
     serve_web_presence(jid, User, Server, Tail);
 
-process2(["hash", Hash | Tail], _Request) ->
-    [Pr] = mnesia:dirty_index_read(webpresence, Hash, #webpresence.hashurl),
+process2(["rid", Rid | Tail], _Request) ->
+    [Pr] = mnesia:dirty_index_read(webpresence, Rid, #webpresence.ridurl),
     {User, Server} = Pr#webpresence.us,
-    serve_web_presence(hash, User, Server, Tail);
+    serve_web_presence(rid, User, Server, Tail);
 
 %% Compatibility with old mod_presence
 process2([User, Server | Tail], _Request) ->
@@ -670,7 +670,7 @@ serve_web_presence(TypeURL, User, Server, Tail) ->
     WP = get_wp(LUser, LServer),
     case TypeURL of
 	jid -> true = WP#webpresence.jidurl;
-	hash -> false =/= WP#webpresence.hashurl
+	rid -> false =/= WP#webpresence.ridurl
     end,
     Args = case Tail of
 	       ["image"] -> 
@@ -720,11 +720,11 @@ get_users(Host) ->
 
 make_users_table(Records, Lang) ->
     TList = lists:map(
-	      fun([User, HashUrl, JIDUrl, XML, Avatar, Icon]) ->
+	      fun([User, RidUrl, JIDUrl, XML, Avatar, Icon]) ->
 		      ?XE("tr",
 			  [?XE("td", [?AC("../user/"++User++"/", User)]),
 			   ?XC("td", atom_to_list(JIDUrl)),
-			   ?XC("td", hashurl_out(HashUrl)),
+			   ?XC("td", ridurl_out(RidUrl)),
 			   ?XC("td", atom_to_list(XML)),
 			   ?XC("td", atom_to_list(Avatar)),
 			   ?XC("td", Icon)])
@@ -733,8 +733,8 @@ make_users_table(Records, Lang) ->
 	 [?XE("thead",
 	      [?XE("tr",
 		   [?XCT("td", "User"),
-		    ?XCT("td", "JID"),
-		    ?XCT("td", "Hash"),
+		    ?XCT("td", "JabberID-URL"),
+		    ?XCT("td", "RandomID-URL"),
 		    ?XCT("td", "XML"),
 		    ?XCT("td", "Avatar"),
 		    ?XCT("td", "Icon")
@@ -756,7 +756,7 @@ migrate_data_mod_presence(Size) ->
     Migrate = fun(Old, S) ->
 		      {presence_registered, {US, _Host}, XML, Icon} = Old,
 		      New = #webpresence{us = US,
-					 hashurl = false,
+					 ridurl = false,
 					 jidurl = true,
 					 xml = list_to_atom(XML),
 					 avatar = false,
