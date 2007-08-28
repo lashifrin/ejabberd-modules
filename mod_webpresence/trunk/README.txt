@@ -167,11 +167,11 @@ on a web browser open the corresponding URI:
  * for avatar output:
 	http://example.org:5280/presence/jid/<user>/<server>/avatar/ 
 
-If you want to show the image output of a specific resource, use those URIs:
- * for image output:
-	http://example.org:5280/presence/jid/<user>/<server>/image/res/<resource>
- * for image output with theme:
-	http://example.org:5280/presence/jid/<user>/<server>/image/<theme>/res/<resource>
+If you want to show the image or text outputs of a specific resource, add /res/<resource>
+to the URI:
+  http://example.org:5280/presence/jid/<user>/<server>/text/res/<resource>
+  http://example.org:5280/presence/jid/<user>/<server>/image/res/<resource>
+  http://example.org:5280/presence/jid/<user>/<server>/image/<theme>/res/<resource>
 
 If you don't want to reveal your Jabber ID, you can enable Random ID URI.
 After the registration the user gets a message with his a pseudo-random ID.

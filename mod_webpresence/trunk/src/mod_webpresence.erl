@@ -30,7 +30,7 @@
 -include("ejabberd_web_admin.hrl").
 -include("ejabberd_http.hrl").
 
--record(webpresence, {us, ridurl = false, jidurl = false, xml = false, avatar = false, icon = "---"}).
+-record(webpresence, {us, ridurl = false, jidurl = false, xml = false, avatar = false, text = false, icon = "---"}).
 -record(state, {host, server_host, base_url, access}).
 -record(presence, {resource, show, priority, status}).
 
@@ -271,20 +271,20 @@ to_bool("1") -> true.
 
 get_pr(LUS) ->
     case catch mnesia:dirty_read(webpresence, LUS) of
-	[#webpresence{jidurl = J, ridurl = H, xml = X, avatar = A, icon = I}] ->
-	    {J, H, X, A, I, true};
+	[#webpresence{jidurl = J, ridurl = H, xml = X, avatar = A, text = T, icon = I}] ->
+	    {J, H, X, A, T, I, true};
 	_ ->
-	    {true, false, false, false, "---", false}
+	    {true, false, false, false, false, "---", false}
     end.
 
 get_pr_rid(LUS) ->
-    {_, H, _, _, _, _} = get_pr(LUS),
+    {_, H, _, _, _, _, _} = get_pr(LUS),
     H.
 
 iq_get_register_info(_Host, From, Lang) ->
     {LUser, LServer, _} = jlib:jid_tolower(From),
     LUS = {LUser, LServer},
-    {JidUrl, RidUrl, XML, Avatar, Icon, Registered} = get_pr(LUS),
+    {JidUrl, RidUrl, XML, Avatar, Text, Icon, Registered} = get_pr(LUS),
     RegisteredXML = case Registered of 
 			true -> [{xmlelement, "registered", [], []}];
 			false -> []
@@ -309,27 +309,29 @@ iq_get_register_info(_Host, From, Lang) ->
 		      [{xmlelement, "value", [], [{xmlcdata, "---"}]}]}             
 		    ] ++ available_themes(xdata)
 		   ),
+	   ?XFIELD("boolean", ?T("Text"), "text", atom_to_list(Text)),
 	   ?XFIELD("boolean", ?T("XML"), "xml", atom_to_list(XML)),
 	   ?XFIELD("boolean", ?T("Avatar"), "avatar", atom_to_list(Avatar))]}].
 
 %% TODO: Check if remote users are allowed to reach here: they should not be allowed
-iq_set_register_info(From, {Host, JidUrl, RidUrl, XML, Avatar, Icon, _, Lang} = Opts) ->
+iq_set_register_info(From, {Host, JidUrl, RidUrl, XML, Avatar, Text, Icon, _, Lang} = Opts) ->
     {LUser, LServer, _} = jlib:jid_tolower(From),
     LUS = {LUser, LServer},
     Check_URLTypes = (JidUrl == true) or (RidUrl =/= false),
-    Check_OutputTypes = (XML == true) or (Avatar == true) or (Icon =/= "---"),
+    Check_OutputTypes = (XML == true) or (Avatar == true) or (Text == true) or (Icon =/= "---"),
     case Check_URLTypes and Check_OutputTypes of
 	true -> iq_set_register_info2(From, LUS, Opts);
 	false -> unregister_webpresence(From, Host, Lang)
     end.
 
-iq_set_register_info2(From, LUS, {Host, JidUrl, RidUrl, XML, Avatar, Icon, BaseURL, Lang}) ->
+iq_set_register_info2(From, LUS, {Host, JidUrl, RidUrl, XML, Avatar, Text, Icon, BaseURL, Lang}) ->
     RidUrl2 = get_rid_final_value(RidUrl, LUS),
     WP = #webpresence{us = LUS,
 		      jidurl = JidUrl,
 		      ridurl = RidUrl2,
 		      xml = XML,
 		      avatar = Avatar,
+		      text = Text,
 		      icon = Icon},
     F = fun() -> mnesia:write(WP) end,
     case mnesia:transaction(F) of
@@ -360,6 +362,11 @@ send_message_registered(WP, To, Host, BaseURL, Lang) ->
 		  false -> "";
 		  true -> "  avatar\n"
 	      end,
+    Otext = case WP#webpresence.text of
+		false -> "";
+		true -> "  text\n"
+			    "  text/res/<"++?T("Resource")++">\n"
+	    end,
     Oimage = case WP#webpresence.icon of
 		 "---" -> "";
 		 I when is_list(I) -> 
@@ -372,10 +379,11 @@ send_message_registered(WP, To, Host, BaseURL, Lang) ->
 	       false -> "";
 	       true -> "  xml\n"
 	   end,
-    Allowed_type = case {Oimage, Oxml, Oavatar} of
-		       {"", "", _} -> "avatar";
-		       {"", _, _} -> "xml";
-		       {_, _, _} -> "image"
+    Allowed_type = case {Oimage, Oxml, Oavatar, Otext} of
+		       {"", "", "", _} -> "text";
+		       {"", "", _, _} -> "avatar";
+		       {"", _, _, _} -> "xml";
+		       {_, _, _, _} -> "image"
 		   end,
     {USERID_jid, Example_jid} = case WP#webpresence.jidurl of
 				    false -> {"", ""};
@@ -400,7 +408,7 @@ send_message_registered(WP, To, Host, BaseURL, Lang) ->
 	"  "++BaseURL++"USERID/OUTPUT/\n"
 	"\n"
 	"USERID:\n"++USERID_jid++USERID_rid++"\n"
-	"OUTPUT:\n"++Oavatar++Oxml++Oimage++"\n"
+	"OUTPUT:\n"++Oavatar++Oxml++Oimage++Otext++"\n"
 	++?T("Example")++":\n"++Example_jid++Example_rid++"\n"
 	++Text_rid,
     send_headline(Host, To, Subject, Body).
@@ -446,8 +454,9 @@ process_iq_register_set2(From, Els, Host, BaseURL, Lang) ->
 	    RidUrl = get_attr("ridurl", XData, "false"),
 	    XML = get_attr("xml", XData, "false"),
 	    Avatar = get_attr("avatar", XData, "false"),
+	    Text = get_attr("text", XData, "false"),
 	    Icon = get_attr("icon", XData, "---"),
-	    iq_set_register_info(From, {Host, to_bool(JidUrl), to_bool(RidUrl), to_bool(XML), to_bool(Avatar), Icon, BaseURL, Lang})
+	    iq_set_register_info(From, {Host, to_bool(JidUrl), to_bool(RidUrl), to_bool(XML), to_bool(Avatar), to_bool(Text), Icon, BaseURL, Lang})
     end.
 
 unregister_webpresence(From, Host, Lang) ->
@@ -534,6 +543,17 @@ get_presences({xml, LUser, LServer, Show_us}) ->
                 [{xmlcdata, Presence#presence.status}]}
        end,
        get_presences({sorted, LUser, LServer}))};
+get_presences({status, LUser, LServer, LResource}) ->
+    Rs = get_presences({sorted, LUser, LServer}),
+    {value, R} = lists:keysearch(LResource, 2, Rs),
+    R#presence.status;
+get_presences({status, LUser, LServer}) ->
+    case get_presences({sorted, LUser, LServer}) of
+        [Highest | _Rest] ->
+            Highest#presence.status;
+        _ ->
+            "unavailable"
+    end;
 get_presences({show, LUser, LServer, LResource}) ->
     Rs = get_presences({sorted, LUser, LServer}),
     {value, R} = lists:keysearch(LResource, 2, Rs),
@@ -602,6 +622,17 @@ show_presence({xml, WP, LUser, LServer, Show_us}) ->
     true = WP#webpresence.xml,
     Presence_xml = xml:element_to_string(get_presences({xml, LUser, LServer, Show_us})),
     {200, [{"Content-Type", "text/xml; charset=utf-8"}], ?XML_HEADER ++ Presence_xml};
+
+
+show_presence({text, WP, LUser, LServer}) ->
+    true = WP#webpresence.text,
+    Presence_text = get_presences({status, LUser, LServer}),
+    {200, [{"Content-Type", "text/html; charset=utf-8"}], Presence_text};
+
+show_presence({text, WP, LUser, LServer, LResource}) ->
+    true = WP#webpresence.text,
+    Presence_text = get_presences({status, LUser, LServer, LResource}),
+    {200, [{"Content-Type", "text/html; charset=utf-8"}], Presence_text};
 
 show_presence({avatar, WP, LUser, LServer}) ->
     true = WP#webpresence.avatar,
@@ -718,6 +749,10 @@ serve_web_presence(TypeURL, User, Server, Tail) ->
 	       ["xml"] -> 
 		   Show_us = (TypeURL == jid),
 		   {xml, WP, LUser, LServer, Show_us};
+	       ["text"] -> 
+		   {text, WP, LUser, LServer};
+	       ["text", "res", Resource] -> 
+		   {text, WP, LUser, LServer, Resource};
 	       ["avatar"] -> 
 		   {avatar, WP, LUser, LServer}
 	   end,
@@ -763,18 +798,19 @@ web_page_host(_, Host,
 web_page_host(Acc, _, _) -> Acc. 
 
 get_users(Host) ->
-    Select = [{{webpresence, {'$1', Host}, '$2', '$3', '$4', '$5', '$6'}, [], ['$$']}],
+    Select = [{{webpresence, {'$1', Host}, '$2', '$3', '$4', '$5', '$6', '$7'}, [], ['$$']}],
     mnesia:dirty_select(webpresence, Select).
 
 make_users_table(Records, Lang) ->
     TList = lists:map(
-	      fun([User, RidUrl, JIDUrl, XML, Avatar, Icon]) ->
+	      fun([User, RidUrl, JIDUrl, XML, Avatar, Text, Icon]) ->
 		      ?XE("tr",
 			  [?XE("td", [?AC("../user/"++User++"/", User)]),
 			   ?XC("td", atom_to_list(JIDUrl)),
 			   ?XC("td", ridurl_out(RidUrl)),
 			   ?XC("td", atom_to_list(XML)),
 			   ?XC("td", atom_to_list(Avatar)),
+			   ?XC("td", atom_to_list(Text)),
 			   ?XC("td", Icon)])
 	      end, Records),
     [?XE("table",
@@ -785,24 +821,26 @@ make_users_table(Records, Lang) ->
 		    ?XCT("td", "Random ID"),
 		    ?XCT("td", "XML"),
 		    ?XCT("td", "Avatar"),
+		    ?XCT("td", "Text"),
 		    ?XCT("td", "Icon Theme")
 		   ])]),
 	  ?XE("tbody", TList)])].
 
 make_stats_options(Records, Lang) ->
-    [RegUsers, JJ, RR, XX, AA, II] = lists:foldl(
-				       fun([_User, RidUrl, JidUrl, XML, Avatar, Icon], [N, J, R, X, A, I]) ->
-					       J2 = J + case JidUrl of false -> 0; true -> 1 end,
-					       R2 = R + case RidUrl of false -> 0; _ -> 1 end,
-					       X2 = X + case XML of false -> 0; true -> 1 end,
-					       A2 = A + case Avatar of false -> 0; true -> 1 end,
-					       I2 = I + case Icon of "---" -> 0; _ -> 1 end,
-					       [N+1, J2, R2, X2, A2, I2]
-				       end, 
-				       [0, 0, 0, 0, 0, 0],
-				       Records),
+    [RegUsers, JJ, RR, XX, AA, TT, II] = lists:foldl(
+					   fun([_User, RidUrl, JidUrl, XML, Avatar, Text, Icon], [N, J, R, X, A, T, I]) ->
+						   J2 = J + case JidUrl of false -> 0; true -> 1 end,
+						   R2 = R + case RidUrl of false -> 0; _ -> 1 end,
+						   X2 = X + case XML of false -> 0; true -> 1 end,
+						   A2 = A + case Avatar of false -> 0; true -> 1 end,
+						   T2 = T + case Text of false -> 0; true -> 1 end,
+						   I2 = I + case Icon of "---" -> 0; _ -> 1 end,
+						   [N+1, J2, R2, X2, A2, T2, I2]
+					   end, 
+					   [0, 0, 0, 0, 0, 0, 0],
+					   Records),
     URLTList = [{"Jabber ID", JJ}, {"Random ID", RR}],
-    OutputTList = [{"XML", XX}, {"Avatar", AA}, {"Icon Theme", II}],
+    OutputTList = [{"XML", XX}, {"Avatar", AA}, {"Text", TT}, {"Icon Theme", II}],
     [
      ?C("Registered Users" ++": "++ integer_to_list(RegUsers)),
      ?XCT("h3", "URL Type"),
@@ -817,7 +855,7 @@ make_stats_options(Records, Lang) ->
 make_stats_iconthemes(Records, Lang) ->
     Themes1 = [{T, 0} || T <- available_themes(list)],
     Dict = lists:foldl(
-	     fun([_, _, _, _, _, Icon], D) ->
+	     fun([_, _, _, _, _, _, Icon], D) ->
 		     dict:update_counter(Icon, 1, D)
 	     end, 
 	     dict:from_list(Themes1),
@@ -901,6 +939,7 @@ migrate_data_mod_presence(Size) ->
 					 jidurl = true,
 					 xml = list_to_atom(XML),
 					 avatar = false,
+					 text = false,
 					 icon = Icon},
 		      mnesia:write(New),
 		      mnesia:delete_object(Old),
