@@ -297,8 +297,7 @@ iq_get_register_info(_Host, From, Lang) ->
 	  [{xmlelement, "title", [],
 	    [{xmlcdata,
 	      ?T("Web Presence")}]},
-	   {xmlelement, "instructions", [], [{xmlcdata, ?T("This form allows you to register in")++" "++?T("Web Presence")++". "++
-					      ?T("You will receive a message with usage instructions once registered.")}]},
+	   {xmlelement, "instructions", [], [{xmlcdata, ?T("What features do you want to enable?")}]},
 	   ?XFIELD("fixed", ?T("URL Type")++" "++?T("Select one at least"), [], []),
 	   ?XFIELD("boolean", "Jabber ID", "jidurl", atom_to_list(JidUrl)),
 	   ?XFIELD("boolean", "Random ID", "ridurl", ridurl_out(RidUrl)),
@@ -309,8 +308,8 @@ iq_get_register_info(_Host, From, Lang) ->
 		      [{xmlelement, "value", [], [{xmlcdata, "---"}]}]}             
 		    ] ++ available_themes(xdata)
 		   ),
-	   ?XFIELD("boolean", ?T("Text"), "text", atom_to_list(Text)),
 	   ?XFIELD("boolean", ?T("XML"), "xml", atom_to_list(XML)),
+	   ?XFIELD("boolean", ?T("Text"), "text", atom_to_list(Text)),
 	   ?XFIELD("boolean", ?T("Avatar"), "avatar", atom_to_list(Avatar))]}].
 
 %% TODO: Check if remote users are allowed to reach here: they should not be allowed
@@ -408,7 +407,7 @@ send_message_registered(WP, To, Host, BaseURL, Lang) ->
 	"  "++BaseURL++"USERID/OUTPUT/\n"
 	"\n"
 	"USERID:\n"++USERID_jid++USERID_rid++"\n"
-	"OUTPUT:\n"++Oavatar++Oxml++Oimage++Otext++"\n"
+	"OUTPUT:\n"++Oimage++Oxml++Otext++Oavatar++"\n"
 	++?T("Example")++":\n"++Example_jid++Example_rid++"\n"
 	++Text_rid,
     send_headline(Host, To, Subject, Body).
@@ -672,7 +671,7 @@ make_xhtml(Title, Els) ->
      ]}.
 
 themes_to_xhtml(Themes) ->
-    ShowL = ["chat", "available", "away", "xa", "dnd"],
+    ShowL = ["available", "chat", "dnd", "away", "xa", "unavailable"],
     THeadL = [""] ++ ShowL,
     [?XAE("table", [], 
 	  [?XE("tr", [?XC("th", T) || T <- THeadL])] ++
@@ -808,10 +807,10 @@ make_users_table(Records, Lang) ->
 			  [?XE("td", [?AC("../user/"++User++"/", User)]),
 			   ?XC("td", atom_to_list(JIDUrl)),
 			   ?XC("td", ridurl_out(RidUrl)),
+			   ?XC("td", Icon),
 			   ?XC("td", atom_to_list(XML)),
-			   ?XC("td", atom_to_list(Avatar)),
 			   ?XC("td", atom_to_list(Text)),
-			   ?XC("td", Icon)])
+			   ?XC("td", atom_to_list(Avatar))])
 	      end, Records),
     [?XE("table",
 	 [?XE("thead",
@@ -819,10 +818,10 @@ make_users_table(Records, Lang) ->
 		   [?XCT("td", "User"),
 		    ?XCT("td", "Jabber ID"),
 		    ?XCT("td", "Random ID"),
+		    ?XCT("td", "Icon Theme"),
 		    ?XCT("td", "XML"),
-		    ?XCT("td", "Avatar"),
 		    ?XCT("td", "Text"),
-		    ?XCT("td", "Icon Theme")
+		    ?XCT("td", "Avatar")
 		   ])]),
 	  ?XE("tbody", TList)])].
 
@@ -840,7 +839,7 @@ make_stats_options(Records, Lang) ->
 					   [0, 0, 0, 0, 0, 0, 0],
 					   Records),
     URLTList = [{"Jabber ID", JJ}, {"Random ID", RR}],
-    OutputTList = [{"XML", XX}, {"Avatar", AA}, {"Text", TT}, {"Icon Theme", II}],
+    OutputTList = [{"Icon Theme", II}, {"XML", XX}, {"Text", TT}, {"Avatar", AA}],
     [
      ?C("Registered Users" ++": "++ integer_to_list(RegUsers)),
      ?XCT("h3", "URL Type"),
