@@ -14,8 +14,9 @@ presence information in the web.
 This module is the succesor of Igor Goryachev's mod_presence.
 
 Allowed output methods are
- * Icons (various themes available): http://www.goryachev.org/jabber-status/image/
- * Raw XML: http://www.goryachev.org/jabber-status/xml/
+ * Icons (various themes available)
+ * Status text
+ * Raw XML
  * Avatar, stored in the user's vCard
 
 No web server, database, additional libraries or programs are required.
