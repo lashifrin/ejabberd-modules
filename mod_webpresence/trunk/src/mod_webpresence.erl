@@ -1,13 +1,13 @@
 %%%----------------------------------------------------------------------
 %%% File    : mod_webpresence.erl
-%%% Author  : Igor Goryachev <igor@goryachev.org>
+%%% Author  : Badlop <badlop@ono.com>
 %%% Purpose : Allow user to show presence in the web
 %%% Created : 30 Apr 2006 by Igor Goryachev <igor@goryachev.org>
 %%% Id      : $Id$
 %%%----------------------------------------------------------------------
 
 -module(mod_webpresence).
--author('igor@goryachev.org').
+-author('badlop@ono.com').
 -vsn('$Revision$ ').
 
 -behaviour(gen_server).
@@ -473,7 +473,7 @@ iq_get_vcard() ->
      {xmlelement, "URL", [],
       [{xmlcdata, "http://ejabberd.jabber.ru/mod_webpresence"}]},
      {xmlelement, "DESC", [],
-      [{xmlcdata, "ejabberd web presence module\nCopyright (c) 2006-2007 Igor Goryachev"}]}].
+      [{xmlcdata, "ejabberd web presence module\nCopyright (c) 2006-2007 Igor Goryachev, 2007 Badlop"}]}].
 
 get_wp(LUser, LServer) ->
     LUS = {LUser, LServer},

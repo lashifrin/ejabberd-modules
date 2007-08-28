@@ -1,7 +1,7 @@
 
-	mod_webpresence - Allow user to show presence in the web
+	mod_webpresence - Presence on the Web
 
-	Author: Igor Goryachev
+	Author: Badlop
 	Requires: ejabberd SVN (not possible with 1.1.x)
 	http://ejabberd.jabber.ru/mod_webpresence
 
@@ -11,10 +11,7 @@
 
 This module allows any local user of the ejabberd server to publish his
 presence information in the web.
-
-This service is similar to other web-presence/status like
- * ICQ: http://www.icq.com/features/web/indicator.html
- * Edgar: http://edgar.netflint.net/
+This module is the succesor of Igor Goryachev's mod_presence.
 
 Allowed output methods are
  * Icons (various themes available): http://www.goryachev.org/jabber-status/image/
@@ -22,6 +19,7 @@ Allowed output methods are
  * Avatar, stored in the user's vCard
 
 No web server, database, additional libraries or programs are required.
+
 
 
 	INSTALL

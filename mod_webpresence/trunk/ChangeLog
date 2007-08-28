@@ -1,5 +1,11 @@
 2007-08-28  Badlop  <badlop@ono.com>
 
+	* AUTHORS: Added Badlop as main author, and mention Igor Goryachev as author of mod_presence.
+	* README.txt: Same.
+	* src/mod_webpresence.erl: Same.
+
+	* LICENSE: Deleted, since all modules are by default published with the GPL license for compatibility with ejabberd.
+
 	* src/mod_webpresence.erl: Added registration and theme statistics. Improved statistics: icon theme, and percentages. Added support for Text output. Changed order of options.
 	
 
