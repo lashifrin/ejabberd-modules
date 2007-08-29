@@ -258,6 +258,11 @@ iq_disco_info(Lang) ->
 		 [{xmlelement, "value", [], [{xmlcdata, Val}]}])
        ).
 
+-define(XFIELDFIXED(Val),
+        {xmlelement, "field", [{"type", "fixed"}],
+	 [{xmlelement, "value", [], [{xmlcdata, Val}]}]}
+       ).
+
 %% @spec ridurl_out(ridurl()) -> boolean_string()
 %% @type ridurl() = string() | false
 %% @type boolean_string() = "true" | "false"
@@ -298,10 +303,10 @@ iq_get_register_info(_Host, From, Lang) ->
 	    [{xmlcdata,
 	      ?T("Web Presence")}]},
 	   {xmlelement, "instructions", [], [{xmlcdata, ?T("What features do you want to enable?")}]},
-	   ?XFIELD("fixed", ?T("URL Type")++" "++?T("Select one at least"), [], []),
+	   ?XFIELDFIXED(?T("URL Type")++". "++?T("Select one at least")),
 	   ?XFIELD("boolean", "Jabber ID", "jidurl", atom_to_list(JidUrl)),
 	   ?XFIELD("boolean", "Random ID", "ridurl", ridurl_out(RidUrl)),
-	   ?XFIELD("fixed", ?T("Output Type")++" "++?T("Select one at least"), [], []),
+	   ?XFIELDFIXED(?T("Output Type")++". "++?T("Select one at least")),
 	   ?XFIELDS("list-single", ?T("Icon Theme"), "icon", 
 		    [{xmlelement, "value", [], [{xmlcdata, Icon}]},
 		     {xmlelement, "option", [{"label", "---"}],
