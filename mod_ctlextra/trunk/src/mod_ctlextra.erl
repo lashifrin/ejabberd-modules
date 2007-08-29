@@ -76,6 +76,7 @@ start(Host, _Opts) ->
 
 				    {"stats registeredusers", "number of registered users"},
 				    {"stats onlineusers", "number of logged users"},
+				    {"stats uptime-seconds", "uptime of ejabberd node in seconds"},
 
 				    %% misc
 				    {"get-cookie", "get the Erlang cookie of this node"},
@@ -274,6 +275,7 @@ ctl_process(_Val, ["load-config", Path]) ->
 
 ctl_process(_Val, ["stats", Stat]) ->
     Res = case Stat of
+	      "uptime-seconds" -> uptime_seconds();
 	      "registeredusers" -> mnesia:table_info(passwd, size);
 	      "onlineusers" -> mnesia:table_info(session, size)
 	  end,
@@ -762,6 +764,9 @@ decide({Room_name, Host}, Last_allowed) ->
 
 seconds_to_days(S) ->
     round(S) div 60*60*24.
+
+uptime_seconds() ->
+    trunc(element(1, erlang:statistics(wall_clock))/1000).
 
 get_room_names(Host) ->
     Get_room_names = fun(Room_reg, Names) ->
