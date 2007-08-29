@@ -274,7 +274,7 @@ get_pr(LUS) ->
 	[#webpresence{jidurl = J, ridurl = H, xml = X, avatar = A, text = T, icon = I}] ->
 	    {J, H, X, A, T, I, true};
 	_ ->
-	    {true, false, false, false, false, "---", false}
+	    {true, false, false, false, false, "jsf-jabber-text", false}
     end.
 
 get_pr_rid(LUS) ->
