@@ -76,12 +76,12 @@ pixmaps_path:
     and make sure the user than runs ejabberd has read access to that directory.
     Default value: "./pixmaps"
 port:
-    This port value is used to send a message to the user.
-    If you set a different port in the 'listen' section, set this option.
+    This informational option is used only when sending a message to the user.
+    If you set a different port in the 'listen' section, set this option too.
     Default value: 5280
 path:
-    This path value is used to send a message to the user.
-    If you set a different path in the 'listen' section, set this option.
+    This informational option is used only when sending a message to the user.
+    If you set a different path in the 'listen' section, set this option too.
     Default value: "presence"
 
 
