@@ -160,7 +160,8 @@ process_request(Data) ->
                                    end
                            end,
                     Version = 
-                        case list_to_float(xml:get_attr_s("ver", Attrs)) of
+                        case catch list_to_float(
+                                     xml:get_attr_s("ver", Attrs)) of
                             {'EXIT', _} -> 0.0;
                             V -> V
                         end,
