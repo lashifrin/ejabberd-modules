@@ -563,9 +563,12 @@ get_presences({xml, LUser, LServer, Show_us}) ->
        end,
        get_presences({sorted, LUser, LServer}))};
 get_presences({status, LUser, LServer, LResource}) ->
-    Rs = get_presences({sorted, LUser, LServer}),
-    {value, R} = lists:keysearch(LResource, 2, Rs),
-    R#presence.status;
+    case get_presences({sorted, LUser, LServer}) of
+	[] -> "unavailable";
+	Rs -> 
+	    {value, R} = lists:keysearch(LResource, 2, Rs),
+	    R#presence.status
+    end;
 get_presences({status, LUser, LServer}) ->
     case get_presences({sorted, LUser, LServer}) of
         [Highest | _Rest] ->
@@ -574,9 +577,12 @@ get_presences({status, LUser, LServer}) ->
             "unavailable"
     end;
 get_presences({show, LUser, LServer, LResource}) ->
-    Rs = get_presences({sorted, LUser, LServer}),
-    {value, R} = lists:keysearch(LResource, 2, Rs),
-    R#presence.show;
+    case get_presences({sorted, LUser, LServer}) of
+	[] -> "unavailable";
+	Rs -> 
+	    {value, R} = lists:keysearch(LResource, 2, Rs),
+	    R#presence.show
+    end;
 get_presences({show, LUser, LServer}) ->
     case get_presences({sorted, LUser, LServer}) of
         [Highest | _Rest] ->
