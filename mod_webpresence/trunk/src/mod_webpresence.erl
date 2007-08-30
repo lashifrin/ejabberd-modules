@@ -146,6 +146,13 @@ handle_info({route, From, To, Packet},
 	    ok
     end,
     {noreply, State};
+
+
+handle_info({tell_baseurl, Pid},
+	    #state{base_url = BaseURL} = State) ->
+    Pid ! {baseurl_is, BaseURL},
+    {noreply, State};
+
 handle_info(_Info, State) ->
     {noreply, State}.
 
@@ -578,54 +585,66 @@ get_presences({show, LUser, LServer}) ->
             "unavailable"
     end.
 
-make_js(WP, Prs, Show_us) ->
-    Port = integer_to_list(5280), 
-    Path = "presence",
-    Lang = "en",
+make_js(WP, Prs, Show_us, Lang) ->
     {User, Server} = WP#webpresence.us,
+    BaseURL = get_baseurl(Server),
     US_string = case Show_us of
 		    true -> 
-			"var jabber_user = '"++User++"';\n"
-			    "var jabber_server = '"++Server++"';\n";
+			"var jabber_user='"++User++"';\n"
+			    "var jabber_server='"++Server++"';\n";
 		    false -> ""
 		end,
+    FunImage = fun(I, S) ->
+		       case I of
+			   "---" -> "";
+			   Icon -> " image:'"++BaseURL++"image/"++Icon++"/"++S++"'\n"
+		       end
+	       end,
     R_string_list = case Prs of
 			[] -> 
 			    Show = "unavailable",
-			    Icon = WP#webpresence.icon,
-			    "{  show: '"++Show++"',\n"
-				"  long_show: '"++long_show(Show, Lang)++"',\n"
-				"  status: 'I sign off because....',\n" %+++++
-				"  image: 'http://"++Server++":"++Port++"/"++Path++"/image/"++WP#webpresence.icon++"/"++Show++"'\n"
-				"}";
+			    ["{show:'"++Show++"',\n"
+			     " long_show:'"++long_show(Show, Lang)++"',\n"
+			     " status:'',\n" % TODO
+			     ++ FunImage(WP#webpresence.icon, Show) ++
+			     "}"];
 			_ -> lists:map(
 			       fun(Pr) ->
 				       Show =  Pr#presence.show,
-				       Icon = WP#webpresence.icon,
-				       "{  name: '"++Pr#presence.resource++"',\n"
-					   "  priority: "++integer_to_list(Pr#presence.priority)++",\n"
-					   "  show: '"++Show++"',\n"
-					   "  long_show: '"++long_show(Show, Lang)++"',\n"
-					   "  status: '"++Pr#presence.status++"',\n"
-					   "  image: 'http://"++Server++":"++Port++"/"++Path++"/image/"++Icon++"/"++Show++"'\n"
+				       "{name:'"++Pr#presence.resource++"',\n"
+					   " priority:"++integer_to_list(Pr#presence.priority)++",\n"
+					   " show:'"++Show++"',\n"
+					   " long_show:'"++long_show(Show, Lang)++"',\n"
+					   " status:'"++Pr#presence.status++"',\n"
+					   ++ FunImage(WP#webpresence.icon, Show) ++
 					   "}"
 			       end,
 			       Prs)
 		    end,
     R_string = lists:foldl(
 		 fun(RS, Res) ->
-			 Res ++ ",\n" ++ RS
+			 case Res of
+			     "" -> RS;
+			     _ -> Res ++ ",\n" ++ RS
+			 end
 		 end,
 		 "",
 		 R_string_list),
-    US_string ++ "var jabber_resources = [\n"++R_string++"];".
+    US_string ++ "var jabber_resources=[\n"++R_string++"];".
 
 long_show("available", Lang) -> ?T("available");
 long_show("chat", Lang) -> ?T("chatty");
 long_show("away", Lang) -> ?T("away");
 long_show("xa", Lang) -> ?T("extended away");
-long_show("dnd", Lang) -> ?T("not disturb");
+long_show("dnd", Lang) -> ?T("do not disturb");
 long_show(_, Lang) -> ?T("unavailable").
+
+get_baseurl(Host) ->
+    Proc = gen_mod:get_module_proc(Host, ?PROCNAME),
+    Proc ! {tell_baseurl, self()},
+    receive 
+	{baseurl_is, BaseURL} -> BaseURL
+    end.
 
 -define(XML_HEADER, "<?xml version='1.0' encoding='utf-8'?>").
 
@@ -684,10 +703,10 @@ show_presence({xml, WP, LUser, LServer, Show_us}) ->
     Presence_xml = xml:element_to_string(get_presences({xml, LUser, LServer, Show_us})),
     {200, [{"Content-Type", "text/xml; charset=utf-8"}], ?XML_HEADER ++ Presence_xml};
 
-show_presence({js, WP, LUser, LServer, Show_us}) ->
+show_presence({js, WP, LUser, LServer, Show_us, Lang}) ->
     true = WP#webpresence.js,
     Prs = get_presences({sorted, LUser, LServer}),
-    Js = make_js(WP, Prs, Show_us),
+    Js = make_js(WP, Prs, Show_us, Lang),
     {200, [{"Content-Type", "text/html; charset=utf-8"}], Js};
 
 show_presence({text, WP, LUser, LServer}) ->
@@ -781,20 +800,20 @@ process2(["image", Theme, Show], _Request) ->
     Args = {image_example, Theme, Show},
     show_presence(Args);
 
-process2(["jid", User, Server | Tail], _Request) ->
-    serve_web_presence(jid, User, Server, Tail);
+process2(["jid", User, Server | Tail], Request) ->
+    serve_web_presence(jid, User, Server, Tail, Request);
 
-process2(["rid", Rid | Tail], _Request) ->
+process2(["rid", Rid | Tail], Request) ->
     [Pr] = mnesia:dirty_index_read(webpresence, Rid, #webpresence.ridurl),
     {User, Server} = Pr#webpresence.us,
-    serve_web_presence(rid, User, Server, Tail);
+    serve_web_presence(rid, User, Server, Tail, Request);
 
 %% Compatibility with old mod_presence
-process2([User, Server | Tail], _Request) ->
-    serve_web_presence(jid, User, Server, Tail).
+process2([User, Server | Tail], Request) ->
+    serve_web_presence(jid, User, Server, Tail, Request).
 
 
-serve_web_presence(TypeURL, User, Server, Tail) ->
+serve_web_presence(TypeURL, User, Server, Tail, #request{lang = Lang1}) ->
     LServer = jlib:nameprep(Server),
     true = lists:member(LServer, ?MYHOSTS),
     LUser = jlib:nodeprep(User),
@@ -804,6 +823,7 @@ serve_web_presence(TypeURL, User, Server, Tail) ->
 	rid -> false =/= WP#webpresence.ridurl
     end,
     Show_us = (TypeURL == jid),
+    Lang = parse_lang(Lang1),
     Args = case Tail of
 	       ["image"] -> 
 		   {image, WP, LUser, LServer};
@@ -816,7 +836,7 @@ serve_web_presence(TypeURL, User, Server, Tail) ->
 	       ["xml"] -> 
 		   {xml, WP, LUser, LServer, Show_us};
 	       ["js"] -> 
-		   {js, WP, LUser, LServer, Show_us};
+		   {js, WP, LUser, LServer, Show_us, Lang};
 	       ["text"] -> 
 		   {text, WP, LUser, LServer};
 	       ["text", "res", Resource] -> 
