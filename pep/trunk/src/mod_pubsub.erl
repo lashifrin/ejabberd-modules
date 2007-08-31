@@ -127,7 +127,7 @@ init([ServerHost, Opts]) ->
 			 {type, bag}]),
     mnesia:add_table_copy(pubsub_presence, node(), ram_copies),
 
-    Host = gen_mod:get_opt(host, Opts, "pubsub." ++ ServerHost),
+    Host = gen_mod:get_opt_host(ServerHost, Opts, "pubsub.@HOST@"),
     update_table(Host),
     mnesia:add_table_index(pubsub_node, host_parent),
     ServedHosts = gen_mod:get_opt(served_hosts, Opts, []),
