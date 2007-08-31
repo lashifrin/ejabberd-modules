@@ -29,3 +29,6 @@ and add for ad-hoc commands on the top of the config file:
 5) have fun
 
 For futhure info consult mod_logdb manual.
+
+Note for admins who use clustered setup: you need to install mod_logdb on each ejabberd node. 
+Multiple mod_logdb sessions can share database access without any problems.
