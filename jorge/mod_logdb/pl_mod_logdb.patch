@@ -1,0 +1,32 @@
+--- pl.msg	2007-08-08 18:04:32.000000000 +0200
++++ pl_new-utf.msg	2007-08-10 14:03:06.000000000 +0200
+@@ -423,3 +423,29 @@
+ % ./mod_muc/mod_muc.erl
+ {"ejabberd MUC module\nCopyright (c) 2003-2006 Alexey Shchepin", ""}.
+ 
++% mod_logdb
++{"Users Messages", "Wiadomości użytkownika"}.
++{"Date", "Data"}.
++{"Count", "Liczba"}.
++{"Logged messages for ", "Zapisane wiadomości dla "}.
++{" at ", " o "}.
++{"No logged messages for ", "Brak zapisanych wiadomości dla "}.
++{"Date, Time", "Data, Godzina"}.
++{"Direction: Jid", "Kierunek: Jid"}.
++{"Subject", "Temat"}.
++{"Body", "Treść"}.
++{"Messages","Wiadomości"}.
++{"Filter Selected", "Odfiltruj zaznaczone"}.
++{"Do Not Log Messages", "Nie zapisuj wiadomości"}.
++{"Log Messages", "Zapisuj wiadomości"}.
++{"Messages logging engine", "System zapisywania historii rozmów"}.
++{"Run-time Settings", "Ustawienia"}.
++{"Default", "Domyślne"}.
++{"Set logging preferences", "Ustaw preferencje zapisywania"}.
++{"Messages logging engine settings", "Ustawienia systemu logowania"}.
++{"Set run-time settings", "Zapisz ustawienia systemu logowania"}.
++{"Groupchat messages logging", "Zapisywanie rozmów z konferencji"}.
++{"Jids/Domains to ignore", "JID/Domena która ma być ignorowana"}.
++{"Purge messages older than (days)", "Usuń wiadomości starsze niż (w dniach)"}.
++{"Poll users settings (seconds)", "Czas aktualizacji preferencji użytkowników (sekundy)"}.
++
