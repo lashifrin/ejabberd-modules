@@ -1,3 +1,7 @@
+2007-08-31  Badlop  <badlop@ono.com>
+
+	* src/mod_cron.erl (web_page_host): Small improvement on page format.
+
 2007-08-23  Badlop  <badlop@ono.com>
 
 	* src/mod_cron.erl: Added page in Web Admin; currently only tasks view is possible.

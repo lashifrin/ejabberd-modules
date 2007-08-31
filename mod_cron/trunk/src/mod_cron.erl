@@ -161,15 +161,18 @@ web_page_host(Acc, _, _) -> Acc.
 make_tasks_table(Tasks, Lang) ->
     TList = lists:map(
 	      fun(T) ->
-		      TID = integer_to_list(T#task.taskid),
-		      TDef = io_lib:format("~p", [T#task.task]),
+		      {Time_num, Time_unit, Mod, Fun, Args} = T#task.task,
 		      ?XE("tr",
-			  [?XC("td", TID),
-			   ?XC("td", TDef)])
+			  [?XC("td", integer_to_list(Time_num) ++" " ++ atom_to_list(Time_unit)),
+			   ?XC("td", atom_to_list(Mod)),
+			   ?XC("td", atom_to_list(Fun)),
+			   ?XC("td", io_lib:format("~p", [Args]))])
 	      end, Tasks),
     [?XE("table",
 	 [?XE("thead",
 	      [?XE("tr",
-		   [?XCT("td", "Task ID"),
-		    ?XCT("td", "Task def")])]),
+		   [?XCT("td", "Periodicity"),
+		    ?XCT("td", "Module"),
+		    ?XCT("td", "Function"),
+		    ?XCT("td", "Arguments")])]),
 	  ?XE("tbody", TList)])].
