@@ -165,7 +165,7 @@ if ($token==$admin_name) {
 <?
 }
 ?>
-	<title>Jorge (beta) $Rev$</title>
+	<title><? print $xmpp_host_dotted; ?> :: Jorge (beta)</title>
         <script type="text/javascript">
             $(function() {
 		$('table#maincontent tbody#searchfield tr').quicksearch({

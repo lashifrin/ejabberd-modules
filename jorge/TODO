@@ -13,7 +13,6 @@ ToDo list for beta front-end for mod_logdb:
 - switch to AES encryption  (done) *
 - new look (done) *
 - more functions, less code garbage (done) *
-- finish offline message browser & replaying (moved to beta)
 - message text formating (done) *
 - additionaly security review to ensure that ther's no drawback in security functions
 - optimize sql queries in message browser - too many loops out þhere (done)*
@@ -27,7 +26,6 @@ ToDo list for beta front-end for mod_logdb:
 
 Sumarizing before bumping to beta stage:
 - "bug hunt session"
-- Respect resources
 
 Amusements:
 
