@@ -13,15 +13,19 @@
 -behaviour(gen_mod).
 
 -export([start/2, loop/0, stop/1, get_statistic/2, 
+	web_menu_main/1, web_page_main/2,
+        web_menu_node/2, web_page_node/5,
+        web_menu_host/2, web_page_host/3,
 	remove_user/2, user_send_packet/3, user_receive_packet/4,
 	user_login/1, user_logout/4]).
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
 -include("mod_roster.hrl").
+-include("ejabberd_http.hrl").
+-include("ejabberd_web_admin.hrl").
 
 -define(PROCNAME, ejabberd_mod_statsdx).
--define(T(Text), translate:translate("Lang", Text)).
 
 %% -------------------
 %% Module control
@@ -76,6 +80,13 @@ start(Host, Opts) ->
 		fun(E) -> ets:insert(stats, {{os, Host, E}, CD}) end,
 		list_elem(oss, id)
 	),
+    ejabberd_hooks:add(webadmin_menu_main, ?MODULE, web_menu_main, 50),
+    ejabberd_hooks:add(webadmin_menu_node, ?MODULE, web_menu_node, 50),
+    ejabberd_hooks:add(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
+    ejabberd_hooks:add(webadmin_page_main, ?MODULE, web_page_main, 50),
+    ejabberd_hooks:add(webadmin_page_node, ?MODULE, web_page_node, 50),
+    ejabberd_hooks:add(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
+    ejabberd_hooks:add(webadmin_user, Host, ?MODULE, web_user, 50),
 	case Hooks of
 		true ->
 			ejabberd_hooks:add(user_send_packet, Host, ?MODULE, user_send_packet, 90),
@@ -96,6 +107,13 @@ stop(Host) ->
     ejabberd_hooks:delete(user_send_packet, Host, ?MODULE, user_send_packet, 60),
     ejabberd_hooks:delete(user_receive_packet, Host, ?MODULE, user_receive_packet, 60),
     ejabberd_hooks:delete(remove_user, Host, ?MODULE, remove_user, 60),
+    ejabberd_hooks:delete(webadmin_menu_main, ?MODULE, web_menu_main, 50),
+    ejabberd_hooks:delete(webadmin_menu_node, ?MODULE, web_menu_node, 50),
+    ejabberd_hooks:delete(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
+    ejabberd_hooks:delete(webadmin_page_main, ?MODULE, web_page_main, 50),
+    ejabberd_hooks:delete(webadmin_page_node, ?MODULE, web_page_node, 50),
+    ejabberd_hooks:delete(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
+    ejabberd_hooks:delete(webadmin_user, Host, ?MODULE, web_user, 50),
 	ets:delete(stats),
 	case whereis(?PROCNAME) of
 		undefined -> ok;
@@ -123,7 +141,7 @@ user_send_packet(FromJID, ToJID, NewEl) ->
 	end,
 	ets:update_counter(stats, {send, Host, Type2, Dest}, 1),
 
-	% Registrarse para tramitar Host/mod_stats2file
+	%% Registrarse para tramitar Host/mod_stats2file
 	case list_to_atom(ToJID#jid.lresource) of
 		?MODULE -> received_response(FromJID, ToJID, NewEl);
 		_ -> ok
@@ -149,11 +167,11 @@ user_receive_packet(_JID, From, To, FixedPacket) ->
 %% get(*
 %% -------------------
 
-%gett(Arg) -> get(node(), [Arg, title]).
+%%gett(Arg) -> get(node(), [Arg, title]).
 getl(Args) -> get(node(), [Args]).
 getl(Args, Host) -> get(node(), [Args, Host]).
 
-%get(_Node, ["", title]) -> "";
+%%get(_Node, ["", title]) -> "";
 
 get_statistic(N, A) -> 
 	case catch get(N, A) of
@@ -318,9 +336,9 @@ get(_, ["vcards", title]) -> "Total vCards published";
 get(N, ["vcards"]) -> rpc:call(N, mnesia, table_info, [vcard, size]);
 get(_, ["vcards", Host]) -> get_vcards(Host);
 
-%get(_, ["ircconns", title]) -> "IRC connections";
-%get(_, ["ircconns"]) -> ets:info(irc_connection, size);
-%get(_, ["ircconns", Host]) -> get_irccons(Host); % This seems to crash for some people
+%%get(_, ["ircconns", title]) -> "IRC connections";
+%%get(_, ["ircconns"]) -> ets:info(irc_connection, size);
+%%get(_, ["ircconns", Host]) -> get_irccons(Host); % This seems to crash for some people
 get(_, ["uptime", title]) -> "Uptime";
 get(N, ["uptime"]) -> element(1, rpc:call(N, erlang, statistics, [wall_clock]));
 get(_, ["cputime", title]) -> "CPU Time";
@@ -377,23 +395,23 @@ get_totalrosteritems(Host) ->
     {atomic, {Host, Res}} = mnesia:transaction(F),
 	Res.
 
-% Copied from ejabberd_sm.erl
--record(session, {sid, usr, us, priority}).
+%% Copied from ejabberd_sm.erl
+%%-record(session, {sid, usr, us, priority}).
 
-get_authusers(Host) ->
-    F = fun() ->
-		F2 = fun(R, {H, A}) ->
-			{_LUser, LServer, _LResource} = R#session.usr,
-			A2 = case LServer of
-				H -> A+1;
-				_ -> A
-			end,
-			{H, A2}
-		end,
-		mnesia:foldl(F2, {Host, 0}, session)
-	end,
-    {atomic, {Host, Res}} = mnesia:transaction(F),
-	Res.
+%%get_authusers(Host) ->
+%%    F = fun() ->
+%%		F2 = fun(R, {H, A}) ->
+%%			{_LUser, LServer, _LResource} = R#session.usr,
+%%			A2 = case LServer of
+%%				H -> A+1;
+%%				_ -> A
+%%			end,
+%%			{H, A2}
+%%		end,
+%%		mnesia:foldl(F2, {Host, 0}, session)
+%%	end,
+%%    {atomic, {Host, Res}} = mnesia:transaction(F),
+%%	Res.
 
 -record(offline_msg, {us, timestamp, expire, from, to, packet}).
 
@@ -446,19 +464,19 @@ get_s2sconnections(Host) ->
     {atomic, {Host, Res}} = mnesia:transaction(F),
 	Res.
 
--record(irc_connection, {jid_server_host, pid}).
+%%-record(irc_connection, {jid_server_host, pid}).
 
-get_irccons(Host) ->
-	F2 = fun(R, {H, A}) ->
-		{From, _Server, _Host} = R#irc_connection.jid_server_host,
-		A2 = case From#jid.lserver of
-			H -> A+1;
-			_ -> A
-		end,
-		{H, A2}
-	end,
-    {Host, Res} = ets:foldl(F2, {Host, 0}, irc_connection),
-	Res.
+%%get_irccons(Host) ->
+%%	F2 = fun(R, {H, A}) ->
+%%		{From, _Server, _Host} = R#irc_connection.jid_server_host,
+%%		A2 = case From#jid.lserver of
+%%			H -> A+1;
+%%			_ -> A
+%%		end,
+%%		{H, A2}
+%%	end,
+%%    {Host, Res} = ets:foldl(F2, {Host, 0}, irc_connection),
+%%	Res.
 
 is_host(Host, Subhost) ->
 	Pos = string:len(Host)-string:len(Subhost)+1,
@@ -520,7 +538,7 @@ get_stat(Stat, Ims) ->
 	ets:update_counter(stats, Stat, {2,1,0,0}),
 	[{_, C}] = Res,
 	calc_avg(C, Ims).
-	%C.
+	%%C.
 
 calc_avg(Count, TimeMS) ->
 	TimeMIN = TimeMS/(1000*60),
@@ -550,7 +568,7 @@ ms_to_time(T) ->
 	[D, H, M, S].
 
 
-% Cuando un usuario conecta, pedirle iq:version a nombre de Host/mod_stats2file
+%% Cuando un usuario conecta, pedirle iq:version a nombre de Host/mod_stats2file
 user_login(U) ->
 	User = U#jid.luser,
 	Host = U#jid.lserver,
@@ -559,7 +577,7 @@ user_login(U) ->
 	ets:update_counter(stats, {user_login, Host}, 1),
 	request_iqversion(User, Host, Resource).
 
-% cuando un usuario desconecta, buscar en la tabla su JID/USR y quitarlo
+%% cuando un usuario desconecta, buscar en la tabla su JID/USR y quitarlo
 user_logout(User, Host, Resource, _Status) ->
 	ets:update_counter(stats, {user_logout, server}, 1),
 	ets:update_counter(stats, {user_logout, Host}, 1),
@@ -590,8 +608,8 @@ request_iqversion(User, Host, Resource) ->
 		[{xmlcdata,"\n"}, {xmlcdata,"  "}, {xmlelement, "query", [{"xmlns","jabber:iq:version"}], []}, {xmlcdata,"\n"}]},
 	ejabberd_local:route(From, To, Packet). 
 
-% cuando el virtualJID recibe una respuesta iqversion, 
-% almacenar su JID/USR + client + OS en una tabla
+%% cuando el virtualJID recibe una respuesta iqversion, 
+%% almacenar su JID/USR + client + OS en una tabla
 received_response(From, _To, {xmlelement, "iq", Attrs, Elc}) ->
 	User = From#jid.luser,
 	Host = From#jid.lserver,
@@ -610,7 +628,7 @@ received_response(From, _To, {xmlelement, "iq", Attrs, Elc}) ->
 	?NS_VERSION = xml:get_attr_s("xmlns", Attrs2),
 
 	Client = get_tag_cdata_subtag(El, "name"),
-	%Version = get_tag_cdata_subtag(El, "version"),
+	%%Version = get_tag_cdata_subtag(El, "version"),
 	OS = get_tag_cdata_subtag(El, "os"),
 	{Client_id, OS_id} = identify(Client, OS),
 
@@ -720,8 +738,313 @@ get_meanitemsinroster2(Items, Users) ->
 localtime_to_string({{Y, Mo, D},{H, Mi, S}}) ->
 	lists:concat([H, ":", Mi, ":", S, " ", D, "/", Mo, "/", Y]).
 
-% cuando toque mostrar estadisticas
-%get_iqversion() ->
-	% contar en la tabla cuantos tienen cliente: *psi*
-	%buscar en la tabla iqversion
-	%ok.
+%% cuando toque mostrar estadisticas
+%%get_iqversion() ->
+	%% contar en la tabla cuantos tienen cliente: *psi*
+	%%buscar en la tabla iqversion
+	%%ok.
+
+
+%%-------------------
+%% Web Admin Menu
+%%-------------------
+
+web_menu_main(Acc) ->
+        Acc ++ [{"statsdx", "Statistics Dx"}].
+
+web_menu_node(Acc, _Node) ->
+        Acc ++ [{"statsdx", "Statistics Dx"}].
+
+web_menu_host(Acc, _Host) ->
+        Acc ++ [{"statsdx", "Statistics Dx"}].
+
+%%-------------------
+%% Web Admin Page
+%%-------------------
+
+web_page_main(_, #request{path=["statsdx"], lang = Lang} = _Request) ->
+    Res = [?XC("h1", ?T("Statistics")++" Dx"),
+     ?XC("h3", "Accounts"),
+     ?XAE("table", [],
+      [?XE("tbody", [
+	     do_stat(global, Lang, "registeredusers")
+      ])
+     ]),
+     ?XC("h3", "Roster"),
+     ?XAE("table", [],
+      [?XE("tbody", [
+	     do_stat(global, Lang, "totalrosteritems"),
+	     do_stat(global, Lang, "meanitemsinroster")
+      ])
+     ]),
+     ?XC("h3", "Users"),
+     ?XAE("table", [],
+      [?XE("tbody", [
+	     do_stat(global, Lang, "onlineusers"),
+	     do_stat(global, Lang, "offlinemsg"),
+	     do_stat(global, Lang, "vcards")
+      ])
+     ]),
+     ?XC("h3", "MUC"),
+     ?XAE("table", [],
+      [?XE("tbody", [
+	     do_stat(global, Lang, "totalmucrooms"),
+	     do_stat(global, Lang, "permmucrooms"),
+	     do_stat(global, Lang, "regmucrooms")
+      ])
+     ]),
+     ?XC("h3", "Pub/Sub"),
+     ?XAE("table", [],
+      [?XE("tbody", [
+	     do_stat(global, Lang, "regpubsubnodes")
+      ])
+     ]),
+     %%?XC("h3", "IRC"),
+     %%?XAE("table", [],
+     %% [?XE("tbody", [
+     %%  do_stat(global, Lang, "ircconns")
+     %% ])
+     %%]),
+     ?XC("h3", "Ratios"),
+     ?XAE("table", [],
+      [?XE("tbody", [
+      ])
+     ]),
+     ?XC("h3", "Sessions: " ++ get_stat_n("client")),
+     ?XAE("table", [],
+      [?XE("tbody",
+	     do_stat_table(global, Lang, "client", server)
+      )
+     ]),
+     ?XC("h3", "Sessions: " ++ get_stat_n("os")),
+     ?XAE("table", [],
+      [?XE("tbody", 
+	     do_stat_table(global, Lang, "os", server)
+      )
+     ]),
+     ?XC("h3", "Sessions: " ++ get_stat_n("client") ++ "/" ++ get_stat_n("os")),
+     ?XAE("table", [],
+      [?XE("tbody",
+	     do_stat_table(global, Lang, "client_os", server)
+      )
+     ]),
+     ?XC("h3", "Sessions: " ++ get_stat_n("languages")),
+     ?XAE("table", [],
+      [?XE("tbody", 
+	     do_stat_table(global, Lang, "languages", server)
+      )
+     ])
+	],
+    {stop, Res};
+web_page_main(Acc, _) -> Acc.
+
+web_page_node(_, Node, ["statsdx"], _Query, Lang) ->
+    TransactionsCommited =
+	rpc:call(Node, mnesia, system_info, [transaction_commits]),
+    TransactionsAborted =
+	rpc:call(Node, mnesia, system_info, [transaction_failures]),
+    TransactionsRestarted =
+	rpc:call(Node, mnesia, system_info, [transaction_restarts]),
+    TransactionsLogged =
+	rpc:call(Node, mnesia, system_info, [transaction_log_writes]),
+	
+	Res =
+    [?XC("h1", io_lib:format(?T("~p statistics"), [Node])),
+     ?XC("h3", "Connections"),
+     ?XAE("table", [],
+	  [?XE("tbody", [
+	     do_stat(global, Lang, "onlineusers"),
+		do_stat(Node, Lang, "httppollusers"),
+		do_stat(Node, Lang, "httpbindusers"),
+		do_stat(Node, Lang, "s2sconnections"),
+		do_stat(Node, Lang, "s2sservers")
+       ])
+	  ]),
+     ?XC("h3", "Erlang"),
+     ?XAE("table", [],
+	  [?XE("tbody", [
+		do_stat(Node, Lang, "operatingsystem"),
+		do_stat(Node, Lang, "erlangmachine"),
+		do_stat(Node, Lang, "erlangmachinetarget"),
+		do_stat(Node, Lang, "maxprocallowed"),
+		do_stat(Node, Lang, "procqueue"),
+		do_stat(Node, Lang, "totalerlproc")
+       ])
+	  ]),
+     ?XC("h3", "Times"),
+     ?XAE("table", [],
+	  [?XE("tbody", [
+		do_stat(Node, Lang, "uptime"),
+		do_stat(Node, Lang, "uptimehuman"),
+		do_stat(Node, Lang, "lastrestart"),
+		do_stat(Node, Lang, "cputime")
+       ])
+	  ]),
+     ?XC("h3", "CPU"),
+     ?XAE("table", [],
+	  [?XE("tbody", [
+		do_stat(Node, Lang, "cpu_avg1"),
+		do_stat(Node, Lang, "cpu_avg5"),
+		do_stat(Node, Lang, "cpu_avg15"),
+		do_stat(Node, Lang, "cpu_nprocs")%,
+		%%do_stat(Node, Lang, "cpu_util_user"),
+		%%do_stat(Node, Lang, "cpu_nice_user"),
+		%%do_stat(Node, Lang, "cpu_kernel"),
+		%%do_stat(Node, Lang, "cpu_idle"),
+		%%do_stat(Node, Lang, "cpu_wait")
+       ])
+	  ]),
+     %%?XC("h3", "RAM"),
+     %%?XAE("table", [],
+     %% [?XE("tbody", [
+     %%  do_stat(Node, Lang, "memsup_system"),
+     %%  do_stat(Node, Lang, "memsup_free"),
+     %%  do_stat(Node, Lang, "reductions")
+     %%])
+     %%]),
+     ?XC("h3", "Database"),
+     ?XAE("table", [],
+	  [?XE("tbody", [
+		?XE("tr", [?XCT("td", "Transactions commited"),
+			   ?XAC("td", [{"class", "alignright"}],
+				integer_to_list(TransactionsCommited))]),
+		?XE("tr", [?XCT("td", "Transactions aborted"),
+			   ?XAC("td", [{"class", "alignright"}],
+				integer_to_list(TransactionsAborted))]),
+		?XE("tr", [?XCT("td", "Transactions restarted"),
+			   ?XAC("td", [{"class", "alignright"}],
+				integer_to_list(TransactionsRestarted))]),
+		?XE("tr", [?XCT("td", "Transactions logged"),
+			   ?XAC("td", [{"class", "alignright"}],
+				integer_to_list(TransactionsLogged))])
+       ])
+	  ])],
+    {stop, Res};
+web_page_node(Acc, _, _, _, _) -> Acc.
+
+web_page_host(_, Host,
+             #request{path = ["statsdx"],
+                      lang = Lang} = _Request) ->
+    Res = [?XC("h1", ?T("Statistics")++" Dx"),
+     ?XC("h2", Host),
+     ?XC("h3", "Accounts"),
+     ?XAE("table", [],
+      [?XE("tbody", [
+	     do_stat(global, Lang, "registeredusers", Host)
+      ])
+     ]),
+     ?XC("h3", "Roster"),
+     ?XAE("table", [],
+      [?XE("tbody", [
+	     do_stat(global, Lang, "totalrosteritems", Host),
+	     do_stat(global, Lang, "meanitemsinroster", Host)
+      ])
+     ]),
+     ?XC("h3", "Users"),
+     ?XAE("table", [],
+      [?XE("tbody", [
+	     do_stat(global, Lang, "onlineusers", Host),
+	     do_stat(global, Lang, "offlinemsg", Host),
+	     do_stat(global, Lang, "vcards", Host)
+      ])
+     ]),
+     ?XC("h3", "Connections"),
+     ?XAE("table", [],
+      [?XE("tbody", [
+	     do_stat(global, Lang, "s2sconnections", Host)
+      ])
+     ]),
+     ?XC("h3", "MUC"),
+     ?XAE("table", [],
+      [?XE("tbody", [
+	     do_stat(global, Lang, "totalmucrooms", Host),
+	     do_stat(global, Lang, "permmucrooms", Host),
+	     do_stat(global, Lang, "regmucrooms", Host)
+      ])
+     ]),
+     %%?XC("h3", "IRC"),
+     %%?XAE("table", [],
+     %% [?XE("tbody", [
+     %%  do_stat(global, Lang, "ircconns", Host)
+     %% ])
+     %%]),
+     %%?XC("h3", "Pub/Sub"),
+     %%?XAE("table", [],
+     %% [?XE("tbody", [
+     %%  do_stat(global, Lang, "regpubsubnodes", Host)
+     %% ])
+     %%]),
+     ?XC("h3", "Ratios"),
+     ?XAE("table", [],
+      [?XE("tbody", [
+      ])
+     ]),
+     ?XC("h3", "Sessions: " ++ get_stat_n("client")),
+     ?XAE("table", [],
+      [?XE("tbody",
+	     do_stat_table(global, Lang, "client", Host)
+      )
+     ]),
+     ?XC("h3", "Sessions: " ++ get_stat_n("os")),
+     ?XAE("table", [],
+      [?XE("tbody",
+	     do_stat_table(global, Lang, "os", Host)
+      )
+     ]),
+     ?XC("h3", "Sessions: " ++ get_stat_n("client") ++ "/" ++ get_stat_n("os")),
+     ?XAE("table", [],
+      [?XE("tbody",
+	     do_stat_table(global, Lang, "client_os", Host)
+      )
+     ]),
+     ?XC("h3", "Sessions: " ++ get_stat_n("languages")),
+     ?XAE("table", [],
+      [?XE("tbody", 
+	     do_stat_table(global, Lang, "languages", Host)
+      )
+     ])
+	],
+    {stop, Res};
+web_page_host(Acc, _, _) -> Acc.
+
+
+%%-------------------
+%% Web Admin Utils
+%%-------------------
+
+do_table_element(Lang, L, N) ->
+	?XE("tr", [
+	 ?XCT("td", L),
+	 ?XAC("td", [{"class", "alignright"}],
+	 N)
+	]).
+ 
+do_stat_table(global, Lang, Stat, Host) ->
+	Os = mod_statsdx:get_statistic(global, [Stat, Host]),
+	lists:map(
+		fun({L, N}) -> 
+			do_table_element(Lang, L, io_lib:format("~p", [N]))
+		end,
+		Os
+	).
+ 
+do_stat(Node, Lang, Stat) ->
+	?XE("tr", [
+		?XCT("td", get_stat_n(Stat)),
+		?XAC("td", [{"class", "alignright"}],
+		get_stat_v(Node, [Stat]))]).
+
+do_stat(Node, Lang, Stat, Host) ->
+	%%[Res] = get_stat_v(Node, [Stat, Host]),
+	%%do_table_element(Lang, get_stat_n(Stat), Res).
+	do_table_element(Lang, get_stat_n(Stat), get_stat_v(Node, [Stat, Host])).
+
+%% Get a stat name
+get_stat_n(Stat) ->
+	mod_statsdx:get_statistic(foo, [Stat, title]).
+%% Get a stat value
+get_stat_v(Node, Stat) -> get_stat_v2(mod_statsdx:get_statistic(Node, Stat)).
+get_stat_v2(Value) when is_list(Value) -> Value;
+get_stat_v2(Value) when is_float(Value) -> io_lib:format("~.4f", [Value]);
+get_stat_v2(Value) -> io_lib:format("~p", [Value]).
+
