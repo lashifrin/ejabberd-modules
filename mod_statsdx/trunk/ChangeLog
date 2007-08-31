@@ -1,6 +1,6 @@
 2007-08-31  Badlop  <badlop@ono.com>
 
-	* src/mod_statsdx.erl: Added pages to Web Admin.
+	* src/mod_statsdx.erl: Added pages to Web Admin. Apply Emacs-mode indentation.
 	* src/ejabberd_web_admin.erl: No need to patch core web admin file.
 	* Emakefile: Idem.
 
