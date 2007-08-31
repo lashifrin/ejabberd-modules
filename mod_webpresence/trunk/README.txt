@@ -196,7 +196,7 @@ It assumes that the URI of the presence is:
 	$doc->load('http://example.org:5280/presence/jid/tom/example.org/xml');
 	$presences = $doc->getElementsByTagName("presence");
 	foreach ($presences as $presence) {
-		echo "<p style='bottom-margin: 1px;'>";
+		echo "<p>";
 		echo "<img src='http://example.org:5280/presence/jid/tom/example.org/avatar' style='display: block; margin-right: 10px;float: left;'/>";
 		echo "<a href='xmpp:".$presence->getAttribute('user').'@'.$presence->getAttribute('server')."'>";
 		echo "Tobias Markmann</a><br />";
@@ -213,7 +213,7 @@ It assumes that the URI of the presence is:
 					default:	echo ucfirst($resource->getAttribute('show'));
 				}
 				if($resource->nodeValue){
-					echo ": ".htmlspecialchars($resource->nodeValue);
+					echo ": ".$resource->nodeValue;
 				}
 				echo "<br />";
 			}

@@ -621,7 +621,7 @@ make_js(WP, Prs, Show_us, Lang) ->
 					   " priority:"++integer_to_list(Pr#presence.priority)++",\n"
 					   " show:'"++Show++"',\n"
 					   " long_show:'"++long_show(Show, Lang)++"',\n"
-					   " status:'"++Pr#presence.status++"',\n"
+					   " status:'"++escape(Pr#presence.status)++"',\n"
 					   ++ FunImage(WP#webpresence.icon, Show) ++
 					   "}"
 			       end,
@@ -639,11 +639,15 @@ make_js(WP, Prs, Show_us, Lang) ->
     US_string ++ "var jabber_resources=[\n"++R_string++"];".
 
 long_show("available", Lang) -> ?T("available");
-long_show("chat", Lang) -> ?T("chatty");
+long_show("chat", Lang) -> ?T("free for chat");
 long_show("away", Lang) -> ?T("away");
 long_show("xa", Lang) -> ?T("extended away");
 long_show("dnd", Lang) -> ?T("do not disturb");
 long_show(_, Lang) -> ?T("unavailable").
+
+escape(S1) ->
+    {ok, S2, _} = regexp:gsub(S1, "\'", "\\'"),
+    S2.
 
 get_baseurl(Host) ->
     Proc = gen_mod:get_module_proc(Host, ?PROCNAME),
@@ -825,8 +829,8 @@ serve_web_presence(TypeURL, User, Server, Tail, #request{lang = Lang1}) ->
     LUser = jlib:nodeprep(User),
     WP = get_wp(LUser, LServer),
     case TypeURL of
-	jid -> true =:= WP#webpresence.jidurl;
-	rid -> false =/= WP#webpresence.ridurl
+	jid -> true = WP#webpresence.jidurl;
+	rid -> true = is_list(WP#webpresence.ridurl)
     end,
     Show_us = (TypeURL == jid),
     Lang = parse_lang(Lang1),

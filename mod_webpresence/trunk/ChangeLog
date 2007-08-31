@@ -1,3 +1,7 @@
+2007-08-31  Badlop  <badlop@ono.com>
+
+	* src/mod_webpresence.erl: Escape ' in status message. Fix bug while cheking jidurl and ridurl options. Small fix in PHP example.
+
 2007-08-30  Badlop  <badlop@ono.com>
 
 	* src/mod_webpresence.erl: Support for JavaScript output. Request for image of an unavailable resource results in an unavailable type of image.
