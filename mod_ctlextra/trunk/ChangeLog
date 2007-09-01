@@ -1,6 +1,6 @@
 2007-08-29  Badlop  <badlop@ono.com>
 
-	* src/mod_ctlextra.erl: Added comand: stats uptime-seconds.
+	* src/mod_ctlextra.erl: Added command: stats uptime-seconds.
 
 2007-08-24  Badlop  <badlop@ono.com>
 
