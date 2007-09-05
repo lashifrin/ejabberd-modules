@@ -1482,7 +1482,7 @@ get_items(Host, JID, Node, SMaxItems) ->
 				  {xmlelement, "item", ItemAttrs, Payload}
 			  end, Items),
 		    {result, [{xmlelement, "pubsub",
-			       [{"xmlns", ?NS_PUBSUB_EVENT}],
+			       [{"xmlns", ?NS_PUBSUB}],
 			       [{xmlelement, "items",
 				 [{"node", node_to_string(Node)}],
 				 ItemsEls}]}]};
