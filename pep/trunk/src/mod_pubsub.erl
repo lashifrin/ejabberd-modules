@@ -1053,11 +1053,15 @@ publish_item(Host, JID, Node, ItemID, Payload) ->
 			{pep_node, []} ->
 			    %% In PEP, nodes are created automatically
 			    %% on publishing.
-			    case create_new_node(Host, Node, Host) of
-				{error, _} = E ->
-				    E;
-				{result, _} ->
-				    mnesia:read({Table, {Host, Node}})
+			    if Publisher == Host ->
+				    case create_new_node(Host, Node, Host) of
+					{error, _} = E ->
+					    E;
+					{result, _} ->
+					    mnesia:read({Table, {Host, Node}})
+				    end;
+			       true ->
+				    {error, ?ERR_NOT_ALLOWED}
 			    end
 		    end,
 		case NodeData of
