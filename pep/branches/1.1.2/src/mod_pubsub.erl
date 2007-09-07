@@ -928,33 +928,37 @@ create_new_node(Host, Node, Owner, ServerHost, Access, Configuration) ->
 	    %% And in PEP, instant nodes are not supported.
 	    {error, extend_error(?ERR_NOT_ACCEPTABLE, "nodeid-required")};
 	{{_, _, _}, _, _} ->
-	    LOwner = Host,
-	    F = fun() ->
-			case mnesia:read({pep_node, {LOwner, Node}}) of
-			    [_] ->
-				{error, ?ERR_CONFLICT};
-			    [] ->
-				Entities =
-				    ?DICT:store(
-				       LOwner,
-				       #entity{affiliation = owner,
-					       subscription = none},
-				       ?DICT:new()),
-				mnesia:write(
-				  #pep_node{owner_node = {LOwner, Node},
-					    owner = LOwner,
-					    info = #nodeinfo{entities = Entities,
-							     options = ConfigOptions}}),
-				ok
-			end
-		end,
-	    case mnesia:transaction(F) of
-		{atomic, ok} ->
-		    {result, []};
-		{atomic, {error, _} = Error} ->
-		    Error;
-		_ ->
-		    {error, ?ERR_INTERNAL_SERVER_ERROR}
+	    LOwner = jlib:jid_tolower(jlib:jid_remove_resource(Owner)),
+	    if LOwner == Host ->
+		    F = fun() ->
+				case mnesia:read({pep_node, {LOwner, Node}}) of
+				    [_] ->
+					{error, ?ERR_CONFLICT};
+				    [] ->
+					Entities =
+					    ?DICT:store(
+					       LOwner,
+					       #entity{affiliation = owner,
+						       subscription = none},
+					       ?DICT:new()),
+					mnesia:write(
+					  #pep_node{owner_node = {LOwner, Node},
+						    owner = LOwner,
+						    info = #nodeinfo{entities = Entities,
+								     options = ConfigOptions}}),
+					ok
+				end
+			end,
+		    case mnesia:transaction(F) of
+			{atomic, ok} ->
+			    {result, []};
+			{atomic, {error, _} = Error} ->
+			    Error;
+			_ ->
+			    {error, ?ERR_INTERNAL_SERVER_ERROR}
+		    end;
+	       true ->
+		    {error, ?ERR_NOT_ALLOWED}
 	    end;
 	{_, [], _} ->
 	    {LOU, LOS, _} = jlib:jid_tolower(Owner),
@@ -969,7 +973,7 @@ create_new_node(Host, Node, Owner, ServerHost, Access, Configuration) ->
 		     [{xmlelement, "pubsub",
 		       [{"xmlns", ?NS_PUBSUB}],
 		       [{xmlelement, "create",
-			 [{"node", node_to_string(Node)}], []}]}]};
+			 [{"node", node_to_string(NewNode)}], []}]}]};
 		{error, _} = Error ->
 		    Error
 	    end;
@@ -1053,11 +1057,15 @@ publish_item(Host, JID, Node, ItemID, Payload) ->
 			{pep_node, []} ->
 			    %% In PEP, nodes are created automatically
 			    %% on publishing.
-			    case create_new_node(Host, Node, Host) of
-				{error, _} = E ->
-				    E;
-				{result, _} ->
-				    mnesia:read({Table, {Host, Node}})
+			    if Publisher == Host ->
+				    case create_new_node(Host, Node, Host) of
+					{error, _} = E ->
+					    E;
+					{result, _} ->
+					    mnesia:read({Table, {Host, Node}})
+				    end;
+			       true ->
+				    {error, ?ERR_NOT_ALLOWED}
 			    end
 		    end,
 		case NodeData of
@@ -1482,7 +1490,7 @@ get_items(Host, JID, Node, SMaxItems) ->
 				  {xmlelement, "item", ItemAttrs, Payload}
 			  end, Items),
 		    {result, [{xmlelement, "pubsub",
-			       [{"xmlns", ?NS_PUBSUB_EVENT}],
+			       [{"xmlns", ?NS_PUBSUB}],
 			       [{xmlelement, "items",
 				 [{"node", node_to_string(Node)}],
 				 ItemsEls}]}]};
