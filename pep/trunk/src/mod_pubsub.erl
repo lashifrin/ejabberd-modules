@@ -928,33 +928,37 @@ create_new_node(Host, Node, Owner, ServerHost, Access, Configuration) ->
 	    %% And in PEP, instant nodes are not supported.
 	    {error, extend_error(?ERR_NOT_ACCEPTABLE, "nodeid-required")};
 	{{_, _, _}, _, _} ->
-	    LOwner = Host,
-	    F = fun() ->
-			case mnesia:read({pep_node, {LOwner, Node}}) of
-			    [_] ->
-				{error, ?ERR_CONFLICT};
-			    [] ->
-				Entities =
-				    ?DICT:store(
-				       LOwner,
-				       #entity{affiliation = owner,
-					       subscription = none},
-				       ?DICT:new()),
-				mnesia:write(
-				  #pep_node{owner_node = {LOwner, Node},
-					    owner = LOwner,
-					    info = #nodeinfo{entities = Entities,
-							     options = ConfigOptions}}),
-				ok
-			end
-		end,
-	    case mnesia:transaction(F) of
-		{atomic, ok} ->
-		    {result, []};
-		{atomic, {error, _} = Error} ->
-		    Error;
-		_ ->
-		    {error, ?ERR_INTERNAL_SERVER_ERROR}
+	    LOwner = jlib:jid_tolower(jlib:jid_remove_resource(Owner)),
+	    if LOwner == Host ->
+		    F = fun() ->
+				case mnesia:read({pep_node, {LOwner, Node}}) of
+				    [_] ->
+					{error, ?ERR_CONFLICT};
+				    [] ->
+					Entities =
+					    ?DICT:store(
+					       LOwner,
+					       #entity{affiliation = owner,
+						       subscription = none},
+					       ?DICT:new()),
+					mnesia:write(
+					  #pep_node{owner_node = {LOwner, Node},
+						    owner = LOwner,
+						    info = #nodeinfo{entities = Entities,
+								     options = ConfigOptions}}),
+					ok
+				end
+			end,
+		    case mnesia:transaction(F) of
+			{atomic, ok} ->
+			    {result, []};
+			{atomic, {error, _} = Error} ->
+			    Error;
+			_ ->
+			    {error, ?ERR_INTERNAL_SERVER_ERROR}
+		    end;
+	       true ->
+		    {error, ?ERR_NOT_ALLOWED}
 	    end;
 	{_, [], _} ->
 	    {LOU, LOS, _} = jlib:jid_tolower(Owner),
