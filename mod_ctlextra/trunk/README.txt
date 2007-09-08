@@ -21,14 +21,18 @@ Add the module to your ejabberd.cfg, on the modules section:
 	USAGE
 	=====
 
-Now you have several new options for ejabberd-ctl
+Now you have several new commands in ejabberdctl.
 
-Example for vcard: ejabberdctl eja@host vcard-get joe myjab.net email
+Description of some commands:
 
-The file used by 'pushroster' and 'pushroster-all' must be placed:
- * Windows: on the directory were you installed ejabberd: 'C:/Program Files/ejabberd'
- * Other OS: on the same directory where the .beam files are.
-Example content for the roster file:
+ - vcard-*
+   Example: ejabberdctl eja@host vcard-get joe myjab.net email
+
+ - pushroster*
+   The file used by 'pushroster' and 'pushroster-all' must be placed:
+     - Windows: on the directory were you installed ejabberd: 'C:/Program Files/ejabberd'
+     - Other OS: on the same directory where the .beam files are.
+   Example content for the roster file:
    [{"bob", "example.org", "workers", "Bob"},
     {"mart", "example.org", "workers", "Mart"},
     {"Rich", "example.org", "bosses", "Rich"}].

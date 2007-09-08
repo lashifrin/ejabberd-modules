@@ -1,22 +1,31 @@
+2007-09-08  Badlop  <badlop@ono.com>
+
+	* src/mod_ctlextra.erl: Bugfix: unregister commands when module 
+	stops. Removed all MUC-related commands. 
+
 2007-08-29  Badlop  <badlop@ono.com>
 
 	* src/mod_ctlextra.erl: Added command: stats uptime-seconds.
 
 2007-08-24  Badlop  <badlop@ono.com>
 
-	* src/mod_ctlextra.erl: Fixed bug in vcard-set command that forgot second level attributes.
+	* src/mod_ctlextra.erl: Fixed bug in vcard-set command that 
+	forgot second level attributes.
 
 2007-08-23  Badlop  <badlop@ono.com>
 
-	* src/mod_ctlextra.erl: Command add-rosteritem now pushes the roster item to the client. New command rem-rosteritem.
+	* src/mod_ctlextra.erl: Command add-rosteritem now pushes the 
+	roster item to the client. New command rem-rosteritem.
 
 2007-08-19  Badlop  <badlop@ono.com>
 
-	* src/mod_ctlextra.erl: Now vcard-get and vcard-set are more compatible with mod_vcard_odbc and mod_vcard_ldap.
+	* src/mod_ctlextra.erl: Now vcard-get and vcard-set are more 
+	compatible with mod_vcard_odbc and mod_vcard_ldap.
 
 2007-08-16  Badlop  <badlop@ono.com>
 
-	* src/mod_ctlextra.erl: add-rosteritem only adds an item in a roster.
+	* src/mod_ctlextra.erl: add-rosteritem only adds an item in a 
+	roster.
 
 2007-08-07  Badlop  <badlop@ono.com>
 
