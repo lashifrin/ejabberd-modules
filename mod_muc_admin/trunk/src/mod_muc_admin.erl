@@ -3,17 +3,19 @@
 %%% Author  : Badlop <badlop@ono.com>
 %%% Purpose : Adds more commands to ejabberd_ctl
 %%% Created : 8 Sep 2007 by Badlop <badlop@ono.com>
-%%% Id      : $Id: mod_muc_admin.erl 344 2007-08-29 11:57:43Z badlop $
+%%% Id      : $Id$
 %%%----------------------------------------------------------------------
 
 -module(mod_muc_admin).
 -author('badlop@ono.com').
--vsn('$Revision: 344 $ ').
+-vsn('$Revision$ ').
 
 -behaviour(gen_mod).
 
 -export([start/2,
 	 stop/1,
+	 web_menu_main/1, web_page_main/2,
+	 web_menu_host/2, web_page_host/3,
 	 ctl_process/2,
 	 ctl_process/3
 	]).
@@ -21,6 +23,8 @@
 -include("ejabberd.hrl").
 -include("ejabberd_ctl.hrl").
 -include("jlib.hrl").
+-include("ejabberd_http.hrl").
+-include("ejabberd_web_admin.hrl").
 
 %% Copied from mod_muc/mod_muc*.erl
 -define(MAX_USERS_DEFAULT, 200).
@@ -67,10 +71,21 @@
 %%----------------------------
 
 start(Host, _Opts) ->
-    register_commands(Host).
+    ejabberd_hooks:add(webadmin_menu_main, ?MODULE, web_menu_main, 50),
+    ejabberd_hooks:add(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
+    ejabberd_hooks:add(webadmin_page_main, ?MODULE, web_page_main, 50),
+    ejabberd_hooks:add(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
+    ejabberd_ctl:register_commands(commands_global(), ?MODULE, ctl_process),
+    ejabberd_ctl:register_commands(Host, commands_host(), ?MODULE, ctl_process).
 
 stop(Host) ->
-    unregister_commands(Host).
+    ejabberd_hooks:delete(webadmin_menu_main, ?MODULE, web_menu_main, 50),
+    ejabberd_hooks:delete(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
+    ejabberd_hooks:delete(webadmin_page_main, ?MODULE, web_page_main, 50),
+    ejabberd_hooks:delete(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
+    ejabberd_hooks:delete(webadmin_user, Host, ?MODULE, web_user, 50),
+    ejabberd_ctl:unregister_commands(commands_global(), ?MODULE, ctl_process),
+    ejabberd_ctl:unregister_commands(Host, commands_host(), ?MODULE, ctl_process).
 
 
 %%----------------------------
@@ -90,14 +105,6 @@ commands_host() ->
      {"muc-unused-destroy days", "destroy rooms without activity last days"},
      {"muc-online-rooms", "list existing rooms"}
     ].
-
-register_commands(Host) ->
-    ejabberd_ctl:register_commands(commands_global(), ?MODULE, ctl_process),
-    ejabberd_ctl:register_commands(Host, commands_host(), ?MODULE, ctl_process).
-
-unregister_commands(Host) ->
-    ejabberd_ctl:unregister_commands(commands_global(), ?MODULE, ctl_process),
-    ejabberd_ctl:unregister_commands(Host, commands_host(), ?MODULE, ctl_process).
 
 ctl_process(Val, ["muc-unused-list", Days]) ->
     ctl_process(Val, global, ["muc-unused-list", Days]);
@@ -141,6 +148,102 @@ ctl_process(Val, _Host, _Args) ->
 %%----------------------------
 %% Web Admin
 %%----------------------------
+
+%%---------------
+%% Web Admin Menu
+
+web_menu_main(Acc) ->
+    Acc ++ [{"muc", "Multi-User Chat"}].
+
+web_menu_host(Acc, _Host) ->
+    Acc ++ [{"muc", "Multi-User Chat"}].
+
+
+%%---------------
+%% Web Admin Page
+
+-define(TDTD(L, N), 
+	?XE("tr", [?XCT("td", L),
+		   ?XC("td", integer_to_list(N))
+		  ])).
+
+web_page_main(_, #request{path=["muc"], lang = Lang} = _Request) ->
+    Res = [?XC("h1", "Multi-User Chat"),
+	   ?XC("h3", "Statistics"),
+	   ?XAE("table", [],
+		[?XE("tbody", [?TDTD("Total rooms", ets:info(muc_online_room, size)),
+			       ?TDTD("Permanent rooms", mnesia:table_info(muc_room, size)),
+			       ?TDTD("Registered nicknames", mnesia:table_info(muc_registered, size))
+			      ])
+		]),
+	   ?XE("ul", [?LI([?ACT("rooms", "List of rooms")])])
+	  ],
+    {stop, Res};
+
+web_page_main(_, #request{path=["muc", "rooms"], lang = Lang} = _Request) ->
+    Res = make_rooms_page(global, Lang),
+    {stop, Res};
+
+web_page_main(Acc, _) -> Acc.
+
+web_page_host(_, Host,
+	      #request{path = ["muc"],
+		       lang = Lang} = _Request) ->
+    Res = make_rooms_page(find_host(Host), Lang),
+    {stop, Res};
+web_page_host(Acc, _, _) -> Acc.
+
+make_rooms_page(Host, Lang) ->
+    Rooms1 = get_rooms(Host),
+    Rooms2 = lists:ukeysort(1, Rooms1),
+    Rooms3 = stringize_rooms(Rooms2),
+    TList = lists:map(
+	      fun(Room) ->
+		      ?XE("tr", [?XC("td", E) || E <- Room])
+	      end, Rooms3),
+    Titles = ["Jabber ID",
+	      "# participants",
+	      "Last message",
+	      "Public",
+	      "Persistent",
+	      "Logging",
+	      "Just created",
+	      "Title"],
+    [?XC("h1", "Multi-User Chat"),
+     ?XC("h2", "Rooms"),
+     ?XE("table",
+	 [?XE("thead",
+	      [?XE("tr", [?XCT("td", Title) || Title <- Titles])
+	      ]
+	     ),
+	  ?XE("tbody", TList)
+	 ]
+	)
+    ].
+
+stringize_rooms(Rooms) ->
+    [stringize_room(Room) || Room <- Rooms].
+
+stringize_room({Name, Host, Pid}) ->
+    C = get_room_config(Pid),
+    Title = C#config.title,
+    Public = C#config.public,
+    Persistent = C#config.persistent,
+    Logging = C#config.logging,
+
+    S = get_room_state(Pid),
+    Just_created = S#state.just_created,
+    Num_participants = length(dict:fetch_keys(S#state.users)),
+    Last_message = "a long time ago", % TODO
+
+    [Name++"@"++Host, 
+     integer_to_list(Num_participants),
+     Last_message,
+     atom_to_list(Public),
+     atom_to_list(Persistent), 
+     atom_to_list(Logging), 
+     atom_to_list(Just_created),
+     Title].
 
 
 %%----------------------------

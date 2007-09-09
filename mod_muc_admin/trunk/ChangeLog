@@ -1,3 +1,7 @@
+2007-09-09  Badlop  <badlop@ono.com>
+
+	* src/mod_muc_admin.erl: Added Web Admin and List rooms.
+
 2007-09-08  Badlop  <badlop@ono.com>
 
 	* mod_muc_admin: Initial commit.
