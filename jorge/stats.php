@@ -31,7 +31,7 @@ $top_ten_talkers_yesterday="select at, owner_id, count from `logdb_stats_$xmpp_h
 
 $month_stats="select count(owner_id) users_total, at, sum(count) as messages from `logdb_stats_$xmpp_host` group by at order by str_to_date(at,'%Y-%m-%d') desc limit 30";
 $result=mysql_query($month_stats);
-if (mysql_num_rows($result)<31) { $mark1="1"; } else { $mark1="0"; }
+if (mysql_num_rows($result)<30) { $mark1="1"; } else { $mark1="0"; }
 
 while ($entry=mysql_fetch_array($result)) {
 	$i++;
