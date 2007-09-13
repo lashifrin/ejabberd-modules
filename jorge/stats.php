@@ -31,6 +31,8 @@ $top_ten_talkers_yesterday="select at, owner_id, count from `logdb_stats_$xmpp_h
 
 $month_stats="select count(owner_id) users_total, at, sum(count) as messages from `logdb_stats_$xmpp_host` group by at order by str_to_date(at,'%Y-%m-%d') desc limit 30";
 $result=mysql_query($month_stats);
+if (mysql_num_rows($result)<31) { $mark1="1"; } else { $mark1="0"; }
+
 while ($entry=mysql_fetch_array($result)) {
 	$i++;
 	$d[$i] = $entry[messages];
@@ -46,10 +48,10 @@ print "<p style=\"padding-left: 10px;\">Total <b>".number_format(total_messages(
 print '<hr size="1" noshade="" color="#cccccc"/>'."\n";
 print '<table class="ff">'."\n";
 print '<tr><td style="padding-left: 10px">'."\n";
-print '<p><b>Number of user using message archiving:</b></p>'."\n";
+if ($mark1=="0") { print '<p><b>Number of user using message archiving:</b></p>'."\n"; } else { print '<h1>Not enough data collected for graphs</h1><h2>minimum required: 30 days</h2>';}
 print '<div id="chart" class="chart" style="width: 1000px; height: 200px; font-size: 8pt;"></div>'."\n";
 print "<br>";
-print '<p><b>Number of messages logged by server:</b></p>'."\n";
+if ($mark=="0") { print '<p><b>Number of messages logged by server:</b></p>'."\n"; }
 print '<div id="messages" class="chart" style="width: 1000px; height: 250px; font-size: 8pt;"></div>'."\n";
 print '</td>';
 print '<td style="padding-left: 30px">'."\n";
@@ -84,7 +86,7 @@ $t_3 = date("M-d",strtotime("now -12 days"));
 $t_4 = date("M-d",strtotime("now -6 days"));
 $t_5 = date("M-d",strtotime("now"));
 
-
+if ($mark1=="0") { 
 
 ?>
 
@@ -140,6 +142,8 @@ $t_5 = date("M-d",strtotime("now"));
 
 
 <?
+
+}
 
 include ("footer.php");
 ?>
