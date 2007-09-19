@@ -297,7 +297,7 @@ do_route1(Host, ServerHost, From, To, Packet) ->
 						     Host, From, Server),
 			    case Resource of
 				"" ->
-				    Err = jlib:make_error_reply(packet,
+				    Err = jlib:make_error_reply(Packet,
 					?ERR_JID_MALFORMED),
 				    ejabberd_router:route(To, From, Err);
 				_ ->
