@@ -295,22 +295,30 @@ do_route1(Host, ServerHost, From, To, Packet) ->
 			    io:format("open new connection~n"),
 			    {Username, Encoding} = get_user_and_encoding(
 						     Host, From, Server),
-			    case Resource of
-				"" ->
-				    Err = jlib:make_error_reply(Packet,
-					?ERR_JID_MALFORMED),
-				    ejabberd_router:route(To, From, Err);
-				_ ->
-				    {ok, Pid} = mod_irc_connection:start(
-						  From, Host, ServerHost, Server,
-						  Resource, Encoding),
-				    ets:insert(
-				      irc_connection,
-				      #irc_connection{jid_server_host = {From, Server, Host},
-						      pid = Pid}),
-				    mod_irc_connection:route_chan(
-				      Pid, Channel, Resource, Packet)
-			    end,
+			    ConnectionUsername =
+				case Packet of
+				    %% If the user tries to join a
+				    %% chatroom, the packet for sure
+				    %% contains the desired username.
+				    {xmlelement, "presence", _, _} ->
+					Resource;
+				    %% Otherwise, there is no firm
+				    %% conclusion from the packet.
+				    %% Better to use the configured
+				    %% username (which defaults to the
+				    %% username part of the JID).
+				    _ ->
+					Username
+				end,
+			    {ok, Pid} = mod_irc_connection:start(
+					  From, Host, ServerHost, Server,
+					  ConnectionUsername, Encoding),
+			    ets:insert(
+			      irc_connection,
+			      #irc_connection{jid_server_host = {From, Server, Host},
+					      pid = Pid}),
+			    mod_irc_connection:route_chan(
+			      Pid, Channel, Resource, Packet),
 			    ok;
 			[R] ->
 			    Pid = R#irc_connection.pid,
