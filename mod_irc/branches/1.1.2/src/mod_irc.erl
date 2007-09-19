@@ -29,7 +29,7 @@
 -include("adhoc.hrl").
 
 -define(DEFAULT_IRC_ENCODING, "iso8859-1").
--define(POSSIBLE_ENCODINGS, ["koi8-r", "iso8859-1", "iso8859-2", "utf-8"]).
+-define(POSSIBLE_ENCODINGS, ["koi8-r", "iso8859-1", "iso8859-2", "utf-8", "utf-8+latin-1"]).
 
 -record(irc_connection, {jid_server_host, pid}).
 -record(irc_custom, {us_host, data}).
