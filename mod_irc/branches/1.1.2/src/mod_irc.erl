@@ -27,7 +27,7 @@
 -include("ejabberd.hrl").
 -include("jlib.hrl").
 
--define(DEFAULT_IRC_ENCODING, "koi8-r").
+-define(DEFAULT_IRC_ENCODING, "iso8859-1").
 
 -record(irc_connection, {jid_server_host, pid}).
 -record(irc_custom, {us_host, data}).
