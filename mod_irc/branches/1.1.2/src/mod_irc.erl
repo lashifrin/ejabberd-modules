@@ -295,15 +295,22 @@ do_route1(Host, ServerHost, From, To, Packet) ->
 			    io:format("open new connection~n"),
 			    {Username, Encoding} = get_user_and_encoding(
 						     Host, From, Server),
-			    {ok, Pid} = mod_irc_connection:start(
-					  From, Host, ServerHost, Server,
-					  Username, Encoding),
-			    ets:insert(
-			      irc_connection,
-			      #irc_connection{jid_server_host = {From, Server, Host},
-					      pid = Pid}),
-			    mod_irc_connection:route_chan(
-			      Pid, Channel, Resource, Packet),
+			    case Resource of
+				"" ->
+				    Err = jlib:make_error_reply(packet,
+					?ERR_JID_MALFORMED),
+				    ejabberd_router:route(To, From, Err);
+				_ ->
+				    {ok, Pid} = mod_irc_connection:start(
+						  From, Host, ServerHost, Server,
+						  Resource, Encoding),
+				    ets:insert(
+				      irc_connection,
+				      #irc_connection{jid_server_host = {From, Server, Host},
+						      pid = Pid}),
+				    mod_irc_connection:route_chan(
+				      Pid, Channel, Resource, Packet)
+			    end,
 			    ok;
 			[R] ->
 			    Pid = R#irc_connection.pid,
