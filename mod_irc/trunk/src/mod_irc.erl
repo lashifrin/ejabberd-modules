@@ -83,7 +83,7 @@ init([Host, Opts]) ->
     mnesia:create_table(irc_custom,
 			[{disc_copies, [node()]},
 			 {attributes, record_info(fields, irc_custom)}]),
-    MyHost = gen_mod:get_opt(host, Opts, "irc." ++ Host),
+    MyHost = gen_mod:get_opt_host(Host, Opts, "irc.@HOST@"),
     update_table(MyHost),
     Access = gen_mod:get_opt(access, Opts, all),
     catch ets:new(irc_connection, [named_table,
