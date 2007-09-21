@@ -78,7 +78,7 @@ mysql_query("create temporary table results_table (
 	time_slice varchar(20),
 	peer_name_id integer, 
 	peer_server_id integer,
-	direction integer,
+	direction varchar(10),
 	body text,
 	score float
 
@@ -155,7 +155,7 @@ while ($entry = mysql_fetch_array($result)) {
 				$day_mark++;
 
 				// we like colors dont we?
-				if ($results["direction"] == 0) { $col="e0e9f7"; } else { $col="e8eef7";  }
+				if ($results["direction"] == "to") { $col="e0e9f7"; } else { $col="e8eef7";  }
 
 				$to_user = $results["peer_name_id"];
 				$to_server=$results["peer_server_id"]; 
@@ -195,7 +195,7 @@ while ($entry = mysql_fetch_array($result)) {
 				if ($talk=="f") { $talk=$not_in_r[$lang]; }
 
 				// threaded view
-					if ($results["direction"] == 1) 
+					if ($results["direction"] == "from") 
 					{ 
 						$out=$talk;
 						$tt=$tt+1;
@@ -336,7 +336,7 @@ if ($type!="7") {
 	if ($talk=="f") { $talk=$not_in_r[$lang]; }
 
 	// now we want to know who was talking to who...
-	if ($dat["direction"] == 0) { $fr=$to_u[$lang]; } else { $fr=$from_u[$lang]; }
+	if ($dat["direction"] == "to") { $fr=$to_u[$lang]; } else { $fr=$from_u[$lang]; }
 
 	// ... and what was talking, and format that ...
 	$body_talk = wordwrap(str_replace("\n","<br>",htmlspecialchars(base64_decode($dat["body"]))),107,"<br>",true);

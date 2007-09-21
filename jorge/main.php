@@ -218,7 +218,7 @@ if ($talker) {
 
 		$resource=get_resource_name($entry[peer_resource_id],$xmpp_host);
 		$licz++;	
-		if ($entry["direction"] == 0) { $col="main_row_a"; } else { $col="main_row_b"; }
+		if ($entry["direction"] == "to") { $col="main_row_a"; } else { $col="main_row_b"; }
 
 		$ts=strstr($entry["ts"], ' ');
 		// time calc
@@ -237,7 +237,7 @@ if ($talker) {
 		print '<tr class="'.$col.'">'."\n";
 		print '<td class="time_chat" style="padding-left: 10px; padding-right: 10px;";>'.$ts.'</td>'."\n";
 
-		if ($entry["direction"] == 1) 
+		if ($entry["direction"] == "from") 
 			{ 
 				$out=$nickname;
 				$tt=$tt+1;
