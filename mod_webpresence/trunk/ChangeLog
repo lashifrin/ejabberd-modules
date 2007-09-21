@@ -1,3 +1,11 @@
+2007-09-22  Badlop  <badlop@ono.com>
+
+	* TODO.txt: Added feature requests proposed by Pablo Saratxaga.
+
+	* msgs/wa.msg: Added Walloon translation (thanks to Pablo Saratxaga).
+
+	* src/mod_webpresence.erl: Better i18n support (thanks to Pablo Saratxaga).
+
 2007-09-21  Badlop  <badlop@ono.com>
 
 	* src/mod_webpresence.erl: Better i18n support.

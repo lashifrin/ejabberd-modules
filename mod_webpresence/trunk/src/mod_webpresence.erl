@@ -420,14 +420,14 @@ send_message_registered(WP, To, Host, BaseURL, Lang) ->
 						   ++?T("To get a new RandomID, disable the option and register again.")++"\n"
 						  }
 					  end,
-    Subject = ?T("Web Presence")++": "++?T("registered"),
+    Subject = ?T("Web Presence: ")++?T("registered"),
     Body = ?T("You have registered: ")++JIDS++"\n\n"
-	++?T("Use URLs like")++":\n"
+	++?T("Use URLs like:")++"\n"
 	"  "++BaseURL++"USERID/OUTPUT/\n"
 	"\n"
 	"USERID:\n"++USERID_jid++USERID_rid++"\n"
 	"OUTPUT:\n"++Oimage++Oxml++Ojs++Otext++Oavatar++"\n"
-	++?T("Example")++":\n"++Example_jid++Example_rid++"\n"
+	++?T("Example:")++"\n"++Example_jid++Example_rid++"\n"
 	++Text_rid,
     send_headline(Host, To, Subject, Body).
 
