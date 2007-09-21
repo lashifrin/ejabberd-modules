@@ -421,7 +421,7 @@ send_message_registered(WP, To, Host, BaseURL, Lang) ->
 						  }
 					  end,
     Subject = ?T("Web Presence")++": "++?T("registered"),
-    Body = ?T("You have registered")++" "++JIDS++" "++?T("in")++" "++?T("Web Presence")++".\n\n"
+    Body = ?T("You have registered: ")++JIDS++"\n\n"
 	++?T("Use URLs like")++":\n"
 	"  "++BaseURL++"USERID/OUTPUT/\n"
 	"\n"
@@ -433,7 +433,7 @@ send_message_registered(WP, To, Host, BaseURL, Lang) ->
 
 send_message_unregistered(To, Host, Lang) ->
     Subject = ?T("Web Presence")++": "++?T("unregistered"),
-    Body = ?T("You have unregistered")++" "++?T("from")++" "++?T("Web Presence")++".\n\n",
+    Body = ?T("You have unregistered.")++"\n\n",
     send_headline(Host, To, Subject, Body).
 
 send_headline(Host, To, Subject, Body) ->
@@ -792,7 +792,7 @@ process2([], #request{lang = Lang1}) ->
     Lang = parse_lang(Lang1),
     Title = [?XC("title", ?T("Web Presence"))],
     Desc = [?XC("p", ?T("To publish your presence in this web you need a Jabber account in this Jabber server.")++" "++
-		?T("Login with a Jabber client, open")++" "++?T("Service Discovery")++" "++?T("and register in")++" "++?T("Web Presence")++". "++
+		?T("Login with a Jabber client, open the Service Discovery and register in Web Presence.")++
 		?T("You will receive a message with further instructions."))],
     Link_themes = [?AC("themes", ?T("Icon Theme"))],
     Body = [?XC("h1", ?T("Web Presence"))] ++ Desc ++ Link_themes,
