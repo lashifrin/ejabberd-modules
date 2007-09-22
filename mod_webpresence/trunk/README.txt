@@ -67,7 +67,8 @@ host
     Default value: "webpresence.@HOST@"
 access:
     Specify who can register in the webpresence service.
-    Don't specify all because it will not work.
+    Don't bother to specify 'all' because this module can only show presence of 
+    local users.
     Default value: local
 pixmaps_path:
     Take special care with commas and dots: if this module does not seem to work
@@ -83,6 +84,28 @@ path:
     This informational option is used only when sending a message to the user.
     If you set a different path in the 'listen' section, set this option too.
     Default value: "presence"
+
+
+	AUTOMATIC ENABLE
+	----------------
+
+If you want certain Jabber accounts to be automatically accepted,
+without requiring the user to register in the service, you can user ACL+ACCESS.
+The ACCESSNAME 'webpresence_auto' is available for that purpose.
+
+In that case, all the output methods are enabled, the icon theme is 
+'jsf-jabber-text' and RandomID is disabled.
+
+The default behaviour is to not have automatic webpresence:
+  {access, webpesence_auto, [{deny, all}]}.
+
+For example, if you want all the local users to be automatically enabled in the service:
+  {access, webpesence_auto, [{allow, local}]}.
+
+Note that this ACCESS rule is only checked if the user is not registered. 
+So, if the user registers and disables all output methods,
+his registration prevails over your setup. If you want to ensure the users do not
+register and disable output methods, you can use the Access configurable parameter.
 
 
 	EXAMPLE CONFIGURATION

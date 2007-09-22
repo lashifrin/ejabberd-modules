@@ -38,8 +38,8 @@
 -record(session, {sid, usr, us, priority, info}).
 
 -define(PROCNAME, ejabberd_mod_webpresence).
-
 -define(PIXMAPS_DIR, "pixmaps").
+-define(AUTO_ACL, webpresence_auto).
 
 
 %%====================================================================
@@ -286,7 +286,7 @@ get_pr(LUS) ->
 	[#webpresence{jidurl = J, ridurl = H, xml = X, avatar = A, js = S, text = T, icon = I}] ->
 	    {J, H, X, A, S, T, I, true};
 	_ ->
-	    {true, false, false, false, false, false, "jsf-jabber-text", false}
+	    {true, false, false, false, false, false, "---", false}
     end.
 
 get_pr_rid(LUS) ->
@@ -499,12 +499,29 @@ get_wp(LUser, LServer) ->
     LUS = {LUser, LServer},
     case catch mnesia:dirty_read(webpresence, LUS) of
         {'EXIT', _Reason} -> 
-	    #webpresence{};
+	    try_auto_webpresence(LUser, LServer);
         [] -> 
-	    #webpresence{};
+	    try_auto_webpresence(LUser, LServer);
 	[WP] when is_record(WP, webpresence) ->
 	    WP
     end.
+
+try_auto_webpresence(LUser, LServer) ->
+    From = jlib:make_jid(LUser, LServer, ""),
+    case acl:match_rule(LServer, ?AUTO_ACL, From) of
+	deny -> 
+	    #webpresence{};
+	allow -> 
+	    #webpresence{us = {LUser, LServer}, 
+			 ridurl = false, 
+			 jidurl = true, 
+			 xml = true, 
+			 avatar = true, 
+			 js = true, 
+			 text = true, 
+			 icon = "jsf-jabber-text"}
+    end.
+
 
 get_status_weight(Show) ->
     case Show of
