@@ -388,6 +388,7 @@ send_message_registered(WP, To, Host, BaseURL, Lang) ->
 		 "---" -> "";
 		 I when is_list(I) -> 
 		     "  image\n"
+			 "  image.php\n"
 			 "  image/res/<"++?T("Resource")++">\n"
 			 "  image/<"++?T("Icon Theme")++">\n"
 			 "  image/<"++?T("Icon Theme")++">/res/<"++?T("Resource")++">\n"
@@ -851,8 +852,11 @@ serve_web_presence(TypeURL, User, Server, Tail, #request{lang = Lang1}) ->
     end,
     Show_us = (TypeURL == jid),
     Lang = parse_lang(Lang1),
+    io:format("tail: ~p~n", [Tail]),
     Args = case Tail of
 	       ["image"] -> 
+		   {image, WP, LUser, LServer};
+	       ["image.php"] -> 
 		   {image, WP, LUser, LServer};
 	       ["image", Theme] -> 
 		   {image, WP, LUser, LServer, Theme};
