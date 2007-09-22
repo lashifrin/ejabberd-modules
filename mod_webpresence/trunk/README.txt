@@ -97,10 +97,10 @@ In that case, all the output methods are enabled, the icon theme is
 'jsf-jabber-text' and RandomID is disabled.
 
 The default behaviour is to not have automatic webpresence:
-  {access, webpesence_auto, [{deny, all}]}.
+  {access, webpresence_auto, [{deny, all}]}.
 
 For example, if you want all the local users to be automatically enabled in the service:
-  {access, webpesence_auto, [{allow, local}]}.
+  {access, webpresence_auto, [{allow, local}]}.
 
 Note that this ACCESS rule is only checked if the user is not registered. 
 So, if the user registers and disables all output methods,
