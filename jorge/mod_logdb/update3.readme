@@ -1,0 +1,1 @@
+If you were using mod_logdb *before* revision 357 you must run update script, as database schema had been changed.
