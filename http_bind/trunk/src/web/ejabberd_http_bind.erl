@@ -213,7 +213,7 @@ process_request(Data) ->
 %%          {stop, StopReason}                   
 %%----------------------------------------------------------------------
 init([Sid, Key]) ->
-    ?INFO_MSG("started: ~p", [{Sid, Key}]),
+    ?DEBUG("started: ~p", [{Sid, Key}]),
     Opts = [], % TODO
     ejabberd_socket:start(ejabberd_c2s, ?MODULE, {http_bind, self()}, Opts),
 %    {ok, C2SPid} = ejabberd_c2s:start({?MODULE, {http_bind, self()}}, Opts),
@@ -793,14 +793,12 @@ send_outpacket(#http_bind{pid = FsmRef}, OutPacket) ->
                                 case xml_stream:parse_element(
                                        "<stream:stream>"++OutPacket) of
                                     El when element(1, El) == xmlelement ->
-                                        {xmlelement, _Tag, _Attr, Els} = El,
-                                        [{xmlelement, SE, _, Cond} | _] = Els,
-                                        if 
-                                            SE == "stream:error" ->
-                                                Cond;
-                                            true ->
-                                                null
-                                        end;
+										case xml:get_subtag(El, "stream:error") of
+											false ->
+												null;
+											{xmlelement, _, _, Cond} ->
+												Cond
+										end;
                                     {error, _E} ->
                                         null
                                 end,
