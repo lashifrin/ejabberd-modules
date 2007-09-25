@@ -149,7 +149,7 @@ if ($start) { $cur_loc="&start=$start"; }
 // check number of offline messages - this feature is pushed into later betas...
 $spool = spool_count($bazaj,$token);
 
-print '<a name="top">'."\n";
+print '<a name="top"></a>'."\n";
 print '<table border="0" cellspacing="0" class="ff" width="100%">'."\n";
 print '<tr>'."\n";
 print '<td style="text-align: left;">'.$loc1.' | '.$loc2.' | '.$loc3.' | '.$loc5.' | '.$loc4.' | '.$loc5a.$loc6.' | <a href="" onClick="window.location.reload()">'.$refresh[$lang].'</td>'."\n";

@@ -123,7 +123,7 @@ if ($lang=="eng") { $lang_o="pol"; } elseif($lang=="pol") { $lang_o="eng"; }
 print '<table class="ff" cellspacing="0" width="100%">'."\n";
 print '<tr>'."\n";
 print '<td style="text-align: left;">'.$welcome_1[$lang].'</td><td style="text-align: right;">';
-print '<a href="index.php?lng_sw='.$lang_o.'">'.$ch_lan2[$lang].$lang_sw2[$lang].'</a></td>';
+print '<a href="index.php?lng_sw='.$lang_o.'">'.$ch_lan2[$lang].$lang_sw[$lang].'</a></td>';
 print '<tr height="12" class="maint"><td colspan="2" width="100%"></td></tr>'."\n";
 print '<tr height="3" class="spacer"><td colspan="2" width="100%"></td></tr>'."\n";
 print '</tr></table>'."\n";
