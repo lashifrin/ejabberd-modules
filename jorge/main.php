@@ -209,8 +209,11 @@ if ($talker) {
 	$loc_link = $e_string;
 	$action_link = "$tslice@$talker@$server_id@0@null@$loc_link@del@";
 	$action_link = encode_url($action_link,$token,$url_key);
-	print '<td align="right" style="padding-right: 5px;">[ <a class="export" href="export.php?a='.$e_string.'">'.$export_link[$lang].'</a>&nbsp; | &nbsp;';
-	print '<a class="delq" href="main.php?a='.$action_link.'" onClick="if (!confirm(\''.$del_conf[$lang].'\')) return false;">'.$del_t[$lang].'</a> ]</td></tr>';
+	$predefined="from:$talker_name@$server_name";
+	$predefined=encode_url($predefined,$token,$url_key);
+	print '<td align="right" style="padding-right: 5px;">[ <a id="pretty" title="'.$tip_export[$lang].'" class="export" href="export.php?a='.$e_string.'">'.$export_link[$lang].'</a>&nbsp; | &nbsp;';
+	print '<a id="pretty" title="'.$all_for_u_t[$lang].'" class="export" href="search_v2.php?b='.$predefined.'">'.$all_for_u[$lang].'</a>&nbsp; | &nbsp;';
+	print '<a id="pretty" title="'.$tip_delete[$lang].'" class="delq" href="main.php?a='.$action_link.'" onClick="if (!confirm(\''.$del_conf[$lang].'\')) return false;">'.$del_t[$lang].'</a> ]</td></tr>';
 	print '<tr class="spacer"><td colspan="5"></td></tr>';
 	print '<tbody id="searchfield">'."\n";
 	while ($entry = mysql_fetch_array($result))

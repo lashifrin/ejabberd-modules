@@ -120,6 +120,12 @@ $search_why[eng] = " search results (<i>not more then 100</i>). <a href=\"help.p
 $search_warn[pol] = pl_znaczki("Uwaga: Wyszukuje tylko w podanym przedziale czasu");
 $search_warn[eng] = "Warning: Showing results only from selected time range";
 
+$all_for_u[pol] = pl_znaczki("Wszystkie rozmowy");
+$all_for_u[eng] = "All chats";
+
+$all_for_u_t[pol] = pl_znaczki("Poka¿ wszystkie rozmowy z tym u¿ytkownikiem");
+$all_for_u_t[eng] = "Show all chats from this user";
+
 $arch_on[pol] = pl_znaczki("W³±cz archiwizacje");
 $arch_on[eng] = "Turn on archivization";
 
@@ -261,6 +267,12 @@ $del_my_link[eng] = "delete";
 
 $help_but[pol] = pl_znaczki("Pomoc");
 $help_but[eng] = "Help";
+
+$tip_delete[pol] = pl_znaczki("Usuñ historiê rozmowy z tego dnia");
+$tip_delete[eng] = "Delete chat from this day";
+
+$tip_export[pol] = pl_znaczki("Eksportuj rozmowê do pliku tekstowego");
+$tip_export[eng] = "Export this chat into text file";
 
 $customize1[pol] = pl_znaczki("Dostosuj logowanie");
 $customize1[eng] = "Customize logging";
