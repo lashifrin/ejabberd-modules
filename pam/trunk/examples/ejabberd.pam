@@ -1,0 +1,3 @@
+#%PAM-1.0
+auth        sufficient  pam_unix.so likeauth nullok nodelay
+account     sufficient  pam_unix.so
