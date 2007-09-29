@@ -193,12 +193,7 @@ handle_info({route, From, To, {xmlelement, Stanza_type, _, _} = Packet},
 		   service_limits = SLimits} = State)
   when (Stanza_type == "message") or (Stanza_type == "presence") ->
     %%io:format("Multicast packet: ~nFrom: ~p~nTo: ~p~nPacket: ~p~n", [From, To, Packet]),
-    case catch do_route(LServiceS, LServerS, Access, SLimits, From, To, Packet) of
-	{'EXIT', Reason} ->
-	    ?ERROR_MSG("~p", [Reason]);
-	_ ->
-	    ok
-    end,
+    route_untrusted(LServiceS, LServerS, Access, SLimits, From, To, Packet),
     {noreply, State};
 
 %% Handle multicast packets sent by trusted local services
@@ -206,14 +201,7 @@ handle_info({route_trusted, From, Destinations, Packet},
 	    #state{lservice = LServiceS,
 		   lserver = LServerS} = State) ->
     %%io:format("Multicast packet2: ~nFrom: ~p~nDestinations: ~p~nPacket: ~p~n", [From, Destinations, Packet]),
-    Packet2 = build_packet(Destinations, Packet),
-    Grouped_addresses = group_dests_by_servers(Destinations),
-    case catch do_route3(LServiceS, LServerS, From, Packet2, Grouped_addresses) of
-	{'EXIT', Reason} ->
-	    ?ERROR_MSG("~p", [Reason]);
-	_ ->
-	    ok
-    end,
+    route_trusted(LServiceS, LServerS, From, Destinations, Packet),
     {noreply, State};
 
 handle_info({get_host, Pid}, State) ->
@@ -315,47 +303,79 @@ iq_version() ->
 
 
 %%%-------------------------
-%%% Route 0: Check user
+%%% Route
 %%%-------------------------
 
-do_route(LServiceS, LServerS, Access, SLimits, From, To, Packet) ->
+route_trusted(LServiceS, LServerS, FromJID, Destinations, Packet) -> 
+    Packet2 = build_packet(Destinations, Packet),
+    Grouped_addresses = group_dests_by_servers(Destinations),
+    route_final(LServiceS, LServerS, FromJID, Packet2, Grouped_addresses).
+
+route_untrusted(LServiceS, LServerS, Access, SLimits, From, To, Packet) -> 
+    try route_untrusted2(LServiceS, LServerS, Access, SLimits, From, Packet)
+    catch
+	throw:adenied -> route_error(To, From, Packet, forbidden, "Access denied by service policy");
+	  throw:eadsele -> route_error(To, From, Packet, bad_request, "No addresses element found");
+	  throw:eadeles -> route_error(To, From, Packet, bad_request, "No address elements found");
+	  throw:ewxmlns -> route_error(To, From, Packet, bad_request, "Wrong xmlns");
+	  throw:etoorec -> route_error(To, From, Packet, not_acceptable, "Too many receiver fields were specified");
+	  throw:edrelay -> route_error(To, From, Packet, forbidden, "Packet relay is denied by service policy");
+	  EType:EReason -> 
+	    ?ERROR_MSG("Multicast unknown error: Type: ~p~nReason: ~p", [EType, EReason]),
+	    route_error(To, From, Packet, internal_server_error, "Unknown problem")
+    end.
+
+route_untrusted2(LServiceS, LServerS, Access, SLimits, FromJID, Packet) -> 
+    ok = check_access(LServerS, Access, FromJID),
+    {ok, Addresses_xml} = get_addresses_element(Packet),
+    ok = check_limit_dests(SLimits, FromJID, Packet, Addresses_xml),
+    JIDs = get_destination_jids(Addresses_xml, FromJID, Packet),
+
+    JIDs2 = [stj(JID) || JID <- JIDs],
+    Grouped_addresses = group_dests_by_servers(JIDs2),
+
+    ok = check_relay(FromJID#jid.server, LServerS, Grouped_addresses),
+    route_final(LServiceS, LServerS, FromJID, Packet, Grouped_addresses).
+
+route_final(LServiceS, LServerS, From, Packet, Grouped_addresses) ->
+    Grouped_addresses2 = look_cached_servers(LServerS, Grouped_addresses),
+    process_groups(LServiceS, From, Packet, Grouped_addresses2).
+
+
+%%%-------------------------
+%%% Check access permission
+%%%-------------------------
+
+check_access(LServerS, Access, From) ->
     case acl:match_rule(LServerS, Access, From) of
 	allow ->
-	    do_route1(LServiceS, LServerS, SLimits, From, To, Packet);
+	    ok;
 	_ ->
-	    route_error(To, From, Packet, forbidden, "Access denied by service policy")
+	    throw(adenied)
     end.
 
 
 %%%-------------------------
-%%% Route 1: Check packet
+%%% Get 'addresses' XML element
 %%%-------------------------
 
-do_route1(LServiceS, LServerS, SLimits, From, To, Packet) ->
-    case get_adrs_el(Packet) of
-	{correct, Addresses_xml} ->
-	    do_route2(LServiceS, LServerS, SLimits, From, To, Packet, Addresses_xml);
-	{error, Error_text} ->
-	    route_error(To, From, Packet, bad_request, Error_text)
-    end.
-
-get_adrs_el(Packet) ->
+get_addresses_element(Packet) ->
     case xml:get_subtag(Packet, "addresses") of
 	{xmlelement, _, PAttrs, Addresses_xml} ->
 	    case xml:get_attr_s("xmlns", PAttrs) of
 		?NS_ADDRESS -> 
-		    case get_address_els(Addresses_xml) of
-			[] -> {error, "no address elements found"};
-			Addresses -> {correct, Addresses}
+		    case get_address_elements(Addresses_xml) of
+			[] -> throw(eadeles);
+			Addresses -> {ok, Addresses}
 		    end;
-		_ -> {error, "wrong xmlns"}
+		_ -> throw(ewxmlns)
 	    end;
-	_ -> {error, "no addresses element found"}
+	_ -> throw(eadsele)
     end.
 
 %% Given a list of xmlelements, some may be of "address" type,
 %% return a list of only the attributes of those "address" elements
-get_address_els(Addresses_xml) ->
+get_address_elements(Addresses_xml) ->
     lists:foldl(
       fun(XML, R) ->
 	      case XML of
@@ -379,56 +399,31 @@ get_address_els(Addresses_xml) ->
 
 
 %%%-------------------------
-%%% Route 2: Format list of destinations
+%%% Check does not exceed limit of destinations
 %%%-------------------------
 
-do_route2(LServiceS, LServerS, SLimits, From1, To, Packet, Addresses) ->
-    From = jts(From1),
-    SenderT = sender_type(From1),
+check_limit_dests(SLimits, FromJID, Packet, Addresses) ->
+    SenderT = sender_type(FromJID),
     Limits = get_slimit_group(SenderT, SLimits),
     Type_of_stanza = type_of_stanza(Packet),
     {_Type, Limit_number} = get_limit_number(Type_of_stanza, Limits),
     case length(Addresses) > Limit_number of
 	false -> 
-	    do_route2b(LServiceS, LServerS, From1, From, To, Packet, Addresses);
+	    ok;
 	true ->
-	    route_error(To, From1, Packet, not_acceptable,
-			"Too many receiver fields were specified")
+	    throw(etoorec)
     end.
 
 
 %%%-------------------------
-%%% Route 2b: Format list of destinations
+%%% Get list of destinations JIDs, 
+%%% and send error messages for other dests
 %%%-------------------------
 
-do_route2b(LServiceS, LServerS, From1, From, To, Packet, Addresses) ->
-    {JIDs, URIs, Others} = split_dests(Addresses),
-
-    send_error_address(From1, Packet, URIs, Others),
-
-    JIDs2 = [stj(JID) || JID <- JIDs],
-    Grouped_addresses = group_dests_by_servers(JIDs2),
-
-    %% Check if this packet requires relay
-    FromJID = jlib:string_to_jid(From),
-    case check_relay_required(FromJID#jid.server, LServerS, Grouped_addresses) of
-	false -> do_route3(LServiceS, LServerS, FromJID, Packet, Grouped_addresses);
-	true ->
-	    %% The packet requires relaying, but it is not allowed
-	    %% So let's abort and return error
-	    route_error(To, FromJID, Packet, forbidden,
-			"Relaying denied by service policy")
-    end.
-
-%% Sends an error message for each unknown address
-%% Currently only 'jid' addresses are acceptable on ejabberd
-send_error_address(From, Packet, URIs, Others) ->
-    URIs2 = ["uri: " ++ URI || URI <- URIs],
-    Others2 = [io_lib:format("~p", [Other]) || Other <- Others],
-    Unknown_adds = URIs2 ++ Others2,
-    [route_error(From, From, Packet, jid_malformed, 
-		 "The service does not understand the address: " ++ A)
-     || A <- Unknown_adds].
+get_destination_jids(Addresses_xml, FromJID, Packet) ->
+    {JIDs, URIs, Others} = split_dests(Addresses_xml),
+    send_error_address(FromJID, Packet, URIs, Others),
+    JIDs.
 
 %% Split the list of destinations depending on the address type
 split_dests(Addresses) ->
@@ -458,32 +453,40 @@ group_dests_by_servers(Jids) ->
     Keys = dict:fetch_keys(D),
     [ #group{server = Key, dests = dict:fetch(Key, D)} || Key <- Keys ].
 
+%% Sends an error message for each unknown address
+%% Currently only 'jid' addresses are acceptable on ejabberd
+send_error_address(From, Packet, URIs, Others) ->
+    URIs2 = ["uri: " ++ URI || URI <- URIs],
+    Others2 = [io_lib:format("~p", [Other]) || Other <- Others],
+    Unknown_adds = URIs2 ++ Others2,
+    [route_error(From, From, Packet, jid_malformed, 
+		 "The service does not understand the address: " ++ A)
+     || A <- Unknown_adds].
+
 
 %%%-------------------------
-%%% Route 3: Look for cached responses
+%%% Look for cached responses
 %%%-------------------------
 
-do_route3(LServiceS, LServerS, From, Packet, Grouped_addresses) ->
+look_cached_servers(LServerS, Grouped_addresses) ->
+    [look_cached(LServerS, Group) || Group <- Grouped_addresses].
+
+look_cached(LServerS, G) ->
     Maxtime_positive = ?MAXTIME_CACHE_POSITIVE,
     Maxtime_negative = ?MAXTIME_CACHE_NEGATIVE,
 
-    %% Fill all the possible data from the cache
-    Grouped_addresses2 = 
-	lists:map(
-	  fun(G) ->
-		  Cached_response = 
-		      search_server_on_cache(G#group.server, LServerS,
-					     {Maxtime_positive, Maxtime_negative}),
-		  G#group{multicast = Cached_response}
-	  end,
-	  Grouped_addresses),
-
-    [process_group(LServiceS, From, Packet, Group) || Group <- Grouped_addresses2].
+    Cached_response = 
+	search_server_on_cache(G#group.server, LServerS,
+			       {Maxtime_positive, Maxtime_negative}),
+    G#group{multicast = Cached_response}.
 
 
 %%%-------------------------
 %%% Process group: send packet or ask support
 %%%-------------------------
+
+process_groups(LServiceS, From, Packet, Grouped_addresses2) ->
+    [process_group(LServiceS, From, Packet, Group) || Group <- Grouped_addresses2].
 
 process_group(LServiceS, From, Packet, Group) ->
     Server = Group#group.server,
@@ -530,6 +533,11 @@ process_group(LServiceS, From, Packet, Group) ->
 
     end.
 
+
+%%%-------------------------
+%%% Route packet
+%%%-------------------------
+
 %% Build and send packet to this group of destinations
 %% From = jid()
 %% To = string()
@@ -557,6 +565,12 @@ route_packet2(From, To, Dests, Packet) ->
 %%%-------------------------
 %%% Check relay
 %%%-------------------------
+
+check_relay(RS, LS, GA) ->
+    case check_relay_required(RS, LS, GA) of
+	false -> ok;
+	true -> throw(edrelay)
+    end.
 
 %% If the sender is external, and at least one destination is external,
 %% then this package requires relaying
@@ -1184,6 +1198,8 @@ make_reply(jid_malformed, Lang, ErrText) ->
     ?ERRT_JID_MALFORMED(Lang, ErrText);
 make_reply(not_acceptable, Lang, ErrText) ->
     ?ERRT_NOT_ACCEPTABLE(Lang, ErrText);
+make_reply(internal_server_error, Lang, ErrText) ->
+    ?ERRT_INTERNAL_SERVER_ERROR(Lang, ErrText);
 make_reply(forbidden, Lang, ErrText) ->
     ?ERRT_FORBIDDEN(Lang, ErrText).
 
