@@ -37,13 +37,20 @@
 -record(multicastc, {rserver, response, ts}).
 %% ts: timestamp (in seconds) when the cache item was last updated
 
--record(group, {server, dests, multicast}).
+-record(dest, {jid_string, jid_jid, type, full_xml}).
+%% jid_string = string()
+%% jid_jid = jid()
+%% full_xml = xml()
+
+-record(group, {server, dests, multicast, others, addresses}).
 %% server = string()
 %% dests = [string()] 
 %% multicast = {cached, local_server} | {cached, string()} | {cached, not_supported} | {obsolete, not_supported} | {obsolete, string()} | not_cached
 %%  after being updated, possible values are: local | multicast_not_supported | {multicast_supported, string(), limits()}
+%% others = [xml()]
+%% packet = xml()
 
--record(waiter, {awaiting, group, renewal=false, sender, packet}).
+-record(waiter, {awaiting, group, renewal=false, sender, packet, aattrs, addresses}).
 %% awaiting = {[Remote_service], Local_service, Type_awaiting}
 %%  Remote_service = Local_service = string()
 %%  Type_awaiting = info | items
@@ -51,6 +58,7 @@
 %% renewal = true | false
 %% sender = From
 %% packet = xml()
+%% aattrs = [xml()]
 
 -record(limits, {message, presence}).
 %% message = presence = integer() | infinite
@@ -306,10 +314,31 @@ iq_version() ->
 %%% Route
 %%%-------------------------
 
+%% Destinations = [string()]
 route_trusted(LServiceS, LServerS, FromJID, Destinations, Packet) -> 
-    Packet2 = build_packet(Destinations, Packet),
-    Grouped_addresses = group_dests_by_servers(Destinations),
-    route_final(LServiceS, LServerS, FromJID, Packet2, Grouped_addresses).
+
+    %% Strip 'addresses' from packet
+    Packet_stripped = Packet,
+    AAttrs = [{"xmlns", ?NS_ADDRESS}],
+    Delivereds = [],
+
+    Dests2 = lists:map(
+	       fun(D) ->
+		       DS = jts(D),
+		       XML = {xmlelement, "address", 
+			      [{"type", "bcc"}, {"jid", DS}], 
+			      []},
+		       #dest{jid_string = DS,
+			     jid_jid = D,
+			     type = "bcc",
+			     full_xml = XML}
+	       end,
+	       Destinations),
+
+    %% Group Not_delivered by server
+    Groups = group_dests(Dests2),
+
+    route_common(LServerS, LServiceS, FromJID, Groups, Delivereds, Packet_stripped, AAttrs).
 
 route_untrusted(LServiceS, LServerS, Access, SLimits, From, To, Packet) -> 
     try route_untrusted2(LServiceS, LServerS, Access, SLimits, From, Packet)
@@ -327,19 +356,76 @@ route_untrusted(LServiceS, LServerS, Access, SLimits, From, To, Packet) ->
 
 route_untrusted2(LServiceS, LServerS, Access, SLimits, FromJID, Packet) -> 
     ok = check_access(LServerS, Access, FromJID),
-    {ok, Addresses_xml} = get_addresses_element(Packet),
-    ok = check_limit_dests(SLimits, FromJID, Packet, Addresses_xml),
-    JIDs = get_destination_jids(Addresses_xml, FromJID, Packet),
 
-    JIDs2 = [stj(JID) || JID <- JIDs],
-    Grouped_addresses = group_dests_by_servers(JIDs2),
+    %% Strip 'addresses' from packet
+    {ok, Packet_stripped, AAttrs, Addresses} = strip_addresses_element(Packet),
 
-    ok = check_relay(FromJID#jid.server, LServerS, Grouped_addresses),
-    route_final(LServiceS, LServerS, FromJID, Packet, Grouped_addresses).
+    %% Split Addresses in To_deliver and Delivered
+    {To_deliver, Delivereds} = split_addresses_todeliver(Addresses),
 
-route_final(LServiceS, LServerS, From, Packet, Grouped_addresses) ->
-    Grouped_addresses2 = look_cached_servers(LServerS, Grouped_addresses),
-    process_groups(LServiceS, From, Packet, Grouped_addresses2).
+    %% Convert XML to record
+    Dests = convert_dest_record(To_deliver),
+
+    %% Split the destinations by JID
+    {Dests2, Not_jids} = split_dests_jid(Dests),
+    report_not_jid(FromJID, Packet, Not_jids),
+
+    %% Check limit
+    ok = check_limit_dests(SLimits, FromJID, Packet, Dests2),
+
+    %% Group Not_delivered by server
+    Groups = group_dests(Dests2),
+
+    %% Check relay for each Group
+    ok = check_relay(FromJID#jid.server, LServerS, Groups),
+
+    route_common(LServerS, LServiceS, FromJID, Groups, Delivereds, Packet_stripped, AAttrs).
+
+route_common(LServerS, LServiceS, FromJID, Groups, Delivereds, Packet_stripped, AAttrs) ->
+    %% Gather multicast service for each Group
+    Groups2 = look_cached_servers(LServerS, Groups),
+
+    %% Create Delivered XML element for each Group
+    Groups3 = build_others_xml(Groups2),
+
+    %% Add preliminary packet for each group
+    Groups4 = add_addresses(Delivereds, Groups3),
+
+    %% Decide action for each Group
+    AGroups = decide_action_groups(Groups4),
+
+    act_groups(FromJID, Packet_stripped, AAttrs, LServiceS, AGroups).
+
+act_groups(FromJID, Packet_stripped, AAttrs, LServiceS, AGroups) ->
+    [perform(FromJID, Packet_stripped, AAttrs, LServiceS, AGroup) || AGroup <- AGroups].
+
+perform(From, Packet, AAttrs, _, {route_single, Group}) ->
+    [route_packet(From, ToUser, Packet, AAttrs, Group#group.addresses) || ToUser <- Group#group.dests];
+
+perform(From, Packet, AAttrs, _, {{route_multicast, JID, RLimits}, Group}) ->
+    route_packet_multicast(From, JID, Packet, AAttrs, Group#group.dests, Group#group.addresses, RLimits);
+
+perform(From, Packet, AAttrs, LServiceS, {{ask, Old_service, renewal}, Group}) ->
+    send_query_info(Old_service, LServiceS),
+    add_waiter(#waiter{awaiting = {[Old_service], LServiceS, info},
+		       group = Group,
+		       renewal = true,
+		       sender = From,
+		       packet = Packet,
+		       aattrs = AAttrs,
+		       addresses = Group#group.addresses
+		      });
+
+perform(From, Packet, AAttrs, LServiceS, {{ask, Server, not_renewal}, Group}) ->
+    send_query_info(Server, LServiceS),
+    add_waiter(#waiter{awaiting = {[Server], LServiceS, info},
+		       group = Group,
+		       renewal = false,
+		       sender = From,
+		       packet = Packet,
+		       aattrs = AAttrs,
+		       addresses = Group#group.addresses
+		      }).
 
 
 %%%-------------------------
@@ -356,46 +442,48 @@ check_access(LServerS, Access, From) ->
 
 
 %%%-------------------------
-%%% Get 'addresses' XML element
+%%% Strip 'addresses' XML element
 %%%-------------------------
 
-get_addresses_element(Packet) ->
+strip_addresses_element(Packet) ->
     case xml:get_subtag(Packet, "addresses") of
-	{xmlelement, _, PAttrs, Addresses_xml} ->
-	    case xml:get_attr_s("xmlns", PAttrs) of
+	{xmlelement, "addresses", AAttrs, Addresses} ->
+	    case xml:get_attr_s("xmlns", AAttrs) of
 		?NS_ADDRESS -> 
-		    case get_address_elements(Addresses_xml) of
-			[] -> throw(eadeles);
-			Addresses -> {ok, Addresses}
-		    end;
+		    {xmlelement, Name, Attrs, Els} = Packet,
+		    Els_stripped = lists:keydelete("addresses", 2, Els),
+		    Packet_stripped = {xmlelement, Name, Attrs, Els_stripped},
+		    {ok, Packet_stripped, AAttrs, Addresses};
 		_ -> throw(ewxmlns)
 	    end;
 	_ -> throw(eadsele)
     end.
 
-%% Given a list of xmlelements, some may be of "address" type,
-%% return a list of only the attributes of those "address" elements
-get_address_elements(Addresses_xml) ->
-    lists:foldl(
-      fun(XML, R) ->
+
+%%%-------------------------
+%%% Split Addresses
+%%%-------------------------
+
+split_addresses_todeliver(Addresses) ->
+    lists:partition(
+      fun(XML) ->
 	      case XML of
 		  {xmlelement, "address", Attrs, _El} ->
 		      case xml:get_attr_s("delivered", Attrs) of
-			  "true" -> R;
+			  "true" -> false;
 			  _ ->
 			      Type = xml:get_attr_s("type", Attrs),
 			      case Type of
-				  "to" -> [Attrs|R];
-				  "cc" -> [Attrs|R];
-				  "bcc" -> [Attrs|R];
-				  _ -> R
+				  "to" -> true;
+				  "cc" -> true;
+				  "bcc" -> true;
+				  _ -> false
 			      end
 		      end;
-		  _ -> R
+		  _ -> false
 	      end
       end,
-      [],
-      Addresses_xml).
+      Addresses).
 
 
 %%%-------------------------
@@ -416,60 +504,73 @@ check_limit_dests(SLimits, FromJID, Packet, Addresses) ->
 
 
 %%%-------------------------
-%%% Get list of destinations JIDs, 
+%%% Convert Destination XML to record
+%%%-------------------------
+
+convert_dest_record(XMLs) ->
+    lists:map(
+      fun(XML) ->
+	      case xml:get_tag_attr_s("jid", XML) of
+		  [] -> 
+		      #dest{jid_string = none, full_xml = XML};
+		  JIDS -> 
+		      Type = xml:get_tag_attr_s("type", XML),
+		      JIDJ = stj(JIDS),
+		      #dest{jid_string = JIDS, 
+			    jid_jid = JIDJ,
+			    type = Type,
+			    full_xml = XML}
+	      end
+      end,
+      XMLs).
+
+
+%%%-------------------------
+%%% Split destinations by existence of JID
 %%% and send error messages for other dests
 %%%-------------------------
 
-get_destination_jids(Addresses_xml, FromJID, Packet) ->
-    {JIDs, URIs, Others} = split_dests(Addresses_xml),
-    send_error_address(FromJID, Packet, URIs, Others),
-    JIDs.
-
-%% Split the list of destinations depending on the address type
-split_dests(Addresses) ->
-    lists:foldl(
-      fun(Addr, {Jids1, Uris1, Others1}) ->
-	      {Jid2, Uri2, Other2} =
-		  case {xml:get_attr_s("jid", Addr), xml:get_attr_s("uri", Addr)} of
-		      {[], []} -> {[], [], [Addr]};
-		      {Jid, []} -> {[Jid], [], []};
-		      {[], Uri} -> {[], [Uri], []};
-		      {_Jid, _Uri} -> {[], [], [Addr]}
-		  end,
-	      {Jids1 ++ Jid2, Uris1 ++ Uri2, Others1 ++ Other2}
+split_dests_jid(Dests) ->
+    lists:partition(
+      fun(Dest) ->
+	      case Dest#dest.jid_string of
+		  none -> false;
+		  _ -> true
+	      end
       end,
-      {[], [], []},
-      Addresses).
-
-%% Group destinations by their servers
-group_dests_by_servers(Jids) ->
-    D = lists:foldl(
-	  fun(Jid, Dict) ->
-		  ServerS = Jid#jid.server,
-		  dict:append(ServerS, jts(Jid), Dict)
-	  end,
-	  dict:new(),
-	  Jids),
-    Keys = dict:fetch_keys(D),
-    [ #group{server = Key, dests = dict:fetch(Key, D)} || Key <- Keys ].
+      Dests).
 
 %% Sends an error message for each unknown address
 %% Currently only 'jid' addresses are acceptable on ejabberd
-send_error_address(From, Packet, URIs, Others) ->
-    URIs2 = ["uri: " ++ URI || URI <- URIs],
-    Others2 = [io_lib:format("~p", [Other]) || Other <- Others],
-    Unknown_adds = URIs2 ++ Others2,
+report_not_jid(From, Packet, Dests) ->
+    Dests2 = [xml:element_to_string(Dest#dest.full_xml) || Dest <- Dests],
     [route_error(From, From, Packet, jid_malformed, 
-		 "The service does not understand the address: " ++ A)
-     || A <- Unknown_adds].
+		 "This service can not process the address: " ++ D)
+     || D <- Dests2].
+
+
+%%%-------------------------
+%%% Group destinations by their servers 
+%%%-------------------------
+
+group_dests(Dests) ->
+    D = lists:foldl(
+	  fun(Dest, Dict) ->
+		  ServerS = (Dest#dest.jid_jid)#jid.server,
+		  dict:append(ServerS, Dest, Dict)
+	  end,
+	  dict:new(),
+	  Dests),
+    Keys = dict:fetch_keys(D),
+    [ #group{server = Key, dests = dict:fetch(Key, D)} || Key <- Keys ].
 
 
 %%%-------------------------
 %%% Look for cached responses
 %%%-------------------------
 
-look_cached_servers(LServerS, Grouped_addresses) ->
-    [look_cached(LServerS, Group) || Group <- Grouped_addresses].
+look_cached_servers(LServerS, Groups) ->
+    [look_cached(LServerS, Group) || Group <- Groups].
 
 look_cached(LServerS, G) ->
     Maxtime_positive = ?MAXTIME_CACHE_POSITIVE,
@@ -482,54 +583,81 @@ look_cached(LServerS, G) ->
 
 
 %%%-------------------------
-%%% Process group: send packet or ask support
+%%% Build delivered XML element
 %%%-------------------------
 
-process_groups(LServiceS, From, Packet, Grouped_addresses2) ->
-    [process_group(LServiceS, From, Packet, Group) || Group <- Grouped_addresses2].
+build_others_xml(Groups) ->
+    [Group#group{others = build_other_xml(Group#group.dests)} || Group <- Groups].
 
-process_group(LServiceS, From, Packet, Group) ->
+%% Add delivered=true
+%% and remove addresses which type == bcc
+build_other_xml(Dests) ->
+    lists:foldl(
+      fun(Dest, R) ->
+	      XML = Dest#dest.full_xml,
+	      case Dest#dest.type of
+		  "to" -> [add_delivered(XML) | R];
+		  "cc" -> [add_delivered(XML) | R];
+		  "bcc" -> R;
+		  _ -> [XML | R]
+	      end
+      end,
+      [],
+      Dests).
+
+add_delivered({xmlelement, Name, Attrs, Els}) ->
+    Attrs2 = [{"delivered", "true"} | Attrs],
+    {xmlelement, Name, Attrs2, Els}.
+
+
+%%%-------------------------
+%%% Add preliminary packets
+%%%-------------------------
+
+add_addresses(Delivereds, Groups) ->
+    Ps = [Group#group.others || Group <- Groups],
+    add_addresses2(Delivereds, Groups, [], [], Ps).
+
+add_addresses2(_, [], Res, _, []) ->
+    Res;
+
+add_addresses2(Delivereds, [Group | Groups], Res, Pa, [Pi | Pz]) ->
+    Addresses = lists:append([Delivereds] ++ Pa ++ Pz),
+    Group2 = Group#group{addresses = Addresses},
+    add_addresses2(Delivereds, Groups, [Group2 | Res], [Pi | Pa], Pz).
+
+
+%%%-------------------------
+%%% Decide action groups
+%%%-------------------------
+
+decide_action_groups(Groups) ->
+    [{decide_action_group(Group), Group} || Group <- Groups].
+
+decide_action_group(Group) ->
     Server = Group#group.server,
     case Group#group.multicast of
 
 	{cached, local_server} ->
 	    %% Send a copy of the packet to each local user on Dests
-	    [route_packet(From, ToUser, [], Packet) || ToUser <- Group#group.dests];
+	    route_single;
 
 	{cached, not_supported} ->
 	    %% Send a copy of the packet to each remote user on Dests
-	    [route_packet(From, ToUser, [], Packet) || ToUser <- Group#group.dests];
+	    route_single;
 
 	{cached, {multicast_supported, JID, RLimits}} ->
 	    %% XEP33 is supported by the server, thanks to this service
-	    route_packet(From, JID, {Group#group.dests, RLimits}, Packet);
-
-	{obsolete, not_supported} ->
-	    send_query_info(Server, LServiceS),
-	    add_waiter(#waiter{awaiting = {[Server], LServiceS, info},
-			       group = Group,
-			       renewal = false,
-			       sender = From,
-			       packet = Packet
-			      });
+	    {route_multicast, JID, RLimits};
 
 	{obsolete, {multicast_supported, Old_service, _RLimits}} ->
-	    send_query_info(Old_service, LServiceS),
-	    add_waiter(#waiter{awaiting = {[Old_service], LServiceS, info},
-			       group = Group,
-			       renewal = true,
-			       sender = From,
-			       packet = Packet
-			      });
+	    {ask, Old_service, renewal};
+
+	{obsolete, not_supported} ->
+	    {ask, Server, not_renewal};
 
 	not_cached ->
-	    send_query_info(Server, LServiceS),
-	    add_waiter(#waiter{awaiting = {[Server], LServiceS, info},
-			       group = Group,
-			       renewal = false,
-			       sender = From,
-			       packet = Packet
-			      })
+	    {ask, Server, not_renewal}
 
     end.
 
@@ -540,102 +668,63 @@ process_group(LServiceS, From, Packet, Group) ->
 
 %% Build and send packet to this group of destinations
 %% From = jid()
-%% To = string()
-%% DestsL = [] | {[string()], limits()}
-route_packet(From, To, [], Packet) ->
-    route_packet2(From, To, [], Packet);
+%% ToS = string()
+route_packet(From, ToDest, Packet, AAttrs, Addresses) ->
+    Dests = case ToDest#dest.type of
+		"bcc" -> [];
+		_ -> [ToDest]
+	    end,
+    route_packet2(From, ToDest#dest.jid_string, Dests, Packet, AAttrs, Addresses).
 
-route_packet(From, To, {Dests, Limits}, Packet) ->
+route_packet_multicast(From, ToS, Packet, AAttrs, Dests, Addresses, Limits) ->
     Type_of_stanza = type_of_stanza(Packet),
     {_Type, Limit_number} = get_limit_number(Type_of_stanza, Limits),
     Fragmented_dests = fragment_dests(Dests, Limit_number),
-    [route_packet2(From, To, DFragment, Packet) || DFragment <- Fragmented_dests].
+    [route_packet2(From, ToS, DFragment, Packet, AAttrs, Addresses) || DFragment <- Fragmented_dests].
 
-%% Dests = [] | [string()]
-route_packet2(From, To, Dests, Packet) ->
-    Packet2 = update_addresses_xml(Packet, Dests),
-    Packet3 = xml:replace_tag_attr("to", To, Packet2),
-    To2 = case To of
-	      ToS when is_list(ToS) -> stj(ToS);
-	      ToJID -> ToJID
-	  end,
-    ejabberd_router:route(From, To2, Packet3).
+route_packet2(From, ToS, Dests, Packet, AAttrs, Addresses) ->
+    {xmlelement, T, A, C} = Packet,
+    C2 = case append_dests(Dests, Addresses) of
+	     [] ->
+		 C;
+	     ACs ->
+		 [{xmlelement, "addresses", AAttrs, ACs} | C]
+	 end,
+
+    Packet2 = {xmlelement, T, A, C2},
+    ToJID = stj(ToS),
+    ejabberd_router:route(From, ToJID, Packet2).
+
+append_dests([], Addresses) -> 
+    Addresses;
+append_dests([Dest | Dests], Addresses) ->
+    append_dests(Dests, [Dest#dest.full_xml | Addresses]).
 
 
 %%%-------------------------
 %%% Check relay
 %%%-------------------------
 
-check_relay(RS, LS, GA) ->
-    case check_relay_required(RS, LS, GA) of
+check_relay(RS, LS, Gs) ->
+    case check_relay_required(RS, LS, Gs) of
 	false -> ok;
 	true -> throw(edrelay)
     end.
 
 %% If the sender is external, and at least one destination is external,
 %% then this package requires relaying
-check_relay_required(RServer, LServerS, Grouped_addresses) ->
+check_relay_required(RServer, LServerS, Groups) ->
     case string:str(RServer, LServerS) > 0 of
 	true -> false;
-	false -> check_relay_required(LServerS, Grouped_addresses)
+	false -> check_relay_required(LServerS, Groups)
     end.
 
-check_relay_required(LServerS, Grouped_addresses) ->
+check_relay_required(LServerS, Groups) ->
     lists:any(
       fun(Group) ->
 	      Group#group.server /= LServerS
       end,
-      Grouped_addresses).
-
-
-%%%-------------------------
-%%% Tags
-%%%-------------------------
-
-%% For each address which server is not the local one, add delivered=true
-%% If the address' type == bcc, remove address from list
-%% Dests = [string()]
-update_addresses_xml(Packet, Dests) ->
-    %% get addresses
-    {xmlelement, _, PAttrs, Addresses_xml} = xml:get_subtag(Packet, "addresses"),
-    Addresses_xml2 = 
-	lists:map(
-	  fun(XML) ->
-		  case XML of
-		      {xmlelement, "address", Attrs, _El} ->
-			  case xml:get_attr_s("delivered", Attrs) of
-			      "true" -> XML;
-			      _ ->
-				  JID = xml:get_attr_s("jid", Attrs),
-				  Is_multicast_dest = lists:member(JID, Dests),
-				  Type = xml:get_attr_s("type", Attrs),
-				  case {Is_multicast_dest, Type} of
-				      {true, _} -> XML;
-				      {false, "to"} -> add_delivered(XML);
-				      {false, "cc"} -> add_delivered(XML);
-				      {false, "bcc"} -> [];
-				      {false, _} -> XML
-				  end
-			  end;
-		      {xmlcdata, _} -> [];
-		      _ -> XML
-		  end
-	  end,
-	  Addresses_xml),
-    Addresses_elements = case lists:flatten(Addresses_xml2) of
-			     [] -> [];
-			     E -> [{xmlelement, "addresses", PAttrs, E}]
-			 end,
-    replace_tag_el("addresses", Addresses_elements, Packet).
-
-add_delivered({xmlelement, Name, Attrs, Els}) ->
-    Attrs2 = Attrs ++ [{"delivered", "true"}],
-    {xmlelement, Name, Attrs2, Els}.
-
-replace_tag_el(El, Elements, {xmlelement, Name, Attrs, Els}) ->
-    Els1 = lists:keydelete(El, 2, Els),
-    Els2 = Els1 ++ Elements,
-    {xmlelement, Name, Attrs, Els2}.
+      Groups).
 
 
 %%%-------------------------
@@ -736,8 +825,10 @@ process_discoinfo_result2(From, FromS, LServiceS, Els, Waiter) ->
 	    FromM = Waiter#waiter.sender,
 	    DestsM =  Group#group.dests,
 	    PacketM = Waiter#waiter.packet,
+	    AAttrsM = Waiter#waiter.aattrs,
+	    AddressesM = Waiter#waiter.addresses,
 	    RServiceM = FromS,
-	    route_packet(FromM, RServiceM, {DestsM, RLimits}, PacketM),
+	    route_packet_multicast(FromM, RServiceM, PacketM, AAttrsM, DestsM, AddressesM, RLimits),
 
 	    %% Remove from Pool
 	    delo_waiter(Waiter);
@@ -798,8 +889,8 @@ get_limits_fields(Fields) ->
 		     fun(Field) -> 
 			     case Field of 
 				 {xmlelement, "field", Attrs, _SubEls} ->
-				     ("FORM_TYPE" == xml:get_attr_s("var", Attrs)) and
-										     ("hidden" == xml:get_attr_s("type", Attrs));
+				     ("FORM_TYPE" == xml:get_attr_s("var", Attrs)) 
+					 and ("hidden" == xml:get_attr_s("type", Attrs));
 				 _ -> false
 			     end
 		     end,
@@ -884,7 +975,10 @@ received_awaiter(JID, Waiter, LServiceS) ->
 		    %% Send a copy of the packet to each remote user on Dests
 		    From = Waiter#waiter.sender,
 		    Packet = Waiter#waiter.packet,
-		    [route_packet(From, ToUser, [], Packet) || ToUser <- Group#group.dests];
+		    AAttrs = Waiter#waiter.aattrs,
+		    Addresses = Waiter#waiter.addresses,
+		    [route_packet(From, ToUser, Packet, AAttrs, Addresses) 
+		     || ToUser <- Group#group.dests];
 
 		true -> 
 		    %% We asked this component because the cache 
@@ -1079,7 +1173,9 @@ build_service_limit_record(LimitOpts) ->
     }.
 
 get_from_limitopts(LimitOpts, SenderT) ->
-    [{StanzaT, Number} || {SenderT2, StanzaT, Number} <- LimitOpts, SenderT =:= SenderT2].
+    [{StanzaT, Number} 
+     || {SenderT2, StanzaT, Number} <- LimitOpts, 
+	SenderT =:= SenderT2].
 
 %% Build a record of type #limits{}
 %% In fact, it builds a list and then converts to tuple
@@ -1205,29 +1301,3 @@ make_reply(forbidden, Lang, ErrText) ->
 
 stj(String) -> jlib:string_to_jid(String).
 jts(String) -> jlib:jid_to_string(String).
-
-
-%%%-------------------------
-%%% Exported multicast functions 
-%%%-------------------------
-
-%% Destinations = [jid()]
-build_packet(Destinations, Packet) ->
-    %% Build and addresses element
-    Ad_list = [build_address_element(jts(JID)) || JID <- Destinations],
-    Element = build_addresses_element(Ad_list),
-
-    %% Add element to original packet
-    {xmlelement, Type, Attrs, Els} = Packet,
-    Els2 = [Element | Els],
-    {xmlelement, Type, Attrs, Els2}.
-
-build_address_element(Jid_string) ->
-    {xmlelement, "address", 
-     [{"type", "bcc"}, {"jid", Jid_string}], 
-     []}.
-
-build_addresses_element(Addresses_list) ->
-    {xmlelement, "addresses", 
-     [{"xmlns", "http://jabber.org/protocol/address"}], 
-     Addresses_list}.
