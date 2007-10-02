@@ -92,7 +92,7 @@ if ($action=="del") {
 // some validation things...
 if ($start) { if ((validate_start($start))!="t") { $start="0";  }  }
 
-$result=mysql_query("select substring(at,1,7) as at_m, at as verb from `logdb_stats_$xmpp_host` where owner_id='$user_id' group by at_m order by at desc");
+$result=mysql_query("select substring(at,1,7) as at_m, at as verb from `logdb_stats_$xmpp_host` where owner_id='$user_id' group by at_m order by str_to_date(at,'%Y-%m-%d') desc");
 
 if (mysql_num_rows($result) !=0) {
 
