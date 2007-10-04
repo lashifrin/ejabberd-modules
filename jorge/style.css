@@ -79,6 +79,20 @@ a {
 	text-decoration: none;
 }
 
+a.mmenu {
+	color: white;
+	text-decoration: none;
+}
+
+a:hover.mmenu {
+	color: white;
+}
+
+a.foot {
+	color: #65a5e4;
+	text-decoration: none;
+}
+
 a:hover {
 
 	color: #136ef7;

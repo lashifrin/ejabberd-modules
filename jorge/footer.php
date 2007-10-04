@@ -46,7 +46,9 @@ print '<div align="right"><a href="mailto:zzolkiewski@aster.com.pl">'.$quest1[$l
 
 ?>
 <br><br><br><br><br>
-<div align="center"><small>&copy;2007</small></div>
+<div style="background-image: url(img/bell-down.png); height: 3px;"></div>
+<div align="center"><? print $links; ?></div><br>
+<div align="center" style="color: gray;"><? print $copy; ?></small></div>
 
 <?
 

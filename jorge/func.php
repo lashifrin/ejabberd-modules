@@ -298,7 +298,7 @@ function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type
 	// rozmowy w danym dniu
 	if ($type=="2") {
 
-		$query = "select a.username, b.server as server_name, c.peer_name_id as todaytalk, c.peer_server_id as server from `logdb_users_$xmpp_host` a, `logdb_servers_$xmpp_host` b, `$tslice_table` c where c.owner_id='$user_id' and a.user_id=c.peer_name_id and b.server_id=c.peer_server_id group by a.username,b.server order by lower(username)";
+		$query = "select a.username, b.server as server_name, c.peer_name_id as todaytalk, c.peer_server_id as server from `logdb_users_$xmpp_host` a, `logdb_servers_$xmpp_host` b, `$tslice_table` c where c.owner_id='$user_id' and a.user_id=c.peer_name_id and b.server_id=c.peer_server_id and c.ext is NULL group by a.username,b.server order by lower(username)";
 	
 	}
 
@@ -409,7 +409,7 @@ function get_server_id ($server_name,$xmpp_host) {
 
 function get_my_links_count ($user_id) {
 
-	$result=mysql_query("select count(id_link) from jorge_mylinks where owner_id='$user_id'");
+	$result=mysql_query("select count(id_link) from jorge_mylinks where owner_id='$user_id' and ext is NULL");
 	$row=mysql_fetch_row($result);
 	$my_links_count=$row[0];
 	if ($my_links_count) { return $my_links_count; } else { return "0";}

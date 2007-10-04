@@ -55,9 +55,24 @@ if ($wo_sess || $$inpLogin || $inpPass) {
 
 if ($_GET['act']=='logout') {
 	$ui = get_user_id($sess->get('uid_l'),$xmpp_host);
-	$query="insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time) values ('$ui',2,1,NOW())";
+	mysql_query("insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time) values ('$ui',2,1,NOW())");
+	if (($sess->get('uid_l'))!="") {
+		// purge deletion table upon exit
+		$result=mysql_query("select peer_name_id,date from pending_del where owner_id='$ui'");
+		// prevent code execution if there is nothing to delete
+		if (mysql_num_rows($result)>0) {
+			while($row = mysql_fetch_array($result)) {
+      				$talker = $row["peer_name_id"];
+				$tslice = $row["date"];
+				mysql_query("delete from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$ui' and peer_name_id='$talker' and ext = '1'");
+  			}
+			mysql_query("delete from jorge_mylinks where owner_id='$ui' and ext='1'");
+			mysql_query("delete from pending_del where owner_id='$ui'");
+		}
+ 	}
+
+
 	$sess->finish();
-	mysql_query($query) or die;
 	header("Location: index.php");
 	} else {
 	if ($inpLogin!="" || $inpPass!="") {
@@ -74,6 +89,21 @@ if ($_GET['act']=='logout') {
 		  $ui = get_user_id($sess->get('uid_l'),$xmpp_host);
 		  $query="insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time,extra) values ('$ui',1,1,NOW(),'$rem_adre')";
 		  mysql_query($query) or die;
+
+		// purge deletion table upon startup
+		$result=mysql_query("select peer_name_id,date from pending_del where owner_id='$ui'");
+		// prevent code execution if there is nothing to delete
+		if (mysql_num_rows($result)>0) {
+			while($row = mysql_fetch_array($result)) {
+      				$talker = $row["peer_name_id"];
+				$tslice = $row["date"];
+				mysql_query("delete from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$ui' and peer_name_id='$talker' and ext = '1'");
+  			}
+			mysql_query("delete from jorge_mylinks where owner_id='$ui' and ext='1'");
+			mysql_query("delete from pending_del where owner_id='$ui'");
+		}
+
+		// move to main
 		  header("Location: main.php");
 		  exit; // lets break script at this point...
 		  }
@@ -121,11 +151,9 @@ function new_freecap()
 
 if ($lang=="eng") { $lang_o="pol"; } elseif($lang=="pol") { $lang_o="eng"; }
 print '<table class="ff" cellspacing="0" width="100%">'."\n";
-print '<tr>'."\n";
-print '<td style="text-align: left;">'.$welcome_1[$lang].'</td><td style="text-align: right;">';
-print '<a href="index.php?lng_sw='.$lang_o.'">'.$ch_lan2[$lang].$lang_sw[$lang].'</a></td>';
-print '<tr height="12" class="maint"><td colspan="2" width="100%"></td></tr>'."\n";
-print '<tr height="3" class="spacer"><td colspan="2" width="100%"></td></tr>'."\n";
+print '<tr style="background-image: url(img/bell-bak.png); height: 24;">';
+print '<td style="text-align: left; padding-left: 10px; color: white;">'.$welcome_1[$lang].'</td><td style="text-align: right;">';
+print '<a class="mmenu" href="index.php?lng_sw='.$lang_o.'">'.$ch_lan2[$lang].$lang_sw[$lang].'</a></td>';
 print '</tr></table>'."\n";
 print '<br><div align="center"><img alt="Jorge logo" src="img/jorge_logo.png"></div>'."\n";
 

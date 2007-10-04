@@ -53,4 +53,19 @@ $num_search_results = "100";
 // splitting line. Value in seconds. Default 900s = 15 minutes
 $split_line="900";
 
+// links
+$links='<a class="foot" href="http://www.jabster.pl" target="_blank">jabster.pl</a>&nbsp;&nbsp;&nbsp;&nbsp;
+	<a class="foot" href="http://poczta.jabster.pl" target="_blank">poczta</a>&nbsp;&nbsp;&nbsp;&nbsp;
+	<a class="foot" href="http://kalendarz.jabster.pl" target="_blank">kalendarz</a>&nbsp;&nbsp;&nbsp;&nbsp;
+	<a class="foot" href="http://docs.jabster.pl" target="_blank">dokumenty</a>
+	'; 
+
+// copyright
+$copy = "jabster.pl &copy; 2007";
+
+// custom logo
+$brand_logo = "logo_jabster.png";
+
+
+
 ?>

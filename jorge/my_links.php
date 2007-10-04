@@ -102,7 +102,7 @@ if ($variables[ismylink]=="1") {
 	}
 
 
-$query="select * from jorge_mylinks where owner_id='$user_id' order by str_to_date(datat,'%Y-%m-%d') desc";
+$query="select * from jorge_mylinks where owner_id='$user_id' and ext is NULL order by str_to_date(datat,'%Y-%m-%d') desc";
 $result=mysql_query($query);
 
 if (mysql_num_rows($result) == "0") { print '<br /><br /><center><b>'.$my_links_no_links[$lang].'</b></center>'; }

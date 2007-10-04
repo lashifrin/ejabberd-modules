@@ -50,17 +50,46 @@ if (validate_date($tslice) == "f") { unset ($tslice); unset($e_string); unset($t
 
 include("upper.php");
 
+
+// implement undo actions
+if ($action=="undelete") {
+
+	if (!ctype_digit($talker) OR !ctype_digit($server)) { print 'Ooops...'; exit; }
+	// undelete chat
+	$query="update `logdb_messages_$tslice"."_$xmpp_host` set ext = NULL where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server'";
+	$result=mysql_query($query) or die ("Ooops...Error");
+	// remove from pending table
+	$query="delete from pending_del where owner_id='$user_id' and peer_name_id='$talker' and date='$tslice'";
+	$result=mysql_query($query) or die ("Ooops...Error1");
+	// recount message stats for user
+	$query="select count(body) from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id' and ext is NULL";
+	$result=mysql_query($query) or die ("Ooops...Error1");
+	$row=mysql_fetch_row($result);
+	$new_stats=$row[0];
+	mysql_free_result($result);
+	$query="update `logdb_stats_$xmpp_host` set count='$new_stats' where owner_id='$user_id' and at='$tslice'";
+	$result=mysql_query($query) or die ("Ooops...Error2");
+	// undelete saved links
+	$query="update jorge_mylinks set ext=NULL where owner_id ='$user_id' and peer_name_id='$talker' and link like '$lnk%'";
+	$result=mysql_query($query) or die ("Ooops...Error");
+	mysql_free_result($result);
+
+}
+
+
 // chat deletion
 if ($action=="del") {
 
 	if (!ctype_digit($talker) OR !ctype_digit($server)) { print 'Ooops...'; exit; }
-	$query="delete from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server'";
+	$query="update `logdb_messages_$tslice"."_$xmpp_host` set ext = '1' where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server'";
+	$result=mysql_query($query) or die ("Ooops...Error");
+	$query="insert into pending_del(owner_id,peer_name_id,date) values ('$user_id', '$talker','$tslice')";
 	$result=mysql_query($query) or die ("Ooops...Error");
 	$jid_date = ' '.get_user_name($talker,$xmpp_host).'@'.get_server_name($server,$xmpp_host).' ('.$tslice.')';
 	$query="insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time,extra) values ('$user_id',4,1,NOW(),'$jid_date')";
 	mysql_query($query) or die;
 	// how many chats is there left?
-	$query="select count(peer_name_id) from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id'";
+	$query="select count(peer_name_id) from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id' and ext is NULL";
 	$result=mysql_query($query);
 	$row=mysql_fetch_row($result);
 	// if there is nothing left, lets cleanu up stats, we dont want to have mess in db
@@ -72,7 +101,7 @@ if ($action=="del") {
 			else
 			{
 			// update stats if not delete
-			$query="select count(body) from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id'";
+			$query="select count(body) from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id' and ext is NULL";
 			$result=mysql_query($query) or die ("Ooops...Error1");
 			$row=mysql_fetch_row($result);
 			$new_stats=$row[0];
@@ -81,12 +110,14 @@ if ($action=="del") {
 			$result=mysql_query($query) or die ("Ooops...Error2");
 			mysql_free_result($result);
 			}
-	// also if there were some saved links - we clean them up from mylins as well. We are so nice...
-	$query="delete from jorge_mylinks where owner_id ='$user_id' and peer_name_id='$talker' and link like '$lnk%'";
+	// also if there were some saved links - we clean them up from mylinks as well. We are so nice...
+	$query="update jorge_mylinks set ext='1' where owner_id ='$user_id' and peer_name_id='$talker' and link like '$lnk%'";
 	$result=mysql_query($query) or die ("Ooops...Error");
 	mysql_free_result($result);
+	$undelete_link = "$tslice@$talker@$server@@@$lnk@undelete@";
+	$undelete_link = encode_url($undelete_link,$token,$url_key);
 	unset($talker);
-	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 200pt;">'.$del_info[$lang].'</div></center>';
+	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 200pt;">'.$del_info[$lang].'<a href="main.php?a='.$undelete_link.'"> <span style="color: blue;"><u>Undo</u></span></a></div></center>';
 }
 
 // some validation things...
@@ -213,7 +244,7 @@ if ($talker) {
 	$predefined=encode_url($predefined,$token,$url_key);
 	print '<td align="right" style="padding-right: 5px;">[ <a id="pretty" title="'.$tip_export[$lang].'" class="export" href="export.php?a='.$e_string.'">'.$export_link[$lang].'</a>&nbsp; | &nbsp;';
 	print '<a id="pretty" title="'.$all_for_u_t[$lang].'" class="export" href="search_v2.php?b='.$predefined.'">'.$all_for_u[$lang].'</a>&nbsp; | &nbsp;';
-	print '<a id="pretty" title="'.$tip_delete[$lang].'" class="delq" href="main.php?a='.$action_link.'" onClick="if (!confirm(\''.$del_conf[$lang].'\')) return false;">'.$del_t[$lang].'</a> ]</td></tr>';
+	print '<a id="pretty" title="'.$tip_delete[$lang].'" class="delq" href="main.php?a='.$action_link.'">'.$del_t[$lang].'</a> ]</td></tr>';
 	print '<tr class="spacer"><td colspan="5"></td></tr>';
 	print '<tbody id="searchfield">'."\n";
 	while ($entry = mysql_fetch_array($result))

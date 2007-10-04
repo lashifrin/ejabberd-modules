@@ -259,8 +259,8 @@ $del_conf_my_link[eng] = "Do you really want to remove that link?";
 $not_in_r[pol] = pl_znaczki("Poza list± kontaktów");
 $not_in_r[eng] = "Not in roster";
 
-$del_info[pol] = pl_znaczki("Rozmowa zosta³a usuniêta");
-$del_info[eng] = "Chat succesfuly deleted";
+$del_info[pol] = pl_znaczki("Rozmowa zosta³a usuniêta.");
+$del_info[eng] = "Chat succesfuly deleted.";
 
 $del_my_link[pol] = pl_znaczki("usuñ");
 $del_my_link[eng] = "delete";

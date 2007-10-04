@@ -47,93 +47,93 @@ $my_links_count=get_my_links_count(get_user_id($token,$xmpp_host));
 if (preg_match("/search_v2.php/i",$location)) 
 
 	{ 
-		$loc1='<a href="main.php">'.$menu_item1[$lang].'</a>';
+		$loc1='<a class="mmenu" href="main.php">'.$menu_item1[$lang].'</a>';
 		$loc2='<b>'.$menu_item2[$lang].'</b>';
-		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
-		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
-		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
-		$loc5a='<a href="logger.php">'.$menu_item6[$lang].'</a>';
+		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
+		$loc4='<a class="mmenu" href="settings.php">'.$menu_item4[$lang].'</a>';
+		$loc5='<a class="mmenu" href="contacts.php">'.$menu_item5[$lang].'</a>';
+		$loc5a='<a class="mmenu" href="logger.php">'.$menu_item6[$lang].'</a>';
 		$search_loc=1;
-		if ($token==$admin_name) { $loc6=' | <a href="stats.php"> Stats</a>'; }
+		if ($token==$admin_name) { $loc6=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 	}
 	elseif(preg_match("/main.php/i",$location))
 	{
 		$loc1='<b>'.$menu_item1[$lang].'</b>';
-		$loc2='<a href="search_v2.php">'.$menu_item2[$lang].'</a>';
-		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
-		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
-		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
-		$loc5a='<a href="logger.php">'.$menu_item6[$lang].'</a>';
-		if ($token==$admin_name) { $loc6=' | <a href="stats.php"> Stats</a>'; }
+		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
+		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
+		$loc4='<a class="mmenu" href="settings.php">'.$menu_item4[$lang].'</a>';
+		$loc5='<a class="mmenu" href="contacts.php">'.$menu_item5[$lang].'</a>';
+		$loc5a='<a class="mmenu" href="logger.php">'.$menu_item6[$lang].'</a>';
+		if ($token==$admin_name) { $loc6=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 
 	}
 	elseif(preg_match("/my_links.php/i",$location))
 	{
-		$loc1='<a href="main.php">'.$menu_item1[$lang].'</a>';
-		$loc2='<a href="search_v2.php">'.$menu_item2[$lang].'</a>';
+		$loc1='<a class="mmenu" href="main.php">'.$menu_item1[$lang].'</a>';
+		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
 		$loc3='<b>'.$menu_item3[$lang].' ('.$my_links_count.') </b>';
-		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
-		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
-		$loc5a='<a href="logger.php">'.$menu_item6[$lang].'</a>';
-		if ($token==$admin_name) { $loc6=' | <a href="stats.php"> Stats</a>'; }
+		$loc4='<a class="mmenu" href="settings.php">'.$menu_item4[$lang].'</a>';
+		$loc5='<a class="mmenu" href="contacts.php">'.$menu_item5[$lang].'</a>';
+		$loc5a='<a class="mmenu" href="logger.php">'.$menu_item6[$lang].'</a>';
+		if ($token==$admin_name) { $loc6=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 
 
 	}
 	elseif(preg_match("/settings.php/i",$location))
 	{
-		$loc1='<a href="main.php">'.$menu_item1[$lang].'</a>';
-		$loc2='<a href="search_v2.php">'.$menu_item2[$lang].'</a>';
-		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
+		$loc1='<a class="mmenu" href="main.php">'.$menu_item1[$lang].'</a>';
+		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
+		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<b>'.$menu_item4[$lang].'</b>';
-		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
-		$loc5a='<a href="logger.php">'.$menu_item6[$lang].'</a>';
-		if ($token==$admin_name) { $loc6=' | <a href="stats.php"> Stats</a>'; }
+		$loc5='<a class="mmenu" href="contacts.php">'.$menu_item5[$lang].'</a>';
+		$loc5a='<a class="mmenu" href="logger.php">'.$menu_item6[$lang].'</a>';
+		if ($token==$admin_name) { $loc6=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 
 
 	}
 	elseif(preg_match("/help.php/i",$location))
 	{
-		$loc1='<a href="main.php">'.$menu_item1[$lang].'</a>';
-		$loc2='<a href="search_v2.php">'.$menu_item2[$lang].'</a>';
-		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
-		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
-		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
-		$loc5a='<a href="logger.php">'.$menu_item6[$lang].'</a>';
-		if ($token==$admin_name) { $loc6=' | <a href="stats.php"> Stats</a>'; }
+		$loc1='<a class="mmenu" href="main.php">'.$menu_item1[$lang].'</a>';
+		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
+		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
+		$loc4='<a class="mmenu" href="settings.php">'.$menu_item4[$lang].'</a>';
+		$loc5='<a class="mmenu" href="contacts.php">'.$menu_item5[$lang].'</a>';
+		$loc5a='<a class="mmenu" href="logger.php">'.$menu_item6[$lang].'</a>';
+		if ($token==$admin_name) { $loc6=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 
 	}
 	elseif(preg_match("/contacts.php/i", $location))
 	{
-		$loc1='<a href="main.php">'.$menu_item1[$lang].'</a>';
-		$loc2='<a href="search_v2.php">'.$menu_item2[$lang].'</a>';
-		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
-		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
+		$loc1='<a class="mmenu" href="main.php">'.$menu_item1[$lang].'</a>';
+		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
+		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
+		$loc4='<a class="mmenu" href="settings.php">'.$menu_item4[$lang].'</a>';
 		$loc5='<b>'.$menu_item5[$lang].'</b>';
-		$loc5a='<a href="logger.php">'.$menu_item6[$lang].'</a>';
-		if ($token==$admin_name) { $loc6=' | <a href="stats.php">Stats</a>'; }
+		$loc5a='<a class="mmenu" href="logger.php">'.$menu_item6[$lang].'</a>';
+		if ($token==$admin_name) { $loc6=' | <a class="mmenu" href="stats.php">Stats</a>'; }
 
 	}
 	elseif(preg_match("/stats.php/i", $location))
 	{
-		$loc1='<a href="main.php">'.$menu_item1[$lang].'</a>';
-		$loc2='<a href="search_v2.php">'.$menu_item2[$lang].'</a>';
-		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
-		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
-		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
-		$loc5a='<a href="logger.php">'.$menu_item6[$lang].'</a>';
+		$loc1='<a class="mmenu" href="main.php">'.$menu_item1[$lang].'</a>';
+		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
+		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
+		$loc4='<a class="mmenu" href="settings.php">'.$menu_item4[$lang].'</a>';
+		$loc5='<a class="mmenu" href="contacts.php">'.$menu_item5[$lang].'</a>';
+		$loc5a='<a class="mmenu" href="logger.php">'.$menu_item6[$lang].'</a>';
 		if ($token==$admin_name) { $loc6=' | <b>Stats</b></a>'; }
 
 		
 	}
 	elseif(preg_match("/logger.php/i", $location))
 	{
-		$loc1='<a href="main.php">'.$menu_item1[$lang].'</a>';
-		$loc2='<a href="search_v2.php">'.$menu_item2[$lang].'</a>';
-		$loc3='<a href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
-		$loc4='<a href="settings.php">'.$menu_item4[$lang].'</a>';
-		$loc5='<a href="contacts.php">'.$menu_item5[$lang].'</a>';
+		$loc1='<a class="mmenu" href="main.php">'.$menu_item1[$lang].'</a>';
+		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
+		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
+		$loc4='<a class="mmenu" href="settings.php">'.$menu_item4[$lang].'</a>';
+		$loc5='<a class="mmenu" href="contacts.php">'.$menu_item5[$lang].'</a>';
 		$loc5a='<b>'.$menu_item6[$lang].'</b>';
-		if ($token==$admin_name) { $loc6=' | <a href="stats.php"> Stats</a>'; }
+		if ($token==$admin_name) { $loc6=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 
 		
 	}
@@ -152,16 +152,14 @@ $spool = spool_count($bazaj,$token);
 print '<a name="top"></a>'."\n";
 print '<table border="0" cellspacing="0" class="ff" width="100%">'."\n";
 print '<tr>'."\n";
-print '<td style="text-align: left;">'.$loc1.' | '.$loc2.' | '.$loc3.' | '.$loc5.' | '.$loc4.' | '.$loc5a.$loc6.' | <a href="" onClick="window.location.reload()">'.$refresh[$lang].'</td>'."\n";
-print '<td style="text-align: right;">'."\n";
+print '<td colspan="2" style="text-align: right;">'."\n";
 print '<b>'.$token.'@'.$xmpp_host_dotted.'</b>&nbsp; | &nbsp;';
 print $ch_lan[$lang];
 print ' <a href="'.$location.'?a='.$link_sw.'&sw_lang=t'.$cur_loc.'">'.$lang_sw[$lang].'</a>&nbsp; | &nbsp;';
-print '<a href="help.php" target="_blank">'.$help_but[$lang].'</a>&nbsp; | &nbsp;<a href="index.php?act=logout">'.$log_out_b[$lang].'</a></td>';
+print '<a href="help.php" target="_blank">'.$help_but[$lang].'</a>&nbsp; | &nbsp;<a href="index.php?act=logout">'.$log_out_b[$lang].'</a><hr size="1" noshade="" color="#c9d7f1"/></td>';
 print '</tr>'."\n";
-print '<tr><td></td></tr>'."\n";
-print '<tr><td width="450" colspan="9">'."\n";
-print '<form action="search_v2.php" method="post">'."\n";
+print '<tr><td><a href="main.php"><img src="img/'.$brand_logo.'" alt="logo" border="0" /></a></td></tr>';
+print '<tr><td valign="top"><form action="search_v2.php" method="post">'."\n";
 print '<input type="text" name="query" class="cc" value="'.$search_phase.'">'."\n";
 
 if ($search_loc==1) {
@@ -231,8 +229,9 @@ if ($search_loc==1) {
 print '<input class="red" type="submit" value="'.$search_box[$lang].'">'."\n";
 print '</form></td>'."\n";
 print '</tr>'."\n";
-print '<tr height="12" class="maint"><td colspan="11" width="100%"></td></tr>'."\n";
-print '<tr height="3" class="spacer"><td colspan="11" width="100%"></td></tr>'."\n";
+print '<tr style="background-image: url(img/bell-bak.png); height: 24;">';
+print '<td colspan="11" width="100%" style="text-align: left; padding-left: 30px; color: white;">'.$loc1.' | '.$loc2.' | '.$loc3.' | '.$loc5.' | '.$loc4.' | '.$loc5a.$loc6.' | <a class="mmenu" href="" onClick="window.location.reload()">'.$refresh[$lang].'</td>'."\n";
+print '</tr>'."\n";
 print '</table>'."\n";
 
 print '<p align="center"><b>'.$alert.'</b></p>';
