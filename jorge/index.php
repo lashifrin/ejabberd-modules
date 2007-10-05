@@ -150,13 +150,12 @@ function new_freecap()
 <?
 
 if ($lang=="eng") { $lang_o="pol"; } elseif($lang=="pol") { $lang_o="eng"; }
+print '<br><div align="center" style="height: 110;"><br><a href="index.php"><img border="0" alt="Branding logo" src="img/'.$brand_logo.'"></a></div>'."\n";
 print '<table class="ff" cellspacing="0" width="100%">'."\n";
 print '<tr style="background-image: url(img/bell-bak.png); height: 24;">';
 print '<td style="text-align: left; padding-left: 10px; color: white;">'.$welcome_1[$lang].'</td><td style="text-align: right;">';
 print '<a class="mmenu" href="index.php?lng_sw='.$lang_o.'">'.$ch_lan2[$lang].$lang_sw[$lang].'</a></td>';
 print '</tr></table>'."\n";
-print '<br><div align="center"><img alt="Jorge logo" src="img/jorge_logo.png"></div>'."\n";
-
     echo '<center>'."\n";
     echo '<form action="index.php" method="post">'."\n";
     echo '<br><br><table class="ff" border="0" cellspacing="0" cellpadding="0">'."\n";

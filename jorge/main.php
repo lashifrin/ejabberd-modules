@@ -59,7 +59,7 @@ if ($action=="undelete") {
 	$query="update `logdb_messages_$tslice"."_$xmpp_host` set ext = NULL where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server'";
 	$result=mysql_query($query) or die ("Ooops...Error");
 	// remove from pending table
-	$query="delete from pending_del where owner_id='$user_id' and peer_name_id='$talker' and date='$tslice'";
+	$query="delete from pending_del where owner_id='$user_id' and peer_name_id='$talker' and date='$tslice' and peer_server_id='$server'";
 	$result=mysql_query($query) or die ("Ooops...Error1");
 	// recount message stats for user
 	$query="select count(body) from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id' and ext is NULL";
@@ -83,7 +83,7 @@ if ($action=="del") {
 	if (!ctype_digit($talker) OR !ctype_digit($server)) { print 'Ooops...'; exit; }
 	$query="update `logdb_messages_$tslice"."_$xmpp_host` set ext = '1' where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server'";
 	$result=mysql_query($query) or die ("Ooops...Error");
-	$query="insert into pending_del(owner_id,peer_name_id,date) values ('$user_id', '$talker','$tslice')";
+	$query="insert into pending_del(owner_id,peer_name_id,date,peer_server_id) values ('$user_id', '$talker','$tslice','$server')";
 	$result=mysql_query($query) or die ("Ooops...Error");
 	$jid_date = ' '.get_user_name($talker,$xmpp_host).'@'.get_server_name($server,$xmpp_host).' ('.$tslice.')';
 	$query="insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time,extra) values ('$user_id',4,1,NOW(),'$jid_date')";
@@ -144,8 +144,8 @@ if (mysql_num_rows($result) !=0) {
 
 		$cl_entry = pl_znaczki(verbose_mo($entry[verb],$lang));
 		if ($entry[at_m]==substr($tslice,0,7)) { $rel="open"; $bop="<b>"; $bcl="</b>"; } else { $rel=""; $bop=""; $bcl=""; } // ugly hack...
-		print '<li>'.$bop.$cl_entry.$bcl.''."\n"; // folder - begin
-  		print '<ul rel="'.$rel.'">'."\n"; // folder content
+		print '<li style="background-color: transparent;">'.$bop.$cl_entry.$bcl.''."\n"; // folder - begin
+  		print '<ul style="background-color: transparent;" rel="'.$rel.'">'."\n"; // folder content
 		$query="select at from `logdb_stats_$xmpp_host` where owner_id = '$user_id' and substring(at,1,7) = '$entry[at_m]' order by str_to_date(at,'%Y-%m-%d') desc";
 		$result2=mysql_query($query);
 			while ($ent=mysql_fetch_array($result2)) {
@@ -154,7 +154,7 @@ if (mysql_num_rows($result) !=0) {
 			$to_base = encode_url($to_base,$token,$url_key);
 			$st=get_stats($user_id,$ent["at"],$xmpp_host);
 			if ($tslice==$ent["at"]) { $bold_b = "<b>"; $bold_e="</b>"; } else { $bold_b=""; $bold_e=""; }
-			print '<li><a href="?a='.$to_base.'">'.$bold_b.pl_znaczki(verbose_date($ent["at"],$lang,"m")).$bold_e.' - <small>'.$st.'</small></a></li>'."\n"; // days..
+			print '<li style="background-color: transparent;"><a href="?a='.$to_base.'">'.$bold_b.pl_znaczki(verbose_date($ent["at"],$lang,"m")).$bold_e.' - <small>'.$st.'</small></a></li>'."\n"; // days..
 
 			}
 
@@ -234,7 +234,7 @@ if ($talker) {
 	print $resource_discard[$lang].'<a class="export" href="?a='.$e_string.'">'.$resource_discard2[$lang].'</a>';
 	print '</div></td></tr>';
 	}
-	print '<tr class="maint">'."\n";
+	print '<tr style="background-image: url(img/bar_bg.png); background-repeat:repeat-x;">'."\n";
 	print '<td><b> '.$time_t[$lang].' </b></td><td><b> '.$user_t[$lang].' </b></td><td><b> '.$thread[$lang].'</b></td>'."\n";
 	$server_id=get_server_id($server_name,$xmpp_host);
 	$loc_link = $e_string;
@@ -242,9 +242,9 @@ if ($talker) {
 	$action_link = encode_url($action_link,$token,$url_key);
 	$predefined="from:$talker_name@$server_name";
 	$predefined=encode_url($predefined,$token,$url_key);
-	print '<td align="right" style="padding-right: 5px;">[ <a id="pretty" title="'.$tip_export[$lang].'" class="export" href="export.php?a='.$e_string.'">'.$export_link[$lang].'</a>&nbsp; | &nbsp;';
-	print '<a id="pretty" title="'.$all_for_u_t[$lang].'" class="export" href="search_v2.php?b='.$predefined.'">'.$all_for_u[$lang].'</a>&nbsp; | &nbsp;';
-	print '<a id="pretty" title="'.$tip_delete[$lang].'" class="delq" href="main.php?a='.$action_link.'">'.$del_t[$lang].'</a> ]</td></tr>';
+	print '<td align="right" style="padding-right: 5px;"><a id="pretty" title="'.$tip_export[$lang].'" class="foot" href="export.php?a='.$e_string.'">'.$export_link[$lang].'</a>&nbsp; | &nbsp;';
+	print '<a id="pretty" title="'.$all_for_u_t[$lang].'" class="foot" href="search_v2.php?b='.$predefined.'">'.$all_for_u[$lang].'</a>&nbsp; | &nbsp;';
+	print '<a id="pretty" title="'.$tip_delete[$lang].'" class="foot" href="main.php?a='.$action_link.'">'.$del_t[$lang].'</a></td></tr>';
 	print '<tr class="spacer"><td colspan="5"></td></tr>';
 	print '<tbody id="searchfield">'."\n";
 	while ($entry = mysql_fetch_array($result))
@@ -326,7 +326,7 @@ if ($talker) {
 
 // limiting code
 print '<tr class="spacer" height="1px"><td colspan="5"></td></tr>';
-print '<tr class="maint"><td style="text-align: center;" colspan="9">';
+print '<tr style="background-image: url(img/bar_bg.png); background-repeat:repeat-x;"><td style="text-align: center;" colspan="9">';
 for($i=0;$i < $nume;$i=$i+$num_lines_bro){
 
 	if ($i!=$start) {

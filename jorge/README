@@ -25,7 +25,7 @@ Requirements:
 - any http server supporting php5 with gd, mcrypt, mb_string support
 
 Client Requirements:
-- Jorge is tested and compatibile with: IE6+,Firefox 2+, Opera (..and Firefox is most recomended)
+- Jorge is tested and compatibile with: Firefox 2+ and Opera. (on IE it works although it is not supported due to constant standard violations by IE)
 - Web-browser _must_ have enabled javascript as Jorge strongly relay on jQuery and other js related scripts
 
 Installing:

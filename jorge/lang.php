@@ -108,6 +108,9 @@ $menu_item5[eng] = "Contacts";
 $menu_item6[pol] = pl_znaczki("Logi");
 $menu_item6[eng] = "Logs";
 
+$menu_item7[pol] = pl_znaczki("Kosz");
+$menu_item7[eng] = "Trash";
+
 $search_box[pol] = pl_znaczki("Szukaj w archiwach");
 $search_box[eng] = "Search in archives";
 
@@ -494,5 +497,19 @@ $refresh[eng] = "Refresh";
 $back_t[pol] = pl_znaczki("Wróæ na góre strony");
 $back_t[eng] = "Back to top of the page";
 
+$trash_desc[pol] = pl_znaczki("Lista rozmów usuniêtych. Kosz jest czyszczony w trakcie wylogowywania i zalogowania do systemu");
+$trash_desc[eng] = "List of trashed chats. Trash is purged on logout and login events.";
+
+$trash_undel[pol] = pl_znaczki("Przenie¶ z kosza do archiwum");
+$trash_undel[eng] = "Move from trash to archive";
+
+$trash_link[pol] = pl_znaczki("Akcja");
+$trash_link[eng] = "Action";
+
+$trash_empty[pol] = pl_znaczki("Kosz jest pusty");
+$tassh_empty[eng] = "Trash is empty";
+
+$trash_recovered[pol] = pl_znaczki("Rozmowa zosta³a przeniesiona do archiwum");
+$trash_recovered[eng] = "Chat have been moved to archive";
 
 ?>

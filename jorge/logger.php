@@ -44,7 +44,7 @@ print '<h2>'.$logger_overview[$lang].'</h2>';
 $query = "select b.id_event, b.event as event,c.level as level, c.id_level, a.log_time,a.extra from jorge_logger a,jorge_logger_dict b,jorge_logger_level_dict c where a.id_log_detail=b.id_event and c.id_level=a.id_log_level and  id_user='$user_id' order by log_time desc limit $offset_start,300";
 print '<center>';
 print '<table id="maincontent" class="ff" align="center" border="0" colspan="0" cellspacing="0" >'."\n";
-print '<tr class="maint"><td style="padding-left: 5px; padding-right: 0px;">'.$logger_f1[$lang].'</td><td style="padding-left: 0px; padding-right: 10px;">'.$logger_f2[$lang].'</td><td style="padding-left: 0px; padding-right: 10px;">'.$logger_f3[$lang].'</td><td style="padding-left: 0px; padding-right: 10px;">'.$logger_f4[$lang].'</td></tr>'."\n";
+print '<tr style="background-image: url(img/bar_bg.png); background-repeat:repeat-x; font-weight: bold;"><td style="padding-left: 5px; padding-right: 0px;">'.$logger_f1[$lang].'</td><td style="padding-left: 0px; padding-right: 10px;">'.$logger_f2[$lang].'</td><td style="padding-left: 0px; padding-right: 10px;">'.$logger_f3[$lang].'</td><td style="padding-left: 0px; padding-right: 10px;">'.$logger_f4[$lang].'</td></tr>'."\n";
 print '<tr class="spacer"><td colspan="4"></td></tr>'."\n";
 print '<tbody id="searchfield">';
 
@@ -65,7 +65,7 @@ print '</tbody>';
 
 // pagination
 print '<tr class="spacer" height="1px"><td colspan="4"></td></tr>';
-print '<tr class="maint"><td style="text-align: center;" colspan="4">';
+print '<tr style="background-image: url(img/bar_bg.png); background-repeat:repeat-x; font-weight: bold;"><td style="text-align: center;" colspan="4">';
 for($i=0;$i < $nume;$i=$i+300){
 
 	if ($i!=$offset_start) {

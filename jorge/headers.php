@@ -190,7 +190,7 @@ if ($token==$admin_name) {
             });
 	</script>
 </head>
-<body>
+<body style="background-image: url(img/bak2a.png); background-repeat:repeat-x; background-color: #edf5fa;">
 
 <noscript>
 
