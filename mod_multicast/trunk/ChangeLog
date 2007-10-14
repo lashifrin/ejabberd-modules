@@ -1,6 +1,6 @@
 2007-10-14  Badlop  <badlop@ono.com>
 
-	* src/ejabberd_c2s.erl, src/mod_muc_room.erl: Updated to ejabberd trunk without patches.
+	* src/ejabberd_c2s.erl, src/mod_muc_room.erl: Updated to ejabberd trunk.
 
 2007-09-30  Badlop  <badlop@ono.com>
 
