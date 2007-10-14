@@ -75,6 +75,20 @@
 -define(FSMOPTS, []).
 -endif.
 
+%% Module start with or without supervisor:
+-ifdef(NO_TRANSIENT_SUPERVISORS).
+-define(SUPERVISOR_START, gen_fsm:start(ejabberd_c2s, [SockData, Opts],
+					?FSMOPTS)).
+-else.
+-define(SUPERVISOR_START, supervisor:start_child(ejabberd_c2s_sup,
+						 [SockData, Opts])).
+-endif.
+
+%% This is the timeout to apply between event when starting a new
+%% session:
+-define(C2S_OPEN_TIMEOUT, 5000).
+-define(C2S_HIBERNATE_TIMEOUT, 90000).
+
 -define(STREAM_HEADER,
 	"<?xml version='1.0'?>"
 	"<stream:stream xmlns='jabber:client' "
@@ -97,7 +111,7 @@
 %%% API
 %%%----------------------------------------------------------------------
 start(SockData, Opts) ->
-    supervisor:start_child(ejabberd_c2s_sup, [SockData, Opts]).
+    ?SUPERVISOR_START.
 
 start_link(SockData, Opts) ->
     gen_fsm:start_link(ejabberd_c2s, [SockData, Opts], ?FSMOPTS).
@@ -157,7 +171,7 @@ init([{SockMod, Socket}, Opts]) ->
 				 streamid       = new_id(),
 				 access         = Access,
 				 shaper         = Shaper,
-				 ip             = IP}}.
+				 ip             = IP}, ?C2S_OPEN_TIMEOUT}.
 
 
 %%----------------------------------------------------------------------
@@ -253,10 +267,11 @@ wait_for_stream({xmlstreamstart, _Name, Attrs}, StateData) ->
 						     c2s_stream_features,
 						     Server,
 						     [], [])}),
-				    {next_state, wait_for_feature_request,
-				     StateData#state{server = Server,
-						     sasl_state = SASLState,
-						     lang = Lang}};
+				    fsm_next_state(wait_for_feature_request,
+					       StateData#state{
+						 server = Server,
+						 sasl_state = SASLState,
+						 lang = Lang});
 				_ ->
 				    case StateData#state.resource of
 					"" ->
@@ -267,16 +282,18 @@ wait_for_stream({xmlstreamstart, _Name, Attrs}, StateData) ->
 						 [{"xmlns", ?NS_BIND}], []},
 						{xmlelement, "session",
 						 [{"xmlns", ?NS_SESSION}], []}]}),
-					    {next_state, wait_for_bind,
-					     StateData#state{server = Server,
-							     lang = Lang}};
+					    fsm_next_state(wait_for_bind,
+						       StateData#state{
+							 server = Server,
+							 lang = Lang});
 					_ ->
 					    send_element(
 					      StateData,
 					      {xmlelement, "stream:features", [], []}),
-					    {next_state, wait_for_session,
-					     StateData#state{server = Server,
-							     lang = Lang}}
+					    fsm_next_state(wait_for_session,
+						       StateData#state{
+							 server = Server,
+							 lang = Lang})
 				    end
 			    end;
 			_ ->
@@ -296,9 +313,10 @@ wait_for_stream({xmlstreamstart, _Name, Attrs}, StateData) ->
 				    {stop, normal, StateData};
 				true ->
 				    send_text(StateData, Header),
-				    {next_state, wait_for_auth, 
-				     StateData#state{server = Server,
-						     lang = Lang}}
+				    fsm_next_state(wait_for_auth, 
+					       StateData#state{
+						 server = Server,
+						 lang = Lang})
 			    end
 		    end;
 		_ ->
@@ -318,6 +336,9 @@ wait_for_stream({xmlstreamstart, _Name, Attrs}, StateData) ->
 		      Header ++ ?INVALID_NS_ERR ++ ?STREAM_TRAILER),
 	    {stop, normal, StateData}
     end;
+
+wait_for_stream(timeout, StateData) ->
+    {stop, normal, StateData};
 
 wait_for_stream({xmlstreamelement, _}, StateData) ->
     send_text(StateData, ?INVALID_XML_ERR ++ ?STREAM_TRAILER),
@@ -367,13 +388,13 @@ wait_for_auth({xmlstreamelement, El}, StateData) ->
 			     ]}]}
 		  end,
 	    send_element(StateData, Res),
-	    {next_state, wait_for_auth, StateData};
+	    fsm_next_state(wait_for_auth, StateData);
 	{auth, _ID, set, {_U, _P, _D, ""}} ->
 	    Err = jlib:make_error_reply(
 		    El,
 		    ?ERR_AUTH_NO_RESOURCE_PROVIDED(StateData#state.lang)),
 	    send_element(StateData, Err),
-	    {next_state, wait_for_auth, StateData};
+	    fsm_next_state(wait_for_auth, StateData);
 	{auth, _ID, set, {U, P, D, R}} ->
 	    JID = jlib:make_jid(U, StateData#state.server, R),
 	    case (JID /= error) andalso
@@ -410,14 +431,15 @@ wait_for_auth({xmlstreamelement, El}, StateData) ->
 				  privacy_get_user_list, StateData#state.server,
 				  none,
 				  [U, StateData#state.server]),
-			    {next_state, session_established,
-			     StateData#state{user = U,
+			    fsm_next_state(session_established,
+					   StateData#state{
+					     user = U,
 					     resource = R,
 					     jid = JID,
 					     sid = SID,
 					     pres_f = ?SETS:from_list(Fs1),
 					     pres_t = ?SETS:from_list(Ts1),
-					     privacy_list = PrivList}};
+					     privacy_list = PrivList});
 			_ ->
 			    ?INFO_MSG(
 			       "(~w) Failed legacy authentication for ~s",
@@ -426,7 +448,7 @@ wait_for_auth({xmlstreamelement, El}, StateData) ->
 			    Err = jlib:make_error_reply(
 				    El, ?ERR_NOT_AUTHORIZED),
 			    send_element(StateData, Err),
-			    {next_state, wait_for_auth, StateData}
+			    fsm_next_state(wait_for_auth, StateData)
 		    end;
 		_ ->
 		    if
@@ -437,7 +459,7 @@ wait_for_auth({xmlstreamelement, El}, StateData) ->
 			       [StateData#state.socket, U, R]),
 			    Err = jlib:make_error_reply(El, ?ERR_JID_MALFORMED),
 			    send_element(StateData, Err),
-			    {next_state, wait_for_auth, StateData};
+			    fsm_next_state(wait_for_auth, StateData);
 			true ->
 			    ?INFO_MSG(
 			       "(~w) Forbidden legacy authentication for ~s",
@@ -445,13 +467,16 @@ wait_for_auth({xmlstreamelement, El}, StateData) ->
 				jlib:jid_to_string(JID)]),
 			    Err = jlib:make_error_reply(El, ?ERR_NOT_ALLOWED),
 			    send_element(StateData, Err),
-			    {next_state, wait_for_auth, StateData}
+			    fsm_next_state(wait_for_auth, StateData)
 		    end
 	    end;
 	_ ->
 	    process_unauthenticated_stanza(StateData, El),
-	    {next_state, wait_for_auth, StateData}
+	    fsm_next_state(wait_for_auth, StateData)
     end;
+
+wait_for_auth(timeout, StateData) ->
+    {stop, normal, StateData};
 
 wait_for_auth({xmlstreamend, _Name}, StateData) ->
     send_text(StateData, ?STREAM_TRAILER),
@@ -488,19 +513,20 @@ wait_for_feature_request({xmlstreamelement, El}, StateData) ->
 		    U = xml:get_attr_s(username, Props),
 		    ?INFO_MSG("(~w) Accepted authentication for ~s",
 			      [StateData#state.socket, U]),
-		    {next_state, wait_for_stream,
-		     StateData#state{streamid = new_id(),
+		    fsm_next_state(wait_for_stream,
+				   StateData#state{
+				     streamid = new_id(),
 				     authenticated = true,
-				     user = U
-				    }};
+				     user = U });
 		{continue, ServerOut, NewSASLState} ->
 		    send_element(StateData,
 				 {xmlelement, "challenge",
 				  [{"xmlns", ?NS_SASL}],
 				  [{xmlcdata,
 				    jlib:encode_base64(ServerOut)}]}),
-		    {next_state, wait_for_sasl_response,
-		     StateData#state{sasl_state = NewSASLState}};
+		    fsm_next_state(wait_for_sasl_response,
+				   StateData#state{
+				     sasl_state = NewSASLState});
 		{error, Error, Username} ->
 		    ?INFO_MSG(
 		       "(~w) Failed authentication for ~s@~s",
@@ -510,13 +536,14 @@ wait_for_feature_request({xmlstreamelement, El}, StateData) ->
 				 {xmlelement, "failure",
 				  [{"xmlns", ?NS_SASL}],
 				  [{xmlelement, Error, [], []}]}),
-		    {next_state, wait_for_feature_request, StateData};
+		    {next_state, wait_for_feature_request, StateData,
+		     ?C2S_OPEN_TIMEOUT};
 		{error, Error} ->
 		    send_element(StateData,
 				 {xmlelement, "failure",
 				  [{"xmlns", ?NS_SASL}],
 				  [{xmlelement, Error, [], []}]}),
-		    {next_state, wait_for_feature_request, StateData}
+		    fsm_next_state(wait_for_feature_request, StateData)
 	    end;
 	{?NS_TLS, "starttls"} when TLS == true,
 				   TLSEnabled == false,
@@ -535,11 +562,11 @@ wait_for_feature_request({xmlstreamelement, El}, StateData) ->
 			  Socket, TLSOpts,
 			  xml:element_to_string(
 			    {xmlelement, "proceed", [{"xmlns", ?NS_TLS}], []})),
-	    {next_state, wait_for_stream,
-	     StateData#state{socket = TLSSocket,
-			     streamid = new_id(),
-			     tls_enabled = true
-			    }};
+	    fsm_next_state(wait_for_stream,
+			   StateData#state{socket = TLSSocket,
+					   streamid = new_id(),
+					   tls_enabled = true
+					  });
 	{?NS_COMPRESS, "compress"} when Zlib == true,
 					SockMod == gen_tcp ->
 	    case xml:get_subtag(El, "method") of
@@ -548,7 +575,7 @@ wait_for_feature_request({xmlstreamelement, El}, StateData) ->
 		                 {xmlelement, "failure",
 				  [{"xmlns", ?NS_COMPRESS}],
 				  [{xmlelement, "setup-failed", [], []}]}),
-		    {next_state, wait_for_feature_request, StateData};
+		    fsm_next_state(wait_for_feature_request, StateData);
 		Method ->
 		    case xml:get_tag_cdata(Method) of
 			"zlib" ->
@@ -558,17 +585,18 @@ wait_for_feature_request({xmlstreamelement, El}, StateData) ->
 					   xml:element_to_string(
 					     {xmlelement, "compressed",
 					      [{"xmlns", ?NS_COMPRESS}], []})),
-			    {next_state, wait_for_stream,
+			    fsm_next_state(wait_for_stream,
 			     StateData#state{socket = ZlibSocket,
 					     streamid = new_id()
-					    }};
+					    });
 			_ ->
 			    send_element(StateData,
 					 {xmlelement, "failure",
 					  [{"xmlns", ?NS_COMPRESS}],
 					  [{xmlelement, "unsupported-method",
 					    [], []}]}),
-			    {next_state, wait_for_feature_request, StateData}
+			    fsm_next_state(wait_for_feature_request,
+					   StateData)
 		    end
 	    end;
 	_ ->
@@ -582,9 +610,12 @@ wait_for_feature_request({xmlstreamelement, El}, StateData) ->
 		    {stop, normal, StateData};
 		true ->
 		    process_unauthenticated_stanza(StateData, El),
-		    {next_state, wait_for_feature_request, StateData}
+		    fsm_next_state(wait_for_feature_request, StateData)
 	    end
     end;
+
+wait_for_feature_request(timeout, StateData) ->
+    {stop, normal, StateData};
 
 wait_for_feature_request({xmlstreamend, _Name}, StateData) ->
     send_text(StateData, ?STREAM_TRAILER),
@@ -614,19 +645,19 @@ wait_for_sasl_response({xmlstreamelement, El}, StateData) ->
 		    U = xml:get_attr_s(username, Props),
 		    ?INFO_MSG("(~w) Accepted authentication for ~s",
 			      [StateData#state.socket, U]),
-		    {next_state, wait_for_stream,
-		     StateData#state{streamid = new_id(),
+		    fsm_next_state(wait_for_stream,
+				   StateData#state{
+				     streamid = new_id(),
 				     authenticated = true,
-				     user = U
-				    }};
+				     user = U});
 		{continue, ServerOut, NewSASLState} ->
 		    send_element(StateData,
 				 {xmlelement, "challenge",
 				  [{"xmlns", ?NS_SASL}],
 				  [{xmlcdata,
 				    jlib:encode_base64(ServerOut)}]}),
-		    {next_state, wait_for_sasl_response,
-		     StateData#state{sasl_state = NewSASLState}};
+		    fsm_next_state(wait_for_sasl_response,
+		     StateData#state{sasl_state = NewSASLState});
 		{error, Error, Username} ->
 		    ?INFO_MSG(
 		       "(~w) Failed authentication for ~s@~s",
@@ -636,18 +667,21 @@ wait_for_sasl_response({xmlstreamelement, El}, StateData) ->
 				 {xmlelement, "failure",
 				  [{"xmlns", ?NS_SASL}],
 				  [{xmlelement, Error, [], []}]}),
-		    {next_state, wait_for_feature_request, StateData};
+		    fsm_next_state(wait_for_feature_request, StateData);
 		{error, Error} ->
 		    send_element(StateData,
 				 {xmlelement, "failure",
 				  [{"xmlns", ?NS_SASL}],
 				  [{xmlelement, Error, [], []}]}),
-		    {next_state, wait_for_feature_request, StateData}
+		    fsm_next_state(wait_for_feature_request, StateData)
 	    end;
 	_ ->
 	    process_unauthenticated_stanza(StateData, El),
-	    {next_state, wait_for_feature_request, StateData}
+	    fsm_next_state(wait_for_feature_request, StateData)
     end;
+
+wait_for_sasl_response(timeout, StateData) ->
+    {stop, normal, StateData};
 
 wait_for_sasl_response({xmlstreamend, _Name}, StateData) ->
     send_text(StateData, ?STREAM_TRAILER),
@@ -678,7 +712,7 @@ wait_for_bind({xmlstreamelement, El}, StateData) ->
 		error ->
 		    Err = jlib:make_error_reply(El, ?ERR_BAD_REQUEST),
 		    send_element(StateData, Err),
-		    {next_state, wait_for_bind, StateData};
+		    fsm_next_state(wait_for_bind, StateData);
 		_ ->
 		    JID = jlib:make_jid(U, StateData#state.server, R),
 		    Res = IQ#iq{type = result,
@@ -688,12 +722,15 @@ wait_for_bind({xmlstreamelement, El}, StateData) ->
 					     [{xmlcdata,
 					       jlib:jid_to_string(JID)}]}]}]},
 		    send_element(StateData, jlib:iq_to_xml(Res)),
-		    {next_state, wait_for_session,
-		     StateData#state{resource = R, jid = JID}}
+		    fsm_next_state(wait_for_session,
+				   StateData#state{resource = R, jid = JID})
 	    end;
 	_ ->
-	    {next_state, wait_for_bind, StateData}
+	    fsm_next_state(wait_for_bind, StateData)
     end;
+
+wait_for_bind(timeout, StateData) ->
+    {stop, normal, StateData};
 
 wait_for_bind({xmlstreamend, _Name}, StateData) ->
     send_text(StateData, ?STREAM_TRAILER),
@@ -740,22 +777,26 @@ wait_for_session({xmlstreamelement, El}, StateData) ->
 			  privacy_get_user_list, StateData#state.server,
 			  none,
 			  [U, StateData#state.server]),
-		    {next_state, session_established,
-		     StateData#state{sid = SID,
+		    fsm_next_state(session_established,
+				   StateData#state{
+				     sid = SID,
 				     pres_f = ?SETS:from_list(Fs1),
 				     pres_t = ?SETS:from_list(Ts1),
-				     privacy_list = PrivList}};
+				     privacy_list = PrivList});
 		_ ->
 		    ?INFO_MSG("(~w) Forbidden session for ~s",
 			      [StateData#state.socket,
 			       jlib:jid_to_string(JID)]),
 		    Err = jlib:make_error_reply(El, ?ERR_NOT_ALLOWED),
 		    send_element(StateData, Err),
-		    {next_state, wait_for_session, StateData}
+		    fsm_next_state(wait_for_session, StateData)
 	    end;
 	_ ->
-	    {next_state, wait_for_session, StateData}
+	    fsm_next_state(wait_for_session, StateData)
     end;
+
+wait_for_session(timeout, StateData) ->
+    {stop, normal, StateData};
 
 wait_for_session({xmlstreamend, _Name}, StateData) ->
     send_text(StateData, ?STREAM_TRAILER),
@@ -856,7 +897,17 @@ session_established({xmlstreamelement, El}, StateData) ->
 			StateData
 		end
 	end,
-    {next_state, session_established, NewState};
+    ejabberd_hooks:run(c2s_loop_debug, [{xmlstreamelement, El}]),
+    fsm_next_state(session_established, NewState);
+
+%% We hibernate the process to reduce memory consumption after a
+%% configurable activity timeout
+session_established(timeout, StateData) ->
+    %% TODO: Options must be stored in state:
+    Options = [],
+    proc_lib:hibernate(gen_fsm, enter_loop,
+		       [?MODULE, Options, session_established, StateData]),
+    fsm_next_state(session_established, StateData);
 
 session_established({xmlstreamend, _Name}, StateData) ->
     send_text(StateData, ?STREAM_TRAILER),
@@ -891,7 +942,7 @@ session_established(closed, StateData) ->
 %%          {stop, Reason, NewStateData}                         
 %%----------------------------------------------------------------------
 handle_event(_Event, StateName, StateData) ->
-    {next_state, StateName, StateData}.
+    fsm_next_state(StateName, StateData).
 
 %%----------------------------------------------------------------------
 %% Func: handle_sync_event/4
@@ -911,12 +962,11 @@ handle_sync_event({get_presence}, _From, StateName, StateData) ->
     Resource = StateData#state.resource,
 
     Reply = {User, Resource, Show, Status},
-    {reply, Reply, StateName, StateData};
+    fsm_reply(Reply, StateName, StateData);
 
 handle_sync_event(_Event, _From, StateName, StateData) ->
     Reply = ok,
-    {reply, Reply, StateName, StateData}.
-
+    fsm_reply(Reply, StateName, StateData).
 
 code_change(_OldVsn, StateName, StateData, _Extra) ->
     {ok, StateName, StateData}.
@@ -929,7 +979,9 @@ code_change(_OldVsn, StateName, StateData, _Extra) ->
 %%----------------------------------------------------------------------
 handle_info({send_text, Text}, StateName, StateData) ->
     send_text(StateData, Text),
-    {next_state, StateName, StateData};
+    ejabberd_hooks:run(c2s_loop_debug, [Text]),
+    
+    fsm_next_state(StateName, StateData);
 handle_info(replaced, _StateName, StateData) ->
     Lang = StateData#state.lang,
     send_text(StateData,
@@ -1140,16 +1192,18 @@ handle_info({route, From, To, Packet}, StateName, StateData) ->
 	    ejabberd_hooks:run(user_receive_packet,
 			       StateData#state.server,
 			       [StateData#state.jid, From, To, FixedPacket]),
-	    {next_state, StateName, NewState};
+	    ejabberd_hooks:run(c2s_loop_debug, [{route, From, To, Packet}]),
+	    fsm_next_state(StateName, NewState);
 	true ->
-	    {next_state, StateName, NewState}
+	    ejabberd_hooks:run(c2s_loop_debug, [{route, From, To, Packet}]),
+	    fsm_next_state(StateName, NewState)
     end;
 handle_info({'DOWN', Monitor, _Type, _Object, _Info}, _StateName, StateData)
   when Monitor == StateData#state.socket_monitor ->
     {stop, normal, StateData};
 handle_info(Info, StateName, StateData) ->
     ?ERROR_MSG("Unexpected info: ~p", [Info]),
-    {next_state, StateName, StateData}.
+    fsm_next_state(StateName, StateData).
 
 %%----------------------------------------------------------------------
 %% Func: terminate/3
@@ -1481,69 +1535,87 @@ presence_track(From, To, Packet, StateData) ->
 			    pres_a = A}
     end.
 
-%% Send presence when disconnecting
 presence_broadcast(StateData, From, JIDSet, Packet) ->
-    JIDs = ?SETS:to_list(JIDSet),
-    JIDs2 = format_and_check_privacy(From, StateData, Packet, JIDs),
-    Server = StateData#state.server,
-    send_multiple(From, Server, JIDs2, Packet).
+    lists:foreach(fun(JID) ->
+			  FJID = jlib:make_jid(JID),
+			  case ejabberd_hooks:run_fold(
+				 privacy_check_packet, StateData#state.server,
+				 allow,
+				 [StateData#state.user,
+				  StateData#state.server,
+				  StateData#state.privacy_list,
+				  {From, FJID, Packet},
+				  out]) of
+			      deny ->
+				  ok;
+			      allow ->
+				  ejabberd_router:route(From, FJID, Packet)
+			  end
+		  end, ?SETS:to_list(JIDSet)).
 
-%% Send presence when updating presence
-presence_broadcast_to_trusted(StateData, From, Trusted, JIDSet, Packet) ->
-    JIDs = ?SETS:to_list(JIDSet),
-    JIDs_trusted = [JID || JID <- JIDs, ?SETS:is_element(JID, Trusted)],
-    JIDs2 = format_and_check_privacy(From, StateData, Packet, JIDs_trusted),
-    Server = StateData#state.server,
-    send_multiple(From, Server, JIDs2, Packet).
+presence_broadcast_to_trusted(StateData, From, T, A, Packet) ->
+    lists:foreach(
+      fun(JID) ->
+	      case ?SETS:is_element(JID, T) of
+		  true ->
+		      FJID = jlib:make_jid(JID),
+		      case ejabberd_hooks:run_fold(
+			     privacy_check_packet, StateData#state.server,
+			     allow,
+			     [StateData#state.user,
+			      StateData#state.server,
+			      StateData#state.privacy_list,
+			      {From, FJID, Packet},
+			      out]) of
+			  deny ->
+			      ok;
+			  allow ->
+			      ejabberd_router:route(From, FJID, Packet)
+		      end;
+		  _ ->
+		      ok
+	      end
+      end, ?SETS:to_list(A)).
 
-%% Send presence when connecting
+
 presence_broadcast_first(From, StateData, Packet) ->
-    JIDsProbe = 
-	?SETS:fold(
-	   fun(JID, L) -> [JID | L] end,
-	   [],
-	   StateData#state.pres_t),
-    PacketProbe = {xmlelement, "presence", [{"type", "probe"}], []},
-    JIDs2Probe = format_and_check_privacy(From, StateData, Packet, JIDsProbe),
-    Server = StateData#state.server,
-    send_multiple(From, Server, JIDs2Probe, PacketProbe),
+    ?SETS:fold(fun(JID, X) ->
+		       ejabberd_router:route(
+			 From,
+			 jlib:make_jid(JID),
+			 {xmlelement, "presence",
+			  [{"type", "probe"}],
+			  []}),
+		       X
+	       end,
+	       [],
+	       StateData#state.pres_t),
     if
 	StateData#state.pres_invis ->
 	    StateData;
 	true ->
-	    {As, JIDs} = 
-		?SETS:fold(
-		   fun(JID, {A, JID_list}) ->
-			   {?SETS:add_element(JID, A), JID_list++[JID]}
-		   end,
-		   {StateData#state.pres_a, []},
-		   StateData#state.pres_f),
-	    JIDs2 = format_and_check_privacy(From, StateData, Packet, JIDs),
-	    Server = StateData#state.server,
-	    send_multiple(From, Server, JIDs2, Packet),
+	    As = ?SETS:fold(
+		    fun(JID, A) ->
+			    FJID = jlib:make_jid(JID),
+			    case ejabberd_hooks:run_fold(
+				   privacy_check_packet, StateData#state.server,
+				   allow,
+				   [StateData#state.user,
+				    StateData#state.server,
+				    StateData#state.privacy_list,
+				    {From, FJID, Packet},
+				    out]) of
+				deny ->
+				    ok;
+				allow ->
+				    ejabberd_router:route(From, FJID, Packet)
+			    end,
+			    ?SETS:add_element(JID, A)
+		    end,
+		    StateData#state.pres_a,
+		    StateData#state.pres_f),
 	    StateData#state{pres_a = As}
     end.
- 
-format_and_check_privacy(From, StateData, Packet, JIDs) ->
-    FJIDs = [jlib:make_jid(JID) || JID <- JIDs],
-    lists:filter(
-      fun(FJID) ->
-	      case ejabberd_hooks:run_fold(
-		     privacy_check_packet, StateData#state.server,
-		     allow,
-		     [StateData#state.user,
-		      StateData#state.server,
-		      StateData#state.privacy_list,
-		      {From, FJID, Packet},
-		      out]) of
-		  deny -> false;
-		  allow -> true
-	      end
-      end,
-      FJIDs).
-
-send_multiple(From, Server, JIDs, Packet) ->
-    ejabberd_router_multicast:route_multicast(From, Server, JIDs, Packet).
 
 
 remove_element(E, Set) ->
@@ -1793,3 +1865,17 @@ peerip(SockMod, Socket) ->
 	{ok, IPOK} -> IPOK;
 	_ -> undefined
     end.
+
+%% fsm_next_state: Generate the next_state FSM tuple with different
+%% timeout, depending on the future state
+fsm_next_state(session_established, StateData) ->
+    {next_state, session_established, StateData, ?C2S_HIBERNATE_TIMEOUT};
+fsm_next_state(StateName, StateData) ->
+    {next_state, StateName, StateData, ?C2S_OPEN_TIMEOUT}.
+
+%% fsm_reply: Generate the reply FSM tuple with different timeout,
+%% depending on the future state
+fsm_reply(Reply, session_established, StateData) ->
+    {reply, Reply, session_established, StateData, ?C2S_HIBERNATE_TIMEOUT};
+fsm_reply(Reply, StateName, StateData) ->
+    {reply, Reply, StateName, StateData, ?C2S_OPEN_TIMEOUT}.
