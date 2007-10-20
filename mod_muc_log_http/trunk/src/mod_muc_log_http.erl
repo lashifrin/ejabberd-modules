@@ -223,7 +223,7 @@ show_dir_listing(DirName, LocalPath) ->
 %%%----------------------------------------------------------------------
 
 content_type(Filename) ->
-	case httpd_util:to_lower(filename:extension(Filename)) of
+	case string:to_lower(filename:extension(Filename)) of
 		".jpg"  -> "image/jpeg";
 		".jpeg" -> "image/jpeg";
 		".gif"  -> "image/gif";

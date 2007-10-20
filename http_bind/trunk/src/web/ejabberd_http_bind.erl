@@ -328,7 +328,7 @@ handle_sync_event({http_put, Rid, Attrs, Payload, Hold, StreamTo},
 			   "" ->
 			       true;
 			   OldKey ->
-			       NextKey = httpd_util:to_lower(
+			       NextKey = string:to_lower(
 					   hex(binary_to_list(
 						 crypto:sha(Key)))),
 			       ?DEBUG("Key/OldKey/NextKey: ~s/~s/~s", 
