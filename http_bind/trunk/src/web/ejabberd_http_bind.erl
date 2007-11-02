@@ -214,7 +214,15 @@ process_request(Data) ->
 %%----------------------------------------------------------------------
 init([Sid, Key]) ->
     ?DEBUG("started: ~p", [{Sid, Key}]),
-    Opts = [], % TODO
+
+    %% Read c2s options from the first ejabberd_c2s configuration in
+    %% the config file listen section
+    %% TODO: We should have different access and shaper values for
+    %% each connector. The default behaviour should be however to use
+    %% the default c2s restrictions if not defined for the current
+    %% connector.
+    Opts = ejabberd_c2s_config:get_c2s_limits(),
+
     ejabberd_socket:start(ejabberd_c2s, ?MODULE, {http_bind, self()}, Opts),
 %    {ok, C2SPid} = ejabberd_c2s:start({?MODULE, {http_bind, self()}}, Opts),
 %    ejabberd_c2s:become_controller(C2SPid),
