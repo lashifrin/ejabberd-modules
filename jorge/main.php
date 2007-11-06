@@ -144,8 +144,8 @@ if (mysql_num_rows($result) !=0) {
 
 		$cl_entry = pl_znaczki(verbose_mo($entry[verb],$lang));
 		if ($entry[at_m]==substr($tslice,0,7)) { $rel="open"; $bop="<b>"; $bcl="</b>"; } else { $rel=""; $bop=""; $bcl=""; } // ugly hack...
-		print '<li style="background-color: transparent;">'.$bop.$cl_entry.$bcl.''."\n"; // folder - begin
-  		print '<ul style="background-color: transparent;" rel="'.$rel.'">'."\n"; // folder content
+		print '<li>'.$bop.$cl_entry.$bcl.''."\n"; // folder - begin
+  		print '<ul rel="'.$rel.'">'."\n"; // folder content
 		$query="select at from `logdb_stats_$xmpp_host` where owner_id = '$user_id' and substring(at,1,7) = '$entry[at_m]' order by str_to_date(at,'%Y-%m-%d') desc";
 		$result2=mysql_query($query);
 			while ($ent=mysql_fetch_array($result2)) {
@@ -154,7 +154,7 @@ if (mysql_num_rows($result) !=0) {
 			$to_base = encode_url($to_base,$token,$url_key);
 			$st=get_stats($user_id,$ent["at"],$xmpp_host);
 			if ($tslice==$ent["at"]) { $bold_b = "<b>"; $bold_e="</b>"; } else { $bold_b=""; $bold_e=""; }
-			print '<li style="background-color: transparent;"><a href="?a='.$to_base.'">'.$bold_b.pl_znaczki(verbose_date($ent["at"],$lang,"m")).$bold_e.' - <small>'.$st.'</small></a></li>'."\n"; // days..
+			print '<li><a href="?a='.$to_base.'">'.$bold_b.pl_znaczki(verbose_date($ent["at"],$lang,"m")).$bold_e.' - <small>'.$st.'</small></a></li>'."\n"; // days..
 
 			}
 
