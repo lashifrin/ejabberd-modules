@@ -67,8 +67,21 @@ if ($action=="undelete") {
 	$row=mysql_fetch_row($result);
 	$new_stats=$row[0];
 	mysql_free_result($result);
-	$query="update `logdb_stats_$xmpp_host` set count='$new_stats' where owner_id='$user_id' and at='$tslice'";
-	$result=mysql_query($query) or die ("Ooops...Error2");
+
+	$query="select * from `logdb_stats_$xmpp_host` where owner_id = '$user_id' and at = '$tslice'";
+	$result=mysql_query($query) or die("Ooops...Error1");
+	if (mysql_num_rows($result) < 1 ) {
+			$query="insert into `logdb_stats_$xmpp_host` (owner_id,at,count) values ('$user_id','$tslice','$new_stats')";
+			mysql_query($query) or die ("Ooops...Error2.0");
+			mysql_free_result($result);
+		}
+		else
+		{
+			$query="update `logdb_stats_$xmpp_host` set count='$new_stats' where owner_id='$user_id' and at='$tslice'";
+			$result=mysql_query($query) or die ("Ooops...Error2");
+			mysql_free_result($result);
+		}
+
 	// undelete saved links
 	$query="update jorge_mylinks set ext=NULL where owner_id ='$user_id' and peer_name_id='$talker' and link like '$lnk%'";
 	$result=mysql_query($query) or die ("Ooops...Error");
