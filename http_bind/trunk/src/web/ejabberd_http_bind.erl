@@ -748,8 +748,7 @@ send_outpacket(#http_bind{pid = FsmRef}, OutPacket) ->
 		of
 		El when element(1, El) == xmlelement ->
 		    {xmlelement, _, _, OEls} = El,
-		    TypedEls = [xml:replace_tag_attr("xmlns",
-						     ?NS_CLIENT,OEl) ||
+		    TypedEls = [check_default_xmlns(OEl) ||
 				   OEl <- OEls],
 		    ?DEBUG(" --- outgoing data --- ~n~s~n --- END --- ~n",
 			   [xml:element_to_string(
@@ -778,10 +777,8 @@ send_outpacket(#http_bind{pid = FsmRef}, OutPacket) ->
                                            StreamAttribs, StreamEls} | 
                                           StreamTail] ->
                                              TypedTail = 
-                                                 [xml:replace_tag_attr(
-                                                    "xmlns",
-                                                    ?NS_CLIENT,OEl) ||
-                                                            OEl <- StreamTail],
+                                                 [check_default_xmlns(OEl) ||
+						     OEl <- StreamTail],
                                              [{xmlelement, 
                                                "stream:features", 
                                                [{"xmlns:stream",
@@ -916,4 +913,13 @@ remove_tag_attr(Attr, El) ->
             {xmlelement, Name, Attrs1, Els};
         _ ->
             El
+    end.
+
+check_default_xmlns({xmlelement, Name, Attrs, Els} = El) ->
+    EXmlns = xml:get_tag_attr_s("xmlns", El),
+    if 
+	EXmlns == "" ->
+	    {xmlelement, Name, [{"xmlns", ?NS_CLIENT} | Attrs], Els};
+	true ->
+	    El
     end.
