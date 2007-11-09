@@ -3,29 +3,30 @@
 %%% Author  : Alexey Shchepin <alexey@sevcom.net>
 %%% Purpose : 
 %%% Created : 17 Nov 2002 by Alexey Shchepin <alexey@sevcom.net>
-%%% Id      : $Id: ejabberd.hrl 666 2006-10-28 02:04:55Z alexey $
+%%% Id      : $Id: ejabberd.hrl 689 2006-12-04 16:07:44Z mremond $
 %%%----------------------------------------------------------------------
-
--define(VERSION, "1.1.2").
-
 %-define(ejabberd_debug, true).
 %-define(DBGFSM, true).
 
--ifdef(ejabberd_debug).
--define(DEBUG(Format, Args), io:format("D(~p:~p:~p) : "++Format++"~n",
-                                       [self(),?MODULE,?LINE]++Args)).
--else.
--define(DEBUG(F,A),[]).
--endif.
+-define(VERSION, "1.1.2").
 
--define(ERROR_MSG(Format, Args),
-	error_logger:error_msg("E(~p:~p:~p): "++Format++"~n",
-			       [self(),?MODULE,?LINE]++Args)).
+%% ---------------------------------
+%% Logging mechanism
+
+-define(DEBUG(Format, Args),
+    ejabberd_logger:debug_msg(?MODULE,?LINE,Format, Args)).
 
 -define(INFO_MSG(Format, Args),
-	error_logger:info_msg("I(~p:~p:~p): "++Format++"~n",
-			      [self(),?MODULE,?LINE]++Args)).
+    ejabberd_logger:info_msg(?MODULE,?LINE,Format, Args)).
+			      
+-define(WARNING_MSG(Format, Args),
+    ejabberd_logger:warning_msg(?MODULE,?LINE,Format, Args)).
+			      
+-define(ERROR_MSG(Format, Args),
+    ejabberd_logger:error_msg(?MODULE,?LINE,Format, Args)).
 
+-define(CRITICAL_MSG(Format, Args),
+    ejabberd_logger:critical_msg(?MODULE,?LINE,Format, Args)).
 
 -define(MYHOSTS, ejabberd_config:get_global_option(hosts)).
 -define(MYNAME, hd(ejabberd_config:get_global_option(hosts))).
@@ -35,7 +36,6 @@
 -define(MSGS_DIR, "msgs").
 -define(CONFIG_PATH, "ejabberd.cfg").
 -define(LOG_PATH, "ejabberd.log").
-
 
 -define(PRIVACY_SUPPORT, true).
 
