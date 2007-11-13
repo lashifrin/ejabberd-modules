@@ -18,6 +18,14 @@ input.log { width: 250px; border: 1px solid gray;}
 input.ccc { width: 400px; border: 1px solid gray; }
 textarea.ccc { width: 400px; border: 1px solid gray; }
 
+div.contain {
+  #border: 1px dashed #333;
+}
+
+div.spacer_div {
+  clear: both;
+}
+
 input.red {
 	background-color: #e0e9f7; 
 	font-size: 12px; 

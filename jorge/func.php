@@ -623,6 +623,159 @@ function new_parse_url($text) {
 	return $text;
 }
 
+function calendar($y,$m,$days,$token,$url_key,$months_name_eng){
+	
+	$days=$days;
+	$month = $m;
+	$year = $y;
 
+//create arrays for the calendar
+
+    $months_days = array("31","28","31","30","31","30","31","31",
+                         "30","31","30","31");
+    $days_array = array("Mon","Tue","Wed","Thu","Fri","Sat","Sun");
+
+//removes the 0 from start of month - can't find array key with 0
+
+    if(strlen($month)==1){
+        $month= str_replace("0","",$month);
+    }
+    else{
+        $month=$month;
+    }
+
+//reset month to the array key match (array starts at 0)
+
+    $month= $month-1;
+
+//find the days in the month
+
+    $days_in_month = $months_days[$month];
+
+//And convert the month number to name
+
+    $month_name = $months_name_eng[$month];
+
+//$m is used to find month
+
+    $m = $month+1;
+
+//find the first day of the month     
+ 
+    $time = date("M D Y H:i:s", mktime(0, 0, 0, $m, 1, $year));
+    $first_day = explode(" ",$time);
+    $time = $first_day[1];
+
+//create the links to next and previous months
+
+    $next = $month+2;
+    $x = $year;
+
+//if month is 13 then new year
+
+    if($next==13){
+        $next=1;
+        $x = $x+1;
+    }
+    $prev = $month;
+    $y = $year;
+
+//if month is 0, then previous year
+
+    if($prev==0){
+        $prev=12;
+        $y=$y-1;
+    }
+
+    $calendar = "";
+
+//Build the calendar with css
+//links to next and previous month
+
+    $calendar .='
+                <div class="calendar">
+                  <div class="calhead">
+                    <div class="middle"><span>'.$month_name.'</span></div>
+                    </div>
+                    <div class="caldays">
+                      <ul class="days">
+                        <li>M</li>
+                        <li>T</li>
+                        <li>W</li>
+                        <li>T</li>
+                        <li>F</li>
+                        <li>S</li>
+                        <li>S</li>
+                      </ul>
+                    </div>
+                    <div class="caldates">
+                      <ul class="dates">
+              ';
+               
+    //checks for leap years and add 1 to February
+
+    if(($year % 4 =="") && ($month==1)){
+        $days_in_month=$days_in_month+1;
+    }
+
+    else{
+        $days_in_month=$days_in_month;
+    }
+
+    $new_time="";
+     
+    //find how many blank spaces at beginning of the month
+     
+    foreach($days_array as $key=>$value){
+     
+        if($value == $time){
+            $new_time .= $key+1;
+        }
+        else{
+            $new_time .="";
+        }
+    }
+     
+    //loop through the days in the month
+             
+    for($k=1;$k<($days_in_month+$new_time);$k++){   
+     
+            //blank space
+     
+        if($k<$new_time){
+            $calendar.='<li class="blank"></li>
+            ';
+            continue;
+        }
+         
+        //start the actual days
+              
+        $n = $k-$new_time+1;
+
+        if(in_array($n,$days)){
+	
+	$to_base = "$y-$m-$n@";
+	$to_base = encode_url($to_base,$token,$url_key);
+
+
+            $calendar .= '<li><b><a href="main.php?a='.$to_base.'">'.$n.'</a></b></li>
+                         ';   
+        }
+        else{
+            $calendar .= '<li>'.$n.'</li>
+                         ';
+        }     
+    }
+    $calendar .= '</ul>
+                 ';
+
+    //reset for link to today
+
+
+    return($calendar);
+}
+
+
+            
 
 ?>
