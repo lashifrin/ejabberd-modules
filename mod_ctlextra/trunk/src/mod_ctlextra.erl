@@ -24,7 +24,7 @@
 -include("mod_roster.hrl").
 
 %% Copied from ejabberd_sm.erl
--record(session, {sid, usr, us, priority}). 
+-record(session, {sid, usr, us, priority, info}).
 
 
 %%-------------
