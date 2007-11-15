@@ -94,6 +94,7 @@ stop(Host) ->
 
 commands_global() ->
     [
+     {"muc-destroy-file file", "destroy the rooms whose JID is indicated in file"},
      {"muc-unused-list days", "list rooms without activity in last days"},
      {"muc-unused-destroy days", "destroy rooms without activity last days"},
      {"muc-online-rooms", "list existing rooms"}
@@ -105,6 +106,10 @@ commands_host() ->
      {"muc-unused-destroy days", "destroy rooms without activity last days"},
      {"muc-online-rooms", "list existing rooms"}
     ].
+
+ctl_process(_Val, ["muc-destroy-file", Filename]) ->
+    muc_destroy_file(Filename),
+    ?STATUS_SUCCESS;
 
 ctl_process(Val, ["muc-unused-list", Days]) ->
     ctl_process(Val, global, ["muc-unused-list", Days]);
@@ -244,6 +249,52 @@ stringize_room({Name, Host, Pid}) ->
      atom_to_list(Logging), 
      atom_to_list(Just_created),
      Title].
+
+
+%%----------------------------
+%% MUC Destroy File
+%%----------------------------
+
+%% The format of the file is: one chatroom JID per line
+%% The file encoding must be UTF-8
+
+muc_destroy_file(Filename) ->
+    {ok, F} = file:open(Filename, [read]),
+    RJID = read_room(F),
+    Rooms = read_rooms(F, RJID, []),
+    file:close(F),
+    [destroy_room(A) || A <- Rooms].
+
+read_rooms(_F, eof, L) ->
+    L;
+
+read_rooms(F, RJID, L) ->
+    RJID2 = read_room(F),
+    read_rooms(F, RJID2, [RJID | L]).
+
+read_room(F) ->
+    case io:get_line(F, "") of
+	eof -> eof;
+	String ->
+	    case io_lib:fread("~s", String) of
+		{ok, [RoomJID], _} -> split_roomjid(RoomJID);
+		{error, What} ->
+		    io:format("Parse error: what: ~p~non the line: ~p~n~n", [What, String])
+	    end
+    end.
+
+%% This function is quite rudimentary
+%% and may not be accurate
+split_roomjid(RoomJID) ->
+    [Name, Host] = string:tokens(RoomJID, "@"),
+    [_MUC_service_name | ServerHostList] = string:tokens(Host, "."),
+    ServerHost = lists:concat(ServerHostList),
+    {Name, Host, ServerHost}.
+
+destroy_room({N, H, SH}) ->
+    io:format("Destroying room: ~s@~s - vhost: ~s~n", [N, H, SH]),
+    mod_muc:room_destroyed(H, N, SH),
+    mod_muc:forget_room(H, N).
 
 
 %%----------------------------

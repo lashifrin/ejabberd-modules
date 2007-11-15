@@ -1,3 +1,7 @@
+2007-11-15  Badlop  <badlop@ono.com>
+
+	* src/mod_muc_admin.erl: New command: muc-destroy-file. 
+
 2007-09-09  Badlop  <badlop@ono.com>
 
 	* src/mod_muc_admin.erl: Added Web Admin and List rooms.
