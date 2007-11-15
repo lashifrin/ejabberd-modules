@@ -3,12 +3,12 @@
 %%% Author  : Alexey Shchepin <alexey@sevcom.net>
 %%% Purpose : 
 %%% Created : 24 Jan 2003 by Alexey Shchepin <alexey@sevcom.net>
-%%% Id      : $Id: gen_mod.erl 486 2006-01-19 02:17:31Z alexey $
+%%% Id      : $Id$
 %%%----------------------------------------------------------------------
 
 -module(gen_mod).
 -author('alexey@sevcom.net').
--vsn('$Revision: 486 $ ').
+-vsn('$Revision$ ').
 
 -export([start/0,
 	 start_module/3,

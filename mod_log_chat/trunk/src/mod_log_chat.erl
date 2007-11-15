@@ -2,7 +2,7 @@
 %%% File    : mod_log_chat.erl
 %%% Author  : Jérôme Sautret <jerome.sautret@process-one.net>
 %%% Purpose : Log 2 ways chat messages in files
-%%% Id      : $Id: $
+%%% Id      : $Id$
 %%%----------------------------------------------------------------------
 
 -module(mod_log_chat).

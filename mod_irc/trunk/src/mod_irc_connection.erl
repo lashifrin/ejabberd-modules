@@ -3,12 +3,12 @@
 %%% Author  : Alexey Shchepin <alexey@sevcom.net>
 %%% Purpose : 
 %%% Created : 15 Feb 2003 by Alexey Shchepin <alexey@sevcom.net>
-%%% Id      : $Id: mod_irc_connection.erl 509 2006-02-18 20:05:05Z alexey $
+%%% Id      : $Id$
 %%%----------------------------------------------------------------------
 
 -module(mod_irc_connection).
 -author('alexey@sevcom.net').
--vsn('$Revision: 509 $ ').
+-vsn('$Revision$ ').
 
 -behaviour(gen_fsm).
 

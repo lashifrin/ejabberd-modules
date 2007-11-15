@@ -3,12 +3,12 @@
 %%% Author  : Alexey Shchepin <alexey@sevcom.net>
 %%% Purpose : 
 %%% Created : 31 Jan 2003 by Alexey Shchepin <alexey@sevcom.net>
-%%% Id      : $Id: ejabberd_sup.erl 806 2007-06-29 17:27:42Z mremond $
+%%% Id      : $Id$
 %%%----------------------------------------------------------------------
 
 -module(ejabberd_sup).
 -author('alexey@sevcom.net').
--vsn('$Revision: 806 $ ').
+-vsn('$Revision$ ').
 
 -behaviour(supervisor).
 

@@ -3,7 +3,7 @@
 %%% Author  : Magnus Henoch <henoch@dtek.chalmers.se>
 %%% Purpose : Request and cache Entity Capabilities (XEP-0115)
 %%% Created : 7 Oct 2006 by Magnus Henoch <henoch@dtek.chalmers.se>
-%%% Id      : $Id: ejabberd_c2s.erl 657 2006-10-01 01:53:37Z alexey $
+%%% Id      : $Id$
 %%%----------------------------------------------------------------------
 
 -module(mod_caps).

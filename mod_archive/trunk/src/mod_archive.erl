@@ -18,7 +18,7 @@
 
 -module(mod_archive).
 -author('ogoffart@kde.org').
--vsn('$Revision: 702 $ ').
+-vsn('$Revision$ ').
 
 -behaviour(gen_server).
 -behaviour(gen_mod).

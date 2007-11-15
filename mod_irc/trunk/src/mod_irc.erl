@@ -3,12 +3,12 @@
 %%% Author  : Alexey Shchepin <alexey@sevcom.net>
 %%% Purpose : IRC transport
 %%% Created : 15 Feb 2003 by Alexey Shchepin <alexey@sevcom.net>
-%%% Id      : $Id: mod_irc.erl 620 2006-09-22 17:01:16Z mremond $
+%%% Id      : $Id$
 %%%----------------------------------------------------------------------
 
 -module(mod_irc).
 -author('alexey@sevcom.net').
--vsn('$Revision: 620 $ ').
+-vsn('$Revision$ ').
 
 -behaviour(gen_server).
 -behaviour(gen_mod).
