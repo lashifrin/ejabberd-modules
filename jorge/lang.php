@@ -123,8 +123,8 @@ $search_why[eng] = " search results (<i>not more then 100</i>). <a href=\"help.p
 $search_warn[pol] = pl_znaczki("Uwaga: Wyszukuje tylko w podanym przedziale czasu");
 $search_warn[eng] = "Warning: Showing results only from selected time range";
 
-$all_for_u[pol] = pl_znaczki("Wszystkie rozmowy");
-$all_for_u[eng] = "All chats";
+$all_for_u[pol] = pl_znaczki("wszystkie rozmowy");
+$all_for_u[eng] = "all chats";
 
 $all_for_u_t[pol] = pl_znaczki("Poka¿ wszystkie rozmowy z tym u¿ytkownikiem");
 $all_for_u_t[eng] = "Show all chats from this user";
@@ -352,8 +352,8 @@ $no_more[eng] = "No more search results";
 $in_min[pol] = pl_znaczki("minut");
 $in_min[eng] = "minutes";
 
-$verb_h[pol] = pl_znaczki("przerwa ponad jedn± godzinê");
-$verb_h[eng] = "break more than one hour";
+$verb_h[pol] = pl_znaczki("przerwa w rozmowie trwaj±ca ponad godzinê");
+$verb_h[eng] = "chat break more than one hour";
 
 $time_range_w[pol] = pl_znaczki("Pole \"Od\" nie mo¿e byæ wiêksze od pola \"Do\"");
 $time_range_w[eng] = "Field \"From\" cannot be greater than field \"To\"";
@@ -529,6 +529,12 @@ $months_name_pol = array("Styczeñ","Luty","Marzec","Kwiecieñ","Maj","Czerwiec","
 
 $months_name_eng = array("January","February","March","April","May","June","July",
                              "August","September","October","November","December");
+
+$jump_to_l[pol] = pl_znaczki("Przejd¼ do miesi±ca");
+$jump_to_l[eng] = "Jump to month";
+
+$chat_list_l[pol] = pl_znaczki("Lista rozmów w wybranym dniu:");
+$chat_list_l[eng] = "Chat list for selected day:";
 
 
 ?>

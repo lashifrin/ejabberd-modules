@@ -39,7 +39,7 @@ if ($location=="footer.php") {
 
 if (!preg_match("/index.php/i",$location)) {
 
-print '<div align="right"><a href="mailto:zzolkiewski@aster.com.pl">'.$quest1[$lang].'</a></div>';
+print '<div align="right" style="float: none;"><a href="mailto:zzolkiewski@aster.com.pl">'.$quest1[$lang].'</a></div>';
 
 }
 

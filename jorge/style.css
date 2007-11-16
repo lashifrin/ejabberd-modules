@@ -44,7 +44,8 @@ span.hlt {
 	}
 
 td.time_chat {
-	background-color: #c3d9ff; 
+	background-color: #669dd6;
+	color: #fff;
 	text-align: center; 
 	}
 
@@ -101,6 +102,12 @@ a.foot {
 	text-decoration: none;
 }
 
+a.menu_chat {
+	color: #fff;
+	text-decoration: none;
+
+}
+
 a:hover {
 
 	color: #136ef7;
@@ -155,4 +162,83 @@ input.btn{
 	opacity: .85;
 	max-width: 60em;
 
+}
+
+
+.calbck {
+	background-image: url(img/cal_bck.png);
+	background-repeat: repeat-x;
+	background-color: transparent;	
+}
+
+.calbck_con {
+	background-image: url(img/cal_bck2.png);
+	background-repeat: repeat-x;
+	background-color: transparent;	
+}
+
+.calhead {
+	font-family: Tahoma;
+	font-size: 10px;
+	font-weight: bold;
+	color: #FFFFFF;
+}
+.calweek {
+	font-family: Tahoma;
+	font-size: 10px;
+	color: #FFFFFF;
+}
+.caldays {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 10px;
+	color: #FFFFFF;
+}
+.caldaysnow {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 10px;
+	color: #FFFFFF;
+}
+.caldaysfeat {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 10px;
+	color: #b9b9c1;
+}
+.caldayssel {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 10px;
+	color: #FFFFFF;
+	background-color: #346DA5;
+}
+.caldays2 {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 10px;
+	color: #FFCC00;
+}
+a.caldays2 {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 10px;
+	color: #FFCC00;
+}
+
+a.caldays3 {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 10px;
+	color: #ffffff;
+}
+
+a:hover.caldays3 {
+
+	color:#FFCC00;
+
+}
+
+.calbckleft {
+	background-image: url(img/cal_bck_left2.png);
+	background-repeat: repeat-y;
+	background-color: transparent;
+}
+.calbckright {
+	background-image: url(img/cal_bck_right2.png);
+	background-repeat: repeat-y;
+	background-color: transparent;
 }

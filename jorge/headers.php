@@ -143,7 +143,6 @@ $lang=$sess->get('language');
 	<meta name="Description" content="Jorge" />
 	<link rel="stylesheet" href="style.css" type="text/css" />
 	<link rel="stylesheet" href="simpletree.css" type="text/css" />
- 	<link rel="stylesheet" href="calender.css" type="text/css" />
 	<script type="text/javascript" src="lib/simpletreemenu.js">
 		/***********************************************
 		* Simple Tree Menu - Dynamic Drive DHTML code library (www.dynamicdrive.com)
@@ -191,7 +190,7 @@ if ($token==$admin_name) {
             });
 	</script>
 </head>
-<body style="background-image: url(img/bak2a.png); background-repeat:repeat-x; background-color: #edf5fa;">
+<body style="background-image: url(img/bak2b.png); background-repeat:repeat-x; background-color: #edf5fa;">
 
 <noscript>
 

@@ -189,7 +189,7 @@ print '<a name="top"></a>'."\n";
 print '<table border="0" cellspacing="0" class="ff" width="100%">'."\n";
 print '<tr>'."\n";
 print '<td colspan="2" height="29" style="text-align: right;">'."\n";
-print '<a href="calendar_view.php"><i>'.$change_view_cal[$lang].'</a></i> | <b>'.$token.'@'.$xmpp_host_dotted.'</b>&nbsp; | &nbsp;';
+print '<b>'.$token.'@'.$xmpp_host_dotted.'</b>&nbsp; | &nbsp;';
 print $ch_lan[$lang];
 print ' <a href="'.$location.'?a='.$link_sw.'&sw_lang=t'.$cur_loc.'">'.$lang_sw[$lang].'</a>&nbsp; | &nbsp;';
 print '<a href="help.php" target="_blank">'.$help_but[$lang].'</a>&nbsp; | &nbsp;<a href="index.php?act=logout">'.$log_out_b[$lang].'</a><hr size="1" noshade="" color="#c9d7f1"/></td>';

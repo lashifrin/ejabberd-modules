@@ -161,6 +161,16 @@ function decode_url2($url,$token,$url_key) {
 
 }
 
+function decode_url_simple($url,$token,$url_key) {
+
+	$key=$url_key;
+	$url = str_replace("kezyt2s0", "+",$url);
+	$uri_d=decrypt_aes($key,$url);
+	$uri_d = strrev($uri_d);
+	return $uri_d;
+	
+}
+
 
 function decode_search_url($url,$token,$url_key) {
 
@@ -623,7 +633,7 @@ function new_parse_url($text) {
 	return $text;
 }
 
-function calendar($y,$m,$days,$token,$url_key,$months_name_eng){
+function calendar($user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_name_eng,$left,$right,$selected,$lang){
 	
 	$days=$days;
 	$month = $m;
@@ -692,25 +702,60 @@ function calendar($y,$m,$days,$token,$url_key,$months_name_eng){
 //Build the calendar with css
 //links to next and previous month
 
+// encode links
+$link_left= encode_url("$y-$prev",$token,$url_key);
+$link_right= encode_url("$x-$next",$token,$url_key);
+
+// check if we have chats in prev and next mo
+$is_left="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' and at like '$y-$prev%'";
+$is_right="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' and at like '$x-$next%'";
+
+$i_left=mysql_num_rows(mysql_query($is_left));
+$i_right=mysql_num_rows(mysql_query($is_right));
+
     $calendar .='
-                <div class="calendar">
-                  <div class="calhead">
-                    <div class="middle"><span>'.$month_name.'</span></div>
-                    </div>
-                    <div class="caldays">
-                      <ul class="days">
-                        <li>M</li>
-                        <li>T</li>
-                        <li>W</li>
-                        <li>T</li>
-                        <li>F</li>
-                        <li>S</li>
-                        <li>S</li>
-                      </ul>
-                    </div>
-                    <div class="caldates">
-                      <ul class="dates">
-              ';
+	<table width="200"  border="0" cellpadding="0" cellspacing="0" class="calbck">
+      	<tr>
+        <td><img src="img/cal_corn_11.png" width="15" height="7"></td>
+        <td background="img/cal_bck_top.gif"></td>
+        <td><img src="img/cal_corn_12.png" width="14" height="7"></td>
+      	</tr>
+      	<tr>
+        <td width="15" valign="top" class="calbckleft"><img src="img/cal_bck_left.png" width="15" height="116">
+      	</td>
+        <td width="100%" valign="top">
+        <table width="100%"  border="0" cellspacing="0" cellpadding="0">
+        <tr>
+        <td height="15" align="center" class="caldays">
+	';
+
+if ($i_left!=0) { $calendar.='<a href="?left='.$link_left.'"><<<</a>'; }
+
+$verb_date = "$y-$m-1";
+
+	    $calendar.='
+	    	
+		&nbsp;</td>
+            	<td colspan="5" align="center" class="calhead">'.verbose_mo($verb_date,$lang).'</td>
+            	<td align="center" class="caldays">&nbsp;
+		
+		';
+	  if ($i_right!=0) { $calendar.='<a href="?right='.$link_right.'">>>></a>'; }
+	    $calendar.='
+
+	    	</td>
+	  	</tr>
+          	<tr align="center" class="calweek">
+            	<td width="14%" height="15">Sun</td>
+            	<td width="14%">Mon</td>
+            	<td width="14%">Tue</td>
+            	<td width="14%">Wed</td>
+            	<td width="14%">Thu</td>
+            	<td width="14%">Fri</td>
+            	<td width="14%">Sat</td>
+          	</tr>
+	    
+	    ';
                
     //checks for leap years and add 1 to February
 
@@ -737,13 +782,19 @@ function calendar($y,$m,$days,$token,$url_key,$months_name_eng){
     }
      
     //loop through the days in the month
-             
+	$c=0;
+
     for($k=1;$k<($days_in_month+$new_time);$k++){   
-     
+
+	$c++;
+	if ($c==1) { $calendar.='<tr align="center" class="caldays">'; }
+
+
+ 
             //blank space
      
         if($k<$new_time){
-            $calendar.='<li class="blank"></li>
+            $calendar.='<td height="15">&nbsp;</td>
             ';
             continue;
         }
@@ -757,20 +808,33 @@ function calendar($y,$m,$days,$token,$url_key,$months_name_eng){
 	$to_base = "$y-$m-$n@";
 	$to_base = encode_url($to_base,$token,$url_key);
 
-
-            $calendar .= '<li><b><a href="main.php?a='.$to_base.'">'.$n.'</a></b></li>
+	    if ($selected==$n) { $bgcolor = 'bgcolor="#6daae7"'; } else { $bgcolor=""; }
+            $calendar .= '<td height="15" '.$bgcolor.' onclick="window.location=\'?a='.$to_base.'\'"><b><a class="caldays2" href="?a='.$to_base.'">'.$n.'</a></b></td>
                          ';   
         }
         else{
-            $calendar .= '<li>'.$n.'</li>
+            $calendar .= '<td height="15">'.$n.'</td>
                          ';
         }     
+
+	if ($c==7) { $calendar.='</tr>'; $c=0; }
+
+
     }
-    $calendar .= '</ul>
-                 ';
+    $calendar .= '
 
-    //reset for link to today
-
+	</table>
+        </td>
+        <td width="14" valign="top" class="calbckright"><img src="img/cal_bck_right.png" width="14" height="116"></td>
+      	</tr>
+      	<tr>
+        <td><img src="img/cal_corn_21.png" width="15" height="16"></td>
+        <td background="img/cal_bck_bot.png"></td>
+        <td><img src="img/cal_corn_22.png" width="14" height="16"></td>
+      	</tr>
+    	</table>
+        
+	';
 
     return($calendar);
 }
