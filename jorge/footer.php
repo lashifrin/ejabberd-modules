@@ -58,6 +58,45 @@ $time = substr($time_end - $time_start, 0, 10);
 if ($token==$admin_name) {print '<small>'.$admin_site_gen[$lang].$time.'s.</small>'; };
 ?>
 
+
+<script type="text/javascript">
+	$(document).ready(function() {
+	$("#t_search").autocomplete(
+		[
+
+	<?
+	// this is for local autocomplete, TODO: make it dynamic via AJAX
+	$jquery_search="select jid from rosterusers where username='$token' order by jid";
+	$res = pg_query($bazaj, $jquery_search);
+	if (!$res) {
+	        print "Ooops...";
+		        pg_close($bazaj);
+			        exit;
+				}
+
+	for ($lt = 0; $lt < pg_numrows($res); $lt++) {
+		$jid = pg_result($res, $lt, 0);
+		print '"from:'.$jid.'", ';
+	}
+
+	print "\" \"";
+
+	?>
+		],
+		{
+		minChars: 0,
+		max: 1,
+		cacheLength: 20000,
+		matchSubset: 1,
+		selectFirst: false,
+		matchContains: true,
+		}
+
+	);
+});
+
+</script>
+
 </body>
 </html>
 

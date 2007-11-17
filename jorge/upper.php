@@ -196,7 +196,7 @@ print '<a href="help.php" target="_blank">'.$help_but[$lang].'</a>&nbsp; | &nbsp
 print '</tr>'."\n";
 print '<tr><td height="57"><a href="main.php"><img src="img/'.$brand_logo.'" alt="logo" border="0" /></a></td></tr>';
 print '<tr><td valign="top" height="35"><form action="search_v2.php" method="post">'."\n";
-print '<input type="text" name="query" class="cc" value="'.$search_phase.'">'."\n";
+print '<input id="t_search" type="text" name="query" class="cc" value="'.$search_phase.'">'."\n";
 
 if ($search_loc==1) {
 
