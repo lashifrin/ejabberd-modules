@@ -141,8 +141,10 @@ $result=mysql_query("select substring(at,1,7) as at_m, at as verb from `logdb_st
 if (mysql_num_rows($result) !=0) {
 
 	// main table
-	print '<table class="ff" border="0">'."\n";
-	print '<tr class="main_s"><td colspan="1" style="text-align:left;">'.$archives_t[$lang].'</td>';
+	print '<h2>'.$archives_t[$lang].'</h2>'."\n";
+	print '<small>'.$cal_notice[$lang].'. <a href="calendar_view.php"><u>'.$change_view_cal[$lang].'</u></a></small><br>'."\n";
+	print '<br><table class="ff" border="0">'."\n";
+	print '<tr class="main_s"><td colspan="1" style="text-align:left;">'.$main_date[$lang].'</td>';
 		if ($tslice) { print '<td>'.$talks[$lang].'</td>';}
 		if ($talker) { print '<td>'.$thread[$lang].'</td>';}
 	print '<tr>'."\n";

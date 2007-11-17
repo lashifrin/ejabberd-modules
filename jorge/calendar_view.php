@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 require ("headers.php");
 include ("upper.php");
-print '<h2>'.$cal_head[$lang].'</a></small></h2>';
+print '<h2>'.$cal_head[$lang].'</h2>';
 print '<small>'.$cal_notice[$lang].'. <a href="main.php"><u>'.$change_view[$lang].'</u></a></small><br><br>';
 
 // fetch some get and posts
@@ -170,16 +170,18 @@ if (!isset($mo)) {
 
 		}
 
-
+// validate mo if fail, silently fallback to current date
+if (validate_date($mo."-1") == "f") { unset ($tslice); unset($e_string); unset($talker); $mo=date("Y-m");  }
 
 $get_chats="select substring(at,1,7) as at_send, at from `logdb_stats_$xmpp_host` where owner_id = '$user_id' group by substring(at,1,7) order by str_to_date(at,'%Y-%m-%d') desc";
 $ch_mo=mysql_query($get_chats);
 
 // master div
-print '<div>';
+print '<div>'."\n";
 
 // calendar div
-if ($tslice) { $float="left;"; } else { $float="none;"; }
+if ($talker) { $float="left;"; } else { $float="none;"; }
+
 print '<div style="text-align: center; width: 200px; float: '.$float.'">'."\n";
 
 // lets generate quick jump list
@@ -225,7 +227,7 @@ $tslice_table='logdb_messages_'.$tslice.'_'.$xmpp_host;
 if ($tslice) {
 	
         $result=db_q($user_id,$server,$tslice_table,$talker,$search_p,"2",$start,$xmpp_host);
-        if ($result=="f") { header ("Location: main.php");  }
+        if ($result=="f") { header ("Location: calendar_view.php");  }
         print '<td valign="top" style="padding-top: 15px;">'."\n";
         print '<table width="200" border="0" cellpadding="0" cellspacing="0" class="calbck_con">'."\n";
 	print '

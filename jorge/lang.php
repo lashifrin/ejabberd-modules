@@ -142,8 +142,11 @@ $log_out_b[eng] = "Logout";
 $archives_t[pol] = pl_znaczki("Przegl±darka archiwum");
 $archives_t[eng] = "Archive browser";
 
-$talks[pol] = pl_znaczki("Rozmowy z:");
-$talks[eng] = "Chats with:";
+$main_date[pol] = pl_znaczki("Data:");
+$main_date[eng] = "Date:";
+
+$talks[pol] = pl_znaczki("Lista rozmów:");
+$talks[eng] = "Chat list:";
 
 $thread[pol] = pl_znaczki("Tre¶æ:");
 $thread[eng] = "Content:";
@@ -512,8 +515,8 @@ $tassh_empty[eng] = "Trash is empty";
 $trash_recovered[pol] = pl_znaczki("Rozmowa zosta³a przeniesiona do archiwum");
 $trash_recovered[eng] = "Chat have been moved to archive";
 
-$cal_head[pol] = pl_znaczki("Kalendarz rozmów. (Tylko test)");
-$cal_head[eng] = "Chat calendar (Testing Only)";
+$cal_head[pol] = pl_znaczki("Kalendarz rozmów.");
+$cal_head[eng] = "Chat calendar";
 
 $cal_notice[pol] = pl_znaczki("Kliknij na danym dniu aby zobaczyæ rozmowy");
 $cal_notice[eng] = "Click on days to see chats";
@@ -521,8 +524,8 @@ $cal_notice[eng] = "Click on days to see chats";
 $change_view[pol] = pl_znaczki("Zmieñ widok na standardowy");
 $change_view[eng] = "Switch to standard view";
 
-$change_view_cal[pol] = pl_znaczki("Przegl±daj archiwum za pomoc± widoku kalendarza (<font color=\"red\">Nowe!</font>)");
-$change_view_cal[eng] = "Browse archives using calendar view (<font color=\"red\">New!</font>)";
+$change_view_cal[pol] = pl_znaczki("Przegl±daj archiwum za pomoc± widoku kalendarza.");
+$change_view_cal[eng] = "Browse archives using calendar view.";
 
 $months_name_pol = array("Styczeñ","Luty","Marzec","Kwiecieñ","Maj","Czerwiec","Lipiec",
                              "Sierpieñ","Wrzesieñ","Pa¼dziernik","Listopad","Grudzieñ");
