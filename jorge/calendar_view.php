@@ -23,7 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 require ("headers.php");
 include ("upper.php");
 print '<h2>'.$cal_head[$lang].'</h2>';
-print '<small>'.$cal_notice[$lang].'. <a href="main.php"><u>'.$change_view[$lang].'</u></a></small><br><br>';
+print '<small>'.$cal_notice[$lang].'. <a href="main.php?set_pref=1&v=1"><u>'.$change_view[$lang].'</u></a></small><br><br>';
 
 // fetch some get and posts
 if (isset($_GET['left'])) { $left=decode_url_simple($_GET['left'],$token,$url_key); }

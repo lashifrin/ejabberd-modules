@@ -47,11 +47,41 @@ $result=mysql_query("select count(*) from pending_del where owner_id='$user_id'"
 $row=mysql_fetch_row($result);
 $tr_n=$row[0];
 
+// get preferences for saving
+$pref_id=$_GET['set_pref'];
+$pref_value=$_GET['v'];
+
+// save preferences
+if ($_GET['set_pref']) {
+
+	//validate
+	if (!ctype_digit($pref_id)) { unset($pref_id); }
+	if (!ctype_digit($pref_value)) { unset($pref_value); }
+
+	// what to set
+	// view and language preferences are stored for now.
+	if ($pref_id==="1" OR $pref_id==="2") 
+		{ 
+			if($pref_value==="1" OR $pref_value==="2") 
+				{ 
+					save_pref($user_id,$pref_id,$pref_value);
+					if ($pref_id==="1") {
+						$sess->set('view_type',$pref_value);
+						}
+				} 
+		}
+
+}
+
+// get preferences, if not set, fallback to standard view.
+$view_type=$sess->get('view_type');
+if ($view_type==="1") { $view_type="main.php"; } elseif($view_type==="2") { $view_type="calendar_view.php"; }
+
 // this is menu. not nice but works ;)
 if (preg_match("/search_v2.php/i",$location)) 
 
 	{ 
-		$loc1='<a class="mmenu" href="main.php">'.$menu_item1[$lang].'</a>';
+		$loc1='<a class="mmenu" href="'.$view_type.'">'.$menu_item1[$lang].'</a>';
 		$loc2='<b>'.$menu_item2[$lang].'</b>';
 		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<a class="mmenu" href="settings.php">'.$menu_item4[$lang].'</a>';
@@ -75,7 +105,7 @@ if (preg_match("/search_v2.php/i",$location))
 	}
 	elseif(preg_match("/my_links.php/i",$location))
 	{
-		$loc1='<a class="mmenu" href="main.php">'.$menu_item1[$lang].'</a>';
+		$loc1='<a class="mmenu" href="'.$view_type.'">'.$menu_item1[$lang].'</a>';
 		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
 		$loc3='<b>'.$menu_item3[$lang].' ('.$my_links_count.') </b>';
 		$loc4='<a class="mmenu" href="settings.php">'.$menu_item4[$lang].'</a>';
@@ -88,7 +118,7 @@ if (preg_match("/search_v2.php/i",$location))
 	}
 	elseif(preg_match("/settings.php/i",$location))
 	{
-		$loc1='<a class="mmenu" href="main.php">'.$menu_item1[$lang].'</a>';
+		$loc1='<a class="mmenu" href="'.$view_type.'">'.$menu_item1[$lang].'</a>';
 		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
 		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<b>'.$menu_item4[$lang].'</b>';
@@ -101,7 +131,7 @@ if (preg_match("/search_v2.php/i",$location))
 	}
 	elseif(preg_match("/help.php/i",$location))
 	{
-		$loc1='<a class="mmenu" href="main.php">'.$menu_item1[$lang].'</a>';
+		$loc1='<a class="mmenu" href="'.$view_type.'">'.$menu_item1[$lang].'</a>';
 		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
 		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<a class="mmenu" href="settings.php">'.$menu_item4[$lang].'</a>';
@@ -113,7 +143,7 @@ if (preg_match("/search_v2.php/i",$location))
 	}
 	elseif(preg_match("/contacts.php/i", $location))
 	{
-		$loc1='<a class="mmenu" href="main.php">'.$menu_item1[$lang].'</a>';
+		$loc1='<a class="mmenu" href="'.$view_type.'">'.$menu_item1[$lang].'</a>';
 		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
 		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<a class="mmenu" href="settings.php">'.$menu_item4[$lang].'</a>';
@@ -125,7 +155,7 @@ if (preg_match("/search_v2.php/i",$location))
 	}
 	elseif(preg_match("/stats.php/i", $location))
 	{
-		$loc1='<a class="mmenu" href="main.php">'.$menu_item1[$lang].'</a>';
+		$loc1='<a class="mmenu" href="'.$view_type.'">'.$menu_item1[$lang].'</a>';
 		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
 		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<a class="mmenu" href="settings.php">'.$menu_item4[$lang].'</a>';
@@ -138,7 +168,7 @@ if (preg_match("/search_v2.php/i",$location))
 	}
 	elseif(preg_match("/logger.php/i", $location))
 	{
-		$loc1='<a class="mmenu" href="main.php">'.$menu_item1[$lang].'</a>';
+		$loc1='<a class="mmenu" href="'.$view_type.'">'.$menu_item1[$lang].'</a>';
 		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
 		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<a class="mmenu" href="settings.php">'.$menu_item4[$lang].'</a>';
@@ -151,7 +181,7 @@ if (preg_match("/search_v2.php/i",$location))
 	}
 	elseif(preg_match("/trash.php/i", $location))
 	{
-		$loc1='<a class="mmenu" href="main.php">'.$menu_item1[$lang].'</a>';
+		$loc1='<a class="mmenu" href="'.$view_type.'">'.$menu_item1[$lang].'</a>';
 		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
 		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
 		$loc4='<a class="mmenu" href="settings.php">'.$menu_item4[$lang].'</a>';
@@ -194,7 +224,7 @@ print $ch_lan[$lang];
 print ' <a href="'.$location.'?a='.$link_sw.'&sw_lang=t'.$cur_loc.'">'.$lang_sw[$lang].'</a>&nbsp; | &nbsp;';
 print '<a href="help.php" target="_blank">'.$help_but[$lang].'</a>&nbsp; | &nbsp;<a href="index.php?act=logout">'.$log_out_b[$lang].'</a><hr size="1" noshade="" color="#c9d7f1"/></td>';
 print '</tr>'."\n";
-print '<tr><td height="57"><a href="main.php"><img src="img/'.$brand_logo.'" alt="logo" border="0" /></a></td></tr>';
+print '<tr><td height="57"><a href="'.$view_type.'"><img src="img/'.$brand_logo.'" alt="logo" border="0" /></a></td></tr>';
 print '<tr><td valign="top" height="35"><form action="search_v2.php" method="post">'."\n";
 print '<input id="t_search" type="text" name="query" class="cc" value="'.$search_phase.'">'."\n";
 

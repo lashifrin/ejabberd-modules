@@ -63,7 +63,7 @@ if ($tigger==$my_links_commit[$lang]) {
 	$query="insert into jorge_mylinks (owner_id,peer_name_id,peer_server_id,datat,link,description) values ('$user_id','$peer_user','$peer_server','$datat','$aaa','$desc')";
 	$result = mysql_query($query) or die ("Ooops...Error.");
 	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 150pt;">'.$my_links_added[$lang].'</div></center><br>';
-	print '<a href="main.php?a='.$aaa.'"><b>'.$my_links_back[$lang].'</b></a></center>';
+	print '<a href="'.$view_type.'?a='.$aaa.'"><b>'.$my_links_back[$lang].'</b></a></center>';
 	print '<br /><br />';
 }
 
@@ -90,7 +90,7 @@ if ($variables[ismylink]=="1") {
 	print '<tr><td height="5"></td></tr>'."\n";
 	print '<tr><td colspan="3" align="center"><textarea class="ccc" name="desc" rows="4">'.$my_links_optional[$lang].'</textarea></td></tr>'."\n";
 	print '<tr><td colspan="3" align="center"><input name="trigger" class="red" type="submit" value="'.$my_links_commit[$lang].'">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
-	print '<input class="red" type="button" value="'.$my_links_cancel[$lang].'" onClick="parent.location=\'main.php?a='.htmlspecialchars($variables[lnk]).'&start='.htmlspecialchars($variables[strt]).'#'.htmlspecialchars($variables[linktag]).'\'"></td>';
+	print '<input class="red" type="button" value="'.$my_links_cancel[$lang].'" onClick="parent.location=\''.$view_type.'?a='.htmlspecialchars($variables[lnk]).'&start='.htmlspecialchars($variables[strt]).'#'.htmlspecialchars($variables[linktag]).'\'"></td>';
 	print '</tr>'."\n";
 	print '<tr><td><input type="hidden" name="peer_user" value="'.$variables[talker].'"><input type="hidden" name="peer_server" value="'.$variables[server].'">';
 	print '<input type="hidden" name="aaa" value="'.htmlspecialchars($variables[lnk]).'&start='.htmlspecialchars($variables[strt]).'#'.$variables[linktag].'"><input type="hidden" name="datat" value="'.$variables[tslice].'"> </td></tr>'."\n";
@@ -117,12 +117,12 @@ if (mysql_num_rows($result) == "0") { print '<br /><br /><center><b>'.$my_links_
 		while ($entry = mysql_fetch_array($result)) {
 
 			print '<tr style="cursor: pointer;" bgcolor="#e8eef7" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#e8eef7\';">'."\n";
-			print '<td onclick="window.open(\'main.php?a='.$entry['link'].'\');" style="padding-left: 10px; padding-right: 10px">'.pl_znaczki(verbose_date($entry['datat'],$lang)).'</td>'."\n";
+			print '<td onclick="window.open(\''.$view_type.'?a='.$entry['link'].'\');" style="padding-left: 10px; padding-right: 10px">'.pl_znaczki(verbose_date($entry['datat'],$lang)).'</td>'."\n";
 			$nickname=query_nick_name($bazaj,  $token,  get_user_name($entry[peer_name_id],$xmpp_host), get_server_name($entry[peer_server_id],$xmpp_host));
 			$jid=get_user_name($entry[peer_name_id],$xmpp_host).'@'.get_server_name($entry[peer_server_id],$xmpp_host);
-			print '<td onclick="window.open(\'main.php?a='.$entry['link'].'\');">&nbsp;<b>'.cut_nick(htmlspecialchars($nickname)).'</b> (<i>'.htmlspecialchars($jid).'</i>)&nbsp;</td>'."\n";
+			print '<td onclick="window.open(\''.$view_type.'?a='.$entry['link'].'\');">&nbsp;<b>'.cut_nick(htmlspecialchars($nickname)).'</b> (<i>'.htmlspecialchars($jid).'</i>)&nbsp;</td>'."\n";
 			$opis=htmlspecialchars($entry[description]);
-			print '<td onclick="window.open(\'main.php?a='.$entry['link'].'\');">&nbsp;'.$opis.'</td>'."\n";
+			print '<td onclick="window.open(\''.$view_type.'?a='.$entry['link'].'\');">&nbsp;'.$opis.'</td>'."\n";
 			print '<td><a href="my_links.php?del=t&link_id='.$entry[id_link].'" onClick="if (!confirm(\''.$del_conf_my_link[$lang].'\')) return false;" >&nbsp;'.$del_my_link[$lang].'&nbsp;</a></td>'."\n";
 			print '</tr>'."\n";
 		}

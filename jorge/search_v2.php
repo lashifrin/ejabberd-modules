@@ -184,7 +184,7 @@ while ($entry = mysql_fetch_array($result)) {
 				$jid = htmlspecialchars($talk);
 
 				
-				print '<tr id="pretty" title="'.$jid.'@'.htmlspecialchars($sname).'" style="cursor: pointer;" bgcolor="'.$col.'" onclick="window.open(\'main.php?a='.$to_base.'\');" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#'.$col.'\';">'."\n";
+				print '<tr id="pretty" title="'.$jid.'@'.htmlspecialchars($sname).'" style="cursor: pointer;" bgcolor="'.$col.'" onclick="window.open(\''.$view_type.'?a='.$to_base.'\');" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#'.$col.'\';">'."\n";
 
 				print '<td width="120">'.$results["ts"].'</td>'."\n";
 
@@ -342,7 +342,7 @@ if ($type!="7") {
 	$body_talk = wordwrap(str_replace("\n","<br>",htmlspecialchars(base64_decode($dat["body"]))),107,"<br>",true);
 
 	// opening line
-	print '<tr id="pretty" title="'.$jid.'@'.htmlspecialchars($sname).'" style="cursor: pointer;" bgcolor="'.$col.'" onclick="window.open(\'main.php?a='.$to_base.'\');" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#'.$col.'\';">'."\n";
+	print '<tr id="pretty" title="'.$jid.'@'.htmlspecialchars($sname).'" style="cursor: pointer;" bgcolor="'.$col.'" onclick="window.open(\''.$view_type.'?a='.$to_base.'\');" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#'.$col.'\';">'."\n";
 	
 	// time field:
 	print '<td width="120">'.$dat["ts"].'</td>'."\n";
