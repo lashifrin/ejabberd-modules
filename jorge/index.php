@@ -23,6 +23,16 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 // all we need is header.php file - be sure to include it in all Jorge files! as it containg authentication futures.
 require ("headers.php");
 
+// if already logged in (session active), move to main screen according to user preferences
+if ($sess->get('uid_l')) { 
+	if ($sess->get('view_type') == "1") { 
+		header ("Location: main.php");
+		}
+		else {
+			header ("Location: calendar_view.php");
+			}
+}
+
 $inpLogin=$_POST[inpLogin];
 $inpPass=$_POST[inpPass];
 $wo_sess=$_POST[word];

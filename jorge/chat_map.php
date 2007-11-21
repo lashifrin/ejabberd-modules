@@ -63,7 +63,6 @@ if ($con_map AND $_POST['chat_map'] != "null") {
 	// get the id's of user and server
 	$name_peer=get_user_id(mysql_escape_string($name_peer),$xmpp_host);
 	$server_peer=get_server_id(mysql_escape_string($server_peer),$xmpp_host);
-
 	//validate, always should be integers
 	if (!ctype_digit($name_peer) OR !ctype_digit($server_peer)) { unset($con_map); unset($name_peer); unset($server_peer); }
 

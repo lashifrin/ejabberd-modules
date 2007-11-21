@@ -81,12 +81,14 @@ if ($sess->get('log_status') == "0") { print $arch_on[$lang]; } else { print $ar
 print '"></td></tr></form>'."\n";
 print '<form action="settings.php" method="post">';
 print '<tr style="font-size: x-small;"><td>'.$setting_d2[$lang].'</td><td><input class="btn_set" type="submit" name="del_all" value="'.$settings_del[$lang].'" onClick="if (!confirm(\''.$del_all_conf[$lang].'\')) return false;"></form></td></tr>'."\n";
-print '<form action="settings.php" method="post" name="save_pref">';
-print '<tr style="font-size: x-small;"><td>'.$select_view[$lang].'</td><td><select style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="set_pref" size="0" onchange="javascript:document.save_pref.submit();">'."\n";
+print '<form action="settings.php" method="get" name="save_pref">';
+print '<tr style="font-size: x-small;"><td>'.$select_view[$lang].'</td><td><select style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="v" size="0" onchange="javascript:document.save_pref.submit();">'."\n";
 if ($sess->get('view_type') == "1") { $std="selected"; } else { $cal="selected"; }
 print '<option '.$std.' value="1">'.$view_standard[$lang].'</option>'."\n";
 print '<option '.$cal.' value="2">'.$view_calendar[$lang].'</optin>'."\n";
-print '</select></td></tr>';
+print '</select>';
+print '<input name="set_pref" type="hidden" value="1">';
+print '</td></tr>';
 print '</form>';
 print '</table>';
 print '</center>'."\n";

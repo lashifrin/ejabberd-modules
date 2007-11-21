@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 require ("headers.php");
 include ("upper.php");
 print '<h2>'.$menu_item7[$lang].'</h2>';
-print '<small>'.$trash_desc[$lang].'</h2>';
+print '<small>'.$trash_desc[$lang].'</small></h2>';
 
 $action=$_GET['a'];
 
