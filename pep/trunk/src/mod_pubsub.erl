@@ -774,8 +774,33 @@ pep_disco_items(Acc, _From, To, "", _Lang) ->
 			  end, Nodes),
 	    {result, NodeItems ++ Items}
     end;
-pep_disco_items(Acc, _From, _To, _Node, _Lang) ->
-    Acc.
+pep_disco_items(Acc, _From, To, Node, _Lang) ->
+    %% XXX: access control on From
+    LJID = jlib:jid_tolower(jlib:jid_remove_resource(To)),
+    case catch mnesia:dirty_read(pep_node, {LJID, Node}) of
+	{'EXIT', Reason} ->
+	    ?ERROR_MSG("~p", [Reason]),
+	    Acc;
+	[] ->
+	    Acc;
+	[N] ->
+	    Items = case Acc of
+			{result, I} -> I;
+			_ -> []
+		    end,
+	    Info = get_node_info(N),
+	    NodeItems = lists:map(
+			  fun(#item{id = Id}) ->
+				  %% "jid" is required by XEP-0030, and
+				  %% "node" is forbidden by XEP-0060.
+				  {xmlelement, "item",
+				   [{"jid", jlib:jid_to_string(LJID)},
+				    {"name", Id}],
+				   []}
+			     end,
+			  Info#nodeinfo.items),
+	    {result, NodeItems ++ Items}
+    end.
 
 iq_get_vcard(Lang) ->
     [{xmlelement, "FN", [],
