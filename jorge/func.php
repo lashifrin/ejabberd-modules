@@ -633,7 +633,7 @@ function new_parse_url($text) {
 	return $text;
 }
 
-function calendar($user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_name_eng,$left,$right,$selected,$lang){
+function calendar($user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,$c_type,$name_peer=0,$server_peer=0){
 	
 	$days=$days;
 	$month = $m;
@@ -643,7 +643,8 @@ function calendar($user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_name_e
 
     $months_days = array("31","28","31","30","31","30","31","31",
                          "30","31","30","31");
-    $days_array = array("Mon","Tue","Wed","Thu","Fri","Sat","Sun");
+
+	$days_array = array("Mon","Tue","Wed","Thu","Fri","Sat","Sun");
 
 //removes the 0 from start of month - can't find array key with 0
 
@@ -700,18 +701,26 @@ function calendar($user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_name_e
     $calendar = "";
 
 //Build the calendar with css
-//links to next and previous month
+//links to next and previous month only for browser
+if ($c_type=="1") {
+	// encode links
+	$link_left= encode_url("$y-$prev",$token,$url_key);
+	$link_right= encode_url("$x-$next",$token,$url_key);
 
-// encode links
-$link_left= encode_url("$y-$prev",$token,$url_key);
-$link_right= encode_url("$x-$next",$token,$url_key);
+	// check if we have chats in prev and next mo
+	$is_left="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' and at like '$y-$prev%'";
+	$is_right="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' and at like '$x-$next%'";
 
-// check if we have chats in prev and next mo
-$is_left="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' and at like '$y-$prev%'";
-$is_right="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' and at like '$x-$next%'";
+	$i_left=mysql_num_rows(mysql_query($is_left));
+	$i_right=mysql_num_rows(mysql_query($is_right));
 
-$i_left=mysql_num_rows(mysql_query($is_left));
-$i_right=mysql_num_rows(mysql_query($is_right));
+	}
+	else {
+
+		$i_left=0;
+		$i_right=0;
+
+	}
 
     $calendar .='
 	<table width="200"  border="0" cellpadding="0" cellspacing="0" class="calbck">
@@ -746,13 +755,13 @@ $verb_date = "$y-$m-1";
 	    	</td>
 	  	</tr>
           	<tr align="center" class="calweek">
-            	<td width="14%" height="15">Sun</td>
-            	<td width="14%">Mon</td>
+            	<td width="14%" height="15">Mon</td>
             	<td width="14%">Tue</td>
             	<td width="14%">Wed</td>
             	<td width="14%">Thu</td>
             	<td width="14%">Fri</td>
             	<td width="14%">Sat</td>
+            	<td width="14%">Sun</td>
           	</tr>
 	    
 	    ';
@@ -805,11 +814,16 @@ $verb_date = "$y-$m-1";
 
         if(in_array($n,$days)){
 	
-	$to_base = "$y-$m-$n@";
+	if ($c_type=="1") {
+			$to_base = "$y-$m-$n@";
+		}
+		elseif($c_type=="2") {
+			$to_base = "$y-$m-$n@$name_peer@$server_peer@";
+		}
 	$to_base = encode_url($to_base,$token,$url_key);
 
 	    if ($selected==$n) { $bgcolor = 'bgcolor="#6daae7"'; } else { $bgcolor=""; }
-            $calendar .= '<td height="15" '.$bgcolor.' onclick="window.location=\'?a='.$to_base.'\'"><b><a class="caldays2" href="?a='.$to_base.'">'.$n.'</a></b></td>
+            $calendar .= '<td height="15" '.$bgcolor.' onclick="window.location=\''.$view_type.'?a='.$to_base.'\'"><b><a class="caldays2" href="'.$view_type.'?a='.$to_base.'">'.$n.'</a></b></td>
                          ';   
         }
         else{

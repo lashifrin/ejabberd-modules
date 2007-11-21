@@ -93,6 +93,9 @@ $header_l[eng] = "Message archives of server";
 $menu_item1[pol] = pl_znaczki("Przegl±darka");
 $menu_item1[eng] = "Browser";
 
+$menu_item1a[pol] = pl_znaczki("MapaRozmów");
+$menu_item1a[eng] = "ChatMap";
+
 $menu_item2[pol] = pl_znaczki("Wyszukiwarka");
 $menu_item2[eng] = "Search";
 
@@ -331,6 +334,9 @@ $con_tab6[eng] = "Group";
 $con_no_g[pol] = pl_znaczki("Ogólne (brak grupy)");
 $con_no_g[eng] = "General (no group)";
 
+$map_no_g[pol] = pl_znaczki("brak grupy");
+$map_no_g[eng] = "no group";
+
 $con_head[pol] = pl_znaczki("Zarz±dzanie kontaktami");
 $con_head[eng] = "Contacts managment";
 
@@ -539,5 +545,34 @@ $jump_to_l[eng] = "Jump to month";
 $chat_list_l[pol] = pl_znaczki("Lista rozmów w wybranym dniu:");
 $chat_list_l[eng] = "Chat list for selected day:";
 
+$select_view[pol] = pl_znaczki("Wybierz rodzaj widoku przegl±darki:");
+$select_view[eng] = "Select prefered view for browser:";
+
+$view_calendar[pol] = pl_znaczki("Widok kalendarza");
+$view_calendar[eng] = "Calendar view";
+
+$view_standard[pol] = pl_znaczki("Widok standardowy");
+$view_standard[eng] = "Standard view";
+
+$setting_d1[pol] = pl_znaczki("Zmieñ globaln± opcjê archiwizacji:");
+$setting_d1[eng] = "Change global archivization policy:";
+
+$setting_d2[pol] = pl_znaczki("Usuñ ca³e archiwum wiadomo¶ci (<i>nie mo¿na wycofaæ</i>):");
+$setting_d2[eng] = "Delete entire message archive (<i>cannot undo</i>):";
+
+$chat_map[pol] = pl_znaczki("Mapa rozmów");
+$chat_map[eng] = "Chat map";
+
+$chat_select[pol] = pl_znaczki("Wybierz kontakt aby zobaczyæ listê rozmów");
+$chat_select[eng] = "Select contact to see chats";
+
+$chat_m_select[pol] = pl_znaczki("Wybierz kontakt:");
+$chat_m_select[eng] = "Pick a contact:";
+
+$chat_c_list[pol] = pl_znaczki("Lista kontaktów");
+$chat_c_list[eng] = "Contacts list";
+
+$chat_no_chats[pol] = pl_znaczki("Brak rozmów z wybranym kontaktem");
+$chat_no_chats[eng] = "There are no chats with selected contact";
 
 ?>

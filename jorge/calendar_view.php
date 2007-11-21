@@ -217,7 +217,7 @@ while ($row_d=mysql_fetch_array($result_for_days)) {
 
 // display calendar
 list($y,$m) = split("-", $mo);
-echo pl_znaczki(calendar($user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_name_eng,$left,$right,$selected,$lang));
+echo pl_znaczki(calendar($user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,1));
 unset($days);
 
 // generate table name
@@ -315,10 +315,10 @@ if ($talker) {
         $loc_link = $e_string;
         $action_link = "$tslice@$talker@$server_id@0@null@$loc_link@del@";
         $action_link = encode_url($action_link,$token,$url_key);
-        $predefined="from:$talker_name@$server_name";
+        $predefined="$talker_name@$server_name";
         $predefined=encode_url($predefined,$token,$url_key);
         print '<td align="right" style="padding-right: 5px;"><a id="pretty" title="'.$tip_export[$lang].'" class="menu_chat" href="export.php?a='.$e_string.'">'.$export_link[$lang].'</a>&nbsp; | &nbsp;';
-        print '<a id="pretty" title="'.$all_for_u_t[$lang].'" class="menu_chat" href="search_v2.php?b='.$predefined.'">'.$all_for_u[$lang].'</a>&nbsp; | &nbsp;';
+        print '<a id="pretty" title="'.$all_for_u_t[$lang].'" class="menu_chat" href="chat_map.php?chat_map='.$predefined.'">'.$all_for_u[$lang].'</a>&nbsp; | &nbsp;';
         print '<a id="pretty" title="'.$tip_delete[$lang].'" class="menu_chat" href="calendar_view.php?a='.$action_link.'">'.$del_t[$lang].'</a></td></tr>';
         print '<tr class="spacer"><td colspan="5"></td></tr>';
         print '<tbody id="searchfield">'."\n";

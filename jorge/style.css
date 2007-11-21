@@ -150,6 +150,22 @@ input.btn{
 }
 
 
+input.btn_set{
+   color:#fff;
+   font-size: x-small;
+   background-color:#6daae7;
+   border:0px solid;
+   border-top-color:#696;
+   border-left-color:#696;
+   border-right-color:#363;
+   border-bottom-color:#363;
+}
+
+
+
+
+
+
 #tooltip.fancy {
 	background-color: #ffffcc;
 	border: 1px solid #afccf7;

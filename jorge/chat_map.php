@@ -23,7 +23,12 @@ require ("headers.php");
 include ("upper.php");
 print '<h2>'.$chat_map[$lang].'</h2>';
 print '<small>'.$chat_select[$lang].'</small><br><br>';
-$con_map=decode_url_simple($_POST['chat_map'],$token,$url_key);
+if ($_POST['chat_map']) {
+	$con_map=decode_url_simple($_POST['chat_map'],$token,$url_key);
+	}
+	elseif ($_GET['chat_map']) {
+	$con_map=decode_url_simple($_GET['chat_map'],$token,$url_key);
+	}
 
 // this is tempory workaround.
 $contact_list="select a.nick, a.jid, b.grp from rosterusers a left outer join rostergroups b on (a.jid=b.jid and a.username=b.username) where a.username='$token' and a.nick !='' order by lower(a.nick)";
@@ -36,17 +41,18 @@ $contact_list="select a.nick, a.jid, b.grp from rosterusers a left outer join ro
 
 print '<form action="chat_map.php" method="post" name="chat_map_form">'."\n";
 print '<span style="padding-right: 20px">'.$chat_m_select[$lang].'</span>'."\n";
-print '<select style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="chat_map" size="0" onchange="javascript:document.chat_map_form.submit();">'."\n";
+print '<select id="c_map" style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="chat_map" size="0" onchange="javascript:document.chat_map_form.submit();">'."\n";
 print '<option value="null">'.$chat_c_list[$lang].'</option>';
 	for ($lt = 0; $lt < pg_numrows($res); $lt++) {
 		$name = pg_result($res, $lt, 0);
 		$jid = pg_result($res,$lt,1);
 		$grp = pg_result($res,$lt,2);
+		if ($grp=="") { $grp=$map_no_g[$lang]; }
 		if ($con_map==$jid) { $selected="selected"; } else { $selected=""; }
 		print '<option '.$selected.' value=\''.encode_url($jid,$token,$url_key).'\'>'.htmlspecialchars($name).' ('.htmlspecialchars($grp).')</option>'."\n";
 	}
-print '</select></form>'."\n";
-
+print '</select>';
+print '</form>'."\n";
 if ($con_map AND $_POST['chat_map'] != "null") {
 
 	print "<h2>".$cal_head[$lang].":</h2>";
@@ -65,9 +71,7 @@ if ($con_map AND $_POST['chat_map'] != "null") {
 	$get_months="select substring(at,1,7) as at from `logdb_stats_jabster_pl` where owner_id='$user_id' group by substring(at,1,7) order by str_to_date(at,'%Y-%m-%d') asc";
 	$result_m=mysql_query($get_months);
 	$cc_cmp=mysql_num_rows($result_m);
-
 	while($row_m=mysql_fetch_array($result_m)) {
-		
 		// hack for proper date parsing
 		list($y,$m) = split("-",$row_m[at]);
 		$mo="$y-$m";
@@ -78,11 +82,11 @@ if ($con_map AND $_POST['chat_map'] != "null") {
 
 			while($row_day=mysql_fetch_array($result)) {
 
-				// now scan day for chats, yep thats week, but as long as we dont have right stats table this will work...
+				// now scan day for chats, yep thats weak, but as long as we dont have right stats table this will work...
 				$day_chats="select distinct(owner_id), peer_name_id, peer_server_id from `logdb_messages_$row_day[at]"."_$xmpp_host` where owner_id='$user_id' and peer_name_id='$name_peer' and peer_server_id='$server_peer'";
 				// check if there was a chat
 				if (mysql_num_rows(mysql_query($day_chats))>0) { 
-					
+			
 					$i++;
 					list($y,$m,$d) = split("-",$row_day[at]);
 					$days[$i] = $d;
@@ -90,12 +94,10 @@ if ($con_map AND $_POST['chat_map'] != "null") {
 
 			}
 
-		#print "$y-$m:";
-		#print_r ($days);
-		#print "<br>";
-		if (count($days)>0) {
+		if (count($days)>=1) {
 			print '<div style="float: left;">';
 			echo pl_znaczki(calendar($user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,2,$name_peer,$server_peer));
+			unset($days);
 			print '</div>';
 			}
 			else {
