@@ -302,12 +302,20 @@ if ($talker) {
         $server_name = get_server_name($server,$xmpp_host);
         $nickname = query_nick_name($bazaj,$token,$talker_name,$server_name);
         if ($nickname=="f") { $nickname=$not_in_r[$lang]; }
+	$predefined="$talker_name@$server_name";
+	$predefined=encode_url($predefined,$token,$url_key);
         print '<table id="maincontent" border="0" cellspacing="0" class="ff">'."\n";
+	// if we come from chat maps put the link back...its the same link as "show all chats" but, it is more self explaining
+	if ($_GET['loc'] == "2") {
+		print '<tr>';
+		print '<td colspan="2" style="background-color: #fad163; color: #fff; font-size: x-small; text-align: center;"><a href="chat_map.php?chat_map='.$predefined.'">'.$chat_map_back[$lang].'</a></td>';
+		print '<td></td></tr>'."\n";
+	}
         if ($resource_id) {
-        $res_display=get_resource_name($resource_id,$xmpp_host);
-        print '<tr><td colspan="4"><div style="background-color: #fad163; text-align: center; font-weight: bold;">'.$resource_warn[$lang].cut_nick(htmlspecialchars($res_display)).'. ';
-        print $resource_discard[$lang].'<a class="export" href="?a='.$e_string.'">'.$resource_discard2[$lang].'</a>';
-        print '</div></td></tr>';
+        	$res_display=get_resource_name($resource_id,$xmpp_host);
+        	print '<tr><td colspan="4"><div style="background-color: #fad163; text-align: center; font-weight: bold;">'.$resource_warn[$lang].cut_nick(htmlspecialchars($res_display)).'. ';
+        	print $resource_discard[$lang].'<a class="export" href="?a='.$e_string.'">'.$resource_discard2[$lang].'</a>';
+        	print '</div></td></tr>';
         }
         print '<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; color: #fff;">'."\n";
         print '<td><b> '.$time_t[$lang].' </b></td><td><b> '.$user_t[$lang].' </b></td><td><b> '.$thread[$lang].'</b></td>'."\n";
@@ -315,8 +323,6 @@ if ($talker) {
         $loc_link = $e_string;
         $action_link = "$tslice@$talker@$server_id@0@null@$loc_link@del@";
         $action_link = encode_url($action_link,$token,$url_key);
-        $predefined="$talker_name@$server_name";
-        $predefined=encode_url($predefined,$token,$url_key);
         print '<td align="right" style="padding-right: 5px;"><a id="pretty" title="'.$tip_export[$lang].'" class="menu_chat" href="export.php?a='.$e_string.'">'.$export_link[$lang].'</a>&nbsp; | &nbsp;';
         print '<a id="pretty" title="'.$all_for_u_t[$lang].'" class="menu_chat" href="chat_map.php?chat_map='.$predefined.'">'.$all_for_u[$lang].'</a>&nbsp; | &nbsp;';
         print '<a id="pretty" title="'.$tip_delete[$lang].'" class="menu_chat" href="calendar_view.php?a='.$action_link.'">'.$del_t[$lang].'</a></td></tr>';

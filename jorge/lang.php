@@ -575,4 +575,8 @@ $chat_c_list[eng] = "Contacts list";
 $chat_no_chats[pol] = pl_znaczki("Brak rozmów z wybranym kontaktem");
 $chat_no_chats[eng] = "There are no chats with selected contact";
 
+$chat_map_back[pol] = pl_znaczki("<<< Wróæ do MapyRozmów");
+$chat_map_back[eng] = "<<< Back to ChatMap";
+
+
 ?>

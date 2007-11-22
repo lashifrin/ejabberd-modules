@@ -89,7 +89,7 @@ if ($token==$admin_name) {print '<small>'.$admin_site_gen[$lang].$time.'s.</smal
 		cacheLength: 200,
 		matchSubset: true,
 		selectFirst: false,
-		matchContains: true,
+		matchContains: true
 		}
 
 	);

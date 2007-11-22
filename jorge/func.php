@@ -816,14 +816,16 @@ $verb_date = "$y-$m-1";
 	
 	if ($c_type=="1") {
 			$to_base = "$y-$m-$n@";
+			$loc_orign="";
 		}
 		elseif($c_type=="2") {
 			$to_base = "$y-$m-$n@$name_peer@$server_peer@";
+			$loc_orign="&loc=2";
 		}
 	$to_base = encode_url($to_base,$token,$url_key);
 
 	    if ($selected==$n) { $bgcolor = 'bgcolor="#6daae7"'; } else { $bgcolor=""; }
-            $calendar .= '<td height="15" '.$bgcolor.' onclick="window.location=\''.$view_type.'?a='.$to_base.'\'"><b><a class="caldays2" href="'.$view_type.'?a='.$to_base.'">'.$n.'</a></b></td>
+            $calendar .= '<td height="15" '.$bgcolor.' onclick="window.location=\''.$view_type.'?a='.$to_base.$loc_orign.'\'"><b><a class="caldays2" href="'.$view_type.'?a='.$to_base.$loc_orign.'">'.$n.'</a></b></td>
                          ';   
         }
         else{
