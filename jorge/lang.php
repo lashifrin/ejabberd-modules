@@ -271,6 +271,9 @@ $not_in_r[eng] = "Not in roster";
 $del_info[pol] = pl_znaczki("Rozmowa zosta³a usuniêta.");
 $del_info[eng] = "Chat succesfuly deleted.";
 
+$undo_info[pol] = pl_znaczki("Rozmowa zosta³a przywrócona");
+$undo_info[eng] = "Chat restored succesfuly";
+
 $del_my_link[pol] = pl_znaczki("usuñ");
 $del_my_link[eng] = "delete";
 

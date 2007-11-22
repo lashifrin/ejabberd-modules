@@ -54,7 +54,7 @@ $lnk = $variables[lnk];
 // validation
 $talker=mysql_escape_string($talker);
 $server=mysql_escape_string($server);
-if (validate_date($tslice) == "f") { unset ($tslice); unset($e_string); unset($talker); unset($left); unset($right); unset($mo); }
+if (validate_date($tslice) == "f") { unset ($tslice); unset($e_string); unset($talker); unset($left); unset($right); unset($mo); unset($action); }
 
 // some validation things...
 if ($start) { if ((validate_start($start))!="t") { $start="0";  }  }

@@ -871,6 +871,94 @@ function save_pref($user_id, $pref_id,$pref_value) {
 return "f";
 
 }
-            
+
+function delete_chat($talker,$server,$xmpp_host,$user_id,$tslice,$token,$url_key,$lnk) {
+
+        if (!ctype_digit($talker) OR !ctype_digit($server)) { return "f"; }
+        $query="update `logdb_messages_$tslice"."_$xmpp_host` set ext = '1' where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server'";
+        $result=mysql_query($query) or die ("Ooops...Error");
+        $query="insert into pending_del(owner_id,peer_name_id,date,peer_server_id) values ('$user_id', '$talker','$tslice','$server')";
+        $result=mysql_query($query) or die ("Ooops...Error");
+        $jid_date = ' '.get_user_name($talker,$xmpp_host).'@'.get_server_name($server,$xmpp_host).' ('.$tslice.')';
+        $query="insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time,extra) values ('$user_id',4,1,NOW(),'$jid_date')";
+        mysql_query($query) or die;
+        // how many chats is there left?
+        $query="select count(peer_name_id) from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id' and ext is NULL";
+        $result=mysql_query($query);
+        $row=mysql_fetch_row($result);
+        // if there is nothing left, lets cleanu up stats, we dont want to have mess in db
+        if ($row[0]=="0") {
+                        $query="delete from `logdb_stats_$xmpp_host` where owner_id='$user_id' and at='$tslice' limit 1";
+                        $result=mysql_query($query) or die ("Ooops...Error");
+                        mysql_free_result($result);
+                        }
+                        else
+                        {
+                        // update stats if not delete
+                        $query="select count(body) from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id' and ext is NULL";
+                        $result=mysql_query($query) or die ("Ooops...Error");
+                        $row=mysql_fetch_row($result);
+                        $new_stats=$row[0];
+                        mysql_free_result($result);
+                        $query="update `logdb_stats_$xmpp_host` set count='$new_stats' where owner_id='$user_id' and at='$tslice'";
+                        $result=mysql_query($query) or die ("Ooops...Error");
+                        mysql_free_result($result);
+                        }
+        // also if there were some saved links - we clean them up from mylinks as well. We are so nice...
+        $query="update jorge_mylinks set ext='1' where owner_id ='$user_id' and peer_name_id='$talker' and link like '$lnk%'";
+        $result=mysql_query($query) or die ("Ooops...Error");
+        mysql_free_result($result);
+        $undelete_link = "$tslice@$talker@$server@@@$lnk@undelete@";
+        $undelete_link = encode_url($undelete_link,$token,$url_key);
+	
+return $undelete_link;
+
+
+}
+
+function undo_deleted_chat($talker,$server,$user_id,$tslice,$xmpp_host,$lnk) {
+
+	if (!ctype_digit($talker) OR !ctype_digit($server)) { return "f"; }
+	// undelete chat
+	$query="update `logdb_messages_$tslice"."_$xmpp_host` set ext = NULL where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server'";
+	$result=mysql_query($query) or die ("Ooops...Error");
+	// remove from pending table
+	$query="delete from pending_del where owner_id='$user_id' and peer_name_id='$talker' and date='$tslice' and peer_server_id='$server'";
+	$result=mysql_query($query) or die ("Ooops...Error");
+	// recount message stats for user
+	$query="select count(body) from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id' and ext is NULL";
+	$result=mysql_query($query) or die ("Ooops...Error");
+	$row=mysql_fetch_row($result);
+	$new_stats=$row[0];
+	mysql_free_result($result);
+
+	$query="select * from `logdb_stats_$xmpp_host` where owner_id = '$user_id' and at = '$tslice'";
+	$result=mysql_query($query) or die("Ooops...Error");
+	if (mysql_num_rows($result) < 1 ) {
+			$query="insert into `logdb_stats_$xmpp_host` (owner_id,at,count) values ('$user_id','$tslice','$new_stats')";
+			mysql_query($query) or die ("Ooops...Error");
+			mysql_free_result($result);
+		}
+		else
+		{
+			$query="update `logdb_stats_$xmpp_host` set count='$new_stats' where owner_id='$user_id' and at='$tslice'";
+			$result=mysql_query($query) or die ("Ooops...Error");
+			mysql_free_result($result);
+		}
+
+	// undelete saved links
+	$query="update jorge_mylinks set ext=NULL where owner_id ='$user_id' and peer_name_id='$talker' and link like '$lnk%'";
+	$result=mysql_query($query) or die ("Ooops...Error");
+	mysql_free_result($result);
+
+return "t";
+
+}
+
+
+
+
+
+
 
 ?>
