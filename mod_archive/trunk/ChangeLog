@@ -1,0 +1,13 @@
+2007-11-23  Badlop  <badlop@ono.com>
+
+	* Emakefile: Updated.
+
+	* README.txt: Added explanation about the three different modules.
+
+	* mod_archive_odbc.erl: New module that supports MySQL or SQLite3 storage (thanks to Alexander Tsvyashchenko)
+	* mod_archive_mysql.sql
+	* mod_archive_sqlite3.sql
+
+
+
+
