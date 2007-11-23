@@ -223,11 +223,11 @@ $my_links_link[eng] = "Link from day:";
 $my_links_desc[pol] = pl_znaczki("Opis:");
 $my_links_desc[eng] = "Description:";
 
-$my_links_added[pol] = pl_znaczki("Nowy link zosta³ zapisany!");
-$my_links_added[eng] = "New link succesfuly added!";
+$my_links_added[pol] = pl_znaczki("Link zosta³ zapisany!");
+$my_links_added[eng] = "Link succesfuly added!";
 
-$my_links_back[pol] = pl_znaczki("Wróæ do przegl±dania historii");
-$my_links_back[eng] = "Back to archive browsing";
+$my_links_back[pol] = pl_znaczki("Wróæ do rozmowy");
+$my_links_back[eng] = "Back to chat";
 
 $my_links_removed[pol] = pl_znaczki("Link zosta³ usuniêty z bazy danych");
 $my_links_removed[eng] = "Link succesfuly deleted";
@@ -268,8 +268,11 @@ $del_conf_my_link[eng] = "Do you really want to remove that link?";
 $not_in_r[pol] = pl_znaczki("Poza list± kontaktów");
 $not_in_r[eng] = "Not in roster";
 
-$del_info[pol] = pl_znaczki("Rozmowa zosta³a usuniêta.");
-$del_info[eng] = "Chat succesfuly deleted.";
+$del_moved[pol] = pl_znaczki("Rozmowa zosta³a przeniesiona do kosza.");
+$del_moved[eng] = "Chat have been moved to trash.";
+
+$del_info[pol] = pl_znaczki("Rozmowa zosta³a usuniêta");
+$del_info[eng] = "Chat have been deleted";
 
 $undo_info[pol] = pl_znaczki("Rozmowa zosta³a przywrócona");
 $undo_info[eng] = "Chat restored succesfuly";
@@ -509,17 +512,23 @@ $refresh[eng] = "Refresh";
 $back_t[pol] = pl_znaczki("Wróæ na góre strony");
 $back_t[eng] = "Back to top of the page";
 
-$trash_desc[pol] = pl_znaczki("Lista rozmów usuniêtych. Kosz jest czyszczony w trakcie wylogowywania i zalogowania do systemu");
-$trash_desc[eng] = "List of trashed chats. Trash is purged on logout and login events.";
+$trash_desc[pol] = pl_znaczki("Lista rozmów usuniêtych. Wiadomo¶ci które przebywaj± w koszu d³u¿ej ni¿ 30 dni s± automatycznie usuwane");
+$trash_desc[eng] = "List of trashed chats. Chats that are left in trash are automaticly deleted after 30 days.";
 
-$trash_undel[pol] = pl_znaczki("Przenie¶ z kosza do archiwum");
-$trash_undel[eng] = "Move from trash to archive";
+$trash_undel[pol] = pl_znaczki("Przywróæ");
+$trash_undel[eng] = "Restore";
+
+$trash_vit[pol] = pl_znaczki("Zobacz przywrócon± rozmowê");
+$trash_vit[eng] = "View restored chat";
+
+$trash_del[pol] = pl_znaczki("Usuñ");
+$trash_del[eng] = "Delete";
 
 $trash_link[pol] = pl_znaczki("Akcja");
 $trash_link[eng] = "Action";
 
 $trash_empty[pol] = pl_znaczki("Kosz jest pusty");
-$tassh_empty[eng] = "Trash is empty";
+$trash_empty[eng] = "Trash is empty";
 
 $trash_recovered[pol] = pl_znaczki("Rozmowa zosta³a przeniesiona do archiwum");
 $trash_recovered[eng] = "Chat have been moved to archive";

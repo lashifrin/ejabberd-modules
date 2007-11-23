@@ -35,29 +35,28 @@ if ($location=="footer.php") {
 	exit;
 }
 
-
-
 if (!preg_match("/index.php/i",$location)) {
 
 print '<div align="right" style="clear: left;"><a href="mailto:zzolkiewski@aster.com.pl">'.$quest1[$lang].'</a></div>';
 
 }
 
-
 ?>
 <br>
 <div style="background-image: url(img/bell-down.png); height: 3px;"></div>
 <div align="center"><? print $links; ?></div><br>
 <div align="center" style="color: gray;"><? print $copy; ?></small></div>
-
 <?
 
 // footer for admins...
 $time_end = getmicrotime();
 $time = substr($time_end - $time_start, 0, 10);
 if ($token==$admin_name) {print '<small>'.$admin_site_gen[$lang].$time.'s.</small>'; };
-?>
 
+// execude following code only when user is logged in
+if (!preg_match("/index.php/i",$location)) {
+
+?>
 
 <script type="text/javascript">
 	$(document).ready(function() {
@@ -85,7 +84,7 @@ if ($token==$admin_name) {print '<small>'.$admin_site_gen[$lang].$time.'s.</smal
 		],
 		{
 		minChars: 0,
-		max: 5,
+		max: 10,
 		cacheLength: 200,
 		matchSubset: true,
 		selectFirst: false,
@@ -97,9 +96,14 @@ if ($token==$admin_name) {print '<small>'.$admin_site_gen[$lang].$time.'s.</smal
 
 </script>
 
+<?
+
+}
+
+?>
+
 </body>
 </html>
-
 <?
 	ob_end_flush();
 ?>

@@ -43,9 +43,7 @@ $variables = decode_url2($_GET[a],$token,$url_key);
 // ...and validation
 $talker=mysql_escape_string($talker);
 $server=mysql_escape_string($server);
-validate_date($tslice);
-
-
+if (validate_date($tslice)=="f") { unset($del); unset($tigger); unset($variables); }
 
 if ($del=="t") {
 	if (!ctype_digit($link_id)) { print 'Dont play with that...'; exit; }
@@ -62,12 +60,9 @@ if ($tigger==$my_links_commit[$lang]) {
 	$desc=substr($desc,0,120);
 	$query="insert into jorge_mylinks (owner_id,peer_name_id,peer_server_id,datat,link,description) values ('$user_id','$peer_user','$peer_server','$datat','$aaa','$desc')";
 	$result = mysql_query($query) or die ("Ooops...Error.");
-	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 150pt;">'.$my_links_added[$lang].'</div></center><br>';
-	print '<a href="'.$view_type.'?a='.$aaa.'"><b>'.$my_links_back[$lang].'</b></a></center>';
-	print '<br /><br />';
+	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 150pt;">'.$my_links_added[$lang];
+	print '<br><a href="'.$view_type.'?a='.$aaa.'" style="color: blue;"><b>'.$my_links_back[$lang].'</b></a></div></center>';
 }
-
-
 
 
 if ($variables[ismylink]=="1") {
@@ -117,12 +112,12 @@ if (mysql_num_rows($result) == "0") { print '<br /><br /><center><b>'.$my_links_
 		while ($entry = mysql_fetch_array($result)) {
 
 			print '<tr style="cursor: pointer;" bgcolor="#e8eef7" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#e8eef7\';">'."\n";
-			print '<td onclick="window.open(\''.$view_type.'?a='.$entry['link'].'\');" style="padding-left: 10px; padding-right: 10px">'.pl_znaczki(verbose_date($entry['datat'],$lang)).'</td>'."\n";
+			print '<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';" style="padding-left: 10px; padding-right: 10px">'.pl_znaczki(verbose_date($entry['datat'],$lang)).'</td>'."\n";
 			$nickname=query_nick_name($bazaj,  $token,  get_user_name($entry[peer_name_id],$xmpp_host), get_server_name($entry[peer_server_id],$xmpp_host));
 			$jid=get_user_name($entry[peer_name_id],$xmpp_host).'@'.get_server_name($entry[peer_server_id],$xmpp_host);
-			print '<td onclick="window.open(\''.$view_type.'?a='.$entry['link'].'\');">&nbsp;<b>'.cut_nick(htmlspecialchars($nickname)).'</b> (<i>'.htmlspecialchars($jid).'</i>)&nbsp;</td>'."\n";
+			print '<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';">&nbsp;<b>'.cut_nick(htmlspecialchars($nickname)).'</b> (<i>'.htmlspecialchars($jid).'</i>)&nbsp;</td>'."\n";
 			$opis=htmlspecialchars($entry[description]);
-			print '<td onclick="window.open(\''.$view_type.'?a='.$entry['link'].'\');">&nbsp;'.$opis.'</td>'."\n";
+			print '<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';">&nbsp;'.$opis.'</td>'."\n";
 			print '<td><a href="my_links.php?del=t&link_id='.$entry[id_link].'" onClick="if (!confirm(\''.$del_conf_my_link[$lang].'\')) return false;" >&nbsp;'.$del_my_link[$lang].'&nbsp;</a></td>'."\n";
 			print '</tr>'."\n";
 		}

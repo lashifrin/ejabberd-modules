@@ -1,7 +1,8 @@
 .ac_results {
 	padding: 0px;
+	color: #0000cc;
 	border: 1px solid WindowFrame;
-	background-color: Window;
+	background-color: #edf5fa;
 	overflow: hidden;
 }
 

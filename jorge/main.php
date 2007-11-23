@@ -83,8 +83,8 @@ if ($action=="del") {
 	if ($del_result!="f") {
 
 		unset($talker);
-		print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 200pt;">'.$del_info[$lang];
-		print '<a href="'.$view_type.'?a='.$del_result.'"> <span style="color: blue;"><u>Undo</u></span></a></div></center>';
+		print '<center><div style="background-color: #fad163; text-align: center; width: 240pt;">'.$del_moved[$lang];
+		print ' <a href="'.$view_type.'?a='.$del_result.'"> <span style="color: blue; font-weight: bold;"><u>Undo</u></span></a></div></center>';
 
 	}
 

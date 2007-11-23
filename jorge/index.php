@@ -37,7 +37,6 @@ $inpLogin=$_POST[inpLogin];
 $inpPass=$_POST[inpPass];
 $wo_sess=$_POST[word];
 $lng_sw=$_GET['lng_sw'];
-
 $inpLogin=pg_escape_string($inpLogin);
 $inpPass=pg_escape_string($inpPass);
 $inpLogin = strtolower($inpLogin);
@@ -66,22 +65,6 @@ if ($wo_sess || $$inpLogin || $inpPass) {
 if ($_GET['act']=='logout') {
 	$ui = get_user_id($sess->get('uid_l'),$xmpp_host);
 	mysql_query("insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time) values ('$ui',2,1,NOW())");
-	if (($sess->get('uid_l'))!="") {
-		// purge deletion table upon exit
-		$result=mysql_query("select peer_name_id,date from pending_del where owner_id='$ui'");
-		// prevent code execution if there is nothing to delete
-		if (mysql_num_rows($result)>0) {
-			while($row = mysql_fetch_array($result)) {
-      				$talker = $row["peer_name_id"];
-				$tslice = $row["date"];
-				mysql_query("delete from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$ui' and peer_name_id='$talker' and ext = '1'");
-  			}
-			mysql_query("delete from jorge_mylinks where owner_id='$ui' and ext='1'");
-			mysql_query("delete from pending_del where owner_id='$ui'");
-		}
- 	}
-
-
 	$sess->finish();
 	header("Location: index.php");
 	} else {
@@ -99,19 +82,6 @@ if ($_GET['act']=='logout') {
 		  $ui = get_user_id($sess->get('uid_l'),$xmpp_host);
 		  $query="insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time,extra) values ('$ui',1,1,NOW(),'$rem_adre')";
 		  mysql_query($query) or die;
-
-		// purge deletion table upon startup
-		$result=mysql_query("select peer_name_id,date from pending_del where owner_id='$ui'");
-		// prevent code execution if there is nothing to delete
-		if (mysql_num_rows($result)>0) {
-			while($row = mysql_fetch_array($result)) {
-      				$talker = $row["peer_name_id"];
-				$tslice = $row["date"];
-				mysql_query("delete from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$ui' and peer_name_id='$talker' and ext = '1'");
-  			}
-			mysql_query("delete from jorge_mylinks where owner_id='$ui' and ext='1'");
-			mysql_query("delete from pending_del where owner_id='$ui'");
-		}
 		// get preferences, if not set, fallback to standard view.
 		$get_pref_menu="select pref_value from jorge_pref where owner_id='$ui' and pref_id='1'";
 		$view=mysql_fetch_row(mysql_query($get_pref_menu));
@@ -128,7 +98,6 @@ if ($_GET['act']=='logout') {
 				header("Location: not_enabled.php"); }
 
 		}
-
 	$error_m='<div style="background-color: #fad163; text-align: center; font-weight: bold; width: 300pt;">'.$wrong_data[$lang].'</div>';
 	$ui_fail=get_user_id($inpLogin,$xmpp_host);
 	$query = "select count(id_user) as log_number from jorge_logger where id_user = '$ui_fail' and log_time > date_sub(now(),interval 1 minute)";

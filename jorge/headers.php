@@ -151,13 +151,13 @@ $lang=$sess->get('language');
 		* Visit Dynamic Drive at http://www.dynamicdrive.com/ for full source code
 		***********************************************/	
 	</script>
-        <script src="lib/jquery-1.1.3.pack.js" type="text/javascript"></script>
-	<script src="lib/jquery.bgiframe.min.js" type="text/javascript"></script>
-	<script type='text/javascript' src='lib/dimensions.js'></script>
-	<script src="lib/jquery.tooltip.js" type="text/javascript"></script>
+        <script type="text/javascript" src="lib/jquery-1.2.1.pack.js"></script>
+	<script type="text/javascript" src="lib/jquery.bgiframe.min.js"></script>
+	<script type='text/javascript' src="lib/dimensions.js"></script>
+	<script type="text/javascript" src="lib/jquery.tooltip.js"></script>
 	<script type="text/javascript" src="lib/jquery.quicksearch.js"></script>
 	<script type="text/javascript" src="lib/hl.js"></script>
-	<script type="text/javascript" src="lib/jquery.autocomplete.js"></script>
+	<script type="text/javascript" src="lib/jquery.autocomplete.pack.js"></script>
 <?
 // prevent loading includes as long as user is not admin.
 if ($token==$admin_name) {

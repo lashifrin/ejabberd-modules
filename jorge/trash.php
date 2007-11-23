@@ -26,56 +26,60 @@ print '<small>'.$trash_desc[$lang].'</small></h2>';
 
 $action=$_GET['a'];
 
-if ($action) {
+// decompose link
+$variables = decode_url2($action,$token,$url_key);
+$tslice = $variables[tslice];
+$talker = $variables[talker];
+$server = $variables[server];
+$action = $variables[action];
+$lnk = $variables[lnk];
+// validation
+$talker=mysql_escape_string($talker);
+$server=mysql_escape_string($server);
+if (validate_date($tslice)=="f") { unset($action); $unset($tslice); }
 
-	// decompose link
-	$variables = decode_url2($action,$token,$url_key);
-	$tslice = $variables[tslice];
-	$talker = $variables[talker];
-	$server = $variables[server];
-	$action = $variables[action];
-	$lnk = $variables[lnk];
-	// validation
-	$talker=mysql_escape_string($talker);
-	$server=mysql_escape_string($server);
-	if (validate_date($tslice) == "f") { unset ($tslice); unset($action); unset($talker); exit; }
+if ($action=="undelete") {
 
-	// undelete chat
-	$query="update `logdb_messages_$tslice"."_$xmpp_host` set ext = NULL where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server'";
-	$result=mysql_query($query) or die ("Ooops...Error");
-	// remove from pending table
-	$query="delete from pending_del where owner_id='$user_id' and peer_name_id='$talker' and date='$tslice' and peer_server_id='$server'";
-	$result=mysql_query($query) or die ("Ooops...Error1");
-	// recount message stats for user
-	$query="select count(body) from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id' and ext is NULL";
-	$result=mysql_query($query) or die ("Ooops...Error1");
-	$row=mysql_fetch_row($result);
-	$new_stats=$row[0];
-	mysql_free_result($result);
+        	if (undo_deleted_chat($talker,$server,$user_id,$tslice,$xmpp_host,$lnk)=="t") {
 
-	$query="select * from `logdb_stats_$xmpp_host` where owner_id = '$user_id' and at = '$tslice'";
-	$result=mysql_query($query) or die("Ooops...Error1");
-	if (mysql_num_rows($result) < 1 ) {
-			$query="insert into `logdb_stats_$xmpp_host` (owner_id,at,count) values ('$user_id','$tslice','$new_stats')";
-			mysql_query($query) or die ("Ooops...Error2.0");
-			mysql_free_result($result);
-		}
-		else
-		{
-			$query="update `logdb_stats_$xmpp_host` set count='$new_stats' where owner_id='$user_id' and at='$tslice'";
-			$result=mysql_query($query) or die ("Ooops...Error2");
-			mysql_free_result($result);
-		}
+			$back_link="$tslice@$talker@$server@";
+			$back_link=encode_url($back_link,$token,$url_key);
+                	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 200pt;">'.$undo_info[$lang].'<br>';
+			print '<a href="'.$view_type.'?a='.$back_link.'" style="color: blue;">'.$trash_vit[$lang].'</a></div></center><br>';
 
-	// undelete saved links
-	$query="update jorge_mylinks set ext=NULL where owner_id ='$user_id' and peer_name_id='$talker' and link like '$lnk%'";
-	$result=mysql_query($query) or die ("Ooops...Error");
-	mysql_free_result($result);
-	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 200pt;">'.$trash_recovered[$lang].'</a></div></center><br><br>';
+        		}
 
+        	else
+
+        	{
+
+                	unset($talker);
+                	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 200pt;">';
+                	print 'Unusual error accured during processing your request. Please report it (Code:JUF).</div></center>';
+
+        	}
 
 }
 
+if ($action=="delete") {
+
+	// this is additional check - if fail, do nothing
+	if (ctype_digit($talker) OR ctype_digit($server)) {
+		if ((mysql_query("delete from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id' and peer_name_id='$talker' and ext = '1'")==TRUE)) {
+			// cleanup, unfortunately we are not operating on transactions :/
+			mysql_query("delete from jorge_mylinks where owner_id='$user_id' and ext='1' and peer_name_id = '$talker' and peer_server_id='$server' and datat = '$tslice'");
+			mysql_query("delete from pending_del where owner_id='$user_id' and peer_name_id = '$talker' and peer_server_id='$server' and date='$tslice'");
+			print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 200pt;">'.$del_info[$lang].'</div></center><br>';
+		}
+		else {
+
+			print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 200pt;">';
+			print 'Unusual error accured during processing your request. Please report it (Code:JTD).</div></center>';	
+		}
+
+	}
+
+}
 
 
 $result = mysql_query("select * from pending_del where owner_id = '$user_id'");
@@ -88,8 +92,8 @@ if (mysql_num_rows($result)==0) {
 
 	{
 		print '<table class="ff" align="center" border="0"  cellspacing="0">';
-		print '<tr style="background-image: url(img/bar_bg.png); background-repeat:repeat-x; font-weight: bold;"><td style="padding-right: 15px;">'.$my_links_chat[$lang].'</td><td style="padding-right: 15px;">'.$logger_from_day[$lang].'</td><td style="padding-right: 15px;">'.$trash_link[$lang].':</td></tr>';
-		print '<tr class="spacer"><td colspan="3"></td></tr>';
+		print '<tr style="background-image: url(img/bar_bg.png); background-repeat:repeat-x; font-weight: bold;"><td style="padding-right: 15px;">'.$my_links_chat[$lang].'</td><td style="padding-right: 15px;">'.$logger_from_day[$lang].'</td><td style="padding-right: 15px;">'.$trash_link[$lang].':</td><td></td></tr>';
+		print '<tr class="spacer"><td colspan="4"></td></tr>';
 
 		while ($entry=mysql_fetch_array($result)) {
 
@@ -103,23 +107,16 @@ if (mysql_num_rows($result)==0) {
 			$reconstruct_link = encode_url("$tslice@$entry[peer_name_id]@$entry[peer_server_id]@", $token,$url_key); // try to reconstruct oryginal link
 			$undelete_link = "$tslice@$entry[peer_name_id]@$entry[peer_server_id]@@@$reconstruct_link@undelete@";
 			$undelete_link = encode_url($undelete_link,$token,$url_key);
-			print '<td style="padding-left: 10px;"><a href="trash.php?a='.$undelete_link.'">'.$trash_undel[$lang].'</a></td></tr>';
+			$delete_link = "$tslice@$entry[peer_name_id]@$entry[peer_server_id]@@@$reconstruct_link@delete@";
+			$delete_link = encode_url($delete_link,$token,$url_key);
+			print '<td style="padding-left: 10px;"><a href="trash.php?a='.$undelete_link.'">'.$trash_undel[$lang].'</a></td>';
+			print '<td style="padding-left: 10px;"><a href="trash.php?a='.$delete_link.'" onClick="if (!confirm(\''.$del_conf[$lang].'\')) return false;">'.$trash_del[$lang].'</a></td>';
+			print '</tr>';
 
 		}
-		print '<tr class="spacer"><td colspan="3"></td></tr>';
-		print '<tr style="background-image: url(img/bar_bg.png); background-repeat:repeat-x; font-weight: bold;"><td colspan="3" height="15"></td></tr>';
+		print '<tr class="spacer"><td colspan="4"></td></tr>';
+		print '<tr style="background-image: url(img/bar_bg.png); background-repeat:repeat-x; font-weight: bold;"><td colspan="4" height="15"></td></tr>';
 		print '</table>';
-	
-
-
-
-
 	}
-
-
-
-
-
-
 include("footer.php");
 ?>
