@@ -9,7 +9,7 @@
 
 -module(ejabberd_http_bind).
 -author('steve@zeank.in-berlin.de').
--vsn('$Rev$').
+-vsn('$Rev$ ').
 
 -behaviour(gen_fsm).
 
@@ -88,9 +88,7 @@
 %%% API
 %%%----------------------------------------------------------------------
 start(Sid, Key) ->
-    mnesia:create_table(http_bind,
-        		[{ram_copies, [node()]},
-        		 {attributes, record_info(fields, http_bind)}]),
+    setup_database(),
     supervisor:start_child(ejabberd_http_bind_sup, [Sid, Key]).
 
 start_link(Sid, Key) ->
@@ -922,4 +920,20 @@ check_default_xmlns({xmlelement, Name, Attrs, Els} = El) ->
 	    {xmlelement, Name, [{"xmlns", ?NS_CLIENT} | Attrs], Els};
 	true ->
 	    El
+    end.
+
+setup_database() ->
+    migrate_database(),
+    mnesia:create_table(http_bind,
+			[{ram_copies, [node()]},
+			 {attributes, record_info(fields, http_bind)}]).
+
+migrate_database() ->
+    case mnesia:table_info(http_bind, attributes) of
+        [id, pid, to, hold, wait, version] ->
+	    ok;
+        _ ->
+	    %% Since the stored information is not important, instead
+	    %% of actually migrating data, let's just destroy the table
+	    mnesia:delete_table(http_bind)
     end.
