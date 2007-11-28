@@ -929,7 +929,7 @@ setup_database() ->
 			 {attributes, record_info(fields, http_bind)}]).
 
 migrate_database() ->
-    case mnesia:table_info(http_bind, attributes) of
+    case catch mnesia:table_info(http_bind, attributes) of
         [id, pid, to, hold, wait, version] ->
 	    ok;
         _ ->

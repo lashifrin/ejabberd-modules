@@ -1,3 +1,8 @@
+2007-11-28  Badlop  <badlop@process-one.net>
+
+	* src/web/ejabberd_http_bind.erl (migrate_database): Bugfix when
+	table does not exist (thanks to Justin Kirby)
+
 2007-11-27  Badlop  <badlop@process-one.net>
 
 	* src/web/ejabberd_http_bind.erl (start): Migration code for
