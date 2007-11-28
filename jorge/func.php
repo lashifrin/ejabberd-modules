@@ -417,16 +417,6 @@ function get_server_id ($server_name,$xmpp_host) {
 }
 
 
-function get_my_links_count ($user_id) {
-
-	$result=mysql_query("select count(id_link) from jorge_mylinks where owner_id='$user_id' and ext is NULL");
-	$row=mysql_fetch_row($result);
-	$my_links_count=$row[0];
-	if ($my_links_count) { return $my_links_count; } else { return "0";}
-
-}
-
-
 function set_log_t($token,$xmpp_host) {
 
 
@@ -955,8 +945,24 @@ return "t";
 
 }
 
+function do_sel_quick($query) {
 
+	$do_query=mysql_query($query);
+	if (mysql_errno($do_query)>0) { return "f"; }
+	if (mysql_num_rows($do_query)<1) { return "0"; }
+	$result=mysql_fetch_row($do_query);
+	$m_val=$result[0];
+	return $m_val;
 
+}
+
+function do_sel($query) {
+
+	$do_query=mysql_query($query);
+	if (mysql_errno($do_query)>0) { return "f"; }
+	return $do_query;
+	
+}
 
 
 

@@ -83,10 +83,32 @@ if ($_GET['act']=='logout') {
 		  $query="insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time,extra) values ('$ui',1,1,NOW(),'$rem_adre')";
 		  mysql_query($query) or die;
 		// get preferences, if not set, fallback to standard view.
-		$get_pref_menu="select pref_value from jorge_pref where owner_id='$ui' and pref_id='1'";
-		$view=mysql_fetch_row(mysql_query($get_pref_menu));
-		if ($view[0]=="2") { $view_type="2"; $tmp_v="calendar_view.php"; } else { $view_type="1"; $tmp_v="main.php"; }
-		$sess->set('view_type',$view_type);
+		$get_pref_menu="select pref_id, pref_value from jorge_pref where owner_id='$ui'";
+		$q_pref=mysql_query($get_pref_menu);
+
+		while ($res_pref=mysql_fetch_array($q_pref)) {
+			if ($res_pref[pref_id]=="1") {
+				if ($res_pref[pref_value] == "2") {
+					$view_type="2"; $tmp_v="calendar_view.php"; 
+				}
+				elseif($res_pref[pref_value] == "1") {
+					$view_type="1"; $tmp_v="main.php"; 
+				}
+			$sess->set('view_type',$view_type);
+			}
+			
+			if ($res_pref[pref_id] == "2") {
+				if ($res_pref[pref_value] == "1") {
+					$s_lang="pol";
+				}
+				elseif($res_pref[pref_value] == "2") {
+					$s_lang="eng";
+				}
+			$sess->set('language',$s_lang);
+			}
+		}
+		// if pref not set fall to defaults
+		if ($s_lang=="" OR $tmp_v=="") { $sess->set('language',$lang); $sess->set('view_type',1); $tmp_v="main.php"; }
 		header("Location: $tmp_v");
 		exit; // lets break script at this point...
 		}

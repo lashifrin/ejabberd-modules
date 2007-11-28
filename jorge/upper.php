@@ -40,12 +40,10 @@ $location=$_SERVER['PHP_SELF'];
 $link_sw=mysql_escape_string($_GET['a']);
 
 // number of my links saved...
-$my_links_count=get_my_links_count(get_user_id($token,$xmpp_host));
+$my_links_count=do_sel_quick("select count(id_link) from jorge_mylinks where owner_id='$user_id' and ext is NULL");
 
 // number of items in trash
-$result=mysql_query("select count(*) from pending_del where owner_id='$user_id'");
-$row=mysql_fetch_row($result);
-$tr_n=$row[0];
+$tr_n=do_sel_quick("select count(*) from pending_del where owner_id='$user_id'");
 
 // get preferences for saving
 $pref_id=$_GET['set_pref'];
@@ -57,7 +55,6 @@ if ($_GET['set_pref']) {
 	//validate
 	if (!ctype_digit($pref_id)) { unset($pref_id); }
 	if (!ctype_digit($pref_value)) { unset($pref_value); }
-
 	// what to set
 	// view and language preferences are stored for now.
 	if ($pref_id==="1" OR $pref_id==="2") 
@@ -68,6 +65,10 @@ if ($_GET['set_pref']) {
 					if ($pref_id==="1") {
 						$sess->set('view_type',$pref_value);
 						}
+					if ($pref_id==="2") {
+						if ($pref_value=="1") { $s_lang="pol"; } else { $s_lang="eng"; }
+						$sess->set('language',$s_lang);
+						}
 				} 
 		}
 
@@ -75,7 +76,7 @@ if ($_GET['set_pref']) {
 
 // get preferences, if not set, fallback to standard view.
 $view_type=$sess->get('view_type');
-if ($view_type==="1") { $view_type="main.php"; } elseif($view_type==="2") { $view_type="calendar_view.php"; }
+if ($view_type=="1") { $view_type="main.php"; } elseif($view_type=="2") { $view_type="calendar_view.php"; }
 
 // this is menu. not nice but works ;)
 if (preg_match("/search_v2.php/i",$location)) 
@@ -243,8 +244,6 @@ print '<table border="0" cellspacing="0" class="ff" width="100%">'."\n";
 print '<tr>'."\n";
 print '<td colspan="2" height="29" style="text-align: right;">'."\n";
 print '<b>'.$token.'@'.$xmpp_host_dotted.'</b>&nbsp; | &nbsp;';
-print $ch_lan[$lang];
-print ' <a href="'.$location.'?a='.$link_sw.'&sw_lang=t'.$cur_loc.'">'.$lang_sw[$lang].'</a>&nbsp; | &nbsp;';
 print '<a href="help.php" target="_blank">'.$help_but[$lang].'</a>&nbsp; | &nbsp;<a href="index.php?act=logout">'.$log_out_b[$lang].'</a><hr size="1" noshade="" color="#c9d7f1"/></td>';
 print '</tr>'."\n";
 print '<tr><td height="57"><a href="'.$view_type.'"><img src="img/'.$brand_logo.'" alt="logo" border="0" /></a></td></tr>';

@@ -32,58 +32,6 @@ ob_start();
 // error reporting to off
 error_reporting(E_NONE);
 
-// some definitions it seams there are needed in some moments..
-$token=""; 
-$user_id="";
-$owner_id="";
-$talker=""; 
-$tslice=""; 
-$xmpp_host=""; 
-$tslice_table="";
-$offset_arch="";
-$tag_count="";
-$add_tl="";
-$r="";
-$cur_loc="";
-$search_phase="";
-$start="";
-$a="";
-$search_loc="";
-$alert="";
-$ss_r="";
-$server="";
-$action="";
-$search_p="";
-$ee="";
-$licz="";
-$old_d="";
-$add_tl="";
-$aa="";
-$inpLogin="";
-
-define('pol','pol');
-define('eng','eng');
-define('user','user');
-define('pass','pass');
-define('name','name');
-define('host','host');
-define('sw_lang','sw_lang');
-define('verb','verb');
-define('at_m','at_m');
-define('tslice','tslice');
-define('talker','talker');
-define('server','server');
-define('ismylink','ismylink');
-define('linktag','linktag');
-define('lnk','lnk');
-define('action','action');
-define('strt','strt');
-define('at','at');
-define('time2_start','time2_start');
-define('time2_end','time2_end');
-define('c','c');
-
-
 include("func.php");
 include("sessions.php"); // sessions handling
 include("config.php"); // read configuration
@@ -197,16 +145,8 @@ if ($token==$admin_name) {
 <body style="background-image: url(img/bak2b.png); background-repeat:repeat-x; background-color: #edf5fa;">
 
 <noscript>
-
 	<? 
-	
 	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 500pt;">'.$no_script[$lang].'</div></center><br>';
-
 	?>
-
 </noscript>
-
-
-
 <?
-

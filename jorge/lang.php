@@ -590,5 +590,19 @@ $chat_no_chats[eng] = "There are no chats with selected contact";
 $chat_map_back[pol] = pl_znaczki("<<< Wróæ do MapyRozmów");
 $chat_map_back[eng] = "<<< Back to ChatMap";
 
+$sel_language[pol] = pl_znaczki("Wybierz preferowany jêzyk");
+$sel_language[eng] = "Select prefered language";
+
+$sel_client[pol] = pl_znaczki("W³±czyæ klienta jabbera");
+$sel_client[eng] = "Enable jabber client in Jorge";
+
+$sel_yes[pol] = pl_znaczki("Tak");
+$sel_no[eng] = "Yes";
+
+$sel_no[pol] = pl_znaczki("Nie");
+$sel_no[eng] = "No";
+
+
+
 
 ?>

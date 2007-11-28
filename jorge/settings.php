@@ -90,6 +90,16 @@ print '</select>';
 print '<input name="set_pref" type="hidden" value="1">';
 print '</td></tr>';
 print '</form>';
+print '<form action="settings.php" method="get" name="save_pref_lang">';
+print '<tr style="font-size: x-small;"><td>'.$sel_language[$lang].'</td><td><select style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="v" size="0" onchange="javascript:document.save_pref_lang.submit();">'."\n";
+if ($sess->get('language') == "pol") { $pol_sel="selected"; } else { $eng_sel="selected"; }
+print '<option '.$pol_sel.' value="1">'.$lang_sw[eng].'</option>'."\n";
+print '<option '.$eng_sel.' value="2">'.$lang_sw[pol].'</optin>'."\n";
+print '</select>';
+print '<input name="set_pref" type="hidden" value="2">';
+print '<input name="sw_lang" type="hidden" value="t">';
+print '</td></tr>';
+print '</form>';
 print '</table>';
 print '</center>'."\n";
 print '<br /><br /><br />';
