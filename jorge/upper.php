@@ -244,6 +244,7 @@ print '<table border="0" cellspacing="0" class="ff" width="100%">'."\n";
 print '<tr>'."\n";
 print '<td colspan="2" height="29" style="text-align: right;">'."\n";
 print '<b>'.$token.'@'.$xmpp_host_dotted.'</b>&nbsp; | &nbsp;';
+print '<a href="#" onClick="smackzk();">'.$sel_client[$lang].'</a>&nbsp; | &nbsp;';
 print '<a href="help.php" target="_blank">'.$help_but[$lang].'</a>&nbsp; | &nbsp;<a href="index.php?act=logout">'.$log_out_b[$lang].'</a><hr size="1" noshade="" color="#c9d7f1"/></td>';
 print '</tr>'."\n";
 print '<tr><td height="57"><a href="'.$view_type.'"><img src="img/'.$brand_logo.'" alt="logo" border="0" /></a></td></tr>';

@@ -149,4 +149,16 @@ if ($token==$admin_name) {
 	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 500pt;">'.$no_script[$lang].'</div></center><br>';
 	?>
 </noscript>
+
+<script language="JavaScript1.2">
+
+function smackzk()  {
+
+	window.open('http://gps.autocom.pl/ZKJab/','',
+		'location=no,toolbar=no,menubar=no,scrollbars=no,resizable, height=370,width=700');
+
+		}
+</script>
+
+
 <?
