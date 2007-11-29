@@ -82,7 +82,7 @@ if ($action=="delete") {
 }
 
 
-$result = mysql_query("select * from pending_del where owner_id = '$user_id'");
+$result = mysql_query("select * from pending_del where owner_id = '$user_id' order by str_to_date(date,'%Y-%m') desc");
 
 if (mysql_num_rows($result)==0) {
 	print '<center>'.$trash_empty[$lang].'</center>';
@@ -92,7 +92,7 @@ if (mysql_num_rows($result)==0) {
 
 	{
 		print '<table class="ff" align="center" border="0"  cellspacing="0">';
-		print '<tr style="background-image: url(img/bar_bg.png); background-repeat:repeat-x; font-weight: bold;"><td style="padding-right: 15px;">'.$my_links_chat[$lang].'</td><td style="padding-right: 15px;">'.$logger_from_day[$lang].'</td><td style="padding-right: 15px;">'.$trash_link[$lang].':</td><td></td></tr>';
+		print '<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold; color: #fff;"><td style="padding-right: 15px;">'.$my_links_chat[$lang].'</td><td style="padding-right: 15px;">'.$logger_from_day[$lang].'</td></tr>';
 		print '<tr class="spacer"><td colspan="4"></td></tr>';
 
 		while ($entry=mysql_fetch_array($result)) {
@@ -115,7 +115,7 @@ if (mysql_num_rows($result)==0) {
 
 		}
 		print '<tr class="spacer"><td colspan="4"></td></tr>';
-		print '<tr style="background-image: url(img/bar_bg.png); background-repeat:repeat-x; font-weight: bold;"><td colspan="4" height="15"></td></tr>';
+		print '<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold;"><td colspan="4" height="15"></td></tr>';
 		print '</table>';
 	}
 include("footer.php");

@@ -63,7 +63,7 @@ if (pg_num_rows($res)!=0) {
 	print '<center>';
 	print '<form action="contacts.php" method="post">'."\n";
 	print '<table id="maincontent" border="0" class="ff" cellspacing="0">'."\n";
-	print '<tr style="background-image: url(img/bar_bg.png); background-repeat:repeat-x; font-weight: bold;"><td>'.$con_tab2[$lang].'</td><td>'.$con_tab3[$lang].'</td><td>'.$con_tab6[$lang].'</td><td>'.$con_tab4[$lang].'</td></tr>'."\n";
+	print '<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold; color:#fff;"><td>'.$con_tab2[$lang].'</td><td>'.$con_tab3[$lang].'</td><td>'.$con_tab6[$lang].'</td><td>'.$con_tab4[$lang].'</td></tr>'."\n";
 	print '<tr class="spacer"><td colspan="4"></td></tr>';
 	print '<tbody id="searchfield">';
 

@@ -107,7 +107,7 @@ if (mysql_num_rows($result) == "0") { print '<br /><br /><center><b>'.$my_links_
 		print '<center>'."\n";
 		print '<br /><br />'."\n";
 		print '<table class="ff" cellspacing="0">'."\n";
-		print '<tr style="background-image: url(img/bar_bg.png); background-repeat:repeat-x; font-weight: bold;"><td>'.$my_links_link[$lang].'</td><td>'.$my_links_chat[$lang].'</td><td>'.$my_links_desc[$lang].'</td></tr>'."\n";
+		print '<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold; color: #fff;"><td>'.$my_links_link[$lang].'</td><td>'.$my_links_chat[$lang].'</td><td>'.$my_links_desc[$lang].'</td></tr>'."\n";
 		print '<tr class="spacer" height="1px"><td colspan="4"></td></tr>';
 		while ($entry = mysql_fetch_array($result)) {
 
@@ -122,6 +122,7 @@ if (mysql_num_rows($result) == "0") { print '<br /><br /><center><b>'.$my_links_
 			print '</tr>'."\n";
 		}
 	print '<tr class="spacer"><td colspan="4"></td></tr>';
+	print '<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold;"><td colspan="4" height="15"></td></tr>';
 	print '</table>'."\n";
 	print '</center>'."\n";
 	}
