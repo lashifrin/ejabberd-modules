@@ -154,7 +154,7 @@ if ($token==$admin_name) {
 
 function smackzk()  {
 
-	window.open('http://gps.autocom.pl/ZKJab/','',
+	window.open('https://gps.autocom.pl/ZKJab/','',
 		'location=no,toolbar=no,menubar=no,scrollbars=no,resizable, height=370,width=700');
 
 		}
