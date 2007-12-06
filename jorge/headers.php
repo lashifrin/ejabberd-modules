@@ -110,10 +110,7 @@ $lang=$sess->get('language');
 // prevent loading includes as long as user is not admin.
 if ($token==$admin_name) {
 ?>
-	<script type="text/javascript" src="lib/excanvas.js"></script>
-	<script type="text/javascript" src="lib/chart.js"></script>
-	<script type="text/javascript" src="lib/canvaschartpainter.js"></script>
-	<link rel="stylesheet" type="text/css" href="canvaschart.css" />
+	<script language="javascript" type="text/javascript" src="lib/jquery.flot-0.1.pack.js"></script>
 <?
 }
 ?>

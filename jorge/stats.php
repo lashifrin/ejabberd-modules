@@ -48,11 +48,10 @@ print "<p style=\"padding-left: 10px;\">Total <b>".number_format(total_messages(
 print '<hr size="1" noshade="" color="#cccccc"/>'."\n";
 print '<table class="ff">'."\n";
 print '<tr><td style="padding-left: 10px">'."\n";
-if ($mark1=="0") { print '<p><b>Number of user using message archiving:</b></p>'."\n"; } else { print '<h1>Not enough data collected for graphs</h1><h2>minimum required: 30 days</h2>';}
-print '<div id="chart" class="chart" style="width: 1000px; height: 200px; font-size: 8pt;"></div>'."\n";
+if ($mark1=="1") { print '<h1>Not enough data collected for graphs</h1><h2>minimum required: 30 days</h2>';}
+print '<div id="no_users" style="width:1000px;height:250px;"></div>'."\n";
 print "<br>";
-if ($mark=="0") { print '<p><b>Number of messages logged by server:</b></p>'."\n"; }
-print '<div id="messages" class="chart" style="width: 1000px; height: 250px; font-size: 8pt;"></div>'."\n";
+print '<div id="no_messages" style="width:1000px;height:250px;"></div>'."\n";
 print '</td>';
 print '<td style="padding-left: 30px">'."\n";
 print '<div><b>Top 10 talkers today:</b><br><br>'."\n";
@@ -79,66 +78,67 @@ while ($entry=mysql_fetch_array($result)) {
 print '</td>'."\n";
 print '</tr></table>'."\n";
 
-$t_0 = date("M-d",strtotime("now -30 days"));
-$t_1 = date("M-d",strtotime("now -24 days"));
-$t_2 = date("M-d",strtotime("now -18 days"));
-$t_3 = date("M-d",strtotime("now -12 days"));
-$t_4 = date("M-d",strtotime("now -6 days"));
-$t_5 = date("M-d",strtotime("now"));
-
 if ($mark1=="0") { 
 
 ?>
 
-<script type="text/javascript">
-    	function draw() {
-    		var b = new Chart(document.getElementById('chart'));
-				b.setDefaultType(CHART_LINE);
-				b.setGridDensity(32, 10);
-				<? print "b.setVerticalRange(0, $maximum_a);"; ?>	
-				b.setHorizontalLabels(['<? print $t_0; ?>','','','','','','<? print $t_1; ?>','','','','','','','','<? print $t_2; ?>','','','','','','<? print $t_3; ?>','','','','','','<? print $t_4; ?>', '', '', '', '', '<? print $t_5; ?>']);
-				<? print "b.add ('Last 30 days', '#ff0000', ["; 
-			
-				for ($z=30; $z>0; $z--) {
-						
-						print "$e[$z],$e[$z],";
-					
-					}
-				print "]);\n";
+<script id="source" language="javascript" type="text/javascript">
+$(function () {
 
-
-?>
-				b.draw();
-    	
-	
-	var b = new Chart(document.getElementById('messages'));
-				b.setDefaultType(CHART_LINE);
-				b.setGridDensity(32, 10);
-				<? print "b.setVerticalRange(0, $maximum_b);"; ?>	
-				b.setHorizontalLabels(['<? print $t_0; ?>','','','','','','<? print $t_1; ?>','','','','','','','','<? print $t_2; ?>','','','','','','<? print $t_3; ?>','','','','','','<? print $t_4; ?>', '', '', '', '', '<? print $t_5; ?>']);
-				<? print "b.add ('Last 30 days', '#3480ff', ["; 
-			
-				for ($z=30; $z>0; $z--) {
-						
-						print "$d[$z],$d[$z],";
-					
-					}
-				print "]);\n";
-
-
-?>
-				b.draw();
-    	
-
-	
+    var d1 = [
+<?
+	$cn=31;
+	for ($z=1;$z<31;$z++) {
+		$cn--;
+		print "[$z,$e[$cn]],";
 	}
-    	
-    	window.onload = function() {
-    		draw();
-    	};
+?>
+
+
+	];
+
+    var d2 = [
+
+<?
+	$cn=31;
+	for ($z=1; $z<31; $z++) {
+		$cn--;
+		print "[$z,$d[$cn]],";
+	}
+?>
+
+
+	];
+
+    
+    $.plot($("#no_users"), [
+
+		{
+		color: "#ff0000",
+		label: "Users who enabled message archivization - last 30 days", shadowSize: 10, data: d1,
+		lines: { show: true },
+		points: { show: true, fill: true, radius: 4}
+		}
+
+
+
+	]);
+    $.plot($("#no_messages"), [
+
+		{
+		color: "#3480ff",
+		label: "Messages logged by server - last 30 days", shadowSize: 10, data: d2,
+		lines: { show: true },
+		points: { show: true, fill: true, radius: 4}
+		}
+
+
+
+	]);
+
+});
 
 </script>
-
 
 
 <?
