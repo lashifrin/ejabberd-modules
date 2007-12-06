@@ -8,7 +8,6 @@
 
 -module(mod_cron).
 -author('badlop@ono.com').
--vsn('$Revision$ ').
 
 -behaviour(gen_mod).
 

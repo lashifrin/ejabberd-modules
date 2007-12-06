@@ -6,7 +6,6 @@
 %%%-------------------------------------------------------------------
 -module(epeios_sup).
 -author('mickael.remond@process-one.net').
--vsn('$Revision $ ').
 
 -behaviour(supervisor).
 -export([start_link/1,

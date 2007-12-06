@@ -8,7 +8,6 @@
 
 -module(gen_mod).
 -author('alexey@sevcom.net').
--vsn('$Revision$ ').
 
 -export([start/0,
 	 start_module/3,

@@ -66,7 +66,6 @@
 -author('ogoffart@kde.org').
 -author('alexey@process-one.net').
 -author('ejabberd@ndl.kiev.ua').
--vsn('$Revision: 412 $ ').
 
 -behaviour(gen_server).
 -behaviour(gen_mod).

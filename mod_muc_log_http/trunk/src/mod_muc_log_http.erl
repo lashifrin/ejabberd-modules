@@ -7,7 +7,6 @@
 %%%----------------------------------------------------------------------
 
 -module(mod_muc_log_http).
--vsn('').
 -define(ejabberd_debug, false).
 
 -behaviour(gen_mod).

@@ -18,7 +18,6 @@
 
 -module(mod_archive).
 -author('ogoffart@kde.org').
--vsn('$Revision$ ').
 
 -behaviour(gen_server).
 -behaviour(gen_mod).

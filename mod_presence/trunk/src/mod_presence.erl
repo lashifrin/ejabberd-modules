@@ -8,7 +8,6 @@
 
 -module(mod_presence).
 -author('igor@goryachev.org').
--vsn('$Revision$ ').
 
 -behaviour(gen_server).
 -behaviour(gen_mod).

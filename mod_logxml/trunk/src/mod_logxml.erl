@@ -8,7 +8,6 @@
 
 -module(mod_logxml).
 -author('').
--vsn('0.2.4').
 
 -behaviour(gen_mod).
 

@@ -7,7 +7,6 @@
 %%%-------------------------------------------------------------------
 -module(epeios_app).
 -author('mickael.remond@process-one.net').
--vsn('$Revision $ ').
 
 -behaviour(application).
 -export([start/2, stop/1]).

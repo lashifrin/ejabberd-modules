@@ -9,7 +9,6 @@
 
 -module(ejabberd_http_bind).
 -author('steve@zeank.in-berlin.de').
--vsn('$Rev$ ').
 
 -behaviour(gen_fsm).
 

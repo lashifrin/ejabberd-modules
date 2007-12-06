@@ -8,7 +8,6 @@
 
 -module(mod_shcommands).
 -author('badlop@ono.com').
--vsn('$Revision$ ').
 
 -behaviour(gen_mod).
 

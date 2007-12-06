@@ -9,7 +9,6 @@
 -module(ejabberd_router_multicast).
 -author('alexey@sevcom.net').
 -author('badlop@ono.com').
--vsn('$Revision$ ').
 
 -behaviour(gen_server).
 

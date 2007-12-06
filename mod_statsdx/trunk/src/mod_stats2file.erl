@@ -8,7 +8,6 @@
 
 -module(mod_stats2file).
 -author('badlop@ono.com').
--vsn('$Revision$ ').
 
 -behaviour(gen_mod).
 

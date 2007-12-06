@@ -8,7 +8,6 @@
 %%%-------------------------------------------------------------------
 -module(epeios_config).
 -author('mickael.remond@process-one.net').
--vsn('$Revision $ ').
 
 -export([component_name/0,
 	 server_host/0,

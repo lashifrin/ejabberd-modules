@@ -8,7 +8,6 @@
 
 -module(mod_multicast).
 -author('badlop@ono.com').
--vsn('$Revision$ ').
 
 -behaviour(gen_server).
 -behaviour(gen_mod).
