@@ -392,7 +392,7 @@ function get_resource_name ($resource_id,$xmpp_host) {
 	$result=mysql_query("select resource from `logdb_resources_$xmpp_host` where resource_id = '$resource_id'");
 	$row=mysql_fetch_row($result);
 	$resource=$row[0];
-	if ($resource) { return $resource; } else { return "f"; }
+	if ($resource) { return $resource; } else { return FALSE; }
 
 }
 
