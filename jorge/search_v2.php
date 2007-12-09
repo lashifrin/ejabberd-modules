@@ -44,6 +44,9 @@ $plain_phase=$search_phase; // fix me
 
 include ("upper.php");
 
+//need to initialize counter here
+$r=0;
+
 // we need to rewrite this part internaly...
 if (!$search_phase) { 
 
