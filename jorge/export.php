@@ -77,7 +77,7 @@ $data="$export_head1[$lang]$nickname ($user_name@$server_name) $export_head2[$la
 
 while ($results=mysql_fetch_array($result)) {
 
-if ($results["direction"] == 1) 
+if ($results["direction"] == "from") 
 			{ 
 				$out=$nickname;
 				$tt=$tt+1;
