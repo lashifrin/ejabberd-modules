@@ -1,2 +1,0 @@
--define(NS_PUBSUB_ERRORS,"http://jabber.org/protocol/pubsub#errors").
--define(NS_CAPS,         "http://jabber.org/protocol/caps").
