@@ -593,8 +593,8 @@ $chat_map_back[eng] = "<<< Back to ChatMap";
 $sel_language[pol] = pl_znaczki("Wybierz preferowany jêzyk");
 $sel_language[eng] = "Select prefered language";
 
-$sel_client[pol] = pl_znaczki("Uruchom SmackZK");
-$sel_client[eng] = "Launch SmackZK";
+$sel_client[pol] = pl_znaczki("Uruchom Slimster");
+$sel_client[eng] = "Launch Slimster";
 
 $sel_yes[pol] = pl_znaczki("Tak");
 $sel_no[eng] = "Yes";
@@ -605,7 +605,7 @@ $sel_no[eng] = "No";
 $jump_to_next[pol] = pl_znaczki("Przejd¼ do nastêpnego dnia rozmowy");
 $jump_to_next[eng] = "Jump to next day of chat";
 
-$jump_to_prev[pol] = pl_znaczki("Przej¼ do poprzedniego dnia rozmowy");
+$jump_to_prev[pol] = pl_znaczki("Przejd¼ do poprzedniego dnia rozmowy");
 $jump_to_prev[eng] = "Jump to previous day of chat";
 
 
