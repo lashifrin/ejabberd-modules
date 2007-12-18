@@ -774,8 +774,33 @@ pep_disco_items(Acc, _From, To, "", _Lang) ->
 			  end, Nodes),
 	    {result, NodeItems ++ Items}
     end;
-pep_disco_items(Acc, _From, _To, _Node, _Lang) ->
-    Acc.
+pep_disco_items(Acc, _From, To, Node, _Lang) ->
+    %% XXX: access control on From
+    LJID = jlib:jid_tolower(jlib:jid_remove_resource(To)),
+    case catch mnesia:dirty_read(pep_node, {LJID, Node}) of
+	{'EXIT', Reason} ->
+	    ?ERROR_MSG("~p", [Reason]),
+	    Acc;
+	[] ->
+	    Acc;
+	[N] ->
+	    Items = case Acc of
+			{result, I} -> I;
+			_ -> []
+		    end,
+	    Info = get_node_info(N),
+	    NodeItems = lists:map(
+			  fun(#item{id = Id}) ->
+				  %% "jid" is required by XEP-0030, and
+				  %% "node" is forbidden by XEP-0060.
+				  {xmlelement, "item",
+				   [{"jid", jlib:jid_to_string(LJID)},
+				    {"name", Id}],
+				   []}
+			     end,
+			  Info#nodeinfo.items),
+	    {result, NodeItems ++ Items}
+    end.
 
 iq_get_vcard(Lang) ->
     [{xmlelement, "FN", [],
@@ -1627,7 +1652,6 @@ owner_get_subscriptions(Host, OJID, Node) ->
 
 
 owner_set_subscriptions(Host, OJID, Node, EntitiesEls) ->
-    %% XXX: not updated for PEP and new pubsub revision
     Owner = jlib:jid_tolower(jlib:jid_remove_resource(OJID)),
     Entities =
 	lists:foldl(
@@ -1637,18 +1661,9 @@ owner_set_subscriptions(Host, OJID, Node, EntitiesEls) ->
 			  error;
 		      _ ->
 			  case El of
-			      {xmlelement, "entity", Attrs, _} ->
+			      {xmlelement, "subscriptions", Attrs, _} ->
 				  JID = jlib:string_to_jid(
 					  xml:get_attr_s("jid", Attrs)),
-				  Affiliation =
-				      case xml:get_attr_s("affiliation",
-							  Attrs) of
-					  "owner" -> owner;
-					  "publisher" -> publisher;
-					  "outcast" -> outcast;
-					  "none" -> none;
-					  _ -> false
-				      end,
 				  Subscription =
 				      case xml:get_attr_s("subscription",
 							  Attrs) of
@@ -1660,13 +1675,12 @@ owner_set_subscriptions(Host, OJID, Node, EntitiesEls) ->
 				      end,
 				  if
 				      (JID == error) or
-				      (Affiliation == false) or
 				      (Subscription == false) ->
 					  error;
 				      true ->
 					  [{jlib:jid_tolower(JID),
 					    #entity{
-					      affiliation = Affiliation,
+					      affiliation = nochange,
 					      subscription = Subscription}} |
 					   Acc]
 				  end
@@ -1678,14 +1692,15 @@ owner_set_subscriptions(Host, OJID, Node, EntitiesEls) ->
 	    {error, ?ERR_BAD_REQUEST};
 	_ ->
 	    F = fun() ->
-			case mnesia:read({pubsub_node, {Host, Node}}) of
-			    [#pubsub_node{info = Info} = N] ->
+			Table = get_table(Host),
+			case mnesia:read({Table, {Host, Node}}) of
+			    [N] ->
+				Info = get_node_info(N),
 				case get_affiliation(Info, Owner) of
 				    owner ->
 					NewInfo =
 					    set_info_entities(Info, Entities),
-					mnesia:write(
-					  N#pubsub_node{info = NewInfo}),
+					mnesia:write(set_node_info(N, NewInfo)),
 					{result, []};
 				    _ ->
 					{error, ?ERR_NOT_ALLOWED}
@@ -1743,7 +1758,6 @@ owner_get_affiliations(Host, OJID, Node) ->
 
 
 owner_set_affiliations(Host, OJID, Node, EntitiesEls) ->
-    %% XXX: not updated for PEP and new pubsub revision
     Owner = jlib:jid_tolower(jlib:jid_remove_resource(OJID)),
     Entities =
 	lists:foldl(
@@ -1753,7 +1767,7 @@ owner_set_affiliations(Host, OJID, Node, EntitiesEls) ->
 			  error;
 		      _ ->
 			  case El of
-			      {xmlelement, "entity", Attrs, _} ->
+			      {xmlelement, "affiliation", Attrs, _} ->
 				  JID = jlib:string_to_jid(
 					  xml:get_attr_s("jid", Attrs)),
 				  Affiliation =
@@ -1765,25 +1779,15 @@ owner_set_affiliations(Host, OJID, Node, EntitiesEls) ->
 					  "none" -> none;
 					  _ -> false
 				      end,
-				  Subscription =
-				      case xml:get_attr_s("subscription",
-							  Attrs) of
-					  "subscribed" -> subscribed;
-					  "pending" -> pending;
-					  "unconfigured" -> unconfigured;
-					  "none" -> none;
-					  _ -> false
-				      end,
 				  if
 				      (JID == error) or
-				      (Affiliation == false) or
-				      (Subscription == false) ->
+				      (Affiliation == false) ->
 					  error;
 				      true ->
 					  [{jlib:jid_tolower(JID),
 					    #entity{
 					      affiliation = Affiliation,
-					      subscription = Subscription}} |
+					      subscription = nochange}} |
 					   Acc]
 				  end
 			  end
@@ -1793,15 +1797,16 @@ owner_set_affiliations(Host, OJID, Node, EntitiesEls) ->
 	error ->
 	    {error, ?ERR_BAD_REQUEST};
 	_ ->
+	    Table = get_table(Host),
 	    F = fun() ->
-			case mnesia:read({pubsub_node, {Host, Node}}) of
-			    [#pubsub_node{info = Info} = N] ->
+			case mnesia:read({Table, {Host, Node}}) of
+			    [N] ->
+				Info = get_node_info(N),
 				case get_affiliation(Info, Owner) of
 				    owner ->
 					NewInfo =
 					    set_info_entities(Info, Entities),
-					mnesia:write(
-					  N#pubsub_node{info = NewInfo}),
+					mnesia:write(set_node_info(N, NewInfo)),
 					{result, []};
 				    _ ->
 					{error, ?ERR_NOT_ALLOWED}
@@ -2044,11 +2049,34 @@ set_info_entities(Info, Entities) ->
     NewEntities =
 	lists:foldl(
 	  fun({JID, Ent}, Es) ->
-		  case Ent of
+		  #entity{affiliation = OldA,
+			  subscription = OldS} =
+		      case ?DICT:find(JID, Es) of
+			  {ok, OldEnt} ->
+			      OldEnt;
+			  error ->
+			      #entity{}
+		      end,
+		  #entity{affiliation = NewA,
+			  subscription = NewS} = Ent,
+		  NewEnt = #entity{
+		    affiliation = case NewA of
+				      nochange ->
+					  OldA;
+				      _ ->
+					  NewA
+				  end,
+		    subscription = case NewS of
+				       nochange ->
+					   OldS;
+				       _ ->
+					   NewS
+				   end},
+		  case NewEnt of
 		      #entity{affiliation = none, subscription = none} ->
 			  ?DICT:erase(JID, Es);
 		      _ ->
-			  ?DICT:store(JID, Ent, Es)
+			  ?DICT:store(JID, NewEnt, Es)
 		  end
 	  end, Info#nodeinfo.entities, Entities),
     Info#nodeinfo{entities = NewEntities}.
