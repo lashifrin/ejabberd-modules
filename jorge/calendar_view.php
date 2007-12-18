@@ -219,14 +219,32 @@ if ($tslice) {
         {
                 $user_name = $entry[username];
                 $server_name = $entry[server_name];
-                if ($talker==$entry["todaytalk"] AND $server==$entry[server]) { $bold_b="<font color=\"#FFCC00\"><b>"; $bold_e="</b></font>"; } else { $bold_b=""; $bold_e=""; }
+                if ($talker==$entry["todaytalk"] AND $server==$entry[server]) { $bold_b="<font color=\"#FFCC00\"><b>"; $bold_e="</b></font>"; $mrk=1; } else { $bold_b=""; $bold_e=""; $mrk=0; }
                         $nickname = query_nick_name($bazaj,$token,$user_name,$server_name);
                         if ($nickname=="f") { $nickname=$not_in_r[$lang]; }
 			// this is hack for not displaying chats with jids without names...
 			if ($user_name!="") {
-                        $to_base2 = "$tslice@$entry[todaytalk]@$entry[server]@";
-                        $to_base2 = encode_url($to_base2,$token,$url_key);
-			print '<a class="caldays3" id="pretty" href="?a='.$to_base2.'" title="JabberID:;'.htmlspecialchars($user_name).'@'.htmlspecialchars($server_name).'">'.$bold_b.cut_nick(htmlspecialchars($nickname)).$bold_e.'</a><br>'."\n";
+				if ($mrk==1) { 
+					$previous_t = prev_c_day($xmpp_host,$tslice,$user_id,$entry[todaytalk],$entry[server]); 
+					$to_base_prev = "$previous_t@$entry[todaytalk]@$entry[server]@";
+					$to_base_prev = encode_url($to_base_prev,$token,$url_key);
+
+					$next_t = next_c_day($xmpp_host,$tslice,$user_id,$entry[todaytalk],$entry[server]);
+					$to_base_next = "$next_t@$entry[todaytalk]@$entry[server]@";
+					$to_base_next = encode_url($to_base_next,$token,$url_key);
+				}
+
+                        	$to_base2 = "$tslice@$entry[todaytalk]@$entry[server]@";
+                        	$to_base2 = encode_url($to_base2,$token,$url_key);
+				if ($mrk==1 AND $previous_t != NULL) { 
+						print '<a class="nav_np" id="pretty" title="'.$jump_to_prev[$lang].': '.$previous_t.'" href="calendar_view.php?a='.$to_base_prev.'"><<< </a>'; 
+					}
+				print '<a class="caldays3" id="pretty" href="?a='.$to_base2.'" title="JabberID:;'.htmlspecialchars($user_name).'@'.htmlspecialchars($server_name).'">'.$bold_b.cut_nick(htmlspecialchars($nickname)).$bold_e.'</a>';
+				if ($mrk==1 AND $next_t != NULL) { 
+						print '<a class="nav_np" id="pretty" title="'.$jump_to_next[$lang].': '.$next_t.'" href="calendar_view.php?a='.$to_base_next.'"> >>></a>'; 
+					}
+
+				print '<br>'."\n";
 			}
 
         }

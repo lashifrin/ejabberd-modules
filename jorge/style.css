@@ -102,6 +102,21 @@ a.foot {
 	text-decoration: none;
 }
 
+a.nav_np {
+
+	color: #fff;
+	text-decoration: none;
+	font-weight: bold;
+
+}
+
+a:hover.nav_np {
+
+	color: #FFCC00;
+	font-weight: bold;
+
+}
+
 a.menu_chat {
 	color: #fff;
 	text-decoration: none;

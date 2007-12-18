@@ -602,6 +602,12 @@ $sel_no[eng] = "Yes";
 $sel_no[pol] = pl_znaczki("Nie");
 $sel_no[eng] = "No";
 
+$jump_to_next[pol] = pl_znaczki("Przejd¼ do nastêpnego dnia rozmowy");
+$jump_to_next[eng] = "Jump to next day of chat";
+
+$jump_to_prev[pol] = pl_znaczki("Przej¼ do poprzedniego dnia rozmowy");
+$jump_to_prev[eng] = "Jump to previous day of chat";
+
 
 
 
