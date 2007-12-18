@@ -101,7 +101,7 @@ print '<tr style="background-image: url(img/bar_bg.png); background-repeat:repea
 print '<tr class="spacer"><td colspan="4"></td></tr>';
 if ($offset_arch) { $type_p="6"; } else { $type_p="1"; }
 
-$result=db_q($user_id,$server,$tslice_table,$talker,$search_p,$type_p,$offset_arch,$xmpp_host,$nn,$time2_start,$time2_end);
+$result=db_q($user_id,$server,$tslice_table,$user_name,$search_p,$type_p,$offset_arch,$xmpp_host,$nn,$time2_start,$time2_end);
 
 $arch_table=mysql_num_rows($result);
 $external=0;

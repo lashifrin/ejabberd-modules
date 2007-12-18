@@ -66,8 +66,9 @@ if ($con_map AND $_POST['chat_map'] != "null") {
 	//validate, always should be integers
 	if (!ctype_digit($name_peer) OR !ctype_digit($server_peer)) { unset($con_map); unset($name_peer); unset($server_peer); }
 
+	//begin
 	//first get the months
-	$get_months="select substring(at,1,7) as at from `logdb_stats_jabster_pl` where owner_id='$user_id' group by substring(at,1,7) order by str_to_date(at,'%Y-%m-%d') asc";
+	$get_months="select substring(at,1,7) as at from `logdb_stats_jabster_pl` where owner_id='$user_id' and peer_name_id='$name_peer' and peer_server_id='$server_peer' group by substring(at,1,7) order by str_to_date(at,'%Y-%m-%d') asc";
 	$result_m=mysql_query($get_months);
 	$cc_cmp=mysql_num_rows($result_m);
 	while($row_m=mysql_fetch_array($result_m)) {
@@ -76,21 +77,16 @@ if ($con_map AND $_POST['chat_map'] != "null") {
 		$mo="$y-$m";
 		
 		// now get the days in with user was talking
-		$days_to_scan="select at from `logdb_stats_jabster_pl` where owner_id='$user_id' and at like '$mo%'";
+		$days_to_scan="select at from `logdb_stats_jabster_pl` where owner_id='$user_id' and peer_name_id='$name_peer' and peer_server_id='$server_peer' and at like '$mo%'";
+
 		$result=mysql_query($days_to_scan);
 
 			while($row_day=mysql_fetch_array($result)) {
 
 				// now scan day for chats, yep thats weak, but as long as we dont have right stats table this will work...
-				$day_chats="select distinct(owner_id), peer_name_id, peer_server_id from `logdb_messages_$row_day[at]"."_$xmpp_host` where owner_id='$user_id' and peer_name_id='$name_peer' and peer_server_id='$server_peer' and ext is NULL";
-				// check if there was a chat
-				if (mysql_num_rows(mysql_query($day_chats))>0) { 
-			
 					$i++;
 					list($y,$m,$d) = split("-",$row_day[at]);
 					$days[$i] = $d;
-				}
-
 			}
 
 		if (count($days)>=1) {

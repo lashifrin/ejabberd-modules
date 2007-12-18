@@ -301,14 +301,14 @@ function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type
 	// archiwa rozmów: przegl±danie:
 	if ($type=="1") {
 
-		$query="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' $add_tl order by str_to_date(at,'%Y-%m-%d') asc";
+		$query="select distinct(at) from `logdb_stats_$xmpp_host` where owner_id='$user_id' $add_tl order by str_to_date(at,'%Y-%m-%d') asc";
 		#select * from `logdb_stats_jabber_autocom_pl` where owner_id='1' and str_to_date(at,'%Y-%m-%d') >= str_to_date('2007-6-21','%Y-%m-%d') and str_to_date(at,'%Y-%m-%d') < str_to_date('2007-7-1','%Y-%m-%d') order by str_to_date(at,'%Y-%m-%d') desc;
 	}
 
 	// rozmowy w danym dniu
 	if ($type=="2") {
 
-		$query = "select a.username, b.server as server_name, c.peer_name_id as todaytalk, c.peer_server_id as server from `logdb_users_$xmpp_host` a, `logdb_servers_$xmpp_host` b, `$tslice_table` c where c.owner_id='$user_id' and a.user_id=c.peer_name_id and b.server_id=c.peer_server_id and c.ext is NULL group by a.username,b.server order by lower(username)";
+		$query="select a.username, b.server as server_name, c.peer_name_id as todaytalk, c.peer_server_id as server from `logdb_users_$xmpp_host` a, `logdb_servers_$xmpp_host` b, `logdb_stats_$xmpp_host` c where c.owner_id = '$user_id' and a.user_id=c.peer_name_id and b.server_id=c.peer_server_id and c.at = '$tslice_table' and username!='' order by lower(username)";
 	
 	}
 
@@ -316,7 +316,7 @@ function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type
 	if ($type=="3") {
 
 		if ($res_id>1) { $sel_resource="and (peer_resource_id='$res_id' OR peer_resource_id='1')"; }
-		$query="select from_unixtime(timestamp+0) as ts,direction, peer_name_id, peer_server_id, peer_resource_id, body from `$tslice_table` where owner_id = '$user_id' and peer_name_id='$talker' and peer_server_id='$server' $sel_resource order by ts limit $start_set,$end_set";
+		$query="select from_unixtime(timestamp+0) as ts,direction, peer_name_id, peer_server_id, peer_resource_id, body from `$tslice_table` where owner_id = '$user_id' and peer_name_id='$talker' and peer_server_id='$server' $sel_resource and ext is NULL order by ts limit $start_set,$end_set";
 
 	}
 
@@ -339,7 +339,7 @@ function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type
 
 	// limited search
 	if ($type=="6") {
-		$query="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' $add_tl order by str_to_date(at,\"%Y-%m-%d\") asc limit $start_set,10000";
+		$query="select distinct(at) from `logdb_stats_$xmpp_host` where owner_id='$user_id' $add_tl order by str_to_date(at,\"%Y-%m-%d\") asc limit $start_set,10000";
 		}
 
 
@@ -589,12 +589,9 @@ function cut_nick($nick) {
 
 function total_messages($xmpp_host) {
 
-  $result = mysql_query("select count from `logdb_stats_$xmpp_host`");
-  $m_count = 0;
-  while($row = mysql_fetch_array($result)) {
-      $m_count += $row["count"];
-  }
-  
+  $result = mysql_query("select sum(count) from `logdb_stats_$xmpp_host`");
+  $count = mysql_fetch_row($result);
+  $m_count = $count[0]; 
   return $m_count;
 
 }
@@ -698,8 +695,8 @@ if ($c_type=="1") {
 	$link_right= encode_url("$x-$next",$token,$url_key);
 
 	// check if we have chats in prev and next mo
-	$is_left="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' and at like '$y-$prev%'";
-	$is_right="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' and at like '$x-$next%'";
+	$is_left="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' and at like '$y-$prev%' limit 1";
+	$is_right="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' and at like '$x-$next%' limit 1";
 
 	$i_left=mysql_num_rows(mysql_query($is_left));
 	$i_right=mysql_num_rows(mysql_query($is_right));
@@ -872,28 +869,10 @@ function delete_chat($talker,$server,$xmpp_host,$user_id,$tslice,$token,$url_key
         $jid_date = ' '.get_user_name($talker,$xmpp_host).'@'.get_server_name($server,$xmpp_host).' ('.$tslice.')';
         $query="insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time,extra) values ('$user_id',4,1,NOW(),'$jid_date')";
         mysql_query($query) or die;
-        // how many chats is there left?
-        $query="select count(peer_name_id) from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id' and ext is NULL";
-        $result=mysql_query($query);
-        $row=mysql_fetch_row($result);
-        // if there is nothing left, lets cleanu up stats, we dont want to have mess in db
-        if ($row[0]=="0") {
-                        $query="delete from `logdb_stats_$xmpp_host` where owner_id='$user_id' and at='$tslice' limit 1";
-                        $result=mysql_query($query) or die ("Ooops...Error");
-                        mysql_free_result($result);
-                        }
-                        else
-                        {
-                        // update stats if not delete
-                        $query="select count(body) from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id' and ext is NULL";
-                        $result=mysql_query($query) or die ("Ooops...Error");
-                        $row=mysql_fetch_row($result);
-                        $new_stats=$row[0];
-                        mysql_free_result($result);
-                        $query="update `logdb_stats_$xmpp_host` set count='$new_stats' where owner_id='$user_id' and at='$tslice'";
-                        $result=mysql_query($query) or die ("Ooops...Error");
-                        mysql_free_result($result);
-                        }
+	// remove user stats
+        $query="delete from `logdb_stats_$xmpp_host` where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server' and at='$tslice' limit 1";
+	$result=mysql_query($query) or die ("Ooops...Error");
+	mysql_free_result($result);
         // also if there were some saved links - we clean them up from mylinks as well. We are so nice...
         $query="update jorge_mylinks set ext='1' where owner_id ='$user_id' and peer_name_id='$talker' and link like '$lnk%'";
         $result=mysql_query($query) or die ("Ooops...Error");
@@ -916,22 +895,22 @@ function undo_deleted_chat($talker,$server,$user_id,$tslice,$xmpp_host,$lnk) {
 	$query="delete from pending_del where owner_id='$user_id' and peer_name_id='$talker' and date='$tslice' and peer_server_id='$server'";
 	$result=mysql_query($query) or die ("Ooops...Error");
 	// recount message stats for user
-	$query="select count(body) from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id' and ext is NULL";
+	$query="select count(body) from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server' and ext is NULL";
 	$result=mysql_query($query) or die ("Ooops...Error");
 	$row=mysql_fetch_row($result);
 	$new_stats=$row[0];
 	mysql_free_result($result);
 
-	$query="select * from `logdb_stats_$xmpp_host` where owner_id = '$user_id' and at = '$tslice'";
+	$query="select * from `logdb_stats_$xmpp_host` where owner_id = '$user_id' and peer_name_id='$talker' and peer_server_id='$server' and at = '$tslice'";
 	$result=mysql_query($query) or die("Ooops...Error");
 	if (mysql_num_rows($result) < 1 ) {
-			$query="insert into `logdb_stats_$xmpp_host` (owner_id,at,count) values ('$user_id','$tslice','$new_stats')";
+			$query="insert into `logdb_stats_$xmpp_host` (owner_id,peer_name_id,peer_server_id,at,count) values ('$user_id','$talker','$server','$tslice','$new_stats')";
 			mysql_query($query) or die ("Ooops...Error");
 			mysql_free_result($result);
 		}
 		else
 		{
-			$query="update `logdb_stats_$xmpp_host` set count='$new_stats' where owner_id='$user_id' and at='$tslice'";
+			$query="update `logdb_stats_$xmpp_host` set count='$new_stats' where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server' and at='$tslice'";
 			$result=mysql_query($query) or die ("Ooops...Error");
 			mysql_free_result($result);
 		}

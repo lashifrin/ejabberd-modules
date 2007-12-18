@@ -28,8 +28,7 @@ $today = date("Y-n-j");
 
 $top_ten_talkers_today="select at, owner_id, count from `logdb_stats_$xmpp_host` where at = '$today' order by count desc limit 10";
 $top_ten_talkers_yesterday="select at, owner_id, count from `logdb_stats_$xmpp_host` where at = (select date_format((date_sub(curdate(),interval 1 day)), \"%Y-%c-%e\")) order by count desc limit 10";
-
-$month_stats="select count(owner_id) users_total, at, sum(count) as messages from `logdb_stats_$xmpp_host` group by at order by str_to_date(at,'%Y-%m-%d') desc limit 30";
+$month_stats="select count(distinct(owner_id)) users_total, at, sum(count) as messages from `logdb_stats_$xmpp_host` group by at order by str_to_date(at,'%Y-%m-%d') desc limit 30";
 $result=mysql_query($month_stats);
 if (mysql_num_rows($result)<30) { $mark1="1"; } else { $mark1="0"; }
 

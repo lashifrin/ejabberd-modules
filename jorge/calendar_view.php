@@ -168,9 +168,8 @@ while ($mo_sel=mysql_fetch_array($ch_mo)) {
 print '</select>'."\n";
 print '</form>'."\n";
 
-// now generate claendar
-
-$query_days="select substring(at,8,9) as days from `logdb_stats_$xmpp_host` where owner_id = '$user_id' and at like '$mo%' order by str_to_date(at,'%Y-%m-%d') desc";
+// now generate claendar, the peer_name_id is hard-coded - this avoids of displaying chats with no-username
+$query_days="select distinct(substring(at,8,9)) as days from `logdb_stats_$xmpp_host` where owner_id = '$user_id' and at like '$mo%' and peer_name_id!='9' order by str_to_date(at,'%Y-%m-%d') desc";
 $result_for_days=mysql_query($query_days);
 $i=0;
 
@@ -193,7 +192,7 @@ $tslice_table='logdb_messages_'.$tslice.'_'.$xmpp_host;
 // if we got day, lets display chats from that day...
 if ($tslice) {
 	
-        $result=db_q($user_id,$server,$tslice_table,$talker,$search_p,"2",$start,$xmpp_host);
+        $result=db_q($user_id,$server,$tslice,$talker,$search_p,"2",$start,$xmpp_host);
         if ($result=="f") { header ("Location: calendar_view.php");  }
         print '<td valign="top" style="padding-top: 15px;">'."\n";
         print '<table width="200" border="0" cellpadding="0" cellspacing="0" class="calbck_con">'."\n";
