@@ -1,0 +1,34 @@
+\subsection{\modhttpbind{}}
+\label{modhttpbind}
+\ind{modules!\modhttpbind{}}\ind{modhttpbind}
+
+This module implements XMPP over Bosh (formerly known as HTTP Binding)
+as outlined by \xepref{0206}.
+It extends ejabberd's built in HTTP service with a configurable
+resource at which this service will be hosted.
+
+To use this module you must enable the module in the modules section:
+\begin{verbatim}
+{modules,
+ [
+  ...
+  {mod_http_bind, []},
+  ...
+]}.
+\end{verbatim}
+and add it as a request handler in the section about listening ports. For example:
+\begin{verbatim}
+{listen, 
+ [
+  ...
+  {5280, ejabberd_http, [
+                         ...
+                         {request_handlers, [{["http-bind"], mod_http_bind}]},
+                         ...
+                        ]
+  },
+  ...
+]}.
+\end{verbatim}
+With this configuration, the module will serve the requests sent to 
+\verb|http://example.org:5280/http-bind/|
