@@ -108,7 +108,8 @@ if ($_GET['act']=='logout') {
 			}
 		}
 		// if pref not set fall to defaults
-		if ($s_lang=="" OR $tmp_v=="") { $sess->set('language',$lang); $sess->set('view_type',1); $tmp_v="main.php"; }
+		if ($s_lang=="") { $sess->set('language',$lang); }
+		if ($tmp_v=="") { $sess->set('view_type',2); $tmp_v="calendar_view.php"; }
 		header("Location: $tmp_v");
 		exit; // lets break script at this point...
 		}
