@@ -134,10 +134,8 @@ if (mysql_num_rows($result) !=0) {
 
 			$to_base = "$ent[at]@";
 			$to_base = encode_url($to_base,$token,$url_key);
-			// temporary disable
-			#$st=get_stats($user_id,$ent["at"],$xmpp_host);
 			if ($tslice==$ent["at"]) { $bold_b = "<b>"; $bold_e="</b>"; } else { $bold_b=""; $bold_e=""; }
-			print '<li><a href="?a='.$to_base.'">'.$bold_b.pl_znaczki(verbose_date($ent["at"],$lang,"m")).$bold_e.' - <small>'.$st.'</small></a></li>'."\n"; // days..
+			print '<li><a href="?a='.$to_base.'">'.$bold_b.pl_znaczki(verbose_date($ent["at"],$lang,"m")).$bold_e.'</a></li>'."\n"; // days..
 
 			}
 
@@ -212,6 +210,8 @@ if ($talker) {
 	if ($nickname=="f") { $nickname=$not_in_r[$lang]; }
 	$predefined="$talker_name@$server_name";
 	$predefined=encode_url($predefined,$token,$url_key);
+	$predefined_s="from:$talker_name@$server_name";
+	$predefined_s=encode_url($predefined_s,$token,$url_key);
 	print '<table id="maincontent" border="0" cellspacing="0" class="ff">'."\n";
 	// if we come from chat maps put the link back...its the same link as "show all chats" but, it is more self explaining
 	if ($_GET['loc'] == "2") {
@@ -232,7 +232,11 @@ if ($talker) {
 	$action_link = "$tslice@$talker@$server_id@0@null@$loc_link@del@";
 	$action_link = encode_url($action_link,$token,$url_key);
 	print '<td align="right" style="padding-right: 5px;"><a id="pretty" title="'.$tip_export[$lang].'" class="foot" href="export.php?a='.$e_string.'">'.$export_link[$lang].'</a>&nbsp; | &nbsp;';
-	print '<a id="pretty" title="'.$all_for_u_t[$lang].'" class="foot" href="chat_map.php?chat_map='.$predefined.'">'.$all_for_u[$lang].'</a>&nbsp; | &nbsp;';
+	print '<font color="#65a5e4">'.$all_for_u[$lang].'</font>';
+        print '<a id="pretty" title="'.$all_for_u_m2_d[$lang].'" class="foot" href="chat_map.php?chat_map='.$predefined.'"><u>'.$all_for_u_m2[$lang].'</u></a>';
+	print '&nbsp;<small>|</small>&nbsp;';
+	print '<a id="pretty" title="'.$all_for_u_m_d[$lang].'" class="foot" href="search_v2.php?b='.$predefined_s.'"><u>'.$all_for_u_m[$lang].'</u></a>';
+	print '&nbsp; | &nbsp;';
 	print '<a id="pretty" title="'.$tip_delete[$lang].'" class="foot" href="main.php?a='.$action_link.'">'.$del_t[$lang].'</a></td></tr>';
 	print '<tr class="spacer"><td colspan="5"></td></tr>';
 	print '<tbody id="searchfield">'."\n";

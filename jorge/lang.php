@@ -126,8 +126,18 @@ $search_why[eng] = " search results (<i>not more then 100</i>). <a href=\"help.p
 $search_warn[pol] = pl_znaczki("Uwaga: Wyszukuje tylko w podanym przedziale czasu");
 $search_warn[eng] = "Warning: Showing results only from selected time range";
 
-$all_for_u[pol] = pl_znaczki("wszystkie rozmowy");
-$all_for_u[eng] = "all chats";
+$all_for_u[pol] = pl_znaczki("Poka¿ wszystkie rozmowy u¿ywaj±c: ");
+$all_for_u[eng] = "Show all chats using: ";
+
+$all_for_u_m[pol] = pl_znaczki("strumienia");
+$all_for_u_m[eng] = "stream";
+$all_for_u_m_d[pol] = pl_znaczki("Pokazuje rozmowê jako strumieñ wiadomo¶ci");
+$all_for_u_m_d[eng] = "Show chat as chat stream";
+
+$all_for_u_m2[pol] = pl_znaczki("mapy");
+$all_for_u_m2[eng] = "map";
+$all_for_u_m2_d[pol] = pl_znaczki("Pokazuje rozmowê jako mapê rozmów");
+$all_for_u_m2_d[eng] = "Show chat as chat map";
 
 $all_for_u_t[pol] = pl_znaczki("Poka¿ wszystkie rozmowy z tym u¿ytkownikiem");
 $all_for_u_t[eng] = "Show all chats from this user";
@@ -539,8 +549,8 @@ $cal_head[eng] = "Chat calendar";
 $cal_notice[pol] = pl_znaczki("Kliknij na danym dniu aby zobaczyæ rozmowy");
 $cal_notice[eng] = "Click on days to see chats";
 
-$change_view[pol] = pl_znaczki("Zmieñ widok na standardowy");
-$change_view[eng] = "Switch to standard view";
+$change_view[pol] = pl_znaczki("Zmieñ na widok drzewa");
+$change_view[eng] = "Switch to tree view";
 
 $change_view_cal[pol] = pl_znaczki("Przegl±daj archiwum za pomoc± widoku kalendarza.");
 $change_view_cal[eng] = "Browse archives using calendar view.";
@@ -563,8 +573,8 @@ $select_view[eng] = "Select prefered view for browser:";
 $view_calendar[pol] = pl_znaczki("Widok kalendarza");
 $view_calendar[eng] = "Calendar view";
 
-$view_standard[pol] = pl_znaczki("Widok standardowy");
-$view_standard[eng] = "Standard view";
+$view_standard[pol] = pl_znaczki("Widok drzewa");
+$view_standard[eng] = "Tree view";
 
 $setting_d1[pol] = pl_znaczki("Zmieñ globaln± opcjê archiwizacji:");
 $setting_d1[eng] = "Change global archivization policy:";
