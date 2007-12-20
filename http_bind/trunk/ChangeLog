@@ -1,3 +1,7 @@
+2007-12-20  Alexey Shchepin  <alexey@process-one.net>
+
+	* src/web/ejabberd_http_bind.erl: Bugfixes
+
 2007-12-18  Badlop  <badlop@process-one.net>
 
 	* doc/mod_http_bind.tex: Added documentation for the ejabberd
