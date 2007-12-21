@@ -756,7 +756,7 @@ handle_http_put_error(Reason, #http_bind{pid=FsmRef}) ->
 
 
 prepare_response(#http_bind{id=Sid, wait=Wait, hold=Hold}=Sess, 
-                 Rid, Attrs, StreamStart) ->
+                 Rid, _, StreamStart) ->
     receive after 100 -> ok end,
     case catch http_get(Sess, Rid) of
 	{ok, cancel} ->

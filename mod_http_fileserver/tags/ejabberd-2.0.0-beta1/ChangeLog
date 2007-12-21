@@ -1,3 +1,8 @@
+2007-12-21  Badlop  <badlop@process-one.net>
+
+	* README.txt: Fixed example
+	* doc/mod_http_fileserver.tex: Likewise
+
 2007-12-18  Badlop  <badlop@process-one.net>
 
 	* doc/mod_http_fileserver.tex: Added documentation for the ejabberd
