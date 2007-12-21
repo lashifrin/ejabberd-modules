@@ -1,0 +1,6 @@
+2007-12-18  Badlop  <badlop@process-one.net>
+
+	* doc/mod_http_fileserver.tex: Added documentation for the ejabberd
+	guide
+
+	* ChangeLog: Added
