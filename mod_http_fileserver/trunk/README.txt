@@ -19,7 +19,7 @@ directory to export is "/var/www":
   {modules,
    [
     ...
-    {mod_http_fileserver, [{docroot, "/var/www"}, {accesslog, /var/log/ejabberd/access.log}]},
+    {mod_http_fileserver, [{docroot, "/var/www"}, {accesslog, "/var/log/ejabberd/access.log"}]},
     ...
    ]}
 
