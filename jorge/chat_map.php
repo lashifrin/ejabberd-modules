@@ -68,7 +68,7 @@ if ($con_map AND $_POST['chat_map'] != "null") {
 
 	//begin
 	//first get the months
-	$get_months="select substring(at,1,7) as at from `logdb_stats_jabster_pl` where owner_id='$user_id' and peer_name_id='$name_peer' and peer_server_id='$server_peer' group by substring(at,1,7) order by str_to_date(at,'%Y-%m-%d') asc";
+	$get_months="select substring(at,1,7) as at from `logdb_stats_$xmpp_host` where owner_id='$user_id' and peer_name_id='$name_peer' and peer_server_id='$server_peer' group by substring(at,1,7) order by str_to_date(at,'%Y-%m-%d') asc";
 	$result_m=mysql_query($get_months);
 	$cc_cmp=mysql_num_rows($result_m);
 	while($row_m=mysql_fetch_array($result_m)) {
@@ -77,7 +77,7 @@ if ($con_map AND $_POST['chat_map'] != "null") {
 		$mo="$y-$m";
 		
 		// now get the days in with user was talking
-		$days_to_scan="select at from `logdb_stats_jabster_pl` where owner_id='$user_id' and peer_name_id='$name_peer' and peer_server_id='$server_peer' and at like '$mo%'";
+		$days_to_scan="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' and peer_name_id='$name_peer' and peer_server_id='$server_peer' and at like '$mo%'";
 
 		$result=mysql_query($days_to_scan);
 
