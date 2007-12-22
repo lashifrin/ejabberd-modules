@@ -1,3 +1,8 @@
+2007-12-22  Badlop  <badlop@process-one.net>
+
+	* doc/mod_http_bind.tex: Added explanation about http_bind option
+	to ejabberd_http
+
 2007-12-21  Badlop  <badlop@process-one.net>
 
 	* src/web/ejabberd_http_bind.erl: Removed small warning

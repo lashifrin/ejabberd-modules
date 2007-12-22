@@ -7,7 +7,7 @@ as outlined by \xepref{0206}.
 It extends ejabberd's built in HTTP service with a configurable
 resource at which this service will be hosted.
 
-To use this module you must enable the module in the modules section:
+To use HTTP-Binding, enable the module:
 \begin{verbatim}
 {modules,
  [
@@ -16,15 +16,16 @@ To use this module you must enable the module in the modules section:
   ...
 ]}.
 \end{verbatim}
-and add it as a request handler in the section about listening ports. For example:
+and add \verb|http\_bind| in the HTTP service. For example:
 \begin{verbatim}
 {listen, 
  [
   ...
   {5280, ejabberd_http, [
                          ...
-                         {request_handlers, [{["http-bind"], mod_http_bind}]},
-                         ...
+                         http_bind,
+                         http_poll,
+                         web_admin
                         ]
   },
   ...
@@ -32,3 +33,20 @@ and add it as a request handler in the section about listening ports. For exampl
 \end{verbatim}
 With this configuration, the module will serve the requests sent to 
 \verb|http://example.org:5280/http-bind/|
+
+Optionally, if you want to set the service in a different URI path or use a different module, 
+you can configure manually the service using the option \verb|request\_handlers|. 
+For example:
+\begin{verbatim}
+{listen, 
+ [
+  ...
+  {5280, ejabberd_http, [
+                         ...
+                         {request_handlers, [{["http-bind"], mod_http_bind}]},
+                         http_poll,
+                         web_admin
+                        ]
+  },
+  ...
+]}.
