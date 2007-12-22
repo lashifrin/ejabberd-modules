@@ -16,13 +16,12 @@ To use HTTP-Binding, enable the module:
   ...
 ]}.
 \end{verbatim}
-and add \verb|http\_bind| in the HTTP service. For example:
+and add \verb|http_bind| in the HTTP service. For example:
 \begin{verbatim}
 {listen, 
  [
   ...
   {5280, ejabberd_http, [
-                         ...
                          http_bind,
                          http_poll,
                          web_admin
@@ -33,16 +32,17 @@ and add \verb|http\_bind| in the HTTP service. For example:
 \end{verbatim}
 With this configuration, the module will serve the requests sent to 
 \verb|http://example.org:5280/http-bind/|
+Remember that this page is not designed to be used by web browsers,
+it is used by Jabber clients that support XMPP over Bosh.
 
-Optionally, if you want to set the service in a different URI path or use a different module, 
-you can configure manually the service using the option \verb|request\_handlers|. 
+If you want to set the service in a different URI path or use a different module, 
+you can configure it manually using the option \verb|request_handlers|. 
 For example:
 \begin{verbatim}
 {listen, 
  [
   ...
   {5280, ejabberd_http, [
-                         ...
                          {request_handlers, [{["http-bind"], mod_http_bind}]},
                          http_poll,
                          web_admin
