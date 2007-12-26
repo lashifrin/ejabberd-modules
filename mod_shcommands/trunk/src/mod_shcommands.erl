@@ -11,7 +11,7 @@
 
 -behaviour(gen_mod).
 
--export([web_menu_node/2, web_page_node/5,
+-export([web_menu_node/3, web_page_node/5,
 	 start/2, stop/1]).
 
 -include("ejabberd.hrl").
@@ -38,8 +38,8 @@ stop(Host) ->
 %% Web Admin Menu
 %%-------------------
 
-web_menu_node(Acc, _Node) ->
-    Acc ++ [{"shcommands", "Shell Commands"}].
+web_menu_node(Acc, _Node, Lang) ->
+    Acc ++ [{"shcommands", ?T("Shell Commands")}].
 
 %%-------------------
 %% Web Admin Page

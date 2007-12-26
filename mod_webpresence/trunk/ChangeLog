@@ -1,3 +1,8 @@
+2007-12-26  Badlop  <badlop@process-one.net>
+
+	* src/mod_webpresence.erl: Translate menu items of webadmin hooks
+	in each module (EJAB-485)
+
 2007-09-22  Badlop  <badlop@ono.com>
 
 	* src/mod_webpresence.erl: Added new ACCESS for automatic enable. Added image.php URL, useful in some cases.

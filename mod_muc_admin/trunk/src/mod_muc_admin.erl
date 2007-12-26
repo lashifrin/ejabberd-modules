@@ -13,8 +13,8 @@
 
 -export([start/2,
 	 stop/1,
-	 web_menu_main/1, web_page_main/2,
-	 web_menu_host/2, web_page_host/3,
+	 web_menu_main/2, web_page_main/2,
+	 web_menu_host/3, web_page_host/3,
 	 ctl_process/2,
 	 ctl_process/3
 	]).
@@ -156,11 +156,11 @@ ctl_process(Val, _Host, _Args) ->
 %%---------------
 %% Web Admin Menu
 
-web_menu_main(Acc) ->
-    Acc ++ [{"muc", "Multi-User Chat"}].
+web_menu_main(Acc, Lang) ->
+    Acc ++ [{"muc", ?T("Multi-User Chat")}].
 
-web_menu_host(Acc, _Host) ->
-    Acc ++ [{"muc", "Multi-User Chat"}].
+web_menu_host(Acc, _Host, Lang) ->
+    Acc ++ [{"muc", ?T("Multi-User Chat")}].
 
 
 %%---------------

@@ -17,7 +17,7 @@
          start/2,
          stop/1,
          remove_user/2,
-         web_menu_host/2, web_page_host/3,
+         web_menu_host/3, web_page_host/3,
          process/2]).
 
 %% gen_server callbacks
@@ -881,8 +881,8 @@ serve_web_presence(TypeURL, User, Server, Tail, #request{lang = Lang1}) ->
 %% Web Admin
 %% ---------------------
 
-web_menu_host(Acc, _Host) ->
-    [{"webpresence", "Web Presence"} | Acc].
+web_menu_host(Acc, _Host, Lang) ->
+    [{"webpresence", ?T("Web Presence")} | Acc].
 
 web_page_host(_, _Host, 
 	      #request{path = ["webpresence"],

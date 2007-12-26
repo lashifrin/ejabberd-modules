@@ -12,9 +12,9 @@
 -behaviour(gen_mod).
 
 -export([start/2, loop/0, stop/1, get_statistic/2, 
-	 web_menu_main/1, web_page_main/2,
-	 web_menu_node/2, web_page_node/5,
-	 web_menu_host/2, web_page_host/3,
+	 web_menu_main/2, web_page_main/2,
+	 web_menu_node/3, web_page_node/5,
+	 web_menu_host/3, web_page_host/3,
 	 remove_user/2, user_send_packet/3, user_receive_packet/4,
 	 user_login/1, user_logout/4]).
 
@@ -750,14 +750,14 @@ localtime_to_string({{Y, Mo, D},{H, Mi, S}}) ->
 %% Web Admin Menu
 %%-------------------
 
-web_menu_main(Acc) ->
-    Acc ++ [{"statsdx", "Statistics Dx"}].
+web_menu_main(Acc, Lang) ->
+    Acc ++ [{"statsdx", ?T("Statistics Dx")}].
 
-web_menu_node(Acc, _Node) ->
-    Acc ++ [{"statsdx", "Statistics Dx"}].
+web_menu_node(Acc, _Node, Lang) ->
+    Acc ++ [{"statsdx", ?T("Statistics Dx")}].
 
-web_menu_host(Acc, _Host) ->
-    Acc ++ [{"statsdx", "Statistics Dx"}].
+web_menu_host(Acc, _Host, Lang) ->
+    Acc ++ [{"statsdx", ?T("Statistics Dx")}].
 
 %%-------------------
 %% Web Admin Page

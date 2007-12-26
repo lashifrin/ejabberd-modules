@@ -13,7 +13,7 @@
 
 -export([ctl_process/3,
 	 run_task/3,
-	 web_menu_host/2, web_page_host/3,
+	 web_menu_host/3, web_page_host/3,
 	 start/2, 
 	 stop/1]).
 
@@ -145,8 +145,8 @@ ctl_process(Val, _Host, _Args) ->
 %% Web Admin
 %% ---------------------
 
-web_menu_host(Acc, _Host) ->
-    [{"cron", "Cron Tasks"} | Acc].
+web_menu_host(Acc, _Host, Lang) ->
+    [{"cron", ?T("Cron Tasks")} | Acc].
 
 web_page_host(_, Host, 
 	      #request{path = ["cron"],
