@@ -727,7 +727,7 @@ if ($c_type=="1") {
 
 if ($i_left!=0) { $calendar.='<a href="?left='.$link_left.'"><<<</a>'; }
 
-$verb_date = "$y-$m-1";
+$verb_date = "$year-$m-1";
 
 	    $calendar.='
 	    	
@@ -802,11 +802,11 @@ $verb_date = "$y-$m-1";
         if(in_array($n,$days)){
 	
 	if ($c_type=="1") {
-			$to_base = "$y-$m-$n@";
+			$to_base = "$year-$m-$n@";
 			$loc_orign="";
 		}
 		elseif($c_type=="2") {
-			$to_base = "$y-$m-$n@$name_peer@$server_peer@";
+			$to_base = "$year-$m-$n@$name_peer@$server_peer@";
 			$loc_orign="&loc=2";
 		}
 	$to_base = encode_url($to_base,$token,$url_key);

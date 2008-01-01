@@ -133,7 +133,7 @@ if ($tslice!="") {
 
 if (!isset($mo)) {
 
-			$mo = date("Y-m");
+			$mo = date("Y-n");
 
 		}
 
@@ -167,7 +167,6 @@ while ($mo_sel=mysql_fetch_array($ch_mo)) {
 }
 print '</select>'."\n";
 print '</form>'."\n";
-
 // now generate claendar, the peer_name_id is hard-coded - this avoids of displaying chats with no-username
 $query_days="select distinct(substring(at,8,9)) as days from `logdb_stats_$xmpp_host` where owner_id = '$user_id' and at like '$mo%' and peer_name_id!='9' order by str_to_date(at,'%Y-%m-%d') desc";
 $result_for_days=mysql_query($query_days);
