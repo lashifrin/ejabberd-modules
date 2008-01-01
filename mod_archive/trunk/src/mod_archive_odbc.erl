@@ -2512,9 +2512,9 @@ parse_rsm_aux([], Acc) ->
     Acc.
 
 make_rsm(undefined, undefined, undefined, Changed, Count) ->
-    {xmlelement, "set", [{"xmlns", ?NS_RSM}], [
+    [{xmlelement, "set", [{"xmlns", ?NS_RSM}], [
 					       {xmlelement, "changed", [], [{xmlcdata,  Changed}]},
-					       {xmlelement, "count", [], [{xmlcdata, integer_to_list(Count)}]}]};
+					       {xmlelement, "count", [], [{xmlcdata, integer_to_list(Count)}]}]}];
 
 make_rsm(FirstIndex, FirstId, LastId, Changed, Count) ->
     [{xmlelement, "set", [{"xmlns", ?NS_RSM}], [
