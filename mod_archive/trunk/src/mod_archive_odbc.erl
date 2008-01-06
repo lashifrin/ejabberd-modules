@@ -1094,7 +1094,7 @@ process_remove_interval(LUser, LServer, LResource, Start, End, With) ->
 		     end],
 		TS = get_timestamp(),
 		LJID = jlib:jid_tolower(jlib:make_jid(LUser, LServer, LResource)),
-		case string:to_lower(gen_mod:get_module_opt(LServer, ?MODULE, database_type, "")) of
+		case jlib:tolower(gen_mod:get_module_opt(LServer, ?MODULE, database_type, "")) of
 		    %% MySQL has severe limitations for triggers: they cannot update the same table
 		    %% they're invoked for, so we have to do that here.
 		    %% However, yet another limitation is that in UPDATE MySQL cannot use the same table
@@ -1325,7 +1325,7 @@ store_message(LServer, Msg) ->
 %% support this syntax
 %%
 store_messages(LServer, CID, Msgs) ->
-    case string:to_lower(gen_mod:get_module_opt(LServer, ?MODULE, database_type, "")) of
+    case jlib:tolower(gen_mod:get_module_opt(LServer, ?MODULE, database_type, "")) of
         "sqlite" ->
 	    %% Single inserts
             lists:map(
@@ -1547,7 +1547,7 @@ combine_names_vals(Names, Vals) ->
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 get_last_inserted_id(LServer, Table) ->
-    case string:to_lower(gen_mod:get_module_opt(LServer, ?MODULE, database_type, "")) of
+    case jlib:tolower(gen_mod:get_module_opt(LServer, ?MODULE, database_type, "")) of
         "mysql" -> {selected, _, [{ID}]} = run_sql_query(["select LAST_INSERT_ID()"]),
                    ID;
         "sqlite" -> {selected, _, [{ID}]} = run_sql_query(["select last_insert_rowid()"]),
@@ -2165,7 +2165,7 @@ expire_collections(Host) ->
     run_sql_transaction(Host, F).
 
 get_expired_str(Host, ExpExpr, UTCField) ->
-    case string:to_lower(gen_mod:get_module_opt(Host, ?MODULE, database_type, "")) of
+    case jlib:tolower(gen_mod:get_module_opt(Host, ?MODULE, database_type, "")) of
         "mysql" -> ["timestampadd(second, ", ExpExpr, ", archive_collections.", UTCField, ")"];
         "sqlite" -> ["datetime(archive_collections.", UTCField, ", '+' || ", ExpExpr, " || ' seconds')"];
         "pgsql" -> ["timestamp archive_collections.", UTCField, " + interval ", ExpExpr, " || ' seconds'"];
@@ -2201,7 +2201,7 @@ escape_str(_, null) ->
 escape_str(_, undefined) ->
     "null";
 escape_str(LServer, Str) ->
-    case string:to_lower(gen_mod:get_module_opt(LServer, ?MODULE, database_type, "")) of
+    case jlib:tolower(gen_mod:get_module_opt(LServer, ?MODULE, database_type, "")) of
         "sqlite" -> "'" ++ [escape_chars(C) || C <- Str] ++ "'";
 	_ -> "'" ++ ejabberd_odbc:escape(Str) ++ "'"
     end.
