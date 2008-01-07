@@ -63,8 +63,8 @@ if (pg_num_rows($res)!=0) {
 	print '<center>';
 	print '<form action="contacts.php" method="post">'."\n";
 	print '<table id="maincontent" border="0" class="ff" cellspacing="0">'."\n";
-	print '<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold; color:#fff;"><td>'.$con_tab2[$lang].'</td><td>'.$con_tab3[$lang].'</td><td>'.$con_tab6[$lang].'</td><td>'.$con_tab4[$lang].'</td></tr>'."\n";
-	print '<tr class="spacer"><td colspan="4"></td></tr>';
+	print '<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold; color:#fff;"><td>'.$con_tab2[$lang].'</td><td>'.$con_tab3[$lang].'</td><td style="text-align: center;">'.$con_tab6[$lang].'</td><td>'.$show_chats[$lang].':</td><td style="padding-left: 10px;">'.$con_tab4[$lang].'</td></tr>'."\n";
+	print '<tr class="spacer"><td colspan="5"></td></tr>';
 	print '<tbody id="searchfield">';
 
 	for ($lt = 0; $lt < pg_numrows($res); $lt++) {
@@ -75,12 +75,15 @@ if (pg_num_rows($res)!=0) {
 		if ($col=="e0e9f7") { $col="e8eef7"; } else { $col="e0e9f7"; }
 		$predefined="$jid";
 		$predefined=encode_url($predefined,$token,$url_key);
+		$predefined_s="from:$jid";
+		$predefined_s=encode_url($predefined_s,$token,$url_key);
 		if (in_array($jid,$do_notlog_list) == TRUE ) { $selected="selected"; } else { $selected=""; }
 		if ($selected!="") { $col="b7b7b7"; }
-		print '<tr style="cursor: pointer;" bgcolor="'.$col.'" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#'.$col.'\';">'."\n";
+		print '<tr bgcolor="'.$col.'" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#'.$col.'\';">'."\n";
 		print '<td title="'.$con_title[$lang].'" style="padding-left:7px" onclick="window.location=\'chat_map.php?chat_map='.$predefined.'\';"><b>'.cut_nick(htmlspecialchars($nick)).'</b></td>'."\n";
-		print '<td title="'.$con_title[$lang].'" onclick="window.location=\'chat_map.php?chat_map='.$predefined.'\';">(<i>'.htmlspecialchars($jid).'</i>)</td>'."\n";
-		print '<td title="'.$con_title[$lang].'" onclick="window.location=\'chat_map.php?chat_map='.$predefined.'\';" style="text-align: center;">'.cut_nick(htmlspecialchars($grp)).'</td>'."\n";
+		print '<td>(<i>'.htmlspecialchars($jid).'</i>)</td>'."\n";
+		print '<td style="text-align: center;">'.cut_nick(htmlspecialchars($grp)).'</td>'."\n";
+		print '<td style="text-align: center;"><a href="chat_map.php?chat_map='.$predefined.'"><u>'.$show_chat_as_map[$lang].'</u></a>|<a href="search_v2.php?b='.$predefined_s.'"><u>'.$show_chat_stream[$lang].'</u></a></td>';
 		print '<td style="text-align: center;">'."\n";
 		// temporary solution we should put integers here instead of full jids
 		$prepared_jid=str_replace("+", "kezyt2s0", base64_encode($jid)); 
@@ -93,11 +96,11 @@ if (pg_num_rows($res)!=0) {
 
 	}
 
-	print '<tr class="spacer"><td colspan="4"></td></tr>'."\n";
+	print '<tr class="spacer"><td colspan="5"></td></tr>'."\n";
 	print '</tbody>'."\n";
-	print '<tr class="maint"><td colspan="4" style="text-align: center;">'."\n";
+	print '<tr class="maint"><td colspan="5" style="text-align: center;">'."\n";
 	print '<input class="red" type="submit" value="'.$con_tab_submit[$lang].'"></td></tr>'."\n";
-	print '<tr class="spacer"><td colspan="4"></td></tr>'."\n";
+	print '<tr class="spacer"><td colspan="5"></td></tr>'."\n";
 	print '</table>'."\n";
 	print '</form>'."\n";
 	print '</center>'."\n";

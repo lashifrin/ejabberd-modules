@@ -61,7 +61,7 @@ $links='<a class="foot" href="http://www.jabster.pl" target="_blank">jabster.pl<
 	'; 
 
 // copyright
-$copy = "jabster.pl &copy; 2007";
+$copy = "jabster.pl &copy; 2008";
 
 // custom logo
 $brand_logo = "logo_jabster.png";

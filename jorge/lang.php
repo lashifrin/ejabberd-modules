@@ -332,8 +332,8 @@ $con_tab2[eng] = "Contact name";
 $con_tab3[pol] = pl_znaczki("JabberID");
 $con_tab3[eng] = "JabberID";
 
-$con_tab4[pol] = pl_znaczki("Archiwizacja w³±czona?");
-$con_tab4[eng] = "Is archiving enabled?";
+$con_tab4[pol] = pl_znaczki("W³±czyæ archiwizacje");
+$con_tab4[eng] = "Enable archiving";
 
 $con_tab_act_y[pol] = pl_znaczki("Tak");
 $con_tab_act_y[eng] = "Yes";
@@ -617,6 +617,15 @@ $jump_to_next[eng] = "Jump to next day of chat";
 
 $jump_to_prev[pol] = pl_znaczki("Przejd¼ do poprzedniego dnia rozmowy");
 $jump_to_prev[eng] = "Jump to previous day of chat";
+
+$show_chats[pol] = pl_znaczki("Poka¿ rozmowê jako");
+$show_chats[eng] = "Show chat as";
+
+$show_chat_stream[pol] = pl_znaczki("strumieñ");
+$show_chat_stream[eng] = "stream";
+
+$show_chat_as_map[pol] = pl_znaczki("mapê");
+$show_chat_as_map[eng] = "map";
 
 
 
