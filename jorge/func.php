@@ -302,7 +302,6 @@ function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type
 	if ($type=="1") {
 
 		$query="select distinct(at) from `logdb_stats_$xmpp_host` where owner_id='$user_id' $add_tl order by str_to_date(at,'%Y-%m-%d') asc";
-		#select * from `logdb_stats_jabber_autocom_pl` where owner_id='1' and str_to_date(at,'%Y-%m-%d') >= str_to_date('2007-6-21','%Y-%m-%d') and str_to_date(at,'%Y-%m-%d') < str_to_date('2007-7-1','%Y-%m-%d') order by str_to_date(at,'%Y-%m-%d') desc;
 	}
 
 	// rozmowy w danym dniu
