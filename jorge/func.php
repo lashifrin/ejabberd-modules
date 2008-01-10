@@ -307,7 +307,7 @@ function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type
 	// rozmowy w danym dniu
 	if ($type=="2") {
 
-		$query="select a.username, b.server as server_name, c.peer_name_id as todaytalk, c.peer_server_id as server from `logdb_users_$xmpp_host` a, `logdb_servers_$xmpp_host` b, `logdb_stats_$xmpp_host` c where c.owner_id = '$user_id' and a.user_id=c.peer_name_id and b.server_id=c.peer_server_id and c.at = '$tslice_table' and username!='' order by lower(username)";
+		$query="select a.username, b.server as server_name, c.peer_name_id as todaytalk, c.peer_server_id as server, c.count as lcount from `logdb_users_$xmpp_host` a, `logdb_servers_$xmpp_host` b, `logdb_stats_$xmpp_host` c where c.owner_id = '$user_id' and a.user_id=c.peer_name_id and b.server_id=c.peer_server_id and c.at = '$tslice_table' and username!='' order by lower(username)";
 	
 	}
 

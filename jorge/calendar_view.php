@@ -238,7 +238,7 @@ if ($tslice) {
 				if ($mrk==1 AND $previous_t != NULL) { 
 						print '<a class="nav_np" id="pretty" title="'.$jump_to_prev[$lang].': '.$previous_t.'" href="calendar_view.php?a='.$to_base_prev.'"><<< </a>'; 
 					}
-				print '<a class="caldays3" id="pretty" href="?a='.$to_base2.'" title="JabberID:;'.htmlspecialchars($user_name).'@'.htmlspecialchars($server_name).'">'.$bold_b.cut_nick(htmlspecialchars($nickname)).$bold_e.'</a>';
+				print '<a class="caldays3" id="pretty" href="?a='.$to_base2.'" title="JabberID:;'.htmlspecialchars($user_name).'@'.htmlspecialchars($server_name).';---;<b>'.$chat_lines[$lang].$entry[lcount].'</b>">'.$bold_b.cut_nick(htmlspecialchars($nickname)).$bold_e.'</a>';
 				if ($mrk==1 AND $next_t != NULL) { 
 						print '<a class="nav_np" id="pretty" title="'.$jump_to_next[$lang].': '.$next_t.'" href="calendar_view.php?a='.$to_base_next.'"> >>></a>'; 
 					}

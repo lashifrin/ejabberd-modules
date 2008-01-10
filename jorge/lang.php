@@ -659,5 +659,9 @@ $cal_days[eng]['5'] = "Fri";
 $cal_days[eng]['6'] = "Sat";
 $cal_days[eng]['7'] = "Sun";
 
+$chat_lines[pol] = pl_znaczki("Ilo¶æ wiadomo¶ci: ");
+$chat_lines[eng] = "Messages count: ";
+
+
 
 ?>
