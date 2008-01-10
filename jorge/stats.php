@@ -26,8 +26,8 @@ if ($admin_name!=$token) { print 'no access'; exit; }
 
 $today = date("Y-n-j");
 
-$top_ten_talkers_today="select at, owner_id, count from `logdb_stats_$xmpp_host` where at = '$today' order by count desc limit 10";
-$top_ten_talkers_yesterday="select at, owner_id, count from `logdb_stats_$xmpp_host` where at = (select date_format((date_sub(curdate(),interval 1 day)), \"%Y-%c-%e\")) order by count desc limit 10";
+$top_ten_talkers_today="select at, owner_id, peer_name_id, peer_server_id, count from `logdb_stats_$xmpp_host` where at = '$today' order by count desc limit 10";
+$top_ten_talkers_yesterday="select at, owner_id, peer_name_id, peer_server_id, count from `logdb_stats_$xmpp_host` where at = (select date_format((date_sub(curdate(),interval 1 day)), \"%Y-%c-%e\")) order by count desc limit 10";
 $month_stats="select count(distinct(owner_id)) users_total, at, sum(count) as messages from `logdb_stats_$xmpp_host` group by at order by str_to_date(at,'%Y-%m-%d') desc limit 30";
 $result=mysql_query($month_stats);
 if (mysql_num_rows($result)<30) { $mark1="1"; } else { $mark1="0"; }
@@ -59,7 +59,7 @@ $i=0;
 while ($entry=mysql_fetch_array($result)) {
 	
 	$i++;
-	print "<b>".$i.".</b> ".get_user_name($entry[owner_id],$xmpp_host)."@".$xmpp_host_dotted." (<i>$entry[count]</i>)<br>"."\n";
+	print "<b>".$i.".</b> ".htmlspecialchars(get_user_name($entry[owner_id],$xmpp_host))."@".$xmpp_host_dotted."<b> <--> </b>".htmlspecialchars(get_user_name($entry[peer_name_id],$xmpp_host))."@".htmlspecialchars(get_server_name($entry[peer_server_id],$xmpp_host))." (<i><b>$entry[count]</b></i>)<br>"."\n";
 
 }
 print '</div>'."\n";
@@ -70,7 +70,7 @@ $result=mysql_query($top_ten_talkers_yesterday);
 while ($entry=mysql_fetch_array($result)) {
 
 	$i++;
-	print "<b>".$i.".</b> ".get_user_name($entry[owner_id],$xmpp_host)."@".$xmpp_host_dotted." (<i>$entry[count]</i>)<br>"."\n";
+	print "<b>".$i.".</b> ".htmlspecialchars(get_user_name($entry[owner_id],$xmpp_host))."@".$xmpp_host_dotted."<b> <--> </b>".htmlspecialchars(get_user_name($entry[peer_name_id],$xmpp_host))."@".htmlspecialchars(get_server_name($entry[peer_server_id],$xmpp_host))." (<i><b>$entry[count]</b></i>)<br>"."\n";
 	
 }
 
