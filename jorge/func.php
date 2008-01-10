@@ -619,7 +619,7 @@ function new_parse_url($text) {
 	return $text;
 }
 
-function calendar($user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,$c_type,$name_peer=0,$server_peer=0){
+function calendar($user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,$c_type,$name_peer=0,$server_peer=0,$cal_days=0) {
 	
 	$days=$days;
 	$month = $m;
@@ -741,13 +741,13 @@ $verb_date = "$year-$m-1";
 	    	</td>
 	  	</tr>
           	<tr align="center" class="calweek">
-            	<td width="14%" height="15">Mon</td>
-            	<td width="14%">Tue</td>
-            	<td width="14%">Wed</td>
-            	<td width="14%">Thu</td>
-            	<td width="14%">Fri</td>
-            	<td width="14%">Sat</td>
-            	<td width="14%">Sun</td>
+            	<td width="14%" height="15">'.$cal_days[$lang][1].'</td>
+            	<td width="14%">'.$cal_days[$lang][2].'</td>
+            	<td width="14%">'.$cal_days[$lang][3].'</td>
+            	<td width="14%">'.$cal_days[$lang][4].'</td>
+            	<td width="14%">'.$cal_days[$lang][5].'</td>
+            	<td width="14%">'.$cal_days[$lang][6].'</td>
+            	<td width="14%">'.$cal_days[$lang][7].'</td>
           	</tr>
 	    
 	    ';

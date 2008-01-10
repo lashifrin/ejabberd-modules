@@ -182,7 +182,7 @@ while ($row_d=mysql_fetch_array($result_for_days)) {
 
 // display calendar
 list($y,$m) = split("-", $mo);
-echo pl_znaczki(calendar($user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,1));
+echo pl_znaczki(calendar($user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,1,$null_a=0,$null_b=0,$cal_days));
 unset($days);
 
 // generate table name

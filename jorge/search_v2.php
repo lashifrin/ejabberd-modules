@@ -97,7 +97,7 @@ if ($time2_start AND $time2_end) {
 	}
 print '<h2>'.$search_res[$lang].'</h2>'."\n";
 print '<table align="center" border="0" cellspacing="0" class="ff">'."\n";
-print '<tr style="background-image: url(img/bar_bg.png); background-repeat:repeat-x; font-weight: bold;"><td>'.$time_t[$lang].'</td><td>'.$talks[$lang].'</td><td>'.$thread[$lang].'</td><td>'.$score.'</td></tr>'."\n";
+print '<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold; color: #fff;"><td>'.$time_t[$lang].'</td><td>'.$talks[$lang].'</td><td>'.$thread[$lang].'</td><td>'.$score.'</td></tr>'."\n";
 print '<tr class="spacer"><td colspan="4"></td></tr>';
 if ($offset_arch) { $type_p="6"; } else { $type_p="1"; }
 
@@ -259,7 +259,7 @@ while ($entry = mysql_fetch_array($result)) {
 					$lnk_n="$entry[at]@$next_r@$internal@$plain_phase@$zz@$tag_count@";
 					#print "Constructed link: $lnk_n <br>"; // debug
 					print '<tr class="spacer"><td colspan="4"></td></tr>';
-					print '<tr class="maint" style="background-image: url(img/bar_bg.png); background-repeat:repeat-x;">';
+					print '<tr class="maint" style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold; color: #fff;">';
 					print '<td colspan="2" style="text-align: left;">';
 					print '<a href="search_v2.php?a='.$lnk_p.'"></a></td>'; // fix me
 					$trange = "$time2_start@$time2_end"; // this is needed for time range to pass to next page
@@ -345,7 +345,7 @@ if ($type!="7") {
 	$body_talk = wordwrap(str_replace("\n","<br>",htmlspecialchars(base64_decode($dat["body"]))),107,"<br>",true);
 
 	// opening line
-	print '<tr id="pretty" title="'.$jid.'@'.htmlspecialchars($sname).'" style="cursor: pointer;" bgcolor="'.$col.'" onclick="window.open(\''.$view_type.'?a='.$to_base.'\');" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#'.$col.'\';">'."\n";
+	print '<tr id="pretty" title="'.$jid.'@'.htmlspecialchars($sname).'" style="cursor: pointer;" bgcolor="'.$col.'" onclick="window.location=\''.$view_type.'?a='.$to_base.'\'" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#'.$col.'\';">'."\n";
 	
 	// time field:
 	print '<td width="120">'.$dat["ts"].'</td>'."\n";
@@ -362,7 +362,7 @@ if ($type!="7") {
 	}
 
 	print '<tr class="spacer" height="1px"><td colspan="5"></td></tr>'."\n";
-	print '<tr style="background-image: url(img/bar_bg.png); background-repeat:repeat-x;" height="15px"><td colspan="5"></td></tr>'."\n";
+	print '<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold; color: #fff;" height="15px"><td colspan="5"></td></tr>'."\n";
 	mysql_free_result ($result);
 	mysql_free_result ($results);
 	mysql_close();

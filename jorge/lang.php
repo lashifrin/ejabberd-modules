@@ -627,7 +627,37 @@ $show_chat_stream[eng] = "stream";
 $show_chat_as_map[pol] = pl_znaczki("mapê");
 $show_chat_as_map[eng] = "map";
 
+$labels_add[pol] = pl_znaczki("Dodaj etykiete");
+$labels_add[eng] = "Add label";
 
+$labels_menu[pol] = pl_znaczki("Etykiety");
+$labels_menu[eng] = "Labels";
+
+$labels_desc[pol] = pl_znaczki("Twoje rozmowy z etykiet±:");
+$labels_desc[eng] = "Your labeled chats:";
+
+$tip_next_m[pol] = pl_znaczki("Przejd¼ do nastêpnego miesi±ca");
+$tip_next_m[eng] = "Go to next month";
+
+$tip_prev_m[pol] = pl_znaczki("Przejd¼ do poprzedniego miesi±ca");
+$tip_prev_m[eng] = "Go to previous month";
+
+// do not convert this via pl_znaczki() as calendar function is filtered via it in later progress
+$cal_days[pol]['1'] = "Pon";
+$cal_days[pol]['2'] = "Wto";
+$cal_days[pol]['3'] = "¦ro";
+$cal_days[pol]['4'] = "Czw";
+$cal_days[pol]['5'] = "Pi±";
+$cal_days[pol]['6'] = "Sob";
+$cal_days[pol]['7'] = "Nie";
+
+$cal_days[eng]['1'] = "Mon";
+$cal_days[eng]['2'] = "Tue";
+$cal_days[eng]['3'] = "Wed";
+$cal_days[eng]['4'] = "Thu";
+$cal_days[eng]['5'] = "Fri";
+$cal_days[eng]['6'] = "Sat";
+$cal_days[eng]['7'] = "Sun";
 
 
 ?>
