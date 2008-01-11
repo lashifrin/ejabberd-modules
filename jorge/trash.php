@@ -92,8 +92,8 @@ if (mysql_num_rows($result)==0) {
 
 	{
 		print '<table class="ff" align="center" border="0"  cellspacing="0">';
-		print '<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold; color: #fff;"><td style="padding-right: 15px;">'.$my_links_chat[$lang].'</td><td style="padding-right: 15px;">'.$logger_from_day[$lang].'</td></tr>';
-		print '<tr class="spacer"><td colspan="4"></td></tr>';
+		print '<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold; color: #fff;"><td style="padding-right: 15px;">'.$my_links_chat[$lang].'</td><td style="padding-right: 15px;">'.$logger_from_day[$lang].'</td><td>'.$del_time[$lang].'</td></tr>';
+		print '<tr class="spacer"><td colspan="5"></td></tr>';
 
 		while ($entry=mysql_fetch_array($result)) {
 
@@ -103,7 +103,7 @@ if (mysql_num_rows($result)==0) {
 			$tslice = $entry["date"];
 			$nickname = query_nick_name($bazaj,$token,$talker,$server_name);
 			print '<tr><td style="padding-left: 10px; padding-right: 10px;"><b>'.htmlspecialchars($nickname).'</b> (<i>'.htmlspecialchars($talker).'@'.htmlspecialchars($server_name).'</i>)</td><td style="text-align: center;">'.$tslice.'</td>';
-		
+			print '<td style="padding-left: 5px; padding-right: 5px; font-size: x-small;">'.$entry[timeframe].'</td>';	
 			$reconstruct_link = encode_url("$tslice@$entry[peer_name_id]@$entry[peer_server_id]@", $token,$url_key); // try to reconstruct oryginal link
 			$undelete_link = "$tslice@$entry[peer_name_id]@$entry[peer_server_id]@@@$reconstruct_link@undelete@";
 			$undelete_link = encode_url($undelete_link,$token,$url_key);
@@ -114,8 +114,8 @@ if (mysql_num_rows($result)==0) {
 			print '</tr>';
 
 		}
-		print '<tr class="spacer"><td colspan="4"></td></tr>';
-		print '<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold;"><td colspan="4" height="15"></td></tr>';
+		print '<tr class="spacer"><td colspan="5"></td></tr>';
+		print '<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold;"><td colspan="5" height="15"></td></tr>';
 		print '</table>';
 	}
 include("footer.php");

@@ -83,7 +83,8 @@ mysql_query("create temporary table results_table (
 	peer_server_id integer,
 	direction varchar(10),
 	body text,
-	score float
+	score float,
+	ext integer
 
 	) ") or die;
 
@@ -141,14 +142,15 @@ while ($entry = mysql_fetch_array($result)) {
 			
 				$body_safe=base64_encode($results[body]); // ensure that we will preserve right message format...
 
-				mysql_query("insert into results_table (ts,time_slice,peer_name_id,peer_server_id,direction,body,score) values (
+				mysql_query("insert into results_table (ts,time_slice,peer_name_id,peer_server_id,direction,body,score,ext) values (
 					'$results[ts]',
 					'$time_slice',
 					'$results[peer_name_id]',
 					'$results[peer_server_id]',
 					'$results[direction]',
 					'$body_safe',
-					'$results[score]'
+					'$results[score]',
+					'$results[ext]'
 					)") or die("Internal Error");
 
 			} else {
@@ -344,9 +346,19 @@ if ($type!="7") {
 	// ... and what was talking, and format that ...
 	$body_talk = wordwrap(str_replace("\n","<br>",htmlspecialchars(base64_decode($dat["body"]))),107,"<br>",true);
 
-	// opening line
-	print '<tr id="pretty" title="'.$jid.'@'.htmlspecialchars($sname).'" style="cursor: pointer;" bgcolor="'.$col.'" onclick="window.location=\''.$view_type.'?a='.$to_base.'\'" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#'.$col.'\';">'."\n";
-	
+	// advise user if chat is deleted. Extension=1 stands for "Chat temporary deleted" or "Chat awaiting deletion"
+	if ($dat[ext] == 1) {
+		print '<tr bgcolor="b5b5b5"><td colspan="4" style="text-align: center;">'.$marked_as_d[$lang].'</td></tr>';
+	}
+
+	// opening line 
+	if (!$dat[ext]) {
+			print '<tr id="pretty" title="'.$jid.'@'.htmlspecialchars($sname).'" style="cursor: pointer;" bgcolor="'.$col.'" onclick="window.location=\''.$view_type.'?a='.$to_base.'\'" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#'.$col.'\';">'."\n";
+		}
+		else {
+			print '<tr id="pretty" title="'.$jid.'@'.htmlspecialchars($sname).'" style="cursor: pointer;" $col="e1e1e1" onclick="window.location=\'trash.php\'">'."\n";
+		}
+
 	// time field:
 	print '<td width="120">'.$dat["ts"].'</td>'."\n";
 	// direction and talker

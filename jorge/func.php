@@ -321,7 +321,7 @@ function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type
 
 	// wyszukiwanie frazy
 	if ($type=="4") {
-		$query="select from_unixtime(timestamp+0) as ts, peer_name_id, peer_server_id, direction, body, match(body) against('$search_p' IN BOOLEAN MODE) as score from `logdb_messages_$tslice_table"."_$xmpp_host` where match(body) against('$search_p' IN BOOLEAN MODE) and owner_id='$user_id' limit $start_set,10000";
+		$query="select from_unixtime(timestamp+0) as ts, peer_name_id, peer_server_id, direction, ext, body, match(body) against('$search_p' IN BOOLEAN MODE) as score from `logdb_messages_$tslice_table"."_$xmpp_host` where match(body) against('$search_p' IN BOOLEAN MODE) and owner_id='$user_id' limit $start_set,10000";
 	}
 
 	// wyszukiwanie wszystkich rozmów z danym userem
@@ -333,7 +333,7 @@ function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type
 			}
 			else { $addq=""; }
 
-		$query="select from_unixtime(timestamp+0) as ts, peer_name_id, peer_server_id, direction, body $adds from `logdb_messages_$tslice_table"."_$xmpp_host` where $addq owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server' limit $start_set,10000";
+		$query="select from_unixtime(timestamp+0) as ts, peer_name_id, peer_server_id, direction, ext, body $adds from `logdb_messages_$tslice_table"."_$xmpp_host` where $addq owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server' limit $start_set,10000";
 	}
 
 	// limited search

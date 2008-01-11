@@ -662,6 +662,10 @@ $cal_days[eng]['7'] = "Sun";
 $chat_lines[pol] = pl_znaczki("Ilo¶æ wiadomo¶ci: ");
 $chat_lines[eng] = "Messages count: ";
 
+$del_time[pol] = pl_znaczki("Usuniêto:");
+$del_time[eng] = "Deleted:";
 
+$marked_as_d[pol] = pl_znaczki("Ta rozmowa znajduje siê w koszu. Aby j± przegl±daæ musisz j± <a href=\"trash.php\"><u>przywróciæ</u></a>");
+$marked_as_d[eng] = "This chat is in trash. If you want to see it - <a href=\"trash.php\"><u>restore it</u></a>";
 
 ?>
