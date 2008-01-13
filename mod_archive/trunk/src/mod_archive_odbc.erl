@@ -2452,7 +2452,7 @@ parse_rsm([A | Tail]) ->
             parse_rsm(Tail)
     end;
 parse_rsm([]) ->
-    none;
+    {{range, {0, undefined}, {infinity, undefined}, normal}, undefined};
 
 parse_rsm({xmlelement, "set", _, SubEls}) ->
     parse_rsm_aux(SubEls, {{range, {0, undefined}, {infinity, undefined}, normal}, undefined});
