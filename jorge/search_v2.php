@@ -348,15 +348,15 @@ if ($type!="7") {
 
 	// advise user if chat is deleted. Extension=1 stands for "Chat temporary deleted" or "Chat awaiting deletion"
 	if ($dat[ext] == 1) {
-		print '<tr bgcolor="b5b5b5"><td colspan="4" style="text-align: center;">'.$marked_as_d[$lang].'</td></tr>';
+		print '<tr bgcolor="b5b5b5"><td colspan="4" style="text-align: center; font-weight: bold;">'.$marked_as_d[$lang].'</td></tr>';
 	}
 
 	// opening line 
-	if (!$dat[ext]) {
+	if ($dat[ext]!=1) {
 			print '<tr id="pretty" title="'.$jid.'@'.htmlspecialchars($sname).'" style="cursor: pointer;" bgcolor="'.$col.'" onclick="window.location=\''.$view_type.'?a='.$to_base.'\'" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#'.$col.'\';">'."\n";
 		}
 		else {
-			print '<tr id="pretty" title="'.$jid.'@'.htmlspecialchars($sname).'" style="cursor: pointer;" $col="e1e1e1" onclick="window.location=\'trash.php\'">'."\n";
+			print '<tr id="pretty" title="'.$jid.'@'.htmlspecialchars($sname).'" style="cursor: pointer;" bgcolor="b5b5b5" onclick="window.location=\'trash.php\'">'."\n";
 		}
 
 	// time field:
