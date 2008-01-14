@@ -66,6 +66,9 @@ $copy = "jabster.pl &copy; 2008";
 // custom logo
 $brand_logo = "logo_jabster.png";
 
+// ignore this ID in queries - this is ID of user without name. see your users table for ID of this user and define it here (it is must)
+$ignore_id="";
+
 
 
 ?>

@@ -101,6 +101,32 @@ print '<input name="sw_lang" type="hidden" value="t">';
 print '</td></tr>';
 print '</form>';
 print '</table>';
+print '<hr size="1" noshade="" color="#c9d7f1"/>';
+// personal stats
+print '<br><small><b>'.$stats_personal_d[$lang].'</b></small>';
+$total_messages=number_format($total_messages=do_sel_quick("select sum(count) from `logdb_stats_$xmpp_host` where owner_id='$user_id'"));
+if ($total_messages=="f") { $total_messages="0"; }
+print '<p style="font-size: x-small;">'.$stats_personal[$lang].'<b> '.$total_messages.'</b></p>';
+$top_ten_personal=do_sel("select peer_name_id,peer_server_id,at,count from `logdb_stats_$xmpp_host` where owner_id='$user_id' and peer_name_id!='$ignore_id' and ext is NULL order by count desc limit 10");
+print '<small><b>'.$stats_personal_top[$lang].'</b></small><br><br>';
+print '<table bgcolor="#ffffff" class="ff" cellspacing="0" cellpadding="3"><tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; color: #fff; font-weight: bold;"><td>'.$stats_personal_count[$lang].'</td><td style="text-align: center;">'.$stats_peer[$lang].'</td><td>'.$stats_when[$lang].'</td></tr>';
+while ($result=mysql_fetch_array($top_ten_personal)) {
+
+	print '<tr><td style="text-align: center; font-weight: bold;">';
+	print $result[count];
+	print '</td><td>';
+	$nickname=htmlspecialchars(query_nick_name($bazaj,$token,pg_escape_string(get_user_name($result[peer_name_id],$xmpp_host)),pg_escape_string(get_server_name($result[peer_server_id],$xmpp_host))));
+	print '<b>'.$nickname.'</b>';
+	print '&nbsp;<small>('.htmlspecialchars(get_user_name($result[peer_name_id],$xmpp_host)).'@'.htmlspecialchars(get_server_name($result[peer_server_id],$xmpp_host)).')</small>';
+	print '</td><td>';
+	$to_base = "$result[at]@$result[peer_name_id]@$result[peer_server_id]@";
+	$to_base = encode_url($to_base,$token,$url_key);
+	print '<a id="pretty" title="'.$stats_see[$lang].'" href="'.$view_type.'?a='.$to_base.'"><u>'.$result[at].'</u></a>';
+	print '</td></tr>';
+
+}
+print '<tr height="15" style="background-image: url(img/bar_new.png); background-repeat:repeat-x; color: #fff;"><td colspan="3"></td></tr>';
+print '</table>';
 print '</center>'."\n";
 print '<br /><br /><br />';
 include("footer.php");

@@ -102,8 +102,8 @@ $menu_item2[eng] = "Search";
 $menu_item3[pol] = pl_znaczki("MyLinks");
 $menu_item3[eng] = "MyLinks";
 
-$menu_item4[pol] = pl_znaczki("Ustawienia");
-$menu_item4[eng] = "Settings";
+$menu_item4[pol] = pl_znaczki("PanelSterowania");
+$menu_item4[eng] = "ControlPanel";
 
 $menu_item5[pol] = pl_znaczki("Kontakty");
 $menu_item5[eng] = "Contacts";
@@ -667,5 +667,28 @@ $del_time[eng] = "Deleted:";
 
 $marked_as_d[pol] = pl_znaczki("Ta rozmowa znajduje siê w koszu. Aby j± przegl±daæ musisz j± <a href=\"trash.php\"><u>przywróciæ</u></a>");
 $marked_as_d[eng] = "This chat is in trash. If you want to see it - <a href=\"trash.php\"><u>restore it</u></a>";
+
+$stats_personal_d[pol] = pl_znaczki("Statystyki rozmów");
+$stats_personal_d[eng] = "Personal statistics";
+
+$stats_personal[pol] = pl_znaczki("Twoja ca³kowita liczba wiadomo¶ci w archiwum:");
+$stats_personal[eng] = "Your total number of messages in archiwe:";
+
+$stats_personal_top[pol] = pl_znaczki("10 najd³u¿szych rozmów:");
+$stats_personal_top[eng] = "Your top 10 chats:";
+
+$stats_when[pol] = pl_znaczki("Kiedy");
+$stats_when[eng] = "When";
+
+$stats_personal_count[pol] = pl_znaczki("Liczba wiadomo¶ci");
+$stats_personal_count[eng] = "Messages count";
+
+$stats_peer[pol] = pl_znaczki("Rozmówca");
+$stats_peer[eng] = "Talker";
+
+$stats_see[pol] = pl_znaczki("Zobacz rozmowê");
+$stats_see[eng] = "See this chat";
+
+
 
 ?>
