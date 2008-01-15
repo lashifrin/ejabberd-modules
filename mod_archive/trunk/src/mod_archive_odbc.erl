@@ -243,15 +243,17 @@ handle_call(stop, _From, State) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
-handle_cast({addlog, Direction, LUser, LServer, LResource, JID, Thread, Subject, Body}, State) ->
+handle_cast({addlog, Type, Direction, LUser, LServer, LResource, JID, Thread, Subject, Nick, Body}, State) ->
     Sessions = State#state.sessions,
     NewSessions =
         case should_store_jid({LUser, LServer}, JID) of
             false ->
                 Sessions;
+            true when Type == "groupchat", Direction == to ->
+                Sessions;
             true ->
                 do_log(Sessions, LUser, LServer, LResource, JID,
-                       Direction, Thread, Subject, Body,
+                       Type, Direction, Thread, Subject, Nick, Body,
                        State#state.session_duration)
         end,
     {noreply, State#state{sessions = NewSessions}};
@@ -420,10 +422,10 @@ receive_packet(_JID, From, To, Packet) ->
 
 add_log(Direction, LUser, LServer, LResource, JID, Packet) ->
     case parse_message(Packet) of
-        {Thread, Subject, Body}  ->
+        {Type, Thread, Subject, Nick, Body}  ->
             Proc = gen_mod:get_module_proc(LServer, ?PROCNAME),
             gen_server:cast(
-              Proc, {addlog, Direction, LUser, LServer, LResource, JID, Thread, Subject, Body});
+              Proc, {addlog, Type, Direction, LUser, LServer, LResource, JID, Thread, Subject, Nick, Body});
 	_ ->
             ok
     end.
@@ -433,13 +435,16 @@ parse_message({xmlelement, "message", _, _} = Packet) ->
     case xml:get_tag_attr_s("type", Packet) of
         Type when Type == "";
                   Type == "normal";
-                  Type == "chat" ->
+                  Type == "chat";
+                  Type == "groupchat" ->
             case xml:get_subtag(Packet, "body") of
                 false ->
 		    "";
                 _ ->
-                    {xml:get_path_s(Packet, [{elem, "thread"}, cdata]),
+                    {Type,
+                     xml:get_path_s(Packet, [{elem, "thread"}, cdata]),
                      xml:get_path_s(Packet, [{elem, "subject"}, cdata]),
+                     xml:get_path_s(Packet, [{elem, "nick"}, cdata]),
                      xml:get_path_s(Packet, [{elem, "body"}, cdata])}
             end;
         _ ->
@@ -453,19 +458,28 @@ parse_message(_) ->
 %%  LUser, LServer :  the local user's information
 %%  Jid : the contact's jid
 %%  Body : the message body
-do_log(Sessions, LUser, LServer, LResource, JID, Direction, Thread, Subject,
-       Body, SessionDuration) ->
+do_log(Sessions, LUser, LServer, LResource, JID, Type, Direction, Thread, Subject,
+       Nick, Body, SessionDuration) ->
     LowJID = jlib:jid_tolower(JID),
+    {_, _, Resource} = LowJID,
     F = fun() ->
                 {NewSessions, _Start, TS, CID, NewRes} =
 		    find_storage(LUser, LServer, LowJID, Thread, Sessions,
-				 SessionDuration),
+				 SessionDuration, Type),
                 LJID = jlib:jid_tolower(jlib:make_jid(LUser, LServer, LResource)),
                 update_collection_partial(CID, LServer, Thread, Subject, NewRes, LJID, TS),
                 M = #archive_message{coll_id = CID,
                                      utc = TS,
                                      direction = Direction,
-                                     name = "",
+                                     name =
+                                         if Type == "groupchat" ->
+                                             if Nick /= "" ->
+                                                 Nick;
+                                                true ->
+                                                 Resource
+                                                end;
+                                            true -> ""
+                                         end,
                                      body = Body},
                 store_message(LServer, M),
                 NewSessions
@@ -478,7 +492,7 @@ do_log(Sessions, LUser, LServer, LResource, JID, Direction, Thread, Subject,
 	    R
     end.
 
-find_storage(LUser, LServer, JID, Thread, Sessions, Timeout) ->
+find_storage(LUser, LServer, JID, Thread, Sessions, Timeout, Type) ->
     %%
     %% In fact there's small problem with resources: we can send the message
     %% to recepient without specifying resource (typically, when sending the first
@@ -511,7 +525,10 @@ find_storage(LUser, LServer, JID, Thread, Sessions, Timeout) ->
     %%        create new if none exists, notifying the caller about change of
     %%        resource, if needed.
     %%
-    {_, _, Resource} = JID,
+    {_, _, ResourceIn} = JID,
+    %% Assume empty Resource for groupchat messages so that they're recorded
+    %% to the same collection.
+    Resource = if Type == "groupchat" -> ""; true -> ResourceIn end,
     Key1 = {LUser, LServer, jlib:jid_remove_resource(JID)},
     TS = get_timestamp(),
     case dict:find(Key1, Sessions) of
@@ -544,8 +561,9 @@ find_storage(LUser, LServer, JID, Thread, Sessions, Timeout) ->
 			    end;
 		       true ->
 			    F = fun(_, Value, {_, MaxLast, _, _} = OldVal) ->
-					{_, Last, _, _} = Value,
-					if Last > MaxLast ->
+					{_, Last, _, CurRes} = Value,
+					if ((Type /= "groupchat") and (Last > MaxLast)) or
+                                           ((Type == "groupchat") and (CurRes == "")) ->
                                                 Value;
 					   true -> OldVal
 					end
