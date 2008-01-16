@@ -474,7 +474,7 @@ do_log(Sessions, LUser, LServer, LResource, JID, Type, Direction, Thread, Subjec
                                      name =
                                          if Type == "groupchat" ->
                                              if Nick /= "" ->
-                                                 Nick;
+					         Nick;
                                                 true ->
                                                  Resource
                                                 end;
@@ -1251,7 +1251,9 @@ get_collection_id_raw(SUS, {SUser, SServer, SResource}, SUTC) ->
                         "and with_server = ", SServer," ",
                         "and with_resource = ", SResource, " "
                         "and utc = ", SUTC]) of
-        {selected, _, Rs} when Rs /= [] -> {ID} = lists:last(lists:sort(Rs)), ID;
+        {selected, _, Rs} when Rs /= [] ->
+	    {ID} = lists:last(lists:sort(Rs)),
+	    decode_integer(ID);
         _ -> {error, ?ERR_BAD_REQUEST}
     end.
 
@@ -1567,11 +1569,11 @@ combine_names_vals(Names, Vals) ->
 get_last_inserted_id(LServer, Table) ->
     case jlib:tolower(gen_mod:get_module_opt(LServer, ?MODULE, database_type, "")) of
         "mysql" -> {selected, _, [{ID}]} = run_sql_query(["select LAST_INSERT_ID()"]),
-                   ID;
+                   decode_integer(ID);
         "sqlite" -> {selected, _, [{ID}]} = run_sql_query(["select last_insert_rowid()"]),
-		    ID;
+		    decode_integer(ID);
 	"pgsql" -> {selected, _, [{ID}]} = run_sql_query(["select currval('",
-                                                          Table, "_id_seq')"]), ID;
+                                                          Table, "_id_seq')"]), decode_integer(ID);
         _ ->
             error
     end.
@@ -1693,12 +1695,11 @@ get_collections_links_count(SUS, SJID, Start, End) ->
     get_collections_links_count_tmpl(SUS, SJID, "utc", false, Start, End).
 
 get_collections_links_count_tmpl(SUS, SJID, Field, AlsoDeleted, {Start, StartID}, {End, EndID}) ->
-    case run_sql_query(["select count(*) from archive_collections ",
-                        get_collections_link_req_where(SUS, SJID, AlsoDeleted),
-                        get_request_part_times(Field, {Start, StartID}, {End, EndID})]) of
-	{selected, _, [{Count}]} when is_integer(Count) -> Count;
-        {selected, _, [{Count}]} when Count /= null -> list_to_integer(Count)
-    end.
+    {selected, _, [{Count}]} =
+        run_sql_query(["select count(*) from archive_collections ",
+                       get_collections_link_req_where(SUS, SJID, AlsoDeleted),
+                       get_request_part_times(Field, {Start, StartID}, {End, EndID})]),
+    decode_integer(Count).
 
 get_collections_links_query(SUS, SJID, RSM) ->
     case run_sql_query(["select id, with_user, with_server, with_resource, utc "
@@ -1721,7 +1722,8 @@ get_collections_links_list(CLs) ->
 get_collection_link_from_query_result({ID, User, Server, Resource, UTC}) ->
     %% We do not create a full-blown record here as we do not have enough info - and
     %% just do not need it.
-    {ID, jlib:jid_tolower(jlib:make_jid(User, Server, Resource)),
+    {decode_integer(ID),
+     jlib:jid_tolower(jlib:make_jid(User, Server, Resource)),
      decode_timestamp(UTC)}.
 
 collection_link_to_xml(Name, {_, JID, UTC}) -> collection_link_to_xml(Name, {JID, UTC});
@@ -1765,12 +1767,12 @@ get_collection_by_id(CID) ->
 
 get_collection_from_query_result({CID, PrevId, NextId, US, User, Server, Resource, UTC,
                                   ChBy, ChUTC, Deleted, Subject, Thread, Crypt, Extra}) ->
-    #archive_collection{id = CID,
+    #archive_collection{id = decode_integer(CID),
                         us = get_us_separated(US),
                         jid = jlib:jid_tolower(jlib:make_jid(User, Server, Resource)),
                         utc = decode_timestamp(UTC),
-                        prev = get_collection_link_by_id(PrevId),
-                        next = get_collection_link_by_id(NextId),
+                        prev = get_collection_link_by_id(decode_integer(PrevId)),
+                        next = get_collection_link_by_id(decode_integer(NextId)),
                         change_by = case ChBy of
                                         null -> {undefined, undefined, undefined};
                                         R -> jlib:jid_tolower(jlib:string_to_jid(R))
@@ -1779,7 +1781,7 @@ get_collection_from_query_result({CID, PrevId, NextId, US, User, Server, Resourc
                                          null -> undefined;
                                          R -> decode_timestamp(R)
                                      end,
-                        deleted = case Deleted of
+                        deleted = case decode_integer(Deleted) of
                                       0 -> false;
                                       1 -> true;
                                       _ -> throw({error, ?ERR_INTERNAL_SERVER_ERROR})
@@ -1792,7 +1794,7 @@ get_collection_from_query_result({CID, PrevId, NextId, US, User, Server, Resourc
                                      null -> undefined;
                                      R -> R
                                  end,
-                        crypt = case Crypt of
+                        crypt = case decode_integer(Crypt) of
                                     null -> false;
                                     R -> R == 1
                                 end,
@@ -1871,13 +1873,11 @@ get_messages(C, RSM) ->
     end.
 
 get_messages_count(CID, {Start, StartID}, {End, EndID}) ->
-    case run_sql_query(["select count(*) from archive_messages "
-                        "where coll_id = ", escape(CID), " ",
-                        get_request_part_times("utc", {Start, StartID}, {End, EndID})]) of
-	{selected, _, [{Count}]} when is_integer(Count) -> Count;
-        {selected, _, [{Count}]} when Count /= null -> list_to_integer(Count)
-    end.
-
+    {selected, _, [{Count}]} =
+        run_sql_query(["select count(*) from archive_messages "
+                       "where coll_id = ", escape(CID), " ",
+                       get_request_part_times("utc", {Start, StartID}, {End, EndID})]),
+    decode_integer(Count).
 
 get_messages_query(CID, RSM) ->
     case run_sql_query(["select * from archive_messages "
@@ -1887,10 +1887,10 @@ get_messages_query(CID, RSM) ->
     end.
 
 get_message_from_query_result({MID, CID, UTC, Dir, Body, Name}) ->
-    #archive_message{id = MID,
-                     coll_id = CID,
+    #archive_message{id = decode_integer(MID),
+                     coll_id = decode_integer(CID),
                      utc = decode_timestamp(UTC),
-                     direction = case Dir of
+                     direction = case decode_integer(Dir) of
                                      0 -> from;
                                      1 -> to;
                                      2 -> note
@@ -2005,12 +2005,12 @@ get_modified_legacy(LUser, LServer, {{range, {Start, undefined}, {_, _}, _}, Max
     end.
 
 get_change_from_query_result({CID, US, By, User, Server, Resource, UTC, CHUTC, Deleted}) ->
-    #archive_collection{id = CID,
+    #archive_collection{id = decode_integer(CID),
                         us = get_us_separated(US),
                         change_by = jlib:jid_tolower(jlib:string_to_jid(By)),
                         jid = jlib:jid_tolower(jlib:make_jid(User, Server, Resource)),
                         utc = decode_timestamp(UTC),
-                        deleted = Deleted,
+                        deleted = decode_integer(Deleted),
                         change_utc = decode_timestamp(CHUTC)}.
 
 change_to_xml(C) ->
@@ -2048,14 +2048,14 @@ get_global_prefs_from_query_result({US, Save, Expire, OTR,
                           method_auto = get_method_from_query_result(MAuto),
                           method_local = get_method_from_query_result(MLocal),
                           method_manual = get_method_from_query_result(MManual),
-                          auto_save = case AutoSave of
+                          auto_save = case decode_integer(AutoSave) of
                                           1 -> true;
                                           0 -> false;
                                           null -> undefined
                                       end}.
 
 get_method_from_query_result(Method) ->
-    case Method of
+    case decode_integer(Method) of
         0 -> prefer;
         1 -> concede;
         2 -> forbid;
@@ -2092,16 +2092,16 @@ get_jid_prefs_from_query_result({US, User, Server, Resource, Save, Expire, OTR})
                        otr = ROTR}.
 
 get_common_prefs_from_query_result(Save, Expire, OTR) ->
-    {case Save of
+    {case decode_integer(Save) of
          1 -> body;
          0 -> false;
          _ -> undefined
      end,
-     case Expire of
+     case decode_integer(Expire) of
          null -> undefined;
          N -> N
      end,
-     case OTR of
+     case decode_integer(OTR) of
          0 -> approve;
          1 -> concede;
          2 -> forbid;
@@ -2272,6 +2272,13 @@ get_jid_full_escaped({LUser, LServer, ""}) ->
     escape(LUser ++ "@" ++ LServer);
 get_jid_full_escaped({LUser, LServer, LResource}) ->
     escape(LUser ++ "@" ++ LServer ++ "/" ++ LResource).
+
+decode_integer(Val) when is_integer(Val) ->
+    Val;
+decode_integer(null) ->
+    null;
+decode_integer(Val) ->
+    list_to_integer(Val).
 
 is_non_empty(null) -> false;
 is_non_empty(undefined) -> false;
