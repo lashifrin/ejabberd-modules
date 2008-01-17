@@ -174,9 +174,36 @@ $tslice_table='logdb_messages_'.$tslice.'_'.$xmpp_host;
 if ($tslice) {
 	$result=db_q($user_id,$server,$tslice,$talker,$search_p,"2",$start,$xmpp_host);
 	if ($result=="f") { header ("Location: main.php");  }
+
+	mysql_query("create temporary table tslice_temp (
+		roster_name varchar(255),
+		username varchar(255),
+		server_name varchar(255),
+		todaytalk integer,
+		server integer,
+		lcount integer
+		)") or die;
+	while ($sort_me = mysql_fetch_array($result)) {
+		
+		$roster_name=pg_escape_string(query_nick_name($bazaj,$token,pg_escape_string($sort_me[username]),pg_escape_string($sort_me[server_name])));
+
+		mysql_query("insert into tslice_temp (roster_name,username,server_name,todaytalk,server,lcount) values (
+			'$roster_name',
+			'$sort_me[username]',
+			'$sort_me[server_name]',
+			'$sort_me[todaytalk]',
+			'$sort_me[server]',
+			'$sort_me[lcount]'
+			)") or die;
+
+	}
+	mysql_free_result($result);
+
 	print '<td valign="top" style="padding-top: 15px;">'."\n";
 	print '<table class="ff">'."\n";
-	while ($entry = mysql_fetch_array($result))
+	$result_from_temp=do_sel("select * from tslice_temp order by roster_name asc");
+
+	while ($entry = mysql_fetch_array($result_from_temp))
 	{
 		$user_name = $entry[username];
 		$server_name = $entry[server_name];
@@ -189,6 +216,8 @@ if ($tslice) {
 			print '<td><a id="pretty" href="?a='.$to_base2.'" title="JabberID:;'.htmlspecialchars($user_name).'@'.htmlspecialchars($server_name).'">'.$bold_b.cut_nick(htmlspecialchars($nickname)).$bold_e.'</a></td>'."\n";
 			print '</tr>'."\n";
 	}
+	mysql_free_result($$result_from_temp);
+
 	print '</table>'."\n";
 	print '</td>'."\n";
 

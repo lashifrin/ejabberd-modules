@@ -192,6 +192,30 @@ $tslice_table='logdb_messages_'.$tslice.'_'.$xmpp_host;
 if ($tslice) {
 	
         $result=db_q($user_id,$server,$tslice,$talker,$search_p,"2",$start,$xmpp_host);
+	mysql_query("create temporary table tslice_temp (
+		roster_name varchar(255),
+		username varchar(255),
+		server_name varchar(255),
+		todaytalk integer,
+		server integer,
+		lcount integer
+		)") or die;
+	while ($sort_me = mysql_fetch_array($result)) {
+		
+		$roster_name=pg_escape_string(query_nick_name($bazaj,$token,pg_escape_string($sort_me[username]),pg_escape_string($sort_me[server_name])));
+
+		mysql_query("insert into tslice_temp (roster_name,username,server_name,todaytalk,server,lcount) values (
+			'$roster_name',
+			'$sort_me[username]',
+			'$sort_me[server_name]',
+			'$sort_me[todaytalk]',
+			'$sort_me[server]',
+			'$sort_me[lcount]'
+			)") or die;
+
+	}
+	mysql_free_result($result);
+
         if ($result=="f") { header ("Location: calendar_view.php");  }
         print '<td valign="top" style="padding-top: 15px;">'."\n";
         print '<table width="200" border="0" cellpadding="0" cellspacing="0" class="calbck_con">'."\n";
@@ -212,9 +236,9 @@ if ($tslice) {
 		';
 	print '<tr align="center" class="caldays">'."\n";
 	print '<td><div style="vertical-align: middle; overflow: auto; height: 210; border-left: 0px; border-bottom: 0px; padding:0px; margin: 0px;">'."\n";
-
 	// select chatters
-        while ($entry = mysql_fetch_array($result))
+	$result_from_temp = do_sel("select * from tslice_temp order by roster_name asc");
+        while ($entry = mysql_fetch_array($result_from_temp))
         {
                 $user_name = $entry[username];
                 $server_name = $entry[server_name];
@@ -247,6 +271,8 @@ if ($tslice) {
 			}
 
         }
+	mysql_free_result($result_from_temp);
+
 	print '</div>';
 	print '</td></tr>'."\n";
 	print '
