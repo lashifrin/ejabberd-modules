@@ -310,7 +310,7 @@ while ($entry = mysql_fetch_array($result)) {
 // if normal search:
 if ($type!="7") {
 
-	$temp_query = "select * from results_table order by score desc limit 100";
+	$temp_query = "select from_unixtime(ts+0) as ts, time_slice, peer_name_id, peer_server_id, direction, body, score, ext from results_table order by score desc limit 100";
 	$result = mysql_query($temp_query);
 	$num_results = mysql_num_rows($result);
 	print '<tr class="maint"><td colspan="4" style="text-align: center; font-weight: normal;">'.$search_tip[$lang].' <b>'.$num_results.'</b>'.$search_why[$lang].'</td></tr>';
