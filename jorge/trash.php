@@ -65,7 +65,7 @@ if ($action=="delete") {
 
 	// this is additional check - if fail, do nothing
 	if (ctype_digit($talker) OR ctype_digit($server)) {
-		if ((mysql_query("delete from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id' and peer_name_id='$talker' and ext = '1'")==TRUE)) {
+		if ((mysql_query("delete from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server' and ext = '1'")==TRUE)) {
 			// cleanup, unfortunately we are not operating on transactions :/
 			mysql_query("delete from jorge_mylinks where owner_id='$user_id' and ext='1' and peer_name_id = '$talker' and peer_server_id='$server' and datat = '$tslice'");
 			mysql_query("delete from pending_del where owner_id='$user_id' and peer_name_id = '$talker' and peer_server_id='$server' and date='$tslice'");
