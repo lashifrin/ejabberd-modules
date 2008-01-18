@@ -102,8 +102,8 @@ $menu_item2[eng] = "Search";
 $menu_item3[pol] = pl_znaczki("MyLinks");
 $menu_item3[eng] = "MyLinks";
 
-$menu_item4[pol] = pl_znaczki("PanelSterowania");
-$menu_item4[eng] = "ControlPanel";
+$menu_item4[pol] = pl_znaczki("Panel Sterowania");
+$menu_item4[eng] = "Control Panel";
 
 $menu_item5[pol] = pl_znaczki("Kontakty");
 $menu_item5[eng] = "Contacts";
