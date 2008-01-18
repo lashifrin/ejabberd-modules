@@ -24,10 +24,10 @@ require ("headers.php");
 
 $tigger=$_POST['trigger'];
 $aaa=mysql_escape_string($_POST['aaa']);
-$datat=mysql_escape_string($_POST['datat']);
+$datat=mysql_escape_string(decode_url_simple($_POST['datat'],$token,$url_key));
 $desc=mysql_escape_string($_POST['desc']);
-$peer_user=mysql_escape_string($_POST['peer_user']);
-$peer_server=mysql_escape_string($_POST['peer_server']);
+$peer_user=mysql_escape_string(decode_url_simple($_POST['peer_user'],$token,$url_key));
+$peer_server=mysql_escape_string(decode_url_simple($_POST['peer_server'],$token,$url_key));
 $del=$_GET['del'];
 $link_id=mysql_escape_string($_GET['link_id']);
 
@@ -87,8 +87,11 @@ if ($variables[ismylink]=="1") {
 	print '<tr><td colspan="3" align="center"><input name="trigger" class="red" type="submit" value="'.$my_links_commit[$lang].'">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
 	print '<input class="red" type="button" value="'.$my_links_cancel[$lang].'" onClick="parent.location=\''.$view_type.'?a='.htmlspecialchars($variables[lnk]).'&start='.htmlspecialchars($variables[strt]).'#'.htmlspecialchars($variables[linktag]).'\'"></td>';
 	print '</tr>'."\n";
-	print '<tr><td><input type="hidden" name="peer_user" value="'.$variables[talker].'"><input type="hidden" name="peer_server" value="'.$variables[server].'">';
-	print '<input type="hidden" name="aaa" value="'.htmlspecialchars($variables[lnk]).'&start='.htmlspecialchars($variables[strt]).'#'.$variables[linktag].'"><input type="hidden" name="datat" value="'.$variables[tslice].'"> </td></tr>'."\n";
+	print '<tr><td>'."\n";
+	print '<input type="hidden" name="peer_user" value="'.encode_url($variables[talker],$token,$url_key).'">'."\n";
+	print '<input type="hidden" name="peer_server" value="'.encode_url($variables[server],$token,$url_key).'">'."\n";
+	print '<input type="hidden" name="aaa" value="'.htmlspecialchars($variables[lnk]).'&start='.htmlspecialchars($variables[strt]).'#'.$variables[linktag].'">'."\n";
+	print '<input type="hidden" name="datat" value="'.encode_url($variables[tslice],$token,$url_key).'"> </td></tr>'."\n";
 	print '</form>'."\n";
 	print '</table>'."\n";
 	print '</center>'."\n";
