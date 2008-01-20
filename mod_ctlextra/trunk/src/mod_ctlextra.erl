@@ -168,7 +168,8 @@ ctl_process(_Val, ["remove-node", Node]) ->
     mnesia:del_table_copy(schema, list_to_atom(Node)),
     ?STATUS_SUCCESS;
 
-ctl_process(_Val, ["srg-create", Group, Host, Name, Description, Display]) ->
+ctl_process(_Val, ["srg-create" | Parameters]) ->
+	[Group, Host, Name, Description, Display] = group_parameters(Parameters, "'"),
     Opts = [{name, Name}, {displayed_groups, [Display]}, {description, Description}],
     {atomic, ok} = mod_shared_roster:create_group(Host, Group, Opts),
     ?STATUS_SUCCESS;
@@ -624,3 +625,29 @@ histogram([], _Integral, _Current, Count, Hist) ->
 	true ->
 	    lists:reverse(Hist)
     end.
+
+group_parameters(Ps, [Char]) ->
+	{none, Grouped_Ps} = lists:foldl(
+		fun(P, {State, Res}) ->
+			case State of
+				none -> 
+					case P of
+						[Char | PTail]->
+							{building, [PTail | Res]};
+						_ ->
+							{none, [P | Res]}
+					end;
+				building -> 
+					[ResHead | ResTail] = Res,
+					case lists:last(P) of
+						Char ->
+							P2 = lists:sublist(P, length(P)-1),
+							{none, [ResHead ++ " " ++ P2 | ResTail]};
+						_ ->
+							{building, [ResHead ++ " " ++ P | ResTail]}
+					end
+			end
+		end,
+		{none, []},
+		Ps),
+	lists:reverse(Grouped_Ps).

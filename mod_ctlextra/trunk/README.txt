@@ -30,9 +30,17 @@ Description of some commands:
 
  - pushroster*
    The file used by 'pushroster' and 'pushroster-all' must be placed:
-     - Windows: on the directory were you installed ejabberd: 'C:/Program Files/ejabberd'
+     - Windows: on the directory were you installed ejabberd: 
+       'C:/Program Files/ejabberd'
      - Other OS: on the same directory where the .beam files are.
    Example content for the roster file:
    [{"bob", "example.org", "workers", "Bob"},
     {"mart", "example.org", "workers", "Mart"},
     {"Rich", "example.org", "bosses", "Rich"}].
+
+ - srg-create
+   If you want to put a group Name with blankspaces, use the characters 
+   "' and '" to define when the Name starts and ends.
+   For example:
+   ejabberdctl srg-create g1 example.org "'Group number 1'" this_is_g1 g1
+
