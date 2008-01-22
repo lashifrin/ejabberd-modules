@@ -90,29 +90,32 @@ $lang_sw2[pol] = "English";
 $header_l[pol] = pl_znaczki("Archiwa rozmów serwera");
 $header_l[eng] = "Message archives of server";
 
-$menu_item1[pol] = pl_znaczki("Przegl±darka");
-$menu_item1[eng] = "Browser";
+$menu_item_browser[pol] = pl_znaczki("Przegl±darka");
+$menu_item_browser[eng] = "Browser";
 
-$menu_item1a[pol] = pl_znaczki("MapaRozmów");
-$menu_item1a[eng] = "ChatMap";
+$menu_item_map[pol] = pl_znaczki("Mapa Rozmów");
+$menu_item_map[eng] = "Chat Map";
 
-$menu_item2[pol] = pl_znaczki("Wyszukiwarka");
-$menu_item2[eng] = "Search";
+$menu_item_fav[pol] = pl_znaczki("Ulubione");
+$menu_item_fav[eng] = "Favorites";
 
-$menu_item3[pol] = pl_znaczki("MyLinks");
-$menu_item3[eng] = "MyLinks";
+$menu_item_search[pol] = pl_znaczki("Wyszukiwarka");
+$menu_item_search[eng] = "Search";
 
-$menu_item4[pol] = pl_znaczki("Panel Sterowania");
-$menu_item4[eng] = "Control Panel";
+$menu_item_links[pol] = pl_znaczki("MyLinks");
+$menu_item_links[eng] = "MyLinks";
 
-$menu_item5[pol] = pl_znaczki("Kontakty");
-$menu_item5[eng] = "Contacts";
+$menu_item_panel[pol] = pl_znaczki("Panel Sterowania");
+$menu_item_panel[eng] = "Control Panel";
 
-$menu_item6[pol] = pl_znaczki("Logi");
-$menu_item6[eng] = "Logs";
+$menu_item_contacts[pol] = pl_znaczki("Kontakty");
+$menu_item_contacts[eng] = "Contacts";
 
-$menu_item7[pol] = pl_znaczki("Kosz");
-$menu_item7[eng] = "Trash";
+$menu_item_logs[pol] = pl_znaczki("Logi");
+$menu_item_logs[eng] = "Logs";
+
+$menu_item_trash[pol] = pl_znaczki("Kosz");
+$menu_item_trash[eng] = "Trash";
 
 $search_box[pol] = pl_znaczki("Szukaj w archiwach");
 $search_box[eng] = "Search in archives";
@@ -522,6 +525,9 @@ $refresh[eng] = "Refresh";
 $back_t[pol] = pl_znaczki("Wróæ na góre strony");
 $back_t[eng] = "Back to top of the page";
 
+$trash_name[pol] = pl_znaczki("Kosz");
+$trash_name[eng] = "Trash";
+
 $trash_desc[pol] = pl_znaczki("Lista rozmów usuniêtych. Wiadomo¶ci które przebywaj± w koszu d³u¿ej ni¿ 30 dni s± automatycznie usuwane");
 $trash_desc[eng] = "List of trashed chats. Chats that are left in trash are automaticly deleted after 30 days.";
 
@@ -689,6 +695,11 @@ $stats_peer[eng] = "Talker";
 $stats_see[pol] = pl_znaczki("Zobacz rozmowê");
 $stats_see[eng] = "See this chat";
 
+$fav_main[pol] = pl_znaczki("Ulubione");
+$fav_main[eng] = "Favorites";
+
+$fav_desc[pol] = pl_znaczki("Lista rozmów oznaczonych jako \"Ulubione\"");
+$fav_desc[eng] = "List of chats marked as favorites";
 
 
 ?>

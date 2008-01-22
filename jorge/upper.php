@@ -82,140 +82,163 @@ if ($view_type=="1") { $view_type="main.php"; } elseif($view_type=="2") { $view_
 if (preg_match("/search_v2.php/i",$location)) 
 
 	{ 
-		$loc1='<a class="mmenu" href="'.$view_type.'">'.$menu_item1[$lang].'</a>';
-		$loc1a='<a class="mmenu" href="chat_map.php">'.$menu_item1a[$lang].'</a>';
-		$loc2='<b>'.$menu_item2[$lang].'</b>';
-		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
-		$loc5='<a class="mmenu" href="contacts.php">'.$menu_item5[$lang].'</a>';
-		$loc5a='<a class="mmenu" href="logger.php">'.$menu_item6[$lang].'</a>';
-		$loc7='<a class="mmenu" href="trash.php">'.$menu_item7[$lang].'('.$tr_n.')</a>';
+		$menu_main='<a class="mmenu" href="'.$view_type.'">'.$menu_item_browser[$lang].'</a>';
+		$menu_map='<a class="mmenu" href="chat_map.php">'.$menu_item_map[$lang].'</a>';
+		$menu_search='<b>'.$menu_item_search[$lang].'</b>';
+		$menu_mylinks='<a class="mmenu" href="my_links.php">'.$menu_item_links[$lang].' ('.$my_links_count.')</a>';
+		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'</a>';
+		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
+		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
+		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
 		$search_loc=1;
-		if ($token==$admin_name) { $loc6=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
+		if ($token==$admin_name) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 	}
 	elseif(preg_match("/main.php/i",$location))
 	{
-		$loc1='<b>'.$menu_item1[$lang].'</b>';
-		$loc1a='<a class="mmenu" href="chat_map.php">'.$menu_item1a[$lang].'</a>';
-		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
-		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
-		$loc5='<a class="mmenu" href="contacts.php">'.$menu_item5[$lang].'</a>';
-		$loc5a='<a class="mmenu" href="logger.php">'.$menu_item6[$lang].'</a>';
-		$loc7='<a class="mmenu" href="trash.php">'.$menu_item7[$lang].'('.$tr_n.')</a>';
-		if ($token==$admin_name) { $loc6=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
+		$menu_main='<b>'.$menu_item_browser[$lang].'</b>';
+		$menu_map='<a class="mmenu" href="chat_map.php">'.$menu_item_map[$lang].'</a>';
+		$menu_search='<a class="mmenu" href="search_v2.php">'.$menu_item_search[$lang].'</a>';
+		$menu_mylinks='<a class="mmenu" href="my_links.php">'.$menu_item_links[$lang].' ('.$my_links_count.')</a>';
+		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'</a>';
+		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
+		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
+		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
+		if ($token==$admin_name) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 
 	}
 	elseif(preg_match("/my_links.php/i",$location))
 	{
-		$loc1='<a class="mmenu" href="'.$view_type.'">'.$menu_item1[$lang].'</a>';
-		$loc1a='<a class="mmenu" href="chat_map.php">'.$menu_item1a[$lang].'</a>';
-		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
-		$loc3='<b>'.$menu_item3[$lang].' ('.$my_links_count.') </b>';
-		$loc5='<a class="mmenu" href="contacts.php">'.$menu_item5[$lang].'</a>';
-		$loc5a='<a class="mmenu" href="logger.php">'.$menu_item6[$lang].'</a>';
-		$loc7='<a class="mmenu" href="trash.php">'.$menu_item7[$lang].'('.$tr_n.')</a>';
-		if ($token==$admin_name) { $loc6=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
+		$menu_main='<a class="mmenu" href="'.$view_type.'">'.$menu_item_browser[$lang].'</a>';
+		$menu_map='<a class="mmenu" href="chat_map.php">'.$menu_item_map[$lang].'</a>';
+		$menu_search='<a class="mmenu" href="search_v2.php">'.$menu_item_search[$lang].'</a>';
+		$menu_mylinks='<b>'.$menu_item_links[$lang].' ('.$my_links_count.') </b>';
+		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'</a>';
+		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
+		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
+		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
+		if ($token==$admin_name) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 
 
 	}
 	elseif(preg_match("/help.php/i",$location))
 	{
-		$loc1='<a class="mmenu" href="'.$view_type.'">'.$menu_item1[$lang].'</a>';
-		$loc1a='<a class="mmenu" href="chat_map.php">'.$menu_item1a[$lang].'</a>';
-		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
-		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
-		$loc5='<a class="mmenu" href="contacts.php">'.$menu_item5[$lang].'</a>';
-		$loc5a='<a class="mmenu" href="logger.php">'.$menu_item6[$lang].'</a>';
-		$loc7='<a class="mmenu" href="trash.php">'.$menu_item7[$lang].'('.$tr_n.')</a>';
-		if ($token==$admin_name) { $loc6=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
+		$menu_main='<a class="mmenu" href="'.$view_type.'">'.$menu_item_browser[$lang].'</a>';
+		$menu_map='<a class="mmenu" href="chat_map.php">'.$menu_item_map[$lang].'</a>';
+		$menu_search='<a class="mmenu" href="search_v2.php">'.$menu_item_search[$lang].'</a>';
+		$menu_mylinks='<a class="mmenu" href="my_links.php">'.$menu_item_links[$lang].' ('.$my_links_count.')</a>';
+		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'</a>';
+		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
+		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
+		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
+		if ($token==$admin_name) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 
 	}
 	elseif(preg_match("/contacts.php/i", $location))
 	{
-		$loc1='<a class="mmenu" href="'.$view_type.'">'.$menu_item1[$lang].'</a>';
-		$loc1a='<a class="mmenu" href="chat_map.php">'.$menu_item1a[$lang].'</a>';
-		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
-		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
-		$loc5='<b>'.$menu_item5[$lang].'</b>';
-		$loc5a='<a class="mmenu" href="logger.php">'.$menu_item6[$lang].'</a>';
-		$loc7='<a class="mmenu" href="trash.php">'.$menu_item7[$lang].'('.$tr_n.')</a>';
-		if ($token==$admin_name) { $loc6=' | <a class="mmenu" href="stats.php">Stats</a>'; }
+		$menu_main='<a class="mmenu" href="'.$view_type.'">'.$menu_item_browser[$lang].'</a>';
+		$menu_map='<a class="mmenu" href="chat_map.php">'.$menu_item_map[$lang].'</a>';
+		$menu_search='<a class="mmenu" href="search_v2.php">'.$menu_item_search[$lang].'</a>';
+		$menu_mylinks='<a class="mmenu" href="my_links.php">'.$menu_item_links[$lang].' ('.$my_links_count.')</a>';
+		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'</a>';
+		$menu_contacts='<b>'.$menu_item_contacts[$lang].'</b>';
+		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
+		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
+		if ($token==$admin_name) { $menu_stats=' | <a class="mmenu" href="stats.php">Stats</a>'; }
 
 	}
 	elseif(preg_match("/stats.php/i", $location))
 	{
-		$loc1='<a class="mmenu" href="'.$view_type.'">'.$menu_item1[$lang].'</a>';
-		$loc1a='<a class="mmenu" href="chat_map.php">'.$menu_item1a[$lang].'</a>';
-		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
-		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
-		$loc5='<a class="mmenu" href="contacts.php">'.$menu_item5[$lang].'</a>';
-		$loc5a='<a class="mmenu" href="logger.php">'.$menu_item6[$lang].'</a>';
-		$loc7='<a class="mmenu" href="trash.php">'.$menu_item7[$lang].'('.$tr_n.')</a>';
-		if ($token==$admin_name) { $loc6=' | <b>Stats</b></a>'; }
+		$menu_main='<a class="mmenu" href="'.$view_type.'">'.$menu_item_browser[$lang].'</a>';
+		$menu_map='<a class="mmenu" href="chat_map.php">'.$menu_item_map[$lang].'</a>';
+		$menu_search='<a class="mmenu" href="search_v2.php">'.$menu_item_search[$lang].'</a>';
+		$menu_mylinks='<a class="mmenu" href="my_links.php">'.$menu_item_links[$lang].' ('.$my_links_count.')</a>';
+		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'</a>';
+		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
+		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
+		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
+		if ($token==$admin_name) { $menu_stats=' | <b>Stats</b></a>'; }
 
 		
 	}
 	elseif(preg_match("/logger.php/i", $location))
 	{
-		$loc1='<a class="mmenu" href="'.$view_type.'">'.$menu_item1[$lang].'</a>';
-		$loc1a='<a class="mmenu" href="chat_map.php">'.$menu_item1a[$lang].'</a>';
-		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
-		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
-		$loc5='<a class="mmenu" href="contacts.php">'.$menu_item5[$lang].'</a>';
-		$loc5a='<b>'.$menu_item6[$lang].'</b>';
-		$loc7='<a class="mmenu" href="trash.php">'.$menu_item7[$lang].'('.$tr_n.')</a>';
-		if ($token==$admin_name) { $loc6=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
+		$menu_main='<a class="mmenu" href="'.$view_type.'">'.$menu_item_browser[$lang].'</a>';
+		$menu_map='<a class="mmenu" href="chat_map.php">'.$menu_item_map[$lang].'</a>';
+		$menu_search='<a class="mmenu" href="search_v2.php">'.$menu_item_search[$lang].'</a>';
+		$menu_mylinks='<a class="mmenu" href="my_links.php">'.$menu_item_links[$lang].' ('.$my_links_count.')</a>';
+		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'</a>';
+		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
+		$menu_logger='<b>'.$menu_item_logs[$lang].'</b>';
+		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
+		if ($token==$admin_name) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 
 		
 	}
 	elseif(preg_match("/trash.php/i", $location))
 	{
-		$loc1='<a class="mmenu" href="'.$view_type.'">'.$menu_item1[$lang].'</a>';
-		$loc1a='<a class="mmenu" href="chat_map.php">'.$menu_item1a[$lang].'</a>';
-		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
-		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
-		$loc5='<a class="mmenu" href="contacts.php">'.$menu_item5[$lang].'</a>';
-		$loc5a='<a class="mmenu" href="logger.php">'.$menu_item6[$lang].'</a>';
-		$loc7='<b>'.$menu_item7[$lang].'('.$tr_n.')</b>';
-		if ($token==$admin_name) { $loc6=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
+		$menu_main='<a class="mmenu" href="'.$view_type.'">'.$menu_item_browser[$lang].'</a>';
+		$menu_map='<a class="mmenu" href="chat_map.php">'.$menu_item_map[$lang].'</a>';
+		$menu_search='<a class="mmenu" href="search_v2.php">'.$menu_item_search[$lang].'</a>';
+		$menu_mylinks='<a class="mmenu" href="my_links.php">'.$menu_item_links[$lang].' ('.$my_links_count.')</a>';
+		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'</a>';
+		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
+		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
+		$menu_trash='<b>'.$menu_item_trash[$lang].'('.$tr_n.')</b>';
+		if ($token==$admin_name) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 
 		
 	}
 	elseif(preg_match("/calendar_view.php/i", $location))
 	{
-		$loc1='<b>'.$menu_item1[$lang].'</b>';
-		$loc1a='<a class="mmenu" href="chat_map.php">'.$menu_item1a[$lang].'</a>';
-		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
-		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
-		$loc5='<a class="mmenu" href="contacts.php">'.$menu_item5[$lang].'</a>';
-		$loc5a='<a class="mmenu" href="logger.php">'.$menu_item6[$lang].'</a>';
-		$loc7='<a class="mmenu" href="trash.php">'.$menu_item7[$lang].'('.$tr_n.')</a>';
-		if ($token==$admin_name) { $loc6=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
+		$menu_main='<b>'.$menu_item_browser[$lang].'</b>';
+		$menu_map='<a class="mmenu" href="chat_map.php">'.$menu_item_map[$lang].'</a>';
+		$menu_search='<a class="mmenu" href="search_v2.php">'.$menu_item_search[$lang].'</a>';
+		$menu_mylinks='<a class="mmenu" href="my_links.php">'.$menu_item_links[$lang].' ('.$my_links_count.')</a>';
+		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'</a>';
+		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
+		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
+		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
+		if ($token==$admin_name) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 
 		
 	}
 	elseif(preg_match("/chat_map.php/i", $location))
 	{
-		$loc1='<a class="mmenu" href="'.$view_type.'">'.$menu_item1[$lang].'</a>';
-		$loc1a='<b>'.$menu_item1a[$lang].'</b>';
-		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
-		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
-		$loc5='<a class="mmenu" href="contacts.php">'.$menu_item5[$lang].'</a>';
-		$loc5a='<a class="mmenu" href="logger.php">'.$menu_item6[$lang].'</a>';
-		$loc7='<a class="mmenu" href="trash.php">'.$menu_item7[$lang].'('.$tr_n.')</a>';
-		if ($token==$admin_name) { $loc6=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
+		$menu_main='<a class="mmenu" href="'.$view_type.'">'.$menu_item_browser[$lang].'</a>';
+		$menu_map='<b>'.$menu_item_map[$lang].'</b>';
+		$menu_search='<a class="mmenu" href="search_v2.php">'.$menu_item_search[$lang].'</a>';
+		$menu_mylinks='<a class="mmenu" href="my_links.php">'.$menu_item_links[$lang].' ('.$my_links_count.')</a>';
+		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'</a>';
+		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
+		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
+		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
+		if ($token==$admin_name) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 
 		
 	}
 	elseif(preg_match("/settings.php/i", $location))
 	{
-		$loc1='<a class="mmenu" href="'.$view_type.'">'.$menu_item1[$lang].'</a>';
-		$loc1a='<a class="mmenu" href="chat_map.php">'.$menu_item1a[$lang].'</a>';
-		$loc2='<a class="mmenu" href="search_v2.php">'.$menu_item2[$lang].'</a>';
-		$loc3='<a class="mmenu" href="my_links.php">'.$menu_item3[$lang].' ('.$my_links_count.')</a>';
-		$loc5='<a class="mmenu" href="contacts.php">'.$menu_item5[$lang].'</a>';
-		$loc5a='<a class="mmenu" href="logger.php">'.$menu_item6[$lang].'</a>';
-		$loc7='<a class="mmenu" href="trash.php">'.$menu_item7[$lang].'('.$tr_n.')</a>';
-		if ($token==$admin_name) { $loc6=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
+		$menu_main='<a class="mmenu" href="'.$view_type.'">'.$menu_item_browser[$lang].'</a>';
+		$menu_map='<a class="mmenu" href="chat_map.php">'.$menu_item_map[$lang].'</a>';
+		$menu_search='<a class="mmenu" href="search_v2.php">'.$menu_item_search[$lang].'</a>';
+		$menu_mylinks='<a class="mmenu" href="my_links.php">'.$menu_item_links[$lang].' ('.$my_links_count.')</a>';
+		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'</a>';
+		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
+		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
+		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
+		if ($token==$admin_name) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
+	}
+	elseif(preg_match("/favorites.php/i", $location))
+	{
+		$menu_main='<a class="mmenu" href="'.$view_type.'">'.$menu_item_browser[$lang].'</a>';
+		$menu_map='<a class="mmenu" href="chat_map.php">'.$menu_item_map[$lang].'</a>';
+		$menu_search='<a class="mmenu" href="search_v2.php">'.$menu_item_search[$lang].'</a>';
+		$menu_mylinks='<a class="mmenu" href="my_links.php">'.$menu_item_links[$lang].' ('.$my_links_count.')</a>';
+		$menu_favorites='<b>'.$menu_item_fav[$lang].'</b>';
+		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
+		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
+		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
+		if ($token==$admin_name) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 	}
 // check if archivization is currently enabled...
 if ($sess->get('log_status') == "0") { 
@@ -231,7 +254,7 @@ print '<table border="0" cellspacing="0" class="ff" width="100%">'."\n";
 print '<tr>'."\n";
 print '<td colspan="2" height="29" style="text-align: right;">'."\n";
 print '<b>'.$token.'@'.$xmpp_host_dotted.'</b>&nbsp; | &nbsp;';
-print '<a href="settings.php">'.$menu_item4[$lang].'</a>&nbsp; | &nbsp;';
+print '<a href="settings.php">'.$menu_item_panel[$lang].'</a>&nbsp; | &nbsp;';
 print '<a href="#" onClick="smackzk();">'.$sel_client[$lang].'</a>&nbsp; | &nbsp;';
 print '<a href="help.php" target="_blank">'.$help_but[$lang].'</a>&nbsp; | &nbsp;<a href="index.php?act=logout">'.$log_out_b[$lang].'</a><hr size="1" noshade="" color="#c9d7f1"/></td>';
 print '</tr>'."\n";
@@ -307,7 +330,16 @@ print '<input class="red" type="submit" value="'.$search_box[$lang].'">'."\n";
 print '</form></td>'."\n";
 print '</tr>'."\n";
 print '<tr style="background-image: url(img/bell-bak.png); height: 24;">';
-print '<td colspan="11" width="100%" style="text-align: left; padding-left: 30px; color: white;">'.$loc1.' | '.$loc1a.' | '.$loc2.' | '.$loc3.' | '.$loc5.' | '.$loc5a.$loc6.' | ' .$loc7. ' | <a class="mmenu" href="" onClick="window.location.reload()">'.$refresh[$lang].'</td>'."\n";
+print '<td colspan="11" width="100%" style="text-align: left; padding-left: 30px; color: white;">'
+	.$menu_main.' | '
+	.$menu_map.' | '
+	.$menu_favorites.' | '
+	.$menu_search.' | '
+	.$menu_mylinks.' | '
+	.$menu_contacts.' | '
+	.$menu_logger.$menu_stats.' | ' 
+	.$menu_trash. 
+	' | <a class="mmenu" href="" onClick="window.location.reload()">'.$refresh[$lang].'</td>'."\n";
 print '</tr>'."\n";
 print '</table>'."\n";
 print '<p align="center"><b>'.$alert.'</b></p>';
