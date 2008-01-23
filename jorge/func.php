@@ -963,5 +963,13 @@ function next_c_day ($xmpp_host,$tslice, $user_id, $talker, $server) {
 
 }
 
+function ch_favorite($user_id,$tslice,$talker,$server) {
+
+	$check=do_sel_quick("select count(*) from jorge_favorites where owner_id='$user_id' and tslice='$tslice' and peer_name_id='$talker' and peer_server_id='$server'");
+	if ($check=="f") { return "f"; }
+	elseif($check>0) { return "1"; }
+	elseif($check==0) { return "0"; }
+
+}
 
 ?>

@@ -701,5 +701,21 @@ $fav_main[eng] = "Favorites";
 $fav_desc[pol] = pl_znaczki("Lista rozmów oznaczonych jako \"Ulubione\"");
 $fav_desc[eng] = "List of chats marked as favorites";
 
+$fav_add[pol] = pl_znaczki("Dodaj t± rozmowê do ulubionych");
+$fav_add[eng] = "Add this chat to favorites";
+
+$fav_success[pol] = pl_znaczki("Rozmowa zosta³a dodana do Twoich <i>Ulubionych</i> !");
+$fav_success[eng] = "This chat had been succesfully added to your <i>Favorites</i> !";
+
+$fav_discard[pol] = pl_znaczki("Ukryj t± informacje");
+$fav_discard[eng] = "Discard this message";
+
+$fav_exist[pol] = pl_znaczki("Ooops...Ta rozmowa juz znajduje siê w Twoich <i>Ulubionych</i>");
+$fav_exist[eng] = "Ooops...This chat is already in your <i>Favorites</i>";
+
+$ajax_error[pol] = pl_znaczki("Oooups...There was a problem during processing your request");
+$ajax_error[eng] = "Oooups...There was a problem during processing your request";
+
+
 
 ?>

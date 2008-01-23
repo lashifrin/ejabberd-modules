@@ -101,6 +101,7 @@ $lang=$sess->get('language');
 	</script>
         <script type="text/javascript" src="lib/jquery-1.2.1.pack.js"></script>
 	<script type="text/javascript" src="lib/jquery.bgiframe.min.js"></script>
+	<script type="text/javascript" src="lib/jquery.form.js"></script>
 	<script type='text/javascript' src="lib/dimensions.js"></script>
 	<script type="text/javascript" src="lib/jquery.tooltip.js"></script>
 	<script type="text/javascript" src="lib/jquery.quicksearch.js"></script>

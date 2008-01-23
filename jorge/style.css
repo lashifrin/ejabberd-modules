@@ -27,12 +27,29 @@ div.spacer_div {
 }
 
 input.red {
-	background-color: #e0e9f7; 
+	background-color: #e0e9f7;
 	font-size: 12px; 
 	color: #000000;
 	border:1px solid;
 	border-color: #ffffff;
 	}
+
+input.fav {
+	background-color: transparent; 
+	font-size: 8pt; 
+	font-weight: bold;
+	color: #ffffff;
+	border:0px solid;
+	border-color: #ffffff;
+	vertical-align: bottom;
+}
+
+div.message {
+	background-color: #fad163; 
+	font-weight: bold;
+	text-align: center;
+	text-size: x-small;
+}
 
 table.ff {
 	font-size: 9pt; 
