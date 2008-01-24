@@ -34,9 +34,7 @@ if ($lang!="pol" && $lang!="eng") { header("Location: index.php?act=logout"); ex
 // control check - if global archivization is enabled...
 if ($sess->get('enabled') == "f") { header ("Location: not_enabled.php"); }
 
-// lets check where we are...
-$location=$_SERVER['PHP_SELF'];
-
+// escape
 $link_sw=mysql_escape_string($_GET['a']);
 
 // number of my links saved...

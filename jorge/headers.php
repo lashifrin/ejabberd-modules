@@ -36,7 +36,12 @@ include("func.php");
 include("sessions.php"); // sessions handling
 include("config.php"); // read configuration
 
+// get client addr
 $rem_adre = $_SERVER['REMOTE_ADDR'];
+
+
+// get location
+$location=$_SERVER['PHP_SELF'];
 
 // make dotted domaniname
 $xmpp_host_dotted=str_replace("_",".",$xmpp_host);
@@ -52,7 +57,7 @@ db_connect($mod_logdb);
 $token=$sess->get('uid_l');
 
 // authentication checks. Ensure if session data is not altered... (only when we are inside Jorge)
-if (!preg_match("/index.php/i",$_SERVER['PHP_SELF'])) {
+if (!preg_match("/index.php/i",$location)) {
 
 	if (check_registered_user($bazaj,$sess) != "t") { header("Location: index.php?act=logout"); exit; }
 
@@ -86,12 +91,16 @@ $lang=$sess->get('language');
 <head>
 	<meta http-equiv="cache-control" content="no-cache" />
 	<meta http-equiv="pragma" content="no-cache" />
-	<meta name="Author" content="Zbyszek Zolkiewski" />
+	<meta name="Author" content="Zbyszek Zolkiewski at jabster.pl" />
 	<meta name="Keywords" content="jorge message archiving ejabberd mod_logdb erlang" />
 	<meta name="Description" content="Jorge" />
 	<link rel="stylesheet" href="style.css" type="text/css" />
-	<link rel="stylesheet" href="simpletree.css" type="text/css" />
 	<link rel="stylesheet" href="jquery.autocomplete.css" type="text/css" />
+<?
+// do not load libs if not nessesary
+if (preg_match("/main.php/i",$location)) {
+?>
+	<link rel="stylesheet" href="simpletree.css" type="text/css" />
 	<script type="text/javascript" src="lib/simpletreemenu.js">
 		/***********************************************
 		* Simple Tree Menu - Dynamic Drive DHTML code library (www.dynamicdrive.com)
@@ -99,13 +108,15 @@ $lang=$sess->get('language');
 		* Visit Dynamic Drive at http://www.dynamicdrive.com/ for full source code
 		***********************************************/	
 	</script>
+<?
+}
+?>
         <script type="text/javascript" src="lib/jquery-1.2.1.pack.js"></script>
 	<script type="text/javascript" src="lib/jquery.bgiframe.min.js"></script>
-	<script type="text/javascript" src="lib/jquery.form.js"></script>
+	<script type="text/javascript" src="lib/jquery.form.pack.js"></script>
 	<script type='text/javascript' src="lib/dimensions.js"></script>
 	<script type="text/javascript" src="lib/jquery.tooltip.js"></script>
 	<script type="text/javascript" src="lib/jquery.quicksearch.js"></script>
-	<script type="text/javascript" src="lib/hl.js"></script>
 	<script type="text/javascript" src="lib/jquery.autocomplete.pack.js"></script>
 <?
 // prevent loading includes as long as user is not admin.
@@ -115,7 +126,7 @@ if ($token==$admin_name) {
 <?
 }
 ?>
-	<title><? print $xmpp_host_dotted; ?> :: Jorge (beta)</title>
+	<title><? print $xmpp_host_dotted; ?> :: Jorge Beta</title>
         <script type="text/javascript">
             $(function() {
 		$('table#maincontent tbody#searchfield tr').quicksearch({

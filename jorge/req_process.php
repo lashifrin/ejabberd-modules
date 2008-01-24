@@ -35,27 +35,57 @@ if ($process_id=="1") {
 	$talker = $variables[talker];
 	$server = $variables[server];
 	// validate
-	if (validate_date($tslice) == "f" OR !ctype_digit($talker) OR !ctype_digit($server)) { print '<div class="message">'.$ajax_error[$lang].'<br><a href="#" onClick="$(\'#fav_result\').fadeOut(\'slow\');" ><u>'.$fav_discard[$lang].'</u></a></div>'; exit; }
+	if (validate_date($tslice) == "f" OR !ctype_digit($talker) OR !ctype_digit($server)) { 
+			print '<div class="message">'.$ajax_error[$lang].'<br><a href="#" onClick="$(\'#fav_result\').fadeOut(\'slow\');" ><u>'.$fav_discard[$lang].'</u></a></div>'; exit; 
+		}
 
-	//insert data
 	$check=ch_favorite($user_id,$tslice,$talker,$server);
 	if ($check=="f") {
-		print '<div class="message">'.$ajax_error[$lang].'<br><a style="font-weight: normal;" href="#" onClick="$(\'#fav_result\').fadeOut(\'slow\');" ><u>'.$fav_discard[$lang].'</u></a></div>'; exit;
+		print '<div class="message">';
+		print $ajax_error[$lang].'<br><a style="font-weight: normal;" href="#" onClick="$(\'#fav_result\').fadeOut(\'slow\');" ><u>'.$fav_discard[$lang].'</u></a>';
+		print '</div>'; 
+		exit;
 		}
-	elseif($check=="1") {
-		print '<div class="message">'.$fav_exist[$lang].'<br><a style="font-weight: normal;" href="#" onClick="$(\'#fav_result\').fadeOut(\'slow\');" ><u>'.$fav_discard[$lang].'</u></a></div>'; exit;
-		}
-	elseif($check=="0") {
 
-		mysql_query("insert into jorge_favorites(owner_id,peer_name_id,peer_server_id,tslice) values(
+	elseif($check=="1") {
+		print '<div class="message">';
+		print $fav_exist[$lang].'<br><a style="font-weight: normal;" href="#" onClick="$(\'#fav_result\').fadeOut(\'slow\');" ><u>'.$fav_discard[$lang].'</u></a>';
+		print '</div>'; exit;
+		}
+		
+	elseif($check=="0") {
+		$query="insert into jorge_favorites(owner_id,peer_name_id,peer_server_id,tslice) values(
 			'$user_id',
 			'$talker',
 			'$server',
-			'$tslice')") or die;
-		echo "qqqqq:$check";
-		echo '<div class="message">'.$fav_success[$lang].'<br><a style="font-weight: normal;" href="#" onClick="$(\'#fav_result\').fadeOut(\'slow\');" ><u>'.$fav_discard[$lang].'</u></a></div>'; 
+			'$tslice')";
+
+		if (mysql_query($query)==TRUE) {
+
+				print '<div class="message">';
+				print $fav_success[$lang].'<br><a style="font-weight: normal;" href="#" onClick="$(\'#fav_result\').fadeOut(\'slow\');" ><u>'.$fav_discard[$lang].'</u></a>';
+				print '</div>'; 
+			}
+
+			else
+
+			{
+				print '<div class="message">';
+				print $ajax_error[$lang].'<br><a style="font-weight: normal;" href="#" onClick="$(\'#fav_result\').fadeOut(\'slow\');" ><u>'.$fav_discard[$lang].'</u></a>';
+				print '</div>';
+
+			}
 
 	}
+
+}
+
+if ($process_id=="2") {
+
+	print '<div class="message" style="width: 400px;">';
+	print $ajax_error[$lang].'<br><a style="font-weight: normal;" href="#" onClick="$(\'#fav_result\').fadeOut(\'slow\');" ><u>'.$fav_discard[$lang].'</u></a>';
+	print_r ($_POST);
+	print '</div><br>';
 
 }
 

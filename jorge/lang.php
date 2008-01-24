@@ -606,6 +606,9 @@ $chat_no_chats[eng] = "There are no chats with selected contact";
 $chat_map_back[pol] = pl_znaczki("<<< Wróæ do MapyRozmów");
 $chat_map_back[eng] = "<<< Back to ChatMap";
 
+$fav_back[pol] = pl_znaczki("<<< Wróæ do Ulubionych");
+$fav_back[eng] = "<<< Back to Favorites";
+
 $sel_language[pol] = pl_znaczki("Wybierz preferowany jêzyk");
 $sel_language[eng] = "Select prefered language";
 
@@ -632,15 +635,6 @@ $show_chat_stream[eng] = "stream";
 
 $show_chat_as_map[pol] = pl_znaczki("mapê");
 $show_chat_as_map[eng] = "map";
-
-$labels_add[pol] = pl_znaczki("Dodaj etykiete");
-$labels_add[eng] = "Add label";
-
-$labels_menu[pol] = pl_znaczki("Etykiety");
-$labels_menu[eng] = "Labels";
-
-$labels_desc[pol] = pl_znaczki("Twoje rozmowy z etykiet±:");
-$labels_desc[eng] = "Your labeled chats:";
 
 $tip_next_m[pol] = pl_znaczki("Przejd¼ do nastêpnego miesi±ca");
 $tip_next_m[eng] = "Go to next month";
@@ -712,6 +706,21 @@ $fav_discard[eng] = "Discard this message";
 
 $fav_exist[pol] = pl_znaczki("Ooops...Ta rozmowa juz znajduje siê w Twoich <i>Ulubionych</i>");
 $fav_exist[eng] = "Ooops...This chat is already in your <i>Favorites</i>";
+
+$fav_contact[pol] = pl_znaczki("Kontakt");
+$faf_contact[eng] = "Contact";
+
+$fav_when[pol] = pl_znaczki("Kiedy");
+$fav_when[eng] = "When";
+
+$fav_comment[pol] = pl_znaczki("Komentarz");
+$fav_comment[eng] = "Comment";
+
+$fav_remove[pol] = pl_znaczki("Usuñ");
+$fav_remove[eng] = "Remove";
+
+$fav_empty[pol] = pl_znaczki("Nie masz aktualnie zapisanych ¿adnych <i>Ulubionych</i> rozmów");
+$fav_empty[eng] = "You dont have any <i>Favorites</i> chats saved";
 
 $ajax_error[pol] = pl_znaczki("Oooups...There was a problem during processing your request");
 $ajax_error[eng] = "Oooups...There was a problem during processing your request";

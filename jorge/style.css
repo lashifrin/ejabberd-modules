@@ -26,6 +26,19 @@ div.spacer_div {
   clear: both;
 }
 
+tr.header {
+	background-image: url(img/bar_new.png); 
+	background-repeat:repeat-x; 
+	color: #fff;
+	font-weight: bold;
+}
+
+tr.foot {
+	background-image: url(img/bar_new.png);
+	background-repeat:repeat-x;
+	color: #fff;
+}
+
 input.red {
 	background-color: #e0e9f7;
 	font-size: 12px; 
@@ -49,6 +62,13 @@ div.message {
 	font-weight: bold;
 	text-align: center;
 	text-size: x-small;
+}
+
+td.message {
+	background-color: #fad163; 
+	color: #fff; 
+	font-size: x-small; 
+	text-align: center;
 }
 
 table.ff {

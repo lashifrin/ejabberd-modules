@@ -341,9 +341,18 @@ if ($talker) {
 	// if we come from chat maps put the link back...its the same link as "show all chats" but, it is more self explaining
 	print '<tr><td colspan="4"><div id="fav_result"></div>';
 	print '</td></tr>';
-	if ($_GET['loc'] == "2") {
+	if ($_GET['loc']) {
+		$loc_id=$_GET['loc'];
+		if ($loc_id=="2") {
+				$back_link_message=$chat_map_back[$lang];
+				$back_link="chat_map.php?chat_map=$predefined";
+			}
+			elseif($loc_id=="3") {
+				$back_link_message=$fav_back[$lang];
+				$back_link="favorites.php";
+			}
 		print '<tr>';
-		print '<td colspan="2" style="background-color: #fad163; color: #fff; font-size: x-small; text-align: center;"><a href="chat_map.php?chat_map='.$predefined.'">'.$chat_map_back[$lang].'</a></td>';
+		print '<td colspan="2" class="message"><a href="'.$back_link.'">'.$back_link_message.'</a></td>';
 		print '<td></td></tr>'."\n";
 	}
         if ($resource_id) {
