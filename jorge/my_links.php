@@ -107,25 +107,28 @@ if (mysql_num_rows($result) == "0") { print '<br /><br /><center><b>'.$my_links_
 	else {
 
 		print '<h2>'.$my_links_desc_m[$lang].'</h2>';
+		print '<small>'.$my_links_desc_e[$lang].'</small>';
 		print '<center>'."\n";
-		print '<br /><br />'."\n";
-		print '<table class="ff" cellspacing="0">'."\n";
-		print '<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold; color: #fff;"><td>'.$my_links_link[$lang].'</td><td>'.$my_links_chat[$lang].'</td><td>'.$my_links_desc[$lang].'</td></tr>'."\n";
+		print '<br>'."\n";
+		print '<table id="maincontent" class="ff" cellspacing="0">'."\n";
+		print '<tr class="header"><td>'.$my_links_link[$lang].'</td><td>'.$my_links_chat[$lang].'</td><td>'.$my_links_desc[$lang].'</td></tr>'."\n";
 		print '<tr class="spacer" height="1px"><td colspan="4"></td></tr>';
+		print '<tbody id="searchfield">';
 		while ($entry = mysql_fetch_array($result)) {
 
 			print '<tr style="cursor: pointer;" bgcolor="#e8eef7" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#e8eef7\';">'."\n";
 			print '<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';" style="padding-left: 10px; padding-right: 10px">'.pl_znaczki(verbose_date($entry['datat'],$lang)).'</td>'."\n";
 			$nickname=query_nick_name($bazaj,  $token,  get_user_name($entry[peer_name_id],$xmpp_host), get_server_name($entry[peer_server_id],$xmpp_host));
 			$jid=get_user_name($entry[peer_name_id],$xmpp_host).'@'.get_server_name($entry[peer_server_id],$xmpp_host);
-			print '<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';">&nbsp;<b>'.cut_nick(htmlspecialchars($nickname)).'</b> (<i>'.htmlspecialchars($jid).'</i>)&nbsp;</td>'."\n";
+			print '<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';">&nbsp;<b>'.cut_nick(htmlspecialchars($nickname)).'</b> ('.htmlspecialchars($jid).')&nbsp;</td>'."\n";
 			$opis=htmlspecialchars($entry[description]);
 			print '<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';">&nbsp;'.$opis.'</td>'."\n";
 			print '<td><a href="my_links.php?del=t&link_id='.$entry[id_link].'" onClick="if (!confirm(\''.$del_conf_my_link[$lang].'\')) return false;" >&nbsp;'.$del_my_link[$lang].'&nbsp;</a></td>'."\n";
 			print '</tr>'."\n";
 		}
+	print '</tbody>';
 	print '<tr class="spacer"><td colspan="4"></td></tr>';
-	print '<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold;"><td colspan="4" height="15"></td></tr>';
+	print '<tr class="foot"><td colspan="4" height="15"></td></tr>';
 	print '</table>'."\n";
 	print '</center>'."\n";
 	}

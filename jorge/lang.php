@@ -176,8 +176,11 @@ $user_t[eng] = "User:";
 $my_links_save[pol] = pl_znaczki("MyLinks");
 $my_links_save[eng] = "MyLinks";
 
-$my_links_desc_m[pol] = pl_znaczki("Zapisane linki z archiwum");
-$my_links_desc_m[eng] = "Saved links from archive";
+$my_links_desc_m[pol] = pl_znaczki("MyLinks - Twoje linki");
+$my_links_desc_m[eng] = "MyLinks - Your links";
+
+$my_links_desc_e[pol] = pl_znaczki("Tutaj znajdziesz listê zapisanych fragmentów rozmów");
+$my_links_desc_e[eng] = "Here you can find saved fragments of your chats";
 
 $settings_desc[pol] = pl_znaczki("Ustawienia archiwum");
 $settings_desc[eng] = "Archive settings";
@@ -715,6 +718,9 @@ $fav_when[eng] = "When";
 
 $fav_comment[pol] = pl_znaczki("Komentarz");
 $fav_comment[eng] = "Comment";
+
+$fav_add_comment[pol] = pl_znaczki("Dodaj komentarz");
+$fav_add_comment[eng] = "Add comment";
 
 $fav_remove[pol] = pl_znaczki("Usuñ");
 $fav_remove[eng] = "Remove";

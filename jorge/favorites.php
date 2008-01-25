@@ -46,9 +46,6 @@ $(document).ready(function() {
 
 <?
 
-
-
-
 // fetch results
 $result=do_sel("select * from jorge_favorites where owner_id='$user_id' order by tslice desc");
 if (mysql_num_rows($result)>0) {
@@ -57,7 +54,7 @@ if (mysql_num_rows($result)>0) {
 	print '<span id="fav_result"></span>';
 	print '<form style="margin-bottom: 0;" id="fav_form" action="req_process.php" method="post">';
 	print '<input type="hidden" name="req" value="2">';
-	print '<table id="maincontent" bgcolor="#ffffff" class="ff" cellspacing="0" cellpadding="3">';
+	print '<table id="maincontent" bgcolor="#e8eef7" class="ff" cellspacing="0" cellpadding="3">';
 	print '<tr class="header"><td>'.$fav_contact[$lang].'</td><td>'.$fav_when[$lang].'</td><td>'.$fav_comment[$lang].'</td><td>'.$fav_remove[$lang].'</td></tr>';
 	print '<tr class="spacer" height="1px"><td colspan="4"></td></tr>';
 	print '<tbody id="searchfield">';
@@ -69,13 +66,13 @@ if (mysql_num_rows($result)>0) {
 		$nickname=htmlspecialchars(query_nick_name($bazaj,$token,pg_escape_string($username),pg_escape_string($server)));
 		$to_base = "$row[tslice]@$row[peer_name_id]@$row[peer_server_id]@";
 		$to_base = encode_url($to_base,$token,$url_key);
-		print '<tr id="'.$i.'"><td> <a href="'.$view_type.'?a='.$to_base.'&loc=3"><u><b>'.$nickname.'</b> (<i>'.htmlspecialchars($username).'@'.htmlspecialchars($server).'</i>)</u></a></td>';
-		print '<td>'.$row[tslice].'</td>';
+		print '<tr id="'.$i.'"><td class="rowspace"> <a href="'.$view_type.'?a='.$to_base.'&loc=3"><u><b>'.$nickname.'</b> (<i>'.htmlspecialchars($username).'@'.htmlspecialchars($server).'</i>)</u></a></td>';
+		print '<td class="rowspace">'.$row[tslice].'</td>';
 		if ($row[comment]==NULL) {
-				print '<td>Add comment</td>';
+				print '<td class="rowspace">'.$fav_add_comment[$lang].'</td>';
 			}
 			else {
-				print '<td>'.$row[comment].'</td>';
+				print '<td class="rowspace">'.$row[comment].'</td>';
 			}
 		print '<td style="text-align: center;">';
 		print '<input name="'.$i.'" type="checkbox" value="'.$to_base.'" />';

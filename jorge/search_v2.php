@@ -98,7 +98,7 @@ if ($time2_start AND $time2_end) {
 	}
 print '<h2>'.$search_res[$lang].'</h2>'."\n";
 print '<table align="center" border="0" cellspacing="0" class="ff">'."\n";
-print '<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold; color: #fff;"><td>'.$time_t[$lang].'</td><td>'.$talks[$lang].'</td><td>'.$thread[$lang].'</td><td>'.$score.'</td></tr>'."\n";
+print '<tr class="header"><td>'.$time_t[$lang].'</td><td>'.$talks[$lang].'</td><td>'.$thread[$lang].'</td><td>'.$score.'</td></tr>'."\n";
 print '<tr class="spacer"><td colspan="4"></td></tr>';
 if ($offset_arch) { $type_p="6"; } else { $type_p="1"; }
 
@@ -374,7 +374,7 @@ if ($type!="7") {
 	}
 
 	print '<tr class="spacer" height="1px"><td colspan="5"></td></tr>'."\n";
-	print '<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold; color: #fff;" height="15px"><td colspan="5"></td></tr>'."\n";
+	print '<tr class="foot" height="15px"><td colspan="5"></td></tr>'."\n";
 	mysql_free_result ($result);
 	mysql_free_result ($results);
 	mysql_close();

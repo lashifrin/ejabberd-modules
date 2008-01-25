@@ -39,6 +39,14 @@ tr.foot {
 	color: #fff;
 }
 
+td.rowspace {
+
+	padding-left: 5px;
+	padding-right: 5px;
+
+
+}
+
 input.red {
 	background-color: #e0e9f7;
 	font-size: 12px; 

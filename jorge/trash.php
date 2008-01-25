@@ -92,7 +92,7 @@ if (mysql_num_rows($result)==0) {
 
 	{
 		print '<table class="ff" align="center" border="0"  cellspacing="0">';
-		print '<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold; color: #fff;"><td style="padding-right: 15px;">'.$my_links_chat[$lang].'</td><td style="padding-right: 15px;">'.$logger_from_day[$lang].'</td><td>'.$del_time[$lang].'</td></tr>';
+		print '<tr class="header"><td style="padding-right: 15px;">'.$my_links_chat[$lang].'</td><td style="padding-right: 15px;">'.$logger_from_day[$lang].'</td><td>'.$del_time[$lang].'</td></tr>';
 		print '<tr class="spacer"><td colspan="5"></td></tr>';
 
 		while ($entry=mysql_fetch_array($result)) {
@@ -115,7 +115,7 @@ if (mysql_num_rows($result)==0) {
 
 		}
 		print '<tr class="spacer"><td colspan="5"></td></tr>';
-		print '<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold;"><td colspan="5" height="15"></td></tr>';
+		print '<tr class="foot"><td colspan="5" height="15"></td></tr>';
 		print '</table>';
 	}
 include("footer.php");

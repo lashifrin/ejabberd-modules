@@ -63,7 +63,7 @@ if (pg_num_rows($res)!=0) {
 	print '<center>';
 	print '<form action="contacts.php" method="post">'."\n";
 	print '<table id="maincontent" border="0" class="ff" cellspacing="0">'."\n";
-	print '<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold; color:#fff;"><td>'.$con_tab2[$lang].'</td><td>'.$con_tab3[$lang].'</td><td style="text-align: center;">'.$con_tab6[$lang].'</td><td>'.$show_chats[$lang].':</td><td style="padding-left: 10px;">'.$con_tab4[$lang].'</td></tr>'."\n";
+	print '<tr class="header"><td>'.$con_tab2[$lang].'</td><td>'.$con_tab3[$lang].'</td><td style="text-align: center;">'.$con_tab6[$lang].'</td><td>'.$show_chats[$lang].':</td><td style="padding-left: 10px;">'.$con_tab4[$lang].'</td></tr>'."\n";
 	print '<tr class="spacer"><td colspan="5"></td></tr>';
 	print '<tbody id="searchfield">';
 
@@ -98,9 +98,8 @@ if (pg_num_rows($res)!=0) {
 
 	print '<tr class="spacer"><td colspan="5"></td></tr>'."\n";
 	print '</tbody>'."\n";
-	print '<tr class="maint"><td colspan="5" style="text-align: center;">'."\n";
-	print '<input class="red" type="submit" value="'.$con_tab_submit[$lang].'"></td></tr>'."\n";
-	print '<tr class="spacer"><td colspan="5"></td></tr>'."\n";
+	print '<tr class="foot"><td colspan="5" style="text-align: center;">'."\n";
+	print '<input class="fav" type="submit" value="'.$con_tab_submit[$lang].'"></td></tr>'."\n";
 	print '</table>'."\n";
 	print '</form>'."\n";
 	print '</center>'."\n";

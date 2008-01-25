@@ -361,13 +361,13 @@ if ($talker) {
         	print $resource_discard[$lang].'<a class="export" href="?a='.$e_string.'">'.$resource_discard2[$lang].'</a>';
         	print '</div></td></tr>';
         }
-        print '<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; color: #fff;">'."\n";
+        print '<tr class="header">'."\n";
         print '<td><b> '.$time_t[$lang].' </b></td><td><b> '.$user_t[$lang].' </b></td><td><b> '.$thread[$lang].'</b></td>'."\n";
         $server_id=get_server_id($server_name,$xmpp_host);
         $loc_link = $e_string;
         $action_link = "$tslice@$talker@$server_id@0@null@$loc_link@del@";
         $action_link = encode_url($action_link,$token,$url_key);
-        print '<td align="right" style="padding-right: 5px;">';
+        print '<td align="right" style="padding-right: 5px; font-weight: normal;">';
 	print '
 	<form style="margin-bottom: 0;" id="fav_form" action="req_process.php" method="post">
 	<input type="hidden" name="a" value="'.$_GET[a].'" />
@@ -464,7 +464,7 @@ if ($talker) {
 
 // limiting code
 print '<tr class="spacer" height="1px"><td colspan="6"></td></tr>';
-print '<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x;"><td style="text-align: center;" colspan="9">';
+print '<tr class="foot"><td style="text-align: center;" colspan="9">';
 for($i=0;$i < $nume;$i=$i+$num_lines_bro){
 
         if ($i!=$start) {
