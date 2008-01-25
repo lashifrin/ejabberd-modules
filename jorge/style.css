@@ -65,6 +65,18 @@ input.fav {
 	vertical-align: bottom;
 }
 
+input.submit {
+
+	background-color: transparent; 
+	font-size: 8pt; 
+	font-weight: bold;
+	color: #ffffff;
+	border:0px solid;
+	border-color: #ffffff;
+	vertical-align: bottom;
+	text-decoration: underline;
+}
+
 div.message {
 	background-color: #fad163; 
 	font-weight: bold;

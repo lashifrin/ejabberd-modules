@@ -99,7 +99,7 @@ if (pg_num_rows($res)!=0) {
 	print '<tr class="spacer"><td colspan="5"></td></tr>'."\n";
 	print '</tbody>'."\n";
 	print '<tr class="foot"><td colspan="5" style="text-align: center;">'."\n";
-	print '<input class="fav" type="submit" value="'.$con_tab_submit[$lang].'"></td></tr>'."\n";
+	print '<input class="submit" type="submit" value="'.$con_tab_submit[$lang].'"></td></tr>'."\n";
 	print '</table>'."\n";
 	print '</form>'."\n";
 	print '</center>'."\n";

@@ -722,8 +722,11 @@ $fav_comment[eng] = "Comment";
 $fav_add_comment[pol] = pl_znaczki("Dodaj komentarz");
 $fav_add_comment[eng] = "Add comment";
 
-$fav_remove[pol] = pl_znaczki("Usuñ");
-$fav_remove[eng] = "Remove";
+$fav_remove[pol] = pl_znaczki("Usuñ zaznaczone");
+$fav_remove[eng] = "Remove selected";
+
+$fav_removed[pol] = pl_znaczki("Zaznaczone rozmowy zosta³y usuniête z <i>Ulubionych</i>");
+$fav_removed[eng] = "Selected chats were removed from <i>Favorites</i>";
 
 $fav_empty[pol] = pl_znaczki("Nie masz aktualnie zapisanych ¿adnych <i>Ulubionych</i> rozmów");
 $fav_empty[eng] = "You dont have any <i>Favorites</i> chats saved";

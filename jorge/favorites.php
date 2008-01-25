@@ -44,6 +44,25 @@ $(document).ready(function() {
 });
 </script>
 
+<script type="text/javascript">
+	function toggle(box,theId) {
+		if(document.getElementById) {
+		var cell = document.getElementById(theId);
+		if(box.checked) {
+			cell.className = "on";
+			}
+		else {
+			cell.className = "off";
+			}
+		}
+	}
+</script>
+
+<style type="text/css">
+	.on {background-color: #84c1df;}
+	.off {background-color: #e8eef7;}
+</style>
+
 <?
 
 // fetch results
@@ -55,7 +74,8 @@ if (mysql_num_rows($result)>0) {
 	print '<form style="margin-bottom: 0;" id="fav_form" action="req_process.php" method="post">';
 	print '<input type="hidden" name="req" value="2">';
 	print '<table id="maincontent" bgcolor="#e8eef7" class="ff" cellspacing="0" cellpadding="3">';
-	print '<tr class="header"><td>'.$fav_contact[$lang].'</td><td>'.$fav_when[$lang].'</td><td>'.$fav_comment[$lang].'</td><td>'.$fav_remove[$lang].'</td></tr>';
+	print '<tr class="header"><td>'.$fav_contact[$lang].'</td><td>'.$fav_when[$lang].'</td><td>'.$fav_comment[$lang].'</td>';
+	print '<td><input class="submit" type="Submit" value="'.$fav_remove[$lang].'"></td></tr>';
 	print '<tr class="spacer" height="1px"><td colspan="4"></td></tr>';
 	print '<tbody id="searchfield">';
 	$i=0;
@@ -75,13 +95,14 @@ if (mysql_num_rows($result)>0) {
 				print '<td class="rowspace">'.$row[comment].'</td>';
 			}
 		print '<td style="text-align: center;">';
-		print '<input name="'.$i.'" type="checkbox" value="'.$to_base.'" />';
+		print '<input name="'.$i.'" type="checkbox" value="'.$to_base.'" onclick="toggle(this,\''.$i.'\')" />';
 		print '</td>';
 		print '</tr>';
 
 	}
 	print '</tbody>';
-	print '<tr class="foot"><td height="14px" colspan="4" style="text-align: right;"><input class="fav" type="Submit" value="'.$fav_remove[$lang].'"></td></tr>';
+	print '<tr class="foot"><td colspan="3"></td><td height="14px" style="text-align: right;">';
+	print '<input class="submit" type="Submit" value="'.$fav_remove[$lang].'"></td></tr>';
 	print '</table></center>';
 	print '</form>';
 }

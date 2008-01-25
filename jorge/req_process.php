@@ -29,7 +29,7 @@ if ($process_id=="1") {
 
 	// processing favorites request
 
-	// decompose link
+	// decompose data
 	$variables = decode_url2($request,$token,$url_key);
 	$tslice = $variables[tslice];
 	$talker = $variables[talker];
@@ -77,19 +77,56 @@ if ($process_id=="1") {
 			}
 
 	}
-
+	// terminate script
+	exit;
 }
 
 if ($process_id=="2") {
 
-	print '<div class="message" style="width: 400px;">';
-	print $ajax_error[$lang].'<br><a style="font-weight: normal;" href="#" onClick="$(\'#fav_result\').fadeOut(\'slow\');" ><u>'.$fav_discard[$lang].'</u></a>';
-	print_r ($_POST);
-	print '</div><br>';
+	// remove first seq as this is always request_id...
+	array_shift($_POST);
+	// control
+	$num=count($_POST);
+	$i=0;
+	while(array_keys($_POST)) {
+		
+		$i++;
+		$enc_data=array_shift($_POST);
+		// decompose data
+		$variables = decode_url2($enc_data,$token,$url_key);
+		$tslice = $variables[tslice];
+		$talker = $variables[talker];
+		$server = $variables[server];
+		// validate
+		if (validate_date($tslice) == "f" OR !ctype_digit($talker) OR !ctype_digit($server)) { 
+			print '<div class="message" style="width: 400px;">';
+			print $ajax_error[$lang].'<br><a href="#" onClick="$(\'#fav_result\').fadeOut(\'slow\');" ><u>'.$fav_discard[$lang].'</u></a></div>'; 
+			exit; 
+		}
+
+		$query="delete from jorge_favorites where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server' and tslice='$tslice'";
+		mysql_query($query);
+		
+		// stop on any error
+		if (mysql_errno()>0) {
+
+			print '<div class="message" style="width: 400px;">';
+			print $ajax_error[$lang].'<br><a style="font-weight: normal;" href="#" onClick="$(\'#fav_result\').fadeOut(\'slow\');" ><u>'.$fav_discard[$lang].'</u></a>';
+			print '</div><br>';
+			exit;
+		}
+
+	}
+	
+	if (($i==$num)AND($num!=0)) {
+		print '<div class="message" style="width: 400px;">';
+		print $fav_removed[$lang].'<br><a style="font-weight: normal;" href="#" onClick="$(\'#fav_result\').fadeOut(\'slow\');" ><u>'.$fav_discard[$lang].'</u></a>';
+		print '</div><br>';
+		exit;
+	}
 
 }
 
 
-mysql_close();
 
 ?>
