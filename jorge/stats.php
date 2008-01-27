@@ -39,11 +39,36 @@ while ($entry=mysql_fetch_array($result)) {
 	
 }
 
+// Hourly stats (long running query!)
+for ($ds=0;$ds<24;$ds++) {
+	$tm++;
+	$de=$ds+1;
+	if ($de==24) {$de=0;}
+	$hourly_t="select count(owner_id) from `logdb_messages_$today"."_"."$xmpp_host` where timestamp > unix_timestamp('$today $ds:00:00') and timestamp < unix_timestamp('$today $de:00:00')";
+	$result=mysql_query($hourly_t);
+	$row=mysql_fetch_row($result);
+	$hs[$tm] = $row[0];
+	}
+
+// yesterday
+$tm=0;$de=0;
+$yesttd = date("Y-n-d", strtotime ("-1 day"));
+for ($ds=0;$ds<24;$ds++) {
+	$tm++;
+	$de=$ds+1;
+	if ($de==24) {$de=0;}
+	$hourly_t="select count(owner_id) from `logdb_messages_$yesttd"."_"."$xmpp_host` where timestamp > unix_timestamp('$yesttd $ds:00:00') and timestamp < unix_timestamp('$yesttd $de:00:00')";
+	$result=mysql_query($hourly_t);
+	$row=mysql_fetch_row($result);
+	$hy[$tm] = $row[0];
+	}
+
+
 $maximum_a = max($e);
 $maximum_b = max($d);
 
 print "<h2><u>Stats for: ".$xmpp_host_dotted."</u></h2>";
-print "<p style=\"padding-left: 10px;\">Total <b>".number_format(total_messages($xmpp_host))."</b> messages logged by the server. Current database size is: <b>".db_size()."</b> MB</p>";
+print "<p style=\"padding-left: 10px;\">Total <b>".number_format(total_messages($xmpp_host))."</b> messages logged by the server in <b>".number_format(total_chats($xmpp_host))."</b> conversations. Current database size is: <b>".db_size()."</b> MB</p>";
 print '<hr size="1" noshade="" color="#cccccc"/>'."\n";
 print '<table class="ff">'."\n";
 print '<tr><td style="padding-left: 10px">'."\n";
@@ -51,6 +76,10 @@ if ($mark1=="1") { print '<h1>Not enough data collected for graphs</h1><h2>minim
 print '<div id="no_users" style="width:1000px;height:250px;"></div>'."\n";
 print "<br>";
 print '<div id="no_messages" style="width:1000px;height:250px;"></div>'."\n";
+print "<br>";
+print '<div id="hourly_today" style="width:1000px;height:250px;"></div>'."\n";
+print "<br>";
+print '<div id="hourly_yesterday" style="width:1000px;height:250px;"></div>'."\n";
 print '</td>';
 print '<td style="padding-left: 30px">'."\n";
 print '<div><b>Top 10 talkers today:</b><br><br>'."\n";
@@ -109,6 +138,27 @@ $(function () {
 
 	];
 
+     var d3 = [
+<?
+	$cn=0;
+	for ($z=0;$z<24;$z++) {
+		$cn++;
+		print "[$z,$hs[$cn]],";
+	}
+?>
+
+	];
+
+     var d4 = [
+<?
+	$cn=0;
+	for ($z=0;$z<24;$z++) {
+		$cn++;
+		print "[$z,$hy[$cn]],";
+	}
+?>
+
+	];
     
     $.plot($("#no_users"), [
 
@@ -133,6 +183,25 @@ $(function () {
 
 
 
+	]);
+    $.plot($("#hourly_today"), [
+
+		{
+		color: "#ff0000",
+		label: "Hourly Statistics - Today", shadowSize: 10, data: d3,
+		bars: { show: true }
+		}
+
+
+
+	]);
+    $.plot($("#hourly_yesterday"), [
+
+		{
+		color: "#3480ff",
+		label: "Hourly Statistics - Yesterday", shadowSize: 10, data: d4,
+		bars: { show: true }
+		}
 	]);
 
 });

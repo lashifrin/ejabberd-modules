@@ -595,6 +595,16 @@ function total_messages($xmpp_host) {
 
 }
 
+function total_chats($xmpp_host) {
+
+  $result = mysql_query("select count(owner_id) from `logdb_stats_$xmpp_host`");
+  $count = mysql_fetch_row($result);
+  $m_count = $count[0]; 
+  return $m_count;
+
+}
+
+
 
 function get_do_log_list($user_id,$xmpp_host) {
 
