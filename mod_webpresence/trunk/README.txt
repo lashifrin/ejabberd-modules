@@ -244,3 +244,22 @@ It assumes that the URI of the presence is:
 		echo "</p>";
 	}
 ?> 
+
+
+	JAVASCRIPT CALLBACK
+	-------------------
+
+The JavaScript output supports cross-site AJAX calls.
+
+Basically, it allows to tack on a callback parameter to presence
+requests like so:
+	http://example.org:5280/presence/jid/<user>/<server>/js?cb=doStuff
+Which then gets fed back in the result as:
+	var jabber_resources = [...]; doStuff();
+
+The motivation for this is to work around browser restrictions in
+cross-site scripting. You can use it by adding a new <script/> node to
+the DOM at runtime, with the presence URL as its source. This will
+cause doStuff() to be called when the presence information has
+loaded. The end result is you can display real-time presence updates
+on a different domain than your jabber server.

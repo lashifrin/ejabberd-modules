@@ -608,7 +608,7 @@ get_presences({show, LUser, LServer}) ->
             "unavailable"
     end.
 
-make_js(WP, Prs, Show_us, Lang) ->
+make_js(WP, Prs, Show_us, Lang, Q) ->
     {User, Server} = WP#webpresence.us,
     BaseURL = get_baseurl(Server),
     US_string = case Show_us of
@@ -653,7 +653,11 @@ make_js(WP, Prs, Show_us, Lang) ->
 		 end,
 		 "",
 		 R_string_list),
-    US_string ++ "var jabber_resources=[\n"++R_string++"];".
+    CB_string = case lists:keysearch("cb", 1, Q) of
+                    {value, {_, CB}} -> " " ++ CB ++ "();";
+                    _                -> ""
+                end,
+    US_string ++ "var jabber_resources=[\n"++R_string++"];" ++ CB_string.
 
 long_show("available", Lang) -> ?T("available");
 long_show("chat", Lang) -> ?T("free for chat");
@@ -730,10 +734,10 @@ show_presence({xml, WP, LUser, LServer, Show_us}) ->
     Presence_xml = xml:element_to_string(get_presences({xml, LUser, LServer, Show_us})),
     {200, [{"Content-Type", "text/xml; charset=utf-8"}], ?XML_HEADER ++ Presence_xml};
 
-show_presence({js, WP, LUser, LServer, Show_us, Lang}) ->
+show_presence({js, WP, LUser, LServer, Show_us, Lang, Q}) ->
     true = WP#webpresence.js,
     Prs = get_presences({sorted, LUser, LServer}),
-    Js = make_js(WP, Prs, Show_us, Lang),
+    Js = make_js(WP, Prs, Show_us, Lang, Q),
     {200, [{"Content-Type", "text/html; charset=utf-8"}], Js};
 
 show_presence({text, WP, LUser, LServer}) ->
@@ -840,7 +844,7 @@ process2([User, Server | Tail], Request) ->
     serve_web_presence(jid, User, Server, Tail, Request).
 
 
-serve_web_presence(TypeURL, User, Server, Tail, #request{lang = Lang1}) ->
+serve_web_presence(TypeURL, User, Server, Tail, #request{lang = Lang1, q = Q}) ->
     LServer = jlib:nameprep(Server),
     true = lists:member(LServer, ?MYHOSTS),
     LUser = jlib:nodeprep(User),
@@ -866,7 +870,7 @@ serve_web_presence(TypeURL, User, Server, Tail, #request{lang = Lang1}) ->
 	       ["xml"] -> 
 		   {xml, WP, LUser, LServer, Show_us};
 	       ["js"] -> 
-		   {js, WP, LUser, LServer, Show_us, Lang};
+		   {js, WP, LUser, LServer, Show_us, Lang, Q};
 	       ["text"] -> 
 		   {text, WP, LUser, LServer};
 	       ["text", "res", Resource] -> 
