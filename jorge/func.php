@@ -886,6 +886,11 @@ function delete_chat($talker,$server,$xmpp_host,$user_id,$tslice,$token,$url_key
         $query="update jorge_mylinks set ext='1' where owner_id ='$user_id' and peer_name_id='$talker' and link like '$lnk%'";
         $result=mysql_query($query) or die ("Ooops...Error");
         mysql_free_result($result);
+	// delete from favorites
+	$query="update jorge_favorites set ext='1' where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server' and tslice='$tslice'";
+	$result=mysql_query($query) or die ("Ooops...Error");
+	mysql_free_result($result);
+	// links
         $undelete_link = "$tslice@$talker@$server@@@$lnk@undelete@";
         $undelete_link = encode_url($undelete_link,$token,$url_key);
 	
@@ -926,6 +931,10 @@ function undo_deleted_chat($talker,$server,$user_id,$tslice,$xmpp_host,$lnk) {
 
 	// undelete saved links
 	$query="update jorge_mylinks set ext=NULL where owner_id ='$user_id' and peer_name_id='$talker' and link like '$lnk%'";
+	$result=mysql_query($query) or die ("Ooops...Error");
+	mysql_free_result($result);
+	// undelete favorites
+	$query="update jorge_favorites set ext=NULL where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server' and tslice='$tslice'";
 	$result=mysql_query($query) or die ("Ooops...Error");
 	mysql_free_result($result);
 

@@ -54,6 +54,49 @@ CREATE TABLE `jorge_mylinks` (
 ) ENGINE=MyISAM AUTO_INCREMENT=179 DEFAULT CHARSET=latin1;
 
 --
+-- Table structure for trash
+--
+
+DROP TABLE IF EXISTS `pending_del`;
+CREATE TABLE `pending_del` (
+  `owner_id` int(11) default NULL,
+  `peer_name_id` int(11) default NULL,
+  `date` varchar(20) default NULL,
+  `peer_server_id` int(11) default NULL,
+  `timeframe` timestamp NOT NULL default CURRENT_TIMESTAMP,
+  KEY `owner_idx` (`owner_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+--
+-- Table structure for table `jorge_favorites`
+--
+
+DROP TABLE IF EXISTS `jorge_favorites`;
+CREATE TABLE `jorge_favorites` (
+  `owner_id` int(11) default NULL,
+  `peer_name_id` int(11) default NULL,
+  `peer_server_id` int(11) default NULL,
+  `resource_id` int(11) default NULL,
+  `tslice` varchar(20) default NULL,
+  `comment` varchar(50) default NULL,
+  `ext` int(11) default NULL,
+  KEY `jorge_fav_all` (`owner_id`,`peer_name_id`,`peer_server_id`,`resource_id`,`tslice`),
+  KEY `jorge_favorites_ext_idx` (`owner_id`,`ext`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+--
+-- Table structure for table `jorge_stats`
+--
+
+DROP TABLE IF EXISTS `jorge_stats`;
+CREATE TABLE `jorge_stats` (
+  `day` varchar(10) default NULL,
+  `hour` tinyint(4) default NULL,
+  `value` int(11) default NULL,
+  KEY `jorge_stats_idx` (`day`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+--
 -- Insert data into dictionary
 --
 
@@ -71,7 +114,7 @@ INSERT INTO `jorge_logger_level_dict` VALUES (1,'normal','eng'),(2,'warn','eng')
 UNLOCK TABLES;
 
 --
--- Lets create view for jorge_logger for out convinience
+-- Lets create view for jorge_logger:
 --
 
 CREATE VIEW v_jorge_logger AS 
