@@ -91,9 +91,11 @@ if (mysql_num_rows($result)==0) {
 	else
 
 	{
-		print '<table class="ff" align="center" border="0"  cellspacing="0">';
+		print '<center>';
+		print '<table id="maincontent" class="ff" align="center" border="0"  cellspacing="0">';
 		print '<tr class="header"><td style="padding-right: 15px;">'.$my_links_chat[$lang].'</td><td style="padding-right: 15px;">'.$logger_from_day[$lang].'</td><td>'.$del_time[$lang].'</td></tr>';
 		print '<tr class="spacer"><td colspan="5"></td></tr>';
+		print '<tbody id="searchfield">';
 
 		while ($entry=mysql_fetch_array($result)) {
 
@@ -114,9 +116,11 @@ if (mysql_num_rows($result)==0) {
 			print '</tr>';
 
 		}
+		print '</tbody>';
 		print '<tr class="spacer"><td colspan="5"></td></tr>';
 		print '<tr class="foot"><td colspan="5" height="15"></td></tr>';
 		print '</table>';
+		print '</center>';
 	}
 include("footer.php");
 ?>

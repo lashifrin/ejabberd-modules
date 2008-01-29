@@ -109,7 +109,6 @@ if (mysql_num_rows($result) == "0") { print '<br /><br /><center><b>'.$my_links_
 		print '<h2>'.$my_links_desc_m[$lang].'</h2>';
 		print '<small>'.$my_links_desc_e[$lang].'</small>';
 		print '<center>'."\n";
-		print '<br>'."\n";
 		print '<table id="maincontent" class="ff" cellspacing="0">'."\n";
 		print '<tr class="header"><td>'.$my_links_link[$lang].'</td><td>'.$my_links_chat[$lang].'</td><td>'.$my_links_desc[$lang].'</td></tr>'."\n";
 		print '<tr class="spacer" height="1px"><td colspan="4"></td></tr>';

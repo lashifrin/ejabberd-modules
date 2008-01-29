@@ -186,7 +186,7 @@ $(function () {
 
 		{
 		color: "#ff0000",
-		label: "Hourly Statistics - Yesterday", shadowSize: 10, data: d3,
+		label: "Hourly Statistics - Yesterday (<? print $yesterday; ?>)", shadowSize: 10, data: d3,
 		bars: { show: true }
 		}
 
@@ -197,7 +197,7 @@ $(function () {
 
 		{
 		color: "#3480ff",
-		label: "Hourly Statistics - Weekly Raport", shadowSize: 10, data: d4,
+		label: "Hourly Statistics - Weekly Raport (<? print $last_week." - ".$yesterday; ?>)", shadowSize: 10, data: d4,
 		bars: { show: true }
 		}
 	]);
