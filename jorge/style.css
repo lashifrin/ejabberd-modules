@@ -65,6 +65,17 @@ input.fav {
 	vertical-align: bottom;
 }
 
+input.fav_main {
+	background-color: transparent; 
+	font-size: 8pt; 
+	font-weight: bold;
+	color: #65a5e4;
+	border:0px solid;
+	border-color: #ffffff;
+	vertical-align: bottom;
+}
+
+
 input.submit {
 
 	background-color: transparent; 

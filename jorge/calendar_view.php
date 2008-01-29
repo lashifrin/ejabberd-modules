@@ -478,7 +478,7 @@ for($i=0;$i < $nume;$i=$i+$num_lines_bro){
 print '</td></tr>';
 // limiting code - end
 
-        if (($nume-$start)>40) { print '<tr><td colspan="5" style="text-align: right; padding-right: 5px;"><a href="#top"><small>'.$back_t[$lang].'</small></a></td></tr>'."\n"; }
+        if (($nume-$start)>40) { print '<tr><td colspan="6" style="text-align: right; padding-right: 5px;"><a href="#top"><small>'.$back_t[$lang].'</small></a></td></tr>'."\n"; }
         print '</table>'."\n";
 
         print '</tr></table></td>'."\n";

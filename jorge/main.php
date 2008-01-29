@@ -49,7 +49,25 @@ $server=mysql_escape_string($server);
 if (validate_date($tslice) == "f") { unset ($tslice); unset($e_string); unset($talker); unset($action); }
 
 include("upper.php");
+?>
+<script language="javascript" type="text/javascript">
 
+// prepare the form when the DOM is ready 
+$(document).ready(function() { 
+    // bind form using ajaxForm 
+    $('#fav_form').ajaxForm({ 
+        // target identifies the element(s) to update with the server response 
+        target: '#fav_result', 
+ 
+        // success identifies the function to invoke when the server response 
+        // has been received; here we apply a fade-in effect to the new content 
+        success: function() { 
+            $('#fav_result').fadeIn('slow'); 
+        } 
+    }); 
+});
+</script>
+<?
 
 // undo delete
 if ($action=="undelete") {
@@ -243,10 +261,21 @@ if ($talker) {
 	$predefined_s=encode_url($predefined_s,$token,$url_key);
 	print '<table id="maincontent" border="0" cellspacing="0" class="ff">'."\n";
 	// if we come from chat maps put the link back...its the same link as "show all chats" but, it is more self explaining
-	if ($_GET['loc'] == "2") {
-		print '<tr>';
-		print '<td colspan="2" style="background-color: #fad163; color: #fff; font-size: x-small; text-align: center;"><a href="chat_map.php?chat_map='.$predefined.'">'.$chat_map_back[$lang].'</a></td>';
-		print '<td></td></tr>'."\n";
+	print '<tr><td colspan="4"><div id="fav_result"></div>';
+	print '</td></tr>';
+        if ($_GET['loc']) {
+                $loc_id=$_GET['loc'];
+                if ($loc_id=="2") {
+                                $back_link_message=$chat_map_back[$lang];
+                                $back_link="chat_map.php?chat_map=$predefined";
+                        }
+                        elseif($loc_id=="3") {
+                                $back_link_message=$fav_back[$lang];
+                                $back_link="favorites.php";
+                        }
+                print '<tr>';
+                print '<td colspan="2" class="message"><a href="'.$back_link.'">'.$back_link_message.'</a></td>';
+                print '<td></td></tr>'."\n";
 	}
 	if ($resource_id) {
 		$res_display=get_resource_name($resource_id,$xmpp_host);
@@ -260,14 +289,21 @@ if ($talker) {
 	$loc_link = $e_string;
 	$action_link = "$tslice@$talker@$server_id@0@null@$loc_link@del@";
 	$action_link = encode_url($action_link,$token,$url_key);
-	print '<td align="right" style="padding-right: 5px;"><a id="pretty" title="'.$tip_export[$lang].'" class="foot" href="export.php?a='.$e_string.'">'.$export_link[$lang].'</a>&nbsp; | &nbsp;';
+	print '<td align="right" style="padding-right: 5px; font-weight: normal;">';
+	print '
+	<form style="margin-bottom: 0;" id="fav_form" action="req_process.php" method="post">
+	<input type="hidden" name="a" value="'.$_GET[a].'" />
+	<input type="hidden" name="req" value="1">
+	<input class="fav_main" type="submit" value="'.$fav_add[$lang].'" />
+	</form>';
+	print '<a id="pretty" title="'.$tip_export[$lang].'" class="foot" href="export.php?a='.$e_string.'">'.$export_link[$lang].'</a>&nbsp; | &nbsp;';
 	print '<font color="#65a5e4">'.$all_for_u[$lang].'</font>';
         print '<a id="pretty" title="'.$all_for_u_m2_d[$lang].'" class="foot" href="chat_map.php?chat_map='.$predefined.'"><u>'.$all_for_u_m2[$lang].'</u></a>';
 	print '&nbsp;<small>|</small>&nbsp;';
 	print '<a id="pretty" title="'.$all_for_u_m_d[$lang].'" class="foot" href="search_v2.php?b='.$predefined_s.'"><u>'.$all_for_u_m[$lang].'</u></a>';
 	print '&nbsp; | &nbsp;';
 	print '<a id="pretty" title="'.$tip_delete[$lang].'" class="foot" href="main.php?a='.$action_link.'">'.$del_t[$lang].'</a></td></tr>';
-	print '<tr class="spacer"><td colspan="5"></td></tr>';
+	print '<tr class="spacer"><td colspan="6"></td></tr>';
 	print '<tbody id="searchfield">'."\n";
 	while ($entry = mysql_fetch_array($result))
 		{
@@ -286,7 +322,7 @@ if ($talker) {
 		if ($time_diff>$split_line AND $licz>1) { 
 				$in_minutes = round(($time_diff/60),0);
 				print '<tr class="splitl">';
-				print '<td colspan="5" style="font-size: 10px;"><i>'.verbose_split_line($in_minutes,$lang,$verb_h,$in_min).'</i><hr size="1" noshade="" color="#cccccc"/></td></tr>';
+				print '<td colspan="6" style="font-size: 10px;"><i>'.verbose_split_line($in_minutes,$lang,$verb_h,$in_min).'</i><hr size="1" noshade="" color="#cccccc"/></td></tr>';
 
 			} // splitting line - defaults to 900s = 15min
 
@@ -347,7 +383,7 @@ if ($talker) {
 
 
 // limiting code
-print '<tr class="spacer" height="1px"><td colspan="5"></td></tr>';
+print '<tr class="spacer" height="1px"><td colspan="6"></td></tr>';
 print '<tr style="background-image: url(img/bar_bg.png); background-repeat:repeat-x;"><td style="text-align: center;" colspan="9">';
 for($i=0;$i < $nume;$i=$i+$num_lines_bro){
 
@@ -362,7 +398,7 @@ for($i=0;$i < $nume;$i=$i+$num_lines_bro){
 print '</td></tr>';
 // limiting code - end
 
-	if (($nume-$start)>40) { print '<tr><td colspan="5" style="text-align: right; padding-right: 5px;"><a href="#top"><small>'.$back_t[$lang].'</small></a></td></tr>'."\n"; }
+	if (($nume-$start)>40) { print '<tr><td colspan="6" style="text-align: right; padding-right: 5px;"><a href="#top"><small>'.$back_t[$lang].'</small></a></td></tr>'."\n"; }
 	print '</table>'."\n";
 
 	print '</tr></table></td>'."\n";
