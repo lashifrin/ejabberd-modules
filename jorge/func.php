@@ -991,4 +991,47 @@ function ch_favorite($user_id,$tslice,$talker,$server) {
 
 }
 
+function remove_messages($user_id,$xmpp_host) {
+
+	// check user_id one more
+	if (!ctype_digit($user_id)OR!$xmpp_host) { return "f"; }
+
+	$result=mysql_query("select distinct(at) from `logdb_stats_$xmpp_host` where owner_id='$user_id'");
+	if (mysql_num_rows($result)!=0) {
+		while ($row=mysql_fetch_array($result)) {
+	
+			mysql_query("delete from `logdb_messages_$row[at]_$xmpp_host` where owner_id='$user_id'");
+			if (mysql_errno()>0) {
+					
+					// return f on any error
+					return "f";
+				
+				}
+	
+		}
+	
+		// remove stats
+		mysql_query("delete from `logdb_stats_$xmpp_host` where owner_id='$user_id'");
+		// remove mylinks
+		mysql_query("delete from jorge_mylinks where owner_id='$user_id'");
+		// remove favorites
+		mysql_query("delete from jorge_favorites where owner_id='$user_id'");
+		// remove from pending_del
+		mysql_query("delete from pending_del where owner_id='$user_id'");
+		return "t";
+	
+		}
+
+	else
+
+		{
+
+		return "0";
+
+		}
+
+return "f";
+
+}
+
 ?>

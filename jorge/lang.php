@@ -212,6 +212,9 @@ $deleted_all[eng] = "All your message archive has been deleted";
 $delete_nothing[pol] = pl_znaczki("Twoje archiwum jest puste. Nic nie usuniêto");
 $delete_nothing[eng] = "Your message archive is empty. Nothing was deleted";
 
+$delete_error[pol] = pl_znaczki("Ooops...Wyst±pi³y b³êdy podczas wykonywania polecenia. Proszê spróbowaæ po¼niej");
+$delete_error[eng] = "Ooops...There were errors during processing your request. Please try again later";
+
 $search_w1[pol] = pl_znaczki("Wyszukiwany ci±g nie mo¿e byæ krótszy ni¿ 3 i d³u¿szy ni¿ 70 znaków...");
 $search_w1[eng] = "Search string cannot be shorter than 3 and longer than 70 characters...";
 

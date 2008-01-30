@@ -49,24 +49,22 @@ if ($tgle) {
 // delete entire archive
 if ($del_a) {
 
-	$result=mysql_query("select at from `logdb_stats_$xmpp_host` where owner_id='$user_id'");
-		if (mysql_num_rows($result)!=0) {
-		while ($row=mysql_fetch_array($result)) {
-		
-			mysql_query("delete from `logdb_messages_$row[at]_$xmpp_host` where owner_id='$user_id'");
-		}
-		mysql_query("delete from `logdb_stats_$xmpp_host` where owner_id='$user_id'");
-		mysql_query("delete from jorge_mylinks where owner_id='$user_id'");
+	$result=remove_messages($user_id,$xmpp_host);
+	if ($result=="t") {
+
+		print '<center><div class="message" style="width: 250pt;">'.$deleted_all[$lang].'</div></center>';
+		//log event
 		mysql_query("insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time) values ('$user_id',9,2,NOW())");
-		print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 250pt;">'.$deleted_all[$lang].'</div></center>';
-	
+
 	}
+	elseif($result=="0"){
 
-	else
+		print '<center><div class="message" style="width: 250pt;">'.$delete_nothing[$lang].'</div></center>';
 
-	{
-
-	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 250pt;">'.$delete_nothing[$lang].'</div></center>';
+	}
+	elseif($result=="f"){
+	
+		print '<center><div class="message" style="width: 250pt;">'.$delete_error[$lang].'</div></center>';
 
 	}
 
@@ -109,6 +107,7 @@ if ($total_messages=="f") { $total_messages="0"; }
 print '<p style="font-size: x-small;">'.$stats_personal[$lang].'<b> '.$total_messages.'</b></p>';
 $top_ten_personal=do_sel("select peer_name_id,peer_server_id,at,count from `logdb_stats_$xmpp_host` where owner_id='$user_id' and peer_name_id!='$ignore_id' and ext is NULL order by count desc limit 10");
 print '<small><b>'.$stats_personal_top[$lang].'</b></small><br><br>';
+if (mysql_num_rows($top_ten_personal)!=0) {
 print '<table bgcolor="#ffffff" class="ff" cellspacing="0" cellpadding="3"><tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; color: #fff; font-weight: bold;"><td>'.$stats_personal_count[$lang].'</td><td style="text-align: center;">'.$stats_peer[$lang].'</td><td>'.$stats_when[$lang].'</td></tr>';
 while ($result=mysql_fetch_array($top_ten_personal)) {
 
@@ -127,6 +126,13 @@ while ($result=mysql_fetch_array($top_ten_personal)) {
 }
 print '<tr height="15" style="background-image: url(img/bar_new.png); background-repeat:repeat-x; color: #fff;"><td colspan="3"></td></tr>';
 print '</table>';
+
+}
+else {
+
+	print '<div class="message">'.$no_archives[$lang].'</div>';
+
+}
 print '</center>'."\n";
 print '<br /><br /><br />';
 include("footer.php");

@@ -93,6 +93,7 @@ div.message {
 	font-weight: bold;
 	text-align: center;
 	text-size: x-small;
+	width: 300px;
 }
 
 td.message {

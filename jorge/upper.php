@@ -240,7 +240,7 @@ if (preg_match("/search_v2.php/i",$location))
 	}
 // check if archivization is currently enabled...
 if ($sess->get('log_status') == "0") { 
-		print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 250pt;">'.$status_msg1[$lang].'</div></center>';
+		print '<center><div class="message">'.$status_msg1[$lang].'</div></center>';
 	}
 if ($start) { $cur_loc="&start=$start"; }
 
@@ -332,8 +332,8 @@ print '<td colspan="11" width="100%" style="text-align: left; padding-left: 30px
 	.$menu_main.' | '
 	.$menu_map.' | '
 	.$menu_favorites.' | '
-	.$menu_search.' | '
 	.$menu_mylinks.' | '
+	.$menu_search.' | '
 	.$menu_contacts.' | '
 	.$menu_logger.$menu_stats.' | ' 
 	.$menu_trash. 

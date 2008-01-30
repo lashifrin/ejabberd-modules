@@ -103,11 +103,18 @@ if ($variables[ismylink]=="1") {
 $query="select * from jorge_mylinks where owner_id='$user_id' and ext is NULL order by str_to_date(datat,'%Y-%m-%d') desc";
 $result=mysql_query($query);
 
-if (mysql_num_rows($result) == "0") { print '<br /><br /><center><b>'.$my_links_no_links[$lang].'</b></center>'; }
+// head
+print '<h2>'.$my_links_desc_m[$lang].'</h2>';
+print '<small>'.$my_links_desc_e[$lang].'</small>';
+
+
+if (mysql_num_rows($result) == "0") { 
+		
+		print '<center><div class="message" style="width: 250px;">'.$my_links_no_links[$lang].'</div></center>'; 
+		
+		}
 	else {
 
-		print '<h2>'.$my_links_desc_m[$lang].'</h2>';
-		print '<small>'.$my_links_desc_e[$lang].'</small>';
 		print '<center>'."\n";
 		print '<table id="maincontent" class="ff" cellspacing="0">'."\n";
 		print '<tr class="header"><td>'.$my_links_link[$lang].'</td><td>'.$my_links_chat[$lang].'</td><td>'.$my_links_desc[$lang].'</td></tr>'."\n";

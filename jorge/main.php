@@ -180,7 +180,9 @@ if (mysql_num_rows($result) !=0) {
 	
 	{
 
-		print '<p align="center"><b>'.$no_archives[$lang].'</b></p>';
+		print '<h2>'.$archives_t[$lang].'</h2>'."\n";
+		print '<small>'.$cal_notice[$lang].'. <a href="calendar_view.php?set_pref=1&v=2"><u>'.$change_view_cal[$lang].'</u></a></small><br>'."\n";
+		print '<center><div class="message">'.$no_archives[$lang].'</div></center>';
 
 
 	}

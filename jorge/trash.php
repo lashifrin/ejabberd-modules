@@ -85,7 +85,7 @@ if ($action=="delete") {
 $result = mysql_query("select * from pending_del where owner_id = '$user_id' order by str_to_date(date,'%Y-%m-%d') desc");
 
 if (mysql_num_rows($result)==0) {
-	print '<center>'.$trash_empty[$lang].'</center>';
+	print '<center><div class="message" style="width: 250px;">'.$trash_empty[$lang].'</div></center>';
 	}
 
 	else
