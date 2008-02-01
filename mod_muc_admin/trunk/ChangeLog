@@ -1,3 +1,7 @@
+2008-02-01  Badlop  <badlop@process-one.net>
+
+	* src/mod_muc_admin.erl: New command: muc-unregister-nick.
+
 2007-12-26  Badlop  <badlop@process-one.net>
 
 	* src/mod_muc_admin.erl: Translate menu items of webadmin hooks in

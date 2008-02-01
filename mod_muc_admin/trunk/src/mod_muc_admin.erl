@@ -93,6 +93,7 @@ stop(Host) ->
 
 commands_global() ->
     [
+     {"muc-unregister-nick nick", "unregister the nick in the muc service"},
      {"muc-destroy-file file", "destroy the rooms whose JID is indicated in file"},
      {"muc-unused-list days", "list rooms without activity in last days"},
      {"muc-unused-destroy days", "destroy rooms without activity last days"},
@@ -105,6 +106,15 @@ commands_host() ->
      {"muc-unused-destroy days", "destroy rooms without activity last days"},
      {"muc-online-rooms", "list existing rooms"}
     ].
+
+ctl_process(_Val, ["muc-unregister-nick", Nick]) ->
+    case muc_unregister_nick(Nick) of
+	unregistered -> 
+	    ?STATUS_SUCCESS;
+	{error, Error} ->
+	    io:format("Error unregistering ~p: ~p~n", [Nick, Error]),
+	    ?STATUS_ERROR
+    end;
 
 ctl_process(_Val, ["muc-destroy-file", Filename]) ->
     muc_destroy_file(Filename),
@@ -248,6 +258,23 @@ stringize_room({Name, Host, Pid}) ->
      atom_to_list(Logging), 
      atom_to_list(Just_created),
      Title].
+
+
+%%----------------------------
+%% MUC Unregister Nick
+%%----------------------------
+
+muc_unregister_nick(Nick) ->
+    F2 = fun(N) -> 
+		 [{_,Key,_}] = mnesia:index_read(muc_registered, N, 3), 
+		 mnesia:delete({muc_registered, Key})
+	 end,
+    case mnesia:transaction(F2, [Nick], 1) of
+	{atomic, ok} ->
+	    unregistered;
+	{aborted, Error} ->
+	    {error, Error}
+    end.
 
 
 %%----------------------------
