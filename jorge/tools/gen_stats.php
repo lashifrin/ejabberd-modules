@@ -31,7 +31,7 @@ mysql_select_db ("_DB_NAME_") or die ("DB select failed\n");
 
 $xmpp_host="_YOUR_XMPP_HOST_"; # Replace dot with underscore f.e.: jabber.org -> jabber_org
 
-$day_stats_a = date("Y-n-d", strtotime ("-1 day")); // if you mist stats for some day change to: date("Y-n-d", strtotime ("-1 day", strtotime("_YOUR_MISSING_DAY_"))); and generate stats manualy.
+$day_stats_a = date("Y-n-j", strtotime ("-1 day")); // if you mist stats for some day change to: date("Y-n-d", strtotime ("-1 day", strtotime("_YOUR_MISSING_DAY_"))); and generate stats manualy.
 $day_stats_b = $day_stats_a;
 
 for ($ds=0;$ds<24;$ds++) {
