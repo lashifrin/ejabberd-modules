@@ -328,12 +328,16 @@ function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type
 	if ($type=="5" OR $type=="7") {
 
 		if ($type=="5") {
-			$addq = "match(body) against('$search_p' IN BOOLEAN MODE) and";
-			$adds = ",match(body) against('$search_p' IN BOOLEAN MODE) as score";
+				$addq = "match(body) against('$search_p' IN BOOLEAN MODE) and";
+				$adds = ",match(body) against('$search_p' IN BOOLEAN MODE) as score";
+				$tcon = "timestamp as ts,";
 			}
-			else { $addq=""; }
+			else { 
+				$addq=""; 
+				$tcon="from_unixtime(timestamp+0) as ts,";
+			}
 
-		$query="select from_unixtime(timestamp+0) as ts, peer_name_id, peer_server_id, direction, ext, body $adds from `logdb_messages_$tslice_table"."_$xmpp_host` where $addq owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server' limit $start_set,10000";
+		$query="select $tcon peer_name_id, peer_server_id, direction, ext, body $adds from `logdb_messages_$tslice_table"."_$xmpp_host` where $addq owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server' limit $start_set,10000";
 	}
 
 	// limited search
