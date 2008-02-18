@@ -31,32 +31,11 @@ connect(Host, Database, User, Password, Port) ->
 	     {password, Password}]).
 
 connect(Options) ->
-    {ok, Db} = pgsql_proto:run(Options),
-    %% Receive startup params or error.
-    receive
-	{pgsql_error, Reason} ->
-	    exit(Reason);
-	{pgsql_params, Params} ->
-	    io:format("Params: ~p~n", [Params])
-    end,
-    %% Confirmation we're connected successfully.
-    receive
-	pgsql_connected ->
-	    ok
-    end,
-    {ok, Db}.
+    pgsql_proto:start(Options).
 
 %% Close a connection
 terminate(Db) ->
-    %%io:format("terminate:~n", []),
-    Ref = make_ref(),
-    Db ! {terminate, Ref, self()},
-    receive
-	{pgsql, Ref, terminated} ->
-	    ok
-    after 5000 ->
-	    timeout
-    end.
+    gen_server:call(Db, terminate).
 
 %%% In the "simple query" protocol, the frontend just sends a 
 %%% textual query string, which is parsed and immediately 
@@ -70,14 +49,7 @@ terminate(Db) ->
 %%% Results = [Result]
 %%% Result = {"SELECT", RowDesc, ResultSet} | ...
 squery(Db, Query) ->
-    %%io:format("squery: ~p~n", [Query]),
-    Ref = make_ref(),
-    Db ! {squery, Ref, self(), Query},
-    receive
-	{pgsql, Ref, Result} ->
-	    %%io:format("Result: ~p~n", [Result]),
-	    {ok, Result}
-    end.
+    gen_server:call(Db, {squery, Query}, infinity).
 
 %%% In the "extended query" protocol, processing of queries is 
 %%% separated into multiple steps: parsing, binding of parameter
@@ -92,41 +64,19 @@ squery(Db, Query) ->
 %%% NameTypes = [{ColName, ColType}]
 %%% Rows = [list()]
 pquery(Db, Query, Params) ->
-    %%io:format("equery: ~p~n", [Query]),
-    Ref = make_ref(),
-    Db ! {equery, Ref, self(), {Query, Params}},
-    receive
-	{pgsql, Ref, {Command, Status, NameTypes, Rows}} ->
-	    {ok, Command, Status, NameTypes, Rows}
-    after 5000 ->
-	    timeout
-    end.
+    gen_server:call(Db, {equery, {Query, Params}}).
 
 %%% prepare(Db, Name, Query) -> {ok, Status, ParamTypes, ResultTypes}
 %%% Status = idle | transaction | failed_transaction
 %%% ParamTypes = [atom()]
 %%% ResultTypes = [{ColName, ColType}]
 prepare(Db, Name, Query) when is_atom(Name) ->
-    Ref = make_ref(),
-    Db ! {prepare, Ref, self(), {atom_to_list(Name), Query}},
-    receive
-	{pgsql, Ref, {prepared, State, ParamDesc, ResultDesc}} ->
-	    {ok, State, ParamDesc, ResultDesc}
-    after 5000 ->
-	    timeout
-    end.
+    gen_server:call(Db, {prepare, {atom_to_list(Name), Query}}).
 
 %%% unprepare(Db, Name) -> ok | timeout | ...
 %%% Name = atom()
 unprepare(Db, Name) when is_atom(Name) ->
-    Ref = make_ref(),
-    Db ! {unprepare, Ref, self(), atom_to_list(Name)},
-    receive
-	{pgsql, Ref, unprepared} ->
-	    ok
-    after 5000 ->
-	    timeout
-    end.
+    gen_server:call(Db, {unprepare, atom_to_list(Name)}).
 
 %%% execute(Db, Name, Params) -> {ok, Result} | timeout | ...
 %%% Result = {'INSERT', NRows} |

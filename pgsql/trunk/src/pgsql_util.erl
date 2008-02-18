@@ -7,7 +7,7 @@
 -module(pgsql_util).
 
 %% Key-Value handling
--export([option/2]).
+-export([option/3]).
 
 %% Networking
 -export([socket/1]).
@@ -19,7 +19,7 @@
 -export([split_pair_rec/1]).
 -export([count_string/1, to_string/1]).
 -export([oids/2, coldescs/2, datacoldescs/3]).
--export([decode_row/2, decode_descs/1]).
+-export([decode_row/2, decode_descs/2]).
 -export([errordesc/1]).
 
 -export([zip/2]).
@@ -31,9 +31,8 @@
 
 %% Lookup key in a plist stored in process dictionary under 'options'.
 %% Default is returned if there is no value for Key in the plist.
-option(Key, Default) ->
-    Plist = get(options),
-    case proplists:get_value(Key, Plist, Default) of
+option(Opts, Key, Default) ->
+    case proplists:get_value(Key, Opts, Default) of
 	Default ->
 	    Default;
 	Value ->
@@ -174,15 +173,14 @@ datacoldescs(N,
 datacoldescs(_N, _, Descs) ->
     lists:reverse(Descs).
 
-decode_descs(Cols) ->
+decode_descs(OidMap, Cols) ->
     decode_descs(Cols, []).
-decode_descs([], Descs) ->
+decode_descs(OidMap, [], Descs) ->
     {ok, lists:reverse(Descs)};
-decode_descs([Col|ColTail], Descs) ->
-    OidMap = get(oidmap),
+decode_descs(OidMap, [Col|ColTail], Descs) ->
     {Name, Format, ColNumber, Oid, _, _, _} = Col,
     OidName = dict:fetch(Oid, OidMap),
-    decode_descs(ColTail, [{Name, Format, ColNumber, OidName, [], [], []}|Descs]).
+    decode_descs(OidMap, ColTail, [{Name, Format, ColNumber, OidName, [], [], []}|Descs]).
 
 decode_row(Types, Values) ->
     decode_row(Types, Values, []).
