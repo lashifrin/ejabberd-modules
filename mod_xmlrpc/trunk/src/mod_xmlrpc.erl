@@ -29,8 +29,8 @@ start(_Host, Opts) ->
 	undefined ->
 	    %% get options
 	    Port = gen_mod:get_opt(port, Opts, 4560),
-	    MaxSessions = 10,
-	    Timeout = 50,
+	    MaxSessions = gen_mod:get_opt(maxsessions, Opts, 10),
+	    Timeout = gen_mod:get_opt(timeout, Opts, 5000),
 	    Handler = {mod_xmlrpc, handler},
 	    State = started,
 

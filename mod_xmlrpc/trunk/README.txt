@@ -1,7 +1,7 @@
 
         mod_xmlrpc - XML-RPC server
 
-        Homepage: http://ejabberd.jabber.ru/mod_xmlrpc
+        Homepage: http://www.ejabberd.im/mod_xmlrpc
         Author: Badlop 
 
 
@@ -63,11 +63,13 @@ will be shown on the error log.
 Configuration is done in 'modules' section in ejabberd.cfg. Available options:
     port: port where the XML-RPC server will listen. Default: 4560
     ip: IP address to listen, in Erlang format. Set to 'all' to listen on all IP address. Default: all
+    maxsessions: Number of concurrent connections allowed. Default: 10
+    timeout: Timeout of the connections, expressed in milliseconds. Default: 5000
 
 Example configurations:
     {mod_xmlrpc,     [{port, 4560}]}
 
-    {mod_xmlrpc,     [{port, 4560}, {ip, all}]}
+    {mod_xmlrpc,     [{port, 4560}, {ip, all}, {maxsessions, 10}, {timeout, 5000}]}
 
     {mod_xmlrpc,     [{port, 4560}, {ip, {81, 202, 202, 79}}]}
 
