@@ -2,7 +2,7 @@
 
 	mod_ctlextra - Additional commands for ejabberdctl
 
-	Homepage: http://ejabberd.jabber.ru/mod_ctlextra
+	Homepage: http://www.ejabberd.im/mod_ctlextra
 	Author: Badlop
 	Module for ejabberd 1.1.2 or newer
 

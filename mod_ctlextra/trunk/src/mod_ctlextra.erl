@@ -83,6 +83,7 @@ commands_global() ->
 
      {"stats registeredusers", "number of registered users"},
      {"stats onlineusers", "number of logged users"},
+     {"stats onlineusersnode", "number of logged users in the ejabberd node"},
      {"stats uptime-seconds", "uptime of ejabberd node in seconds"},
 
      %% misc
@@ -104,11 +105,6 @@ commands_host() ->
 %%-------------
 %% Commands global
 %%-------------
-
-ctl_process(_Val, ["blo"]) ->
-    FResources = "eeeaaa aaa",
-    io:format("~s", [FResources]),
-    ?STATUS_SUCCESS;
 
 ctl_process(_Val, ["delete-older-messages", Days]) ->
     mod_offline:remove_old_messages(list_to_integer(Days)),
@@ -274,7 +270,8 @@ ctl_process(_Val, ["stats", Stat]) ->
     Res = case Stat of
 	      "uptime-seconds" -> uptime_seconds();
 	      "registeredusers" -> mnesia:table_info(passwd, size);
-	      "onlineusers" -> mnesia:table_info(session, size)
+	      "onlineusersnode" -> length(ejabberd_sm:dirty_get_my_sessions_list());
+	      "onlineusers" -> length(ejabberd_sm:dirty_get_sessions_list())
 	  end,
     io:format("~p~n", [Res]),
     ?STATUS_SUCCESS;

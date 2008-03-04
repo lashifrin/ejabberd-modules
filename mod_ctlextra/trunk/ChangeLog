@@ -1,3 +1,10 @@
+2008-03-04  Badlop  <badlop@process-one.net>
+
+	* src/mod_ctlextra.erl: New command 'stats
+	onlineusersnode'. Removed old unusued code.
+
+	* README.txt: Updated module page
+
 2008-01-20  Badlop  <badlop@process-one.net>
 
 	* src/mod_ctlextra.erl: Allow to define group name with spaces
