@@ -102,6 +102,9 @@ print '<tr class="header"><td>'.$time_t[$lang].'</td><td>'.$talks[$lang].'</td><
 print '<tr class="spacer"><td colspan="4"></td></tr>';
 if ($offset_arch) { $type_p="6"; } else { $type_p="1"; }
 
+// run optimized query in specyfic conditions
+if ($qquery[words]=="t" AND $qquery[from]=="t") { $type_p="8"; }
+
 $result=db_q($user_id,$server,$tslice_table,$user_name,$search_p,$type_p,$offset_arch,$xmpp_host,$nn,$time2_start,$time2_end);
 
 $arch_table=mysql_num_rows($result);

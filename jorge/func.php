@@ -298,20 +298,20 @@ function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type
 
 	}
 
-	// archiwa rozmów: przegl±danie:
+	// chat list
 	if ($type=="1") {
 
 		$query="select distinct(at) from `logdb_stats_$xmpp_host` where owner_id='$user_id' $add_tl order by str_to_date(at,'%Y-%m-%d') asc";
 	}
 
-	// rozmowy w danym dniu
+	// chat list - specific day
 	if ($type=="2") {
 
 		$query="select a.username, b.server as server_name, c.peer_name_id as todaytalk, c.peer_server_id as server, c.count as lcount from `logdb_users_$xmpp_host` a, `logdb_servers_$xmpp_host` b, `logdb_stats_$xmpp_host` c where c.owner_id = '$user_id' and a.user_id=c.peer_name_id and b.server_id=c.peer_server_id and c.at = '$tslice_table' and username!='' order by lower(username)";
 	
 	}
 
-	// rozmowy z danym u¿ytkownikiem
+	// chat with user
 	if ($type=="3") {
 
 		if ($res_id>1) { $sel_resource="and (peer_resource_id='$res_id' OR peer_resource_id='1')"; }
@@ -319,12 +319,12 @@ function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type
 
 	}
 
-	// wyszukiwanie frazy
+	// phase search
 	if ($type=="4") {
 		$query="select timestamp as ts, peer_name_id, peer_server_id, direction, ext, body, match(body) against('$search_p' IN BOOLEAN MODE) as score from `logdb_messages_$tslice_table"."_$xmpp_host` where match(body) against('$search_p' IN BOOLEAN MODE) and owner_id='$user_id' limit $start_set,10000";
 	}
 
-	// wyszukiwanie wszystkich rozmów z danym userem
+	// user phase search
 	if ($type=="5" OR $type=="7") {
 
 		if ($type=="5") {
@@ -346,8 +346,15 @@ function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type
 		}
 
 
+	// optimized user chat list
+	if ($type=="8") {
 
-	#print htmlspecialchars($query)."<br>";
+		$query="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server' order by str_to_date(at,'%Y-%m-%d') asc";
+	}
+
+
+	# uncomment to debug query
+	#print "<span style=\"font-size:x-small;\">Query: ".htmlspecialchars($query)." [end] in query type: $type</span><br>";
 	$result=mysql_query($query) or die;
 	if (mysql_errno()) { return "f"; }
 	return $result;

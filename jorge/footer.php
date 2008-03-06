@@ -46,7 +46,7 @@ print '<div align="right" style="clear: left;"><a href="mailto:zbyszek@jabster.p
 <div style="background-image: url(img/bell-down.png); height: 3px;"></div>
 <div align="center"><? print $links; ?></div><br>
 <div align="center" style="color: gray;"><? print $copy; ?></div>
-<p style="font-size: xx-small; text-align: right;">v1.0.505</p><br>
+<p style="font-size: xx-small; text-align: right;">v1.0.506</p><br>
 <?
 
 // footer for admins...
