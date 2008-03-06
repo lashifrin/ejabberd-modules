@@ -90,7 +90,7 @@ CREATE TABLE `jorge_favorites` (
 
 DROP TABLE IF EXISTS `jorge_stats`;
 CREATE TABLE `jorge_stats` (
-  `day` varchar(10) default NULL,
+  `day` date default NULL,
   `hour` tinyint(4) default NULL,
   `value` int(11) default NULL,
   KEY `jorge_stats_idx` (`day`)
