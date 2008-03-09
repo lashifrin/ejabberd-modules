@@ -65,6 +65,11 @@ process2(["config" ], #request{lang = Lang } = Request , {User, Server}) ->
     make_xhtml(?T("Config"),
         [?XE("h3", [?CT("Global Settings")]) ] ++ global_config_form({User, Server}, Lang) ++
         [?XE("h3", [?CT("Specific Contact Settings")]) ] ++ contact_config_form({User, Server}, Lang) , Lang);
+        
+process2(["config" , "submit", "global"], #request{q = Query } = Request , US) ->
+    submit_config_global( Query  , US),
+    process2(["config"], Request, US);
+
     
 process2(["contact"], #request{lang = Lang } = Request , US) ->
     make_xhtml(?T("Contact List"), [
@@ -169,11 +174,14 @@ table_element(Rows) ->
     ?XE("table",lists:map(fun(Cols)-> ?XE("tr", lists:map(fun(Ct)-> ?XE("td",Ct) end, Cols)) end, Rows)).
 
 global_config_form({LUser,LServer},Lang) ->
-    {selected, _, [{Save,Expire,Otr,Method_auto,Method_local,Method_manual,Auto_save}]} =
-         run_sql_transaction(LServer, fun() -> run_sql_query(
-            "SELECT save,expire,otr,method_auto,method_local,method_manual,auto_save"
-            " FROM archive_global_prefs"
-            " WHERE us = " ++ get_us_escaped({LUser,LServer}) ) end),
+    {Save,Expire,Otr,Method_auto,Method_local,Method_manual,Auto_save} =
+        case run_sql_transaction(LServer, fun() -> run_sql_query(
+                "SELECT save,expire,otr,method_auto,method_local,method_manual,auto_save"
+                " FROM archive_global_prefs"
+                " WHERE us = " ++ get_us_escaped({LUser,LServer}) ) end) of
+            {selected, _ , [ Ok ]} -> Ok;
+            {selected, _ , [ ]} -> { -1, -1, -1, -1, -1, -1, -1 }
+        end,
     MethodList = [ {-1,?T("--Undefined--")}, {0,?T("Prefer")}, {1,?T("Concede")}, {2,?T("Forbid")} ],
     [?XAE("form",[{"action",?LINK("config/submit/global")}],[table_element([[
             [?XE("label",[?CT("Save: "), select_element("global_save",[{-1,?T("--Default--")},{1,?T("Enabled")},{0,?T("Disabled")}],decode_integer(Save))])],
@@ -188,7 +196,7 @@ global_config_form({LUser,LServer},Lang) ->
             [?XE("label",[?CT("Auto Method: "), select_element("global_method_auto", MethodList,decode_integer(Method_auto))])],
             [?XE("label",[?CT("Local Method: "), select_element("global_method_local", MethodList,decode_integer(Method_local))])],
             [?XE("label",[?CT("Manual Method: "), select_element("global_method_manual", MethodList,decode_integer(Method_manual))])],
-            [?XE("label",[?CT("Auto Save "), select_element("global_method_auto",
+            [?XE("label",[?CT("Auto Save "), select_element("global_auto_save",
                                              [{-1,?T("--Default--")},{1,?T("Enabled")},{0,?T("Disabled")}],decode_integer(Auto_save))])],
             [?INPUT("submit","global_modify",?T("Modify"))]
        ]])])].
@@ -202,6 +210,36 @@ contact_config_form({LUser,LServer},Lang) ->
 %             " WHERE us = " ++ get_us_escaped({LUser,LServer}) ) end),
     [?PCT("TODO")].
 
+
+get_from_query_escaped(Key,Query) ->
+    {value, {_, Value}} = lists:keysearch(Key, 1, Query),
+    case Value of
+        -1 -> "NULL";
+        Integer when is_integer(Integer) -> Integer;
+        "-1" -> "NULL";
+        Value -> "'" ++ ejabberd_odbc:escape(Value) ++ "'"
+    end.
+
+
+submit_config_global(Query , {LUser,LServer}) ->
+    SUS = get_us_escaped({LUser,LServer}),
+    SQLQuery = 
+        "UPDATE archive_global_prefs"
+        " SET save = " ++ get_from_query_escaped("global_save",Query) ++ ","
+        "     expire = " ++ get_from_query_escaped("global_expire",Query) ++ ","
+        "     otr = " ++ get_from_query_escaped("global_otr",Query) ++ ","
+        "     method_auto = " ++ get_from_query_escaped("global_method_auto",Query) ++ ","
+        "     method_local = " ++ get_from_query_escaped("global_method_local",Query) ++ ","
+        "     method_manual = " ++ get_from_query_escaped("global_method_manual",Query) ++ ","
+        "     auto_save = " ++ get_from_query_escaped("global_auto_save",Query) ++ 
+        " WHERE us = " ++ SUS,
+    F = fun() ->
+        case run_sql_query("SELECT us FROM archive_global_prefs WHERE us = " ++ SUS) of
+            {selected, _, Rs} when Rs /= [] -> ok;
+            _ -> run_sql_query("INSERT INTO archive_global_prefs (us) VALUES (" ++ SUS ++ ")")
+        end,
+        run_sql_query(SQLQuery) end,
+    run_sql_transaction(LServer, F).
 
 %------------------------
 
@@ -232,7 +270,7 @@ get_collection(Id,{LUser,LServer}) ->
                             " FROM archive_collections"
                             " WHERE id = '" ++ ejabberd_odbc:escape(Id) ++ "'" 
                             "  AND us = " ++ get_us_escaped({LUser,LServer})),
-                                                 
+
          {selected, _ , List} = run_sql_query("SELECT utc,dir,body"
                                                  " FROM archive_messages"
                                                  " WHERE coll_id = '" ++ ejabberd_odbc:escape(Id) ++ "'"),
