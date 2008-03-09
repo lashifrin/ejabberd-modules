@@ -127,7 +127,8 @@ ctl_process(_Val, ["export2odbc", Server, Output]) ->
     Export = fun({TableFun, Table}) -> 
 		     Filename = filename:join([Output, atom_to_list(Table)++".txt"]),
 		     io:format("Trying to export Mnesia table '~p' on server '~s' to file '~s'~n", [Table, Server, Filename]),
-		     catch ejd2odbc:TableFun(Server, Filename)
+		     Res = (catch ejd2odbc:TableFun(Server, Filename)),
+		     io:format("  Result: ~p~n", [Res])
 	     end,
     lists:foreach(Export, Tables),
     ?STATUS_SUCCESS;

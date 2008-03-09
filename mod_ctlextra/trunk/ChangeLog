@@ -1,3 +1,7 @@
+2008-03-09  Badlop  <badlop@process-one.net>
+
+	* src/mod_ctlextra.erl: Show the result of each table export
+
 2008-03-04  Badlop  <badlop@process-one.net>
 
 	* src/mod_ctlextra.erl: New command 'stats
