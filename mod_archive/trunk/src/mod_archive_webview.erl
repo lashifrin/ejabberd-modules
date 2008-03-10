@@ -44,6 +44,8 @@ process(["style.css"], _) ->
 .message_from .jid  { color:#BD2134; font-weight:bold; }
 .message_to   .time { color:#1E6CC6; font-weight:bold; }
 .message_to   .jid  { color:#1E6CC6; font-weight:bold; }
+.search_result a { display:block; }
+.search_result em { display:block; color:green; }
 "};
 
 process(Path, #request{auth = Auth} = Request) ->
@@ -61,7 +63,7 @@ process(Path, #request{auth = Auth} = Request) ->
 
 %process2(["config" | tail], #request{lang = Lang } = Request , {User, Server}) ->
 
-process2(["config" ], #request{lang = Lang } = Request , {User, Server}) ->
+process2(["config" ], #request{lang = Lang } = _Request , {User, Server}) ->
     make_xhtml(?T("Config"),
         [?XE("h3", [?CT("Global Settings")]) ] ++ global_config_form({User, Server}, Lang) ++
         [?XE("h3", [?CT("Specific Contact Settings")]) ] ++ contact_config_form({User, Server}, Lang) , Lang);
@@ -71,7 +73,7 @@ process2(["config" , "submit", "global"], #request{q = Query } = Request , US) -
     process2(["config"], Request, US);
 
     
-process2(["contact"], #request{lang = Lang } = Request , US) ->
+process2(["contact"], #request{lang = Lang } = _Request , US) ->
     make_xhtml(?T("Contact List"), [
                            ?XE("ul", lists:map( fun({Node,Server,Count}) -> 
                                                     With = jlib:jid_to_string({Node,Server,""}),
@@ -80,7 +82,7 @@ process2(["contact"], #request{lang = Lang } = Request , US) ->
                ], Lang);
                
                
-process2(["contact" , Jid], #request{lang = Lang } = Request , US) ->
+process2(["contact" , Jid], #request{lang = Lang } = _Request , US) ->
     make_xhtml(?T("Chat with ") ++ Jid, contact_config(Jid,US,Lang) ++
                            [?XE("ul", lists:map( fun({Id, Node, Server, Resource, Utc, Subject }) -> 
                                                     With = jlib:jid_to_string({Node,Server,Resource}),
@@ -88,15 +90,23 @@ process2(["contact" , Jid], #request{lang = Lang } = Request , US) ->
                                                 get_collection_list(jlib:string_to_jid(Jid), US)))
                ], Lang);
 
-process2(["show" , Id], #request{lang = Lang } = Request , US) ->
+process2(["show" , Id], #request{lang = Lang } = _Request , US) ->
     { With, Subject, List } = get_collection(Id, US),
     make_xhtml(?T("Chat With ") ++ jlib:jid_to_string(With) ++ ?T(" : ") ++ Subject,
                lists:map(fun(Msg) -> format_message(Msg,With, US) end, List)
                %++[?X("hr"), ?XEA("form",[{"action",?LINK("edit/" ++ integer_to_list(Id))},{"metohd","post"}],...) ]
                , Lang);
+               
+process2(["search"], #request{lang = Lang } = Request , US) ->
+    make_xhtml(?T("Search"), [
+                search_form(Request, US) ], Lang);
+                
+process2(["search", "results"], #request{lang = Lang } = Request , US) ->
+    make_xhtml(?T("Search"), [ search_form(Request, US) | search_results(Request, US)], Lang);
+
    
     
-process2(_, #request{lang = Lang } = Request , {User, Server}) ->
+process2(_, #request{lang = Lang } = _Request , _US) ->
     make_xhtml(?T("404 File not found"),[], Lang).
 
 %------------------------------
@@ -122,7 +132,8 @@ make_xhtml(Title, Els, Lang) ->
                ?XAE("div", [{"id", "navigation"}],
                     [?XE("ul",
                      [?LI([?ACT(?LINK("config"), "Config")]), ?C(" "),
-                      ?LI([?ACT(?LINK("contact"), "Browse")])])]), ?C(" "),
+                      ?LI([?ACT(?LINK("contact"), "Browse")]), ?C(" "),
+                      ?LI([?ACT(?LINK("search"), "Search")])])]), ?C(" "),
                ?XAE("div", [{"id", "content"}], [ ?XE("h2", [?C(Title)]) | Els])])])]}}.
 
 
@@ -143,6 +154,20 @@ get_auth(Auth) ->
          _ ->
             unauthorized
     end.
+    
+    
+select_element(Name, List, Value1) ->
+    Value = if is_integer(Value1) -> integer_to_list(Value1); true -> Value1 end,
+    ?XAE("select",[{"name",Name}],lists:map( 
+        fun({Key,Text}) -> ?XAE("option", 
+                            case Key of
+                                Value -> [{"value",Value},{"selected","selected"}];
+                                _ -> [{"value",Key}]
+                            end, [?C(Text)]) end, List)).
+                            
+table_element(Rows) ->
+    ?XE("table",lists:map(fun(Cols)-> ?XE("tr", lists:map(fun(Ct)-> ?XE("td",Ct) end, Cols)) end, Rows)).
+
 
 %------------------------
 
@@ -162,17 +187,6 @@ contact_config(Jid,{LUser,LServer},Lang) ->
     [].
 
 
-select_element(Name, List, Value) ->
-    ?XAE("select",[{"name",Name}],lists:map( 
-        fun({Key,Text}) -> ?XAE("option", 
-                            case Key of
-                                Value -> [{"value",integer_to_list(Value)},{"selected","selected"}];
-                                _ -> [{"value",integer_to_list(Key)}]
-                            end, [?C(Text)]) end, List)).
-                            
-table_element(Rows) ->
-    ?XE("table",lists:map(fun(Cols)-> ?XE("tr", lists:map(fun(Ct)-> ?XE("td",Ct) end, Cols)) end, Rows)).
-
 global_config_form({LUser,LServer},Lang) ->
     {Save,Expire,Otr,Method_auto,Method_local,Method_manual,Auto_save} =
         case run_sql_transaction(LServer, fun() -> run_sql_query(
@@ -182,22 +196,22 @@ global_config_form({LUser,LServer},Lang) ->
             {selected, _ , [ Ok ]} -> Ok;
             {selected, _ , [ ]} -> { -1, -1, -1, -1, -1, -1, -1 }
         end,
-    MethodList = [ {-1,?T("--Undefined--")}, {0,?T("Prefer")}, {1,?T("Concede")}, {2,?T("Forbid")} ],
+    MethodList = [ {"-1",?T("--Undefined--")}, {"0",?T("Prefer")}, {"1",?T("Concede")}, {"2",?T("Forbid")} ],
     [?XAE("form",[{"action",?LINK("config/submit/global")}],[table_element([[
-            [?XE("label",[?CT("Save: "), select_element("global_save",[{-1,?T("--Default--")},{1,?T("Enabled")},{0,?T("Disabled")}],decode_integer(Save))])],
+            [?XE("label",[?CT("Save: "), select_element("global_save",[{"-1",?T("--Default--")},{"1",?T("Enabled")},{"0",?T("Disabled")}],decode_integer(Save))])],
             [?XE("label",[?CT("Expire: "), ?INPUT("text","global_expire",integer_to_list(decode_integer(Expire)))])],
-            [?XE("label",[?CT("Otr: "), select_element("global_otr",[{-1,?T("--Undefined--")},
-                                                                        {0,?T("Approve")},
-                                                                        {1,?T("Concede")},
-                                                                        {2,?T("Forbid")},
-                                                                        {3,?T("Oppose")},
-                                                                        {4,?T("Prefer")},
-                                                                        {5,?T("Require")} ],decode_integer(Otr))])],
+            [?XE("label",[?CT("Otr: "), select_element("global_otr",[{"-1",?T("--Undefined--")},
+                                                                      {"0",?T("Approve")},
+                                                                      {"1",?T("Concede")},
+                                                                      {"2",?T("Forbid")},
+                                                                      {"3",?T("Oppose")},
+                                                                      {"4",?T("Prefer")},
+                                                                      {"5",?T("Require")} ],decode_integer(Otr))])],
             [?XE("label",[?CT("Auto Method: "), select_element("global_method_auto", MethodList,decode_integer(Method_auto))])],
             [?XE("label",[?CT("Local Method: "), select_element("global_method_local", MethodList,decode_integer(Method_local))])],
             [?XE("label",[?CT("Manual Method: "), select_element("global_method_manual", MethodList,decode_integer(Method_manual))])],
             [?XE("label",[?CT("Auto Save "), select_element("global_auto_save",
-                                             [{-1,?T("--Default--")},{1,?T("Enabled")},{0,?T("Disabled")}],decode_integer(Auto_save))])],
+                                [{"-1",?T("--Default--")},{"1",?T("Enabled")},{"0",?T("Disabled")}],decode_integer(Auto_save))])],
             [?INPUT("submit","global_modify",?T("Modify"))]
        ]])])].
 
@@ -240,6 +254,75 @@ submit_config_global(Query , {LUser,LServer}) ->
         end,
         run_sql_query(SQLQuery) end,
     run_sql_transaction(LServer, F).
+    
+    
+get_from_query_with_default(Key,Query,Default) ->
+    case  lists:keysearch(Key, 1, Query) of
+        {value, {_, Value}} -> Value;
+        _ -> Default
+    end.
+
+search_form( #request{lang = Lang, q = Query } = _Request, US) ->
+    ?XAE("form",[{"method","post"},{"action", ?LINK("search/results")}],
+          [ ?XE("label", [?CT("With: ") ,
+                select_element("with" , [ { "", "--All--" } |
+                                            lists:map( fun({Node,Server,_Count}) -> 
+                                                    With = jlib:jid_to_string({Node,Server,""}),
+                                                    {With, With}  end,
+                                                    get_contacts(US)) ],
+                                get_from_query_with_default("with",Query,""))]),
+            ?BR,
+            ?XE("label", [?CT("From: ") , ?INPUT("text","from", get_from_query_with_default("from",Query,""))]),
+            ?BR,
+            ?XE("label", [?CT("To: ") , ?INPUT("text","to", get_from_query_with_default("to",Query,""))]),
+            ?BR,
+            ?XE("label", [?CT("Search keyword: ") , ?INPUT("text","keywords",
+                                                        get_from_query_with_default("keywords",Query,""))]),
+            ?BR,
+            ?INPUT("submit","search",?T("Search"))  ]).
+
+
+
+search_results( #request{lang = Lang, q = Query } = _Request, {_, LServer} = US) ->
+    With = case  lists:keysearch("with", 1, Query) of
+        {value, {_, Value}} -> case jlib:string_to_jid(Value) of
+            #jid{ luser = Node , lserver = Server , lresource = "" } -> 
+                " AND with_user ='" ++ ejabberd_odbc:escape(Node) ++ "'" ++
+                " AND with_server ='" ++ ejabberd_odbc:escape(Server) ++ "'";
+            #jid{ luser = Node , lserver = Server , lresource = Resource } -> 
+                " AND with_user ='" ++ ejabberd_odbc:escape(Node) ++ "'" ++
+                " AND with_server ='" ++ ejabberd_odbc:escape(Server) ++ "'" ++
+                " AND with_resource ='" ++ ejabberd_odbc:escape(Resource) ++ "'";
+            _ -> ""
+            end;
+        _ -> ""
+    end,
+    From = case lists:keysearch("from", 1, Query) of
+        {value, {_, V1}} when V1 /= "" -> " AND M.utc >= '" ++ ejabberd_odbc:escape(V1) ++ "'";
+        _ -> ""
+    end,
+    To = case lists:keysearch("to", 1, Query) of
+        {value, {_, V2}} when V2 /= "" -> " AND M.utc <= '" ++ ejabberd_odbc:escape(V2) ++ "'";
+        _ -> ""
+    end,
+    Kw = case lists:keysearch("keywords", 1, Query) of
+        {value, {_, V3}} when V3 /= "" -> " AND body LIKE '%" ++ ejabberd_odbc:escape(V3) ++ "%'";
+        _ -> ""
+    end,
+    
+    F = fun() -> run_sql_query(
+            "SELECT coll_id,subject,with_user,with_server,with_resource,C.utc,body"
+            " FROM archive_collections as C, archive_messages as M"
+            " WHERE C.id = M.coll_id AND C.us = " ++  get_us_escaped(US) ++ 
+            With ++ From ++ To ++ Kw ++
+            " GROUP BY coll_id") end,
+    {selected, _ , Results} = run_sql_transaction(LServer,F),
+    lists:map(fun(R) -> format_search_result(R,Lang) end, Results).
+    
+format_search_result( {Id,Subject,User,Server,Resource,Utc,Body} ,_Lang) ->
+    ?XAE("p",[{"class","search_result"}],
+         [?AC(?LINK("show/" ++ integer_to_list(Id)), jlib:jid_to_string({User,Server,Resource}) ++ " on " ++ Utc),
+          ?C(Body), ?XE("em",[?C(Subject)]) ] ).
 
 %------------------------
 
@@ -281,7 +364,7 @@ get_collection(Id,{LUser,LServer}) ->
 %------------------------
 % from mod_archive_odbc
 run_sql_query(Query) ->
-    %%?MYDEBUG("running query: ~p", [lists:flatten(Query)]),
+    ?MYDEBUG("running query: ~p", [lists:flatten(Query)]),
     case catch ejabberd_odbc:sql_query_t(Query) of
         {'EXIT', Err} ->
             ?ERROR_MSG("unhandled exception during query: ~p", [Err]),
