@@ -83,9 +83,11 @@ fill(Num) -> io_lib:format("~p", [Num]).
 %%% MUC INFO
 %%%----------------------------------------------------------------------
 
-% Required for muc_purge
-% Copied from mod_muc/mod_muc_room.erl
+% Copied from mod_muc/mod_muc.erl
 -record(muc_online_room, {name_host, pid}).
+
+% Copied from mod_muc/mod_muc_room.erl
+-define(MAX_USERS_DEFAULT, 200).
 -record(config, {title = "",
 		 allow_change_subj = true,
 		 allow_query_users = true,
@@ -93,13 +95,14 @@ fill(Num) -> io_lib:format("~p", [Num]).
 		 public = true,
 		 public_list = true,
 		 persistent = false,
-		 moderated = false, % TODO
+		 moderated = true,
 		 members_by_default = true,
 		 members_only = false,
 		 allow_user_invites = false,
 		 password_protected = false,
 		 password = "",
 		 anonymous = true,
+		 max_users = ?MAX_USERS_DEFAULT,
 		 logging = false
 		}).
 

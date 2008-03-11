@@ -1,0 +1,11 @@
+2008-03-12  Badlop  <badlop@process-one.net>
+
+	* README.txt: Updated text formatting. Require ejabberd 2.0.0
+
+	* mod_muc_log_http.erl: Updated to ejabberd 2.0.0
+
+	* ChangeLog: New file to log changes
+
+2007-04-13  Badlop  <badlop@ono.com>
+
+	* mod_muc_log_http: New module to serve MUC HTML logs over HTTP
