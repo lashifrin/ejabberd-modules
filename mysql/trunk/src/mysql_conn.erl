@@ -66,7 +66,8 @@
 -export([start/6,
 	 start_link/6,
 	 fetch/3,
-	 fetch/4
+	 fetch/4,
+	 squery/4
 	]).
 
 %%--------------------------------------------------------------------
@@ -87,6 +88,7 @@
 -define(SECURE_CONNECTION, 32768).
 -define(MYSQL_QUERY_OP, 3).
 -define(DEFAULT_STANDALONE_TIMEOUT, 5000).
+-define(DEFAULT_RESULT_TYPE, list).
 -define(MYSQL_4_0, 40). %% Support for MySQL 4.0.x
 -define(MYSQL_4_1, 41). %% Support for MySQL 4.1.x et 5.0.x
 
@@ -162,12 +164,16 @@ post_start(Pid, _LogFun) ->
 %%           Rows      = list() of [string()]
 %%           Reason    = term()
 %%--------------------------------------------------------------------
-fetch(Pid, Query, From) ->
-    fetch(Pid, Query, From, ?DEFAULT_STANDALONE_TIMEOUT).
 
-fetch(Pid, Query, From, Timeout) when is_pid(Pid), is_list(Query) ->
+fetch(Pid, Query, From) ->
+    squery(Pid, Query, From, []).
+fetch(Pid, Query, From, Timeout) ->
+    squery(Pid, Query, From, [{timeout, Timeout}]).
+
+squery(Pid, Query, From, Options) when is_pid(Pid), is_list(Query) ->
     Self = self(),
-    Pid ! {fetch, Query, From},
+    Timeout = get_option(timeout, Options, ?DEFAULT_STANDALONE_TIMEOUT),
+    Pid ! {fetch, Query, From, Options},
     case From of
 	Self ->
 	    %% We are not using a mysql_dispatcher, await the response
@@ -181,7 +187,7 @@ fetch(Pid, Query, From, Timeout) when is_pid(Pid), is_list(Query) ->
 	    %% From is gen_server From, Pid will do gen_server:reply() when it has an answer
 	    ok
     end.
-     
+
 %%--------------------------------------------------------------------
 %% Function: do_recv(LogFun, RecvPid, SeqNum)
 %%           LogFun  = undefined | function() with arity 3
@@ -239,7 +245,7 @@ init(Host, Port, User, Password, Database, LogFun, Parent) ->
 	{ok, RecvPid, Sock} ->
 	    case mysql_init(Sock, RecvPid, User, Password, LogFun) of
 		{ok, Version} ->
-		    case do_query(Sock, RecvPid, LogFun, "use " ++ Database, Version) of
+		    case do_query(Sock, RecvPid, LogFun, "use " ++ Database, Version, [{result_type, binary}]) of
 			{error, MySQLRes} ->
 			    mysql:log(LogFun, error, "mysql_conn: Failed changing to database ~p : ~p",
 				      [Database, mysql:get_result_reason(MySQLRes)]),
@@ -274,10 +280,10 @@ init(Host, Port, User, Password, Database, LogFun, Parent) ->
 loop(State) ->
     RecvPid = State#state.recv_pid,
     receive
-	{fetch, Query, GenSrvFrom} ->
+	{fetch, Query, GenSrvFrom, Options} ->
 	    %% GenSrvFrom is either a gen_server:call/3 From term(), or a pid if no
 	    %% gen_server was used to make the query
-	    Res = do_query(State, Query),
+	    Res = do_query(State, Query, Options),
 	    case is_pid(GenSrvFrom) of
 		true ->
 		    %% The query was not sent using gen_server mechanisms
@@ -373,7 +379,7 @@ asciz(Data) when list(Data) ->
 %%           AffectedRows = int()
 %%           Reason       = term()
 %%--------------------------------------------------------------------
-get_query_response(LogFun, RecvPid, Version) ->
+get_query_response(LogFun, RecvPid, Version, Options) ->
     case do_recv(LogFun, RecvPid, undefined) of
 	{ok, <<Fieldcount:8, Rest/binary>>, _} ->
 	    case Fieldcount of
@@ -388,7 +394,8 @@ get_query_response(LogFun, RecvPid, Version) ->
 		    %% Tabular data received
 		    case get_fields(LogFun, RecvPid, [], Version) of
 			{ok, Fields} ->
-			    case get_rows(Fieldcount, LogFun, RecvPid, []) of
+			    ResultType = get_option(result_type, Options, ?DEFAULT_RESULT_TYPE),
+			    case get_rows(Fieldcount, LogFun, RecvPid, ResultType, []) of
 				{ok, Rows} ->
 				    {data, #mysql_result{fieldinfo=Fields, rows=Rows}};
 				{error, Reason} ->
@@ -434,7 +441,7 @@ get_fields(LogFun, RecvPid, Res, ?MYSQL_4_0) ->
 			    binary_to_list(Field),
 			    Length,
 			    %% TODO: Check on MySQL 4.0 if types are specified
-			    %%       using the same 4.1 formalism and could 
+			    %%       using the same 4.1 formalism and could
 			    %%       be expanded to atoms:
 			    binary_to_list(Type)},
 		    get_fields(LogFun, RecvPid, [This | Res], ?MYSQL_4_0)
@@ -465,7 +472,7 @@ get_fields(LogFun, RecvPid, Res, ?MYSQL_4_1) ->
 		     Length:32/little, Type:8/little,
 		     _Flags:16/little, _Decimals:8/little,
 		     _Rest7/binary>> = Rest6,
-		    
+
 		    This = {binary_to_list(Table),
 			    binary_to_list(Field),
 			    Length,
@@ -486,32 +493,38 @@ get_fields(LogFun, RecvPid, Res, ?MYSQL_4_1) ->
 %%           {error, Reason}
 %%           Rows = list() of [string()]
 %%--------------------------------------------------------------------
-get_rows(N, LogFun, RecvPid, Res) ->
+get_rows(N, LogFun, RecvPid, ResultType, Res) ->
     case do_recv(LogFun, RecvPid, undefined) of
 	{ok, Packet, _Num} ->
 	    case Packet of
 		<<254:8, Rest/binary>> when size(Rest) < 8 ->
 		    {ok, lists:reverse(Res)};
 		_ ->
-		    {ok, This} = get_row(N, Packet, []),
-		    get_rows(N, LogFun, RecvPid, [This | Res])
+		    {ok, This} = get_row(N, Packet, ResultType, []),
+		    get_rows(N, LogFun, RecvPid, ResultType, [This | Res])
 	    end;
 	{error, Reason} ->
 	    {error, Reason}
     end.
 
+
 %% part of get_rows/4
-get_row(0, _Data, Res) ->
+get_row(0, _Data, _ResultType, Res) ->
     {ok, lists:reverse(Res)};
-get_row(N, Data, Res) ->
+get_row(N, Data, ResultType, Res) ->
     {Col, Rest} = get_with_length(Data),
     This = case Col of
 	       null ->
 		   null;
 	       _ ->
-		   binary_to_list(Col)
+		   if
+		       ResultType == list ->
+			   binary_to_list(Col);
+		       ResultType == binary ->
+			   Col
+		   end
 	   end,
-    get_row(N - 1, Rest, [This | Res]).
+    get_row(N - 1, Rest, ResultType, [This | Res]).
 
 get_with_length(<<251:8, Rest/binary>>) ->
     {null, Rest};
@@ -534,20 +547,21 @@ get_with_length(<<Length:8, Rest/binary>>) when Length < 251 ->
 %% Descrip.: Send a MySQL query and block awaiting it's response.
 %% Returns : result of get_query_response/2 | {error, Reason}
 %%--------------------------------------------------------------------
-do_query(State, Query) when is_record(State, state) ->
+do_query(State, Query, Options) when is_record(State, state) ->
     do_query(State#state.socket,
 	     State#state.recv_pid,
 	     State#state.log_fun,
 	     Query,
-	     State#state.mysql_version
+	     State#state.mysql_version,
+	     Options
 	    ).
 
-do_query(Sock, RecvPid, LogFun, Query, Version) when is_pid(RecvPid),
-						     is_list(Query) ->
+do_query(Sock, RecvPid, LogFun, Query, Version, Options) when is_pid(RecvPid),
+							      is_list(Query) ->
     Packet = list_to_binary([?MYSQL_QUERY_OP, Query]),
     case do_send(Sock, Packet, 0, LogFun) of
 	ok ->
-	    get_query_response(LogFun, RecvPid, Version);
+	    get_query_response(LogFun, RecvPid, Version, Options);
 	{error, Reason} ->
 	    Msg = io_lib:format("Failed sending data on socket : ~p", [Reason]),
 	    {error, Msg}
@@ -582,7 +596,7 @@ normalize_version([$4,$.,$1|_T], _LogFun) ->
     ?MYSQL_4_1;
 normalize_version([$5|_T], _LogFun) ->
     %% MySQL version 5.x protocol is compliant with MySQL 4.1.x:
-    ?MYSQL_4_1; 
+    ?MYSQL_4_1;
 normalize_version(_Other, LogFun) ->
     mysql:log(LogFun, error, "MySQL version not supported: MySQL Erlang module might not work correctly.~n"),
     %% Error, but trying the oldest protocol anyway:
@@ -620,3 +634,20 @@ get_field_datatype(252) -> 'BLOB';
 get_field_datatype(253) -> 'VAR_STRING';
 get_field_datatype(254) -> 'STRING';
 get_field_datatype(255) -> 'GEOMETRY'.
+
+%%--------------------------------------------------------------------
+%% Function: get_option(Key1, Options, Default) -> Value1
+%%           Options = [Option]
+%%           Option = {Key2, Value2}
+%%           Key1 = Key2 = atom()
+%%           Value1 = Value2 = Default = term()
+%% Descrip.: Return the option associated with Key passed to squery/4
+%%--------------------------------------------------------------------
+
+get_option(Key, Options, Default) ->
+    case lists:keysearch(Key, 1, Options) of
+	{value, {_, Value}} ->
+	    Value;
+	false ->
+	    Default
+    end.
