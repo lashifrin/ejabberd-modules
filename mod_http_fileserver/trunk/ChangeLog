@@ -1,3 +1,9 @@
+2008-03-12  Badlop  <badlop@process-one.net>
+
+	* src/web/mod_http_fileserver.erl (start): Fix error creating ETS
+	table if enabled in several vhosts (EJAB-551)
+	(stop): Unregister the command when stopping the module
+
 2007-12-21  Badlop  <badlop@process-one.net>
 
 	* README.txt: Fixed example
