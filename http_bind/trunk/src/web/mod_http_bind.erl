@@ -74,7 +74,7 @@ process(_Path, _Request) ->
 %%%----------------------------------------------------------------------
 %%% BEHAVIOUR CALLBACKS
 %%%----------------------------------------------------------------------
-start(_Host, _Opts) ->
+start(Host, _Opts) ->
     HTTPBindSupervisor =
         {ejabberd_http_bind_sup,
          {ejabberd_tmp_sup, start_link,
@@ -88,6 +88,11 @@ start(_Host, _Opts) ->
             ok;
         {ok, _Pid, _Info} ->
             ok;
+        {error, {already_started, _PidOther}} ->
+            ErrorText = "mod_http_bind is already started, "
+		"so it will not be started again for "
+		++ Host,
+            {'EXIT', {start_child_error, ErrorText}};
         {error, Error} ->
             {'EXIT', {start_child_error, Error}}
     end.
