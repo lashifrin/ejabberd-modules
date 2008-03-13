@@ -17,24 +17,19 @@ CREATE TABLE archive_collections(id INTEGER NOT NULL AUTO_INCREMENT,
                                  crypt TINYINT,
                                  extra VARCHAR(32767),
                                  PRIMARY KEY(id));
+CREATE INDEX IDX_archive_colls_with ON archive_collections(us(16),with_user(8),with_server(8),utc);
 CREATE INDEX IDX_archive_colls_prev_id ON archive_collections(prev_id);
 CREATE INDEX IDX_archive_colls_next_id ON archive_collections(next_id);
-CREATE INDEX IDX_archive_colls_us ON archive_collections(us(16));
-CREATE INDEX IDX_archive_colls_with_server ON archive_collections(with_server(16));
-CREATE INDEX IDX_archive_colls_with_user ON archive_collections(with_user(16));
-CREATE INDEX IDX_archive_colls_with_resource ON archive_collections(with_resource(8));
-CREATE INDEX IDX_archive_colls_utc ON archive_collections(utc);
-CREATE INDEX IDX_archive_colls_change_utc ON archive_collections(change_utc);
+CREATE INDEX IDX_archive_colls_utc ON archive_collections(us(16),utc);
 
 CREATE TABLE archive_messages(id INTEGER NOT NULL AUTO_INCREMENT,
                               coll_id INTEGER NOT NULL,
                               utc DATETIME NOT NULL,
                               dir TINYINT,
-                              body VARCHAR(65535),
+                              body VARCHAR(32768),
                               name VARCHAR(1023),
                               PRIMARY KEY(id));
-CREATE INDEX IDX_archive_msgs_coll_id ON archive_messages(coll_id);
-CREATE INDEX IDX_archive_msgs_utc ON archive_messages(utc);
+CREATE INDEX IDX_archive_msgs_coll_id ON archive_messages(coll_id,utc);
 
 CREATE TABLE archive_jid_prefs(us VARCHAR(2047) NOT NULL,
                                with_user VARCHAR(1023) NOT NULL,
@@ -42,11 +37,8 @@ CREATE TABLE archive_jid_prefs(us VARCHAR(2047) NOT NULL,
                                with_resource VARCHAR(1023) NOT NULL,
                                save TINYINT,
                                expire INTEGER,
-                               otr TINYINT);
-CREATE INDEX IDX_archive_jid_prefs_us ON archive_jid_prefs(us(16));
-CREATE INDEX IDX_archive_jid_prefs_with_user ON archive_jid_prefs(with_user(8));
-CREATE INDEX IDX_archive_jid_prefs_with_server ON archive_jid_prefs(with_server(8));
-CREATE INDEX IDX_archive_jid_prefs_with_resource ON archive_jid_prefs(with_resource(8));
+                               otr TINYINT,
+                               PRIMARY KEY  (us(16),with_user(8),with_server(8),with_resource(8)));
 
 CREATE TABLE archive_global_prefs(us VARCHAR(2047) NOT NULL,
                                   save TINYINT,
@@ -55,8 +47,9 @@ CREATE TABLE archive_global_prefs(us VARCHAR(2047) NOT NULL,
                                   method_auto TINYINT,
                                   method_local TINYINT,
                                   method_manual TINYINT,
-                                  auto_save TINYINT);
-CREATE INDEX IDX_archive_global_prefs_us ON archive_global_prefs(us(16));
+                                  auto_save TINYINT,
+                                  PRIMARY KEY  (us(16)));
+
 
 DELIMITER |
 
