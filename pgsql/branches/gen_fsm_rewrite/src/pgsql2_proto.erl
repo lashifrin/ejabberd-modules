@@ -51,7 +51,7 @@
 			decode_response,  %boolean() wether the driver must decode the response fields or let them intact
 			decoders,      %ets map with decoders from know postgres types
 			response_format %binary | text . Format that Postgres must use to return data. 
-			}).
+			}). 
 
 
 -record(equery_r, {
@@ -63,7 +63,14 @@
 % Options documentation in pgsql2:connect/1
 % @see pgsql2:connect/1
 start_link(Options) ->
-	gen_fsm:start_link(?MODULE,Options,[]).
+	case gen_fsm:start_link(?MODULE,{Options,self()},[]) of
+		{ok,Pid} ->	receive
+						{fsm_started,Pid} -> {ok,Pid}
+					after
+						5000 -> {error,timeout}
+					end;
+		X -> X
+	end.
 
 
 
@@ -72,21 +79,21 @@ start_link(Options) ->
 
 %%--------------------gen_fsm callbacks------------------------------------------------------
 
-init(Options) ->
+init({Options,Client}) ->
 	check_options(Options) ,
 	Database = proplists:get_value(database,Options),
 	User = proplists:get_value(user,Options),
 	Password = proplists:get_value(password,Options),
-	connect(User,Password,Database,Options).
+	connect(User,Password,Database,Client,Options).
 	
-connect(User,Password,Database,Options) ->
+connect(User,Password,Database,Client,Options) ->
 	{tcp,Host,Port} = proplists:get_value(connection,Options,{tcp,"localhost",5432}),
 	case gen_tcp:connect(Host,Port,[{active, false}, binary, {packet, raw}]) of
-		{ok,Socket} -> setup_connection(User,Password,Database,Socket,Options);
+		{ok,Socket} -> setup_connection(User,Password,Database,Socket,Client,Options);
 		Error -> throw(Error)
 	end.
 
-setup_connection(User,Password,Database,Socket,Options) ->
+setup_connection(User,Password,Database,Socket,Client,Options) ->
 	
 	StartupMsg = pgsql2_proto_msgs:startup_msg(User,Database),
 	gen_tcp:send(Socket,StartupMsg),
@@ -103,6 +110,7 @@ setup_connection(User,Password,Database,Socket,Options) ->
 		state_data={User,Password},%next state will need this for authentication
 		decode_response = DecodeResponse,
 		decoders=Table,
+		client_pid = Client,
 		response_format=ResponseFormat},5000}.
 
 
@@ -195,6 +203,7 @@ wait_for_types_info(#pg_data_row{row=Row},_Listener,St) ->
 	{reply,ok,wait_for_types_info,St};
 	
 wait_for_types_info(#pg_ready_for_query{status=_Status},_Listener,St)->
+	St#pgsql2.client_pid ! {fsm_started,self()},
 	{reply,ok,ready_for_query,St};
 	
 wait_for_types_info(X,_Listener,St) ->	
