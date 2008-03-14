@@ -1,0 +1,11 @@
+* To behave somewhat "backward compatible"  with the previous version, pass the option 
+  {decode_response,false} to pgsql2:connect, and use only pgsql2:q/2 for queries.
+
+* Note: multiple statment per query are not supported!
+
+* Api docs in pgsql2.erl
+
+Sample session:
+{ok,P}=pgsql2:connect(...).
+pgsql2:execute_many(P,"insert into test(a,b) values ($1,$2)",[["romeo","Montague"],["juliet","capulet"]]).
+pgsql2:q(P,"select a,b from test where a=$1 or b=$2",["romeo","capulet"]).

@@ -1,0 +1,9 @@
+Perform performance testing of this new version against the previous one.
+
+To run:
+Set the required DB connection parameters (username,password,..) in test.erl 
+
+* execute db/test_table.sql 
+* execute db/test_data_?.sql, depending of the data you want to test.  
+* run test:test() (.beams for both the new and old drivers must being in the path )
+ 

@@ -1,0 +1,80 @@
+
+Some naive performance numbers in my machine.
+Times expressed in microseconds, as execution time reported by timer:tc/3
+
+Notes: 
+* The "equivalent" for pgsql:squery/2  is  pgsql2:q/2 (squery)Conversion(Off) format(text)
+
+* The new version seems to be faster in all scenarios but the one with 1000 rows
+  and short values, in which.results are quite similar.
+  For longest values, the ner version is >2x faster. 
+  (test data only has one larger(~120chars) column)
+
+* At least for the tested data, doesn't seems to be much diference between using 
+  the binary or string encoding for postgres responses (not related to  
+  binaries vs list in erlang). If this is true for the general case, we could 
+  discard support for one of the two encodings.
+
+
+
+Conversion(On|Off) -> whether the driver perform automatic conversion for columns 
+                      (timestamp -> calendar:datetime() ,etc)
+format(binary|text) -> format used by postgres to encode result values
+
+***************************************************
+
+100 rows,not so random data. Short string values (2000 iterations)
+pgsql2:q/4 Conversion(On) format(binary)-> 5051897
+pgsql2:q/4 Conversion(On) format(text)-> 5539951
+pgsql2:q/2 (squery)Conversion(On) format(text)-> 5561286
+pgsql2:q/2 (squery)Conversion(Off) format(text)-> 4264365
+pgsql2:q/4 Conversion(Off) format(text)-> 4454548
+-------
+pgsql:squery/2 -> 6522342
+ok
+
+
+
+***************************************************
+
+1000 rows, not so random data. Short string values (2000 iterations)
+pgsql2:q/4 Conversion(On) format(binary)-> 48935334
+pgsql2:q/4 Conversion(On) format(text)-> 51163410
+pgsql2:q/2 (squery)Conversion(On) format(text)-> 51071911
+pgsql2:q/2 (squery)Conversion(Off) format(text)-> 37190993
+pgsql2:q/4 Conversion(Off) format(text)-> 37173440
+-------
+pgsql:squery/2 -> 40266544
+ok
+
+***************************************************
+
+100 rows, not so random data. Bigger(~120 chars) string values (2000 iterations)
+Perfoming queries..
+pgsql2:q/4 Conversion(On) format(binary)-> 6546844
+pgsql2:q/4 Conversion(On) format(text)-> 6924579
+pgsql2:q/2 (squery)Conversion(On) format(text)-> 6629272
+pgsql2:q/2 (squery)Conversion(Off) format(text)-> 5407259
+pgsql2:q/4 Conversion(Off) format(text)-> 5805514
+-------
+pgsql:squery/2 -> 12396326
+
+***************************************************
+
+
+1000 rows, not so random data.Bigger(~120 chars) string values (1000 iterations)
+1> test:test().
+Perfoming queries..
+pgsql2:q/4 Conversion(On) format(binary)-> 30900276
+pgsql2:q/4 Conversion(On) format(text)-> 32372258
+pgsql2:q/2 (squery)Conversion(On) format(text)-> 32222421
+pgsql2:q/2 (squery)Conversion(Off) format(text)-> 24564344
+pgsql2:q/4 Conversion(Off) format(text)-> 24907384
+-------
+pgsql:squery/2 -> 59727209
+ok
+
+***************************************************
+
+
+
