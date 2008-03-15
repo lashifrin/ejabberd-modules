@@ -48,6 +48,7 @@ process(["style.css"], _) ->
 .search_result em { display:block; color:green; }
 /*a.link_prev { float:left } */
 a.link_next { float:right }
+.message_body { white-space: pre-wrap; }
 "};
 
 process(Path, #request{auth = Auth} = Request) ->
@@ -327,8 +328,8 @@ search_results( #request{lang = Lang, q = Query } = _Request, {_, LServer} = US)
     
 format_search_result( {Id,Subject,User,Server,Resource,Utc,Body} ,_Lang) ->
     ?XAE("p",[{"class","search_result"}],
-         [?AC(?LINK("show/" ++ integer_to_list(Id)), jlib:jid_to_string({User,Server,Resource}) ++ " on " ++ Utc),
-          ?C(Body), ?XE("em",[?C(Subject)]) ] ).
+         [?AC(?LINK("show/" ++ integer_to_list(Id)), jlib:jid_to_string({User,Server,Resource}) ++ " : " ++ Subject),
+          ?C(Body), ?XE("em",[?C(Utc)]) ] ).
           
 links_previous_next({PrevId,NextId},Lang) ->
     [?XAE("p",[{"class","links_previous_next"}],
