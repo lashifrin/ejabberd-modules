@@ -383,7 +383,7 @@ get_collection(Id,{LUser,LServer}) ->
                                     "  AND with_user ='" ++ ejabberd_odbc:escape(WithU) ++ "'" ++
                                     "  AND with_server ='" ++ ejabberd_odbc:escape(WithS) ++ "'" ++
                                     "  AND utc > '" ++ Utc ++ "'" ++
-                                    " LIMIT 1") of
+                                    " ORDER BY utc LIMIT 1") of
             {selected, _ , [{V1}]} -> V1;
             _ -> -1
         end,
@@ -393,7 +393,7 @@ get_collection(Id,{LUser,LServer}) ->
                                     "  AND with_user ='" ++ ejabberd_odbc:escape(WithU) ++ "'" ++
                                     "  AND with_server ='" ++ ejabberd_odbc:escape(WithS) ++ "'" ++
                                     "  AND utc < '" ++ Utc ++ "'" ++
-                                    " LIMIT 1") of
+                                    " ORDER BY utc DESC LIMIT 1") of
             {selected, _ , [{V2}]} -> V2;
             _ -> -1
         end,
