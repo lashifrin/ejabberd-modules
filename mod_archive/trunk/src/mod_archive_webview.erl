@@ -99,9 +99,20 @@ process2(["show" , Id], #request{lang = Lang } = _Request , US) ->
     
     make_xhtml(?T("Chat with ") ++ jlib:jid_to_string(With) ++ ?T(" on ") ++ Date ++ ?T(" : ") ++ Subject,
                lists:map(fun(Msg) -> format_message(Msg,With, US) end, List)
-               %++[?X("hr"), ?XEA("form",[{"action",?LINK("edit/" ++ integer_to_list(Id))},{"metohd","post"}],...) ]
                ++ links_previous_next(NPId, Lang)
+               ++ [?X("hr"), ?XAE("form",[{"action",?LINK("edit/" ++ Id)},{"metohd","post"}],
+                                  [?XE("label",[?CT("Edit subject: "),
+                                                ?INPUT("text","subject",Subject)]),
+                                   ?INPUT("submit","submit",?T("Ok"))])]
                , Lang);
+               
+process2(["edit" , Id], #request{ q = Query} = Request , US) ->
+    case lists:keysearch("subject", 1, Query) of
+        {value, {_, Subject}} -> change_subject(Id,Subject,US);
+        _ -> ok
+    end,
+    process2(["show", Id] , Request, US);
+
                
 process2(["search"], #request{lang = Lang } = Request , US) ->
     make_xhtml(?T("Search"), [
@@ -401,7 +412,13 @@ get_collection(Id,{LUser,LServer}) ->
                             
         { {WithU,WithS,WithR} , Utc,  Subject , List, {PrevId,NextId}} end,
     run_sql_transaction(LServer, Fun).
-    
+
+change_subject(Id,Subject,{LUser,LServer}) ->
+    run_sql_transaction(LServer, fun() -> run_sql_query(
+            "UPDATE archive_collections"
+            " SET subject='"++ ejabberd_odbc:escape(Subject)++"' "
+            " WHERE id = '" ++ ejabberd_odbc:escape(Id) ++ "'" 
+            "  AND us = " ++ get_us_escaped({LUser,LServer})) end).
 
 %------------------------
 % from mod_archive_odbc
