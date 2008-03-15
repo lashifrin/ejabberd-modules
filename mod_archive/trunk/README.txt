@@ -6,6 +6,10 @@ There are three different modules, the main difference between them is the stora
 	- mod_archive_sql uses PostgreSQL
 	- mod_archive_odbc uses MySQL or SQLite3
 
+As of today (2008-03-15) mod_archive_odbc is the most complete and maintained.
+
+And another module is used to view archive onlines
+	- mod_archive_webview  webviewer for mod_archive_odbc
 
 
 	MOD_ARCHIVE
@@ -53,3 +57,17 @@ Based in mod_archive_sql, author: Alexey Shchepin
 
 For a detailed documentation about this module, please refer to
 http://www.ndl.kiev.ua/typo/articles/2007/11/14/mod_archive_odbc-release
+
+
+	MOD_ARCHIVE_VEBVIEW
+	===================
+Author: Olivier Goffart
+
+This module woks with the database of mod_archive_odbc
+
+Edit ejabberd.cfg and add the HTTP and module definitions: {["archive"], mod_archive_webview} to the list of request handler
+{listen, [ {5280, ejabberd_http, [     %...
+         {request_handlers, [{["archive"], mod_webarchive}
+    ]} ]} ]}.
+    
+then go on http://your.server.com:5280/archive
