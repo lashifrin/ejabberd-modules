@@ -33,15 +33,19 @@
 
 -behaviour(gen_mod).
 
+%% API:
 -export([start/2,
          init/1,
-	 stop/1,
+	 stop/1]).
+%% Hooks:
+-export([reopen_log/0,
 	 s2s_connect/2]).
 
 -include("ejabberd.hrl").
 
 -define(PROCNAME, ?MODULE).
 -define(DEFAULT_FILENAME, "s2s.log").
+-define(FILE_OPTS, [append,raw]).
 
 -record(config, {filename=?DEFAULT_FILENAME, iodevice}).
 
@@ -53,6 +57,8 @@ start(Host, Opts) ->
 	undefined ->
 	    ?DEBUG("Starting mod_s2s_log ~p  ~p~n", [Host, Opts]),
 	    Filename = gen_mod:get_opt(filename, Opts, ?DEFAULT_FILENAME),
+	    %% TODO: Both hooks will need Host parameter for vhost support
+	    ejabberd_hooks:add(reopen_log_hook, ?MODULE, reopen_log, 55),
 	    ejabberd_hooks:add(s2s_connect_hook, ?MODULE, s2s_connect, 55),
 	    register(?PROCNAME,
 		     spawn(?MODULE, init, [#config{filename=Filename}]));
@@ -62,7 +68,7 @@ start(Host, Opts) ->
 
 init(Config)->
     ?DEBUG("Starting mod_s2s_log ~p with config ~p~n", [?MODULE, Config]),
-    {ok, IOD} = file:open(Config#config.filename, [append,raw]),
+    {ok, IOD} = file:open(Config#config.filename, ?FILE_OPTS),
     loop(Config#config{iodevice=IOD}).
 
 loop(Config) ->
@@ -70,6 +76,11 @@ loop(Config) ->
 	{s2s_connect, MyServer, Server} ->
 	    log_s2s_connection(Config#config.iodevice, MyServer, Server),
 	    loop(Config);
+	{reopen_log} ->
+	    file:close(Config#config.iodevice),
+	    {ok, IOD} = file:open(Config#config.filename, ?FILE_OPTS),
+	    ?INFO_MSG("Reopened s2s log file", []),
+	    loop(Config#config{iodevice = IOD});
 	stop ->
 	    file:close(Config#config.iodevice),
 	    exit(normal)
@@ -78,7 +89,7 @@ loop(Config) ->
 stop(Host) ->
     ejabberd_hooks:delete(s2s_connection, Host,
 			  ?MODULE, s2s_connection, 55),
-    gen_mod:get_module_proc(Host, ?PROCNAME) ! stop,
+    ?PROCNAME ! stop,
     ok.
 
 s2s_connect(MyServer, Server) ->
@@ -86,6 +97,10 @@ s2s_connect(MyServer, Server) ->
 
 reopen_log() ->
     ?PROCNAME ! {reopen_log}.
+
+
+%% ---
+%% Internal functions
 
 log_s2s_connection(IODevice, MyServer, Server) ->
     {{Y, M, D}, {H, Min, S}} = calendar:local_time(),
