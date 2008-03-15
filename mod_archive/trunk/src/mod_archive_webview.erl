@@ -93,8 +93,10 @@ process2(["contact" , Jid], #request{lang = Lang } = _Request , US) ->
                ], Lang);
 
 process2(["show" , Id], #request{lang = Lang } = _Request , US) ->
-    { With, Subject,Utc,  List, NPId } = get_collection(Id, US),
-    make_xhtml(?T("Chat With ") ++ jlib:jid_to_string(With) ++ ?T(" on ") ++ Utc ++ ?T(" : ") ++ Subject,
+    { With, Utc, Subject,  List, NPId } = get_collection(Id, US),
+    [Date, _Time] = string:tokens(Utc, " "),
+    
+    make_xhtml(?T("Chat with ") ++ jlib:jid_to_string(With) ++ ?T(" on ") ++ Date ++ ?T(" : ") ++ Subject,
                lists:map(fun(Msg) -> format_message(Msg,With, US) end, List)
                %++[?X("hr"), ?XEA("form",[{"action",?LINK("edit/" ++ integer_to_list(Id))},{"metohd","post"}],...) ]
                ++ links_previous_next(NPId, Lang)
@@ -180,7 +182,8 @@ format_message({ Utc, Dir, Body } ,{WithU,WithS,WithR}, {LUser,LServer} ) ->
         0 -> { jlib:jid_to_string({WithU,WithS,WithR}) , "message_from" } ;
         1 -> { jlib:jid_to_string({LUser,LServer,""}) , "message_to" } 
     end,
-    ?XAE("p", [{"class", Class}] , [ ?XAE("span", [{"class","time"}], [?C("["++Utc++"]")]), ?C(" "),
+    [_Date, Time] = string:tokens(Utc, " "),
+    ?XAE("p", [{"class", Class}] , [ ?XAE("span", [{"class","time"}], [?C("["++Time++"]")]), ?C(" "),
                                    ?XAE("span", [{"class","jid"}], [?C(From)]), ?C(": "),
                                    ?XAE("span", [{"class","message_body"}], [?C(Body)])]).
 
