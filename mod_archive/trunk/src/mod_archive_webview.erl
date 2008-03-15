@@ -46,6 +46,8 @@ process(["style.css"], _) ->
 .message_to   .jid  { color:#1E6CC6; font-weight:bold; }
 .search_result a { display:block; }
 .search_result em { display:block; color:green; }
+/*a.link_prev { float:left } */
+a.link_next { float:right }
 "};
 
 process(Path, #request{auth = Auth} = Request) ->
@@ -91,10 +93,11 @@ process2(["contact" , Jid], #request{lang = Lang } = _Request , US) ->
                ], Lang);
 
 process2(["show" , Id], #request{lang = Lang } = _Request , US) ->
-    { With, Subject, List } = get_collection(Id, US),
-    make_xhtml(?T("Chat With ") ++ jlib:jid_to_string(With) ++ ?T(" : ") ++ Subject,
+    { With, Subject,Utc,  List, NPId } = get_collection(Id, US),
+    make_xhtml(?T("Chat With ") ++ jlib:jid_to_string(With) ++ ?T(" on ") ++ Utc ++ ?T(" : ") ++ Subject,
                lists:map(fun(Msg) -> format_message(Msg,With, US) end, List)
                %++[?X("hr"), ?XEA("form",[{"action",?LINK("edit/" ++ integer_to_list(Id))},{"metohd","post"}],...) ]
+               ++ links_previous_next(NPId, Lang)
                , Lang);
                
 process2(["search"], #request{lang = Lang } = Request , US) ->
@@ -323,6 +326,17 @@ format_search_result( {Id,Subject,User,Server,Resource,Utc,Body} ,_Lang) ->
     ?XAE("p",[{"class","search_result"}],
          [?AC(?LINK("show/" ++ integer_to_list(Id)), jlib:jid_to_string({User,Server,Resource}) ++ " on " ++ Utc),
           ?C(Body), ?XE("em",[?C(Subject)]) ] ).
+          
+links_previous_next({PrevId,NextId},Lang) ->
+    [?XAE("p",[{"class","links_previous_next"}],
+        links_previous_next_aux("link_prev", ?T("Previous"), PrevId) ++ [?C(" ")] ++
+        links_previous_next_aux("link_next", ?T("Next"), NextId))].
+
+links_previous_next_aux(Class, Text, Id) ->
+    case Id of
+        -1 -> [];
+        _ -> [?XAE("a",[{"href",?LINK("show/" ++ integer_to_list(Id))},{"class",Class}], [?C(Text)])]
+    end.
 
 %------------------------
 
@@ -348,16 +362,40 @@ get_collection_list(Jid, {LUser, LServer}) ->
     
 get_collection(Id,{LUser,LServer}) ->
     Fun = fun() ->
-         {selected, _ , [{WithU, WithS, WithR, Subject}] } = run_sql_query(
-                            "SELECT with_user,with_server,with_resource,subject"
+        SUS = get_us_escaped({LUser,LServer}),
+        {selected, _ , [{WithU, WithS, WithR, Utc, Subject}] } = run_sql_query(
+                            "SELECT with_user,with_server,with_resource,utc,subject"
                             " FROM archive_collections"
                             " WHERE id = '" ++ ejabberd_odbc:escape(Id) ++ "'" 
-                            "  AND us = " ++ get_us_escaped({LUser,LServer})),
+                            "  AND us = " ++ SUS),
+        %If the previous query fail, that mean the collection doesn't exist or is not 
+        % one of the users connection.
 
-         {selected, _ , List} = run_sql_query("SELECT utc,dir,body"
+        {selected, _ , List} = run_sql_query("SELECT utc,dir,body"
                                                  " FROM archive_messages"
                                                  " WHERE coll_id = '" ++ ejabberd_odbc:escape(Id) ++ "'"),
-        { {WithU,WithS,WithR} , Subject , List} end,
+        NextId = case run_sql_query("SELECT id"
+                                    " FROM archive_collections"
+                                    " WHERE us = " ++  SUS ++ 
+                                    "  AND with_user ='" ++ ejabberd_odbc:escape(WithU) ++ "'" ++
+                                    "  AND with_server ='" ++ ejabberd_odbc:escape(WithS) ++ "'" ++
+                                    "  AND utc > '" ++ Utc ++ "'" ++
+                                    " LIMIT 1") of
+            {selected, _ , [{V1}]} -> V1;
+            _ -> -1
+        end,
+        PrevId = case run_sql_query("SELECT id"
+                                    " FROM archive_collections"
+                                    " WHERE us = " ++  SUS ++ 
+                                    "  AND with_user ='" ++ ejabberd_odbc:escape(WithU) ++ "'" ++
+                                    "  AND with_server ='" ++ ejabberd_odbc:escape(WithS) ++ "'" ++
+                                    "  AND utc < '" ++ Utc ++ "'" ++
+                                    " LIMIT 1") of
+            {selected, _ , [{V2}]} -> V2;
+            _ -> -1
+        end,
+                            
+        { {WithU,WithS,WithR} , Utc,  Subject , List, {PrevId,NextId}} end,
     run_sql_transaction(LServer, Fun).
     
 
