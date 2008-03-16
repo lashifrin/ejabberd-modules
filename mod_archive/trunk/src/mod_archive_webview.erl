@@ -104,9 +104,12 @@ process2(["show" , Id], #request{lang = Lang } = _Request , US) ->
                ++ [?X("hr"), ?XAE("form",[{"action",?LINK("edit/" ++ Id)},{"metohd","post"}],
                                   [?XE("label",[?CT("Edit subject: "),
                                                 ?INPUT("text","subject",Subject)]),
-                                   ?INPUT("submit","submit",?T("Ok"))])]
+                                   ?INPUT("submit","submit",?T("Ok"))]),
+                  ?XAE("form",[{"action",?LINK("delete/" ++ Id)},{"metohd","post"},
+                               {"onsubmit","return confirm('"++ ?T("Do you realy want to delete this chat") ++"')"}],
+                       [?INPUT("hidden","id",Id),?INPUT("submit","delete",?T("Delete"))])]
                , Lang);
-               
+
 process2(["edit" , Id], #request{ q = Query} = Request , US) ->
     case lists:keysearch("subject", 1, Query) of
         {value, {_, Subject}} -> change_subject(Id,Subject,US);
@@ -114,11 +117,17 @@ process2(["edit" , Id], #request{ q = Query} = Request , US) ->
     end,
     process2(["show", Id] , Request, US);
 
-               
+process2(["delete" , Id], #request{q = Query, lang=Lang} = _Request , US) ->
+    case lists:keysearch("id", 1, Query) of
+        {value, {_, Id2}} when Id==Id2 -> 
+            delete_collection(Id,US), make_xhtml("Chat deleted",[],Lang);
+        _ -> ?ERR_INTERNAL_SERVER_ERROR
+    end;
+
 process2(["search"], #request{lang = Lang } = Request , US) ->
     make_xhtml(?T("Search"), [
                 search_form(Request, US) ], Lang);
-                
+
 process2(["search", "results"], #request{lang = Lang } = Request , US) ->
     make_xhtml(?T("Search"), [ search_form(Request, US) | search_results(Request, US)], Lang);
 
@@ -333,7 +342,7 @@ search_results( #request{lang = Lang, q = Query } = _Request, {_, LServer} = US)
             "SELECT coll_id,subject,with_user,with_server,with_resource,C.utc,body"
             " FROM archive_collections as C, archive_messages as M"
             " WHERE C.id = M.coll_id AND C.us = " ++  get_us_escaped(US) ++ 
-            With ++ From ++ To ++ Kw ++
+            "   AND C.deleted='0'" ++ With ++ From ++ To ++ Kw ++
             " GROUP BY coll_id") end,
     {selected, _ , Results} = run_sql_transaction(LServer,F),
     lists:map(fun(R) -> format_search_result(R,Lang) end, Results).
@@ -360,7 +369,7 @@ get_contacts({LUser, LServer}) ->
     Fun = fun() ->
         {selected, _ , Contacts} = run_sql_query("SELECT with_user,with_server,COUNT(*)"
                                                  " FROM archive_collections"
-                                                 " WHERE us = " ++ get_us_escaped({LUser,LServer}) ++ 
+                                                 " WHERE us = " ++ get_us_escaped({LUser,LServer}) ++ " AND deleted=0"
                                                  " GROUP BY with_user,with_server"),
         Contacts end,
     run_sql_transaction(LServer, Fun).
@@ -371,6 +380,7 @@ get_collection_list(Jid, {LUser, LServer}) ->
         {selected, _ , List} = run_sql_query("SELECT id,with_user,with_server,with_resource,utc,subject"
                                                  " FROM archive_collections"
                                                  " WHERE us = " ++ get_us_escaped({LUser,LServer}) ++ 
+                                                 "  AND deleted=0 "
                                                  "  AND with_user = " ++ WithU ++
                                                  "  AND with_server = " ++ WithS),
         List end,
@@ -392,7 +402,7 @@ get_collection(Id,{LUser,LServer}) ->
                                                  " WHERE coll_id = '" ++ ejabberd_odbc:escape(Id) ++ "'"),
         NextId = case run_sql_query("SELECT id"
                                     " FROM archive_collections"
-                                    " WHERE us = " ++  SUS ++ 
+                                    " WHERE us = " ++  SUS ++  " AND deleted=0 "
                                     "  AND with_user ='" ++ ejabberd_odbc:escape(WithU) ++ "'" ++
                                     "  AND with_server ='" ++ ejabberd_odbc:escape(WithS) ++ "'" ++
                                     "  AND utc > '" ++ Utc ++ "'" ++
@@ -402,7 +412,7 @@ get_collection(Id,{LUser,LServer}) ->
         end,
         PrevId = case run_sql_query("SELECT id"
                                     " FROM archive_collections"
-                                    " WHERE us = " ++  SUS ++ 
+                                    " WHERE us = " ++  SUS ++  " AND deleted=0 "
                                     "  AND with_user ='" ++ ejabberd_odbc:escape(WithU) ++ "'" ++
                                     "  AND with_server ='" ++ ejabberd_odbc:escape(WithS) ++ "'" ++
                                     "  AND utc < '" ++ Utc ++ "'" ++
@@ -410,14 +420,22 @@ get_collection(Id,{LUser,LServer}) ->
             {selected, _ , [{V2}]} -> V2;
             _ -> -1
         end,
-                            
         { {WithU,WithS,WithR} , Utc,  Subject , List, {PrevId,NextId}} end,
     run_sql_transaction(LServer, Fun).
 
 change_subject(Id,Subject,{LUser,LServer}) ->
     run_sql_transaction(LServer, fun() -> run_sql_query(
             "UPDATE archive_collections"
-            " SET subject='"++ ejabberd_odbc:escape(Subject)++"' "
+            " SET subject='"++ ejabberd_odbc:escape(Subject)++"',"
+            "     change_utc=NOW(), change_by='webview'"
+            " WHERE id = '" ++ ejabberd_odbc:escape(Id) ++ "'" 
+            "  AND us = " ++ get_us_escaped({LUser,LServer})) end).
+
+delete_collection(Id,{LUser,LServer}) ->
+    run_sql_transaction(LServer, fun() -> run_sql_query(
+            "UPDATE archive_collections"
+            " SET deleted=1, subject='', thread = '', extra = '', prev_id = NULL, next_id = NULL,"
+            "     change_utc=NOW(), change_by='webview'"
             " WHERE id = '" ++ ejabberd_odbc:escape(Id) ++ "'" 
             "  AND us = " ++ get_us_escaped({LUser,LServer})) end).
 
