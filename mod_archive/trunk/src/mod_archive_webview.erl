@@ -80,7 +80,8 @@ process2(["contact"], #request{lang = Lang } = _Request , US) ->
     make_xhtml(?T("Contact List"), [
                            ?XE("ul", lists:map( fun({Node,Server,Count}) -> 
                                                     With = jlib:jid_to_string({Node,Server,""}),
-                                                    ?LI([?AC(?LINK("contact/" ++ With), With ) , ?C(" (" ++ Count  ++")")] ) end,
+                                                    ?LI([?AC(?LINK("contact/" ++ ejabberd_http:url_encode(With)), With ) ,
+                                                         ?C(" (" ++ Count  ++")")] ) end,
                                                 get_contacts(US)))
                ], Lang);
                
