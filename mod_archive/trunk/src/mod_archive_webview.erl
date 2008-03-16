@@ -131,16 +131,15 @@ process2(["search"], #request{lang = Lang } = Request , US) ->
 process2(["search", "results"], #request{lang = Lang } = Request , US) ->
     make_xhtml(?T("Search"), [ search_form(Request, US) | search_results(Request, US)], Lang);
 
-   
-    
+process2([], #request{lang = Lang } = _Request , {LUser,LServer}) ->
+    make_xhtml(?T("Archives viewer"),[?PCT("Welcome " ++ LUser ++ "@" ++ LServer)], Lang);
+
 process2(_, #request{lang = Lang } = _Request , _US) ->
     make_xhtml(?T("404 File not found"),[], Lang).
 
 %------------------------------
 
 make_xhtml(Title, Els, Lang) ->
-    ?MYDEBUG("make_xhtml ~p", [Els]),
-    
     {200, [html],
         {xmlelement, "html", [{"xmlns", "http://www.w3.org/1999/xhtml"},
                 {"xml:lang", Lang},
@@ -181,8 +180,7 @@ get_auth(Auth) ->
          _ ->
             unauthorized
     end.
-    
-    
+
 select_element(Name, List, Value1) ->
     Value = if is_integer(Value1) -> integer_to_list(Value1); true -> Value1 end,
     ?XAE("select",[{"name",Name}],lists:map( 
@@ -191,10 +189,9 @@ select_element(Name, List, Value1) ->
                                 Value -> [{"value",Value},{"selected","selected"}];
                                 _ -> [{"value",Key}]
                             end, [?C(Text)]) end, List)).
-                            
+
 table_element(Rows) ->
     ?XE("table",lists:map(fun(Cols)-> ?XE("tr", lists:map(fun(Ct)-> ?XE("td",Ct) end, Cols)) end, Rows)).
-
 
 %------------------------
 
@@ -300,9 +297,11 @@ search_form( #request{lang = Lang, q = Query } = _Request, US) ->
                                                     get_contacts(US)) ],
                                 get_from_query_with_default("with",Query,""))]),
             ?BR,
-            ?XE("label", [?CT("From: ") , ?INPUT("text","from", get_from_query_with_default("from",Query,""))]),
+            ?XE("label", [?CT("From: ") , ?INPUT("text","from", get_from_query_with_default("from",Query,"")),
+                          ?CT(" (date in SQL format,  may be empty)")]),
             ?BR,
-            ?XE("label", [?CT("To: ") , ?INPUT("text","to", get_from_query_with_default("to",Query,""))]),
+            ?XE("label", [?CT("To: ") , ?INPUT("text","to", get_from_query_with_default("to",Query,"")),
+                          ?CT(" (date in SQL format,  may be empty)")]),
             ?BR,
             ?XE("label", [?CT("Search keyword: ") , ?INPUT("text","keywords",
                                                         get_from_query_with_default("keywords",Query,""))]),
@@ -344,9 +343,12 @@ search_results( #request{lang = Lang, q = Query } = _Request, {_, LServer} = US)
             " WHERE C.id = M.coll_id AND C.us = " ++  get_us_escaped(US) ++ 
             "   AND C.deleted='0'" ++ With ++ From ++ To ++ Kw ++
             " GROUP BY coll_id") end,
-    {selected, _ , Results} = run_sql_transaction(LServer,F),
-    lists:map(fun(R) -> format_search_result(R,Lang) end, Results).
-    
+    case run_sql_transaction(LServer,F) of
+        {selected, _ , []} -> [?PCT("No matches")];
+        {selected, _ , Results} ->
+           lists:map(fun(R) -> format_search_result(R,Lang) end, Results)
+    end.
+
 format_search_result( {Id,Subject,User,Server,Resource,Utc,Body} ,_Lang) ->
     ?XAE("p",[{"class","search_result"}],
          [?AC(?LINK("show/" ++ integer_to_list(Id)), jlib:jid_to_string({User,Server,Resource}) ++ " : " ++ Subject),
