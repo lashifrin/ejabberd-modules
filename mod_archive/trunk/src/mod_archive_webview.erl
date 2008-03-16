@@ -69,13 +69,23 @@ process(Path, #request{auth = Auth} = Request) ->
 process2(["config" ], #request{lang = Lang } = _Request , {User, Server}) ->
     make_xhtml(?T("Config"),
         [?XE("h3", [?CT("Global Settings")]) ] ++ global_config_form({User, Server}, Lang) ++
-        [?XE("h3", [?CT("Specific Contact Settings")]) ] ++ contact_config_form({User, Server}, Lang) , Lang);
-        
+        [?XE("h3", [?CT("Specific Contact Settings")]) ] ++ contact_config_form({User, Server}, Lang) ++
+        [?X("hr"), ?ACT(?LINK("config/complex"),"Advanced settings")] , Lang);
+
 process2(["config" , "submit", "global"], #request{q = Query } = Request , US) ->
     submit_config_global( Query  , US),
     process2(["config"], Request, US);
 
-    
+process2(["config" , "complex" ], #request{lang = Lang } = _Request , {User, Server}) ->
+    make_xhtml(?T("Config"),
+        [?XE("h3", [?CT("Global Settings")]) ] ++ global_config_form_complex({User, Server}, Lang) ++
+        [?XE("h3", [?CT("Specific Contact Settings")]) ] ++ contact_config_form({User, Server}, Lang) ++
+        [?X("hr"), ?ACT(?LINK("config"),"Simple settings")] , Lang);
+
+process2(["config" , "submit", "complex_global"], #request{q = Query } = Request , US) ->
+    submit_config_global_complex( Query  , US),
+    process2(["config/complex"], Request, US);
+
 process2(["contact"], #request{lang = Lang } = _Request , US) ->
     make_xhtml(?T("Contact List"), [
                            ?XE("ul", lists:map( fun({Node,Server,Count}) -> 
@@ -195,7 +205,6 @@ table_element(Rows) ->
 
 %------------------------
 
-
 format_message({ Utc, Dir, Body } ,{WithU,WithS,WithR}, {LUser,LServer} ) ->
     {From, Class} = case Dir of 
         0 -> { jlib:jid_to_string({WithU,WithS,WithR}) , "message_from" } ;
@@ -213,6 +222,26 @@ contact_config(Jid,{LUser,LServer},Lang) ->
 
 
 global_config_form({LUser,LServer},Lang) ->
+    {Save,Expire,Auto_save} =
+        case run_sql_transaction(LServer, fun() -> run_sql_query(
+                "SELECT save,expire,auto_save"
+                " FROM archive_global_prefs"
+                " WHERE us = " ++ get_us_escaped({LUser,LServer}) ) end) of
+            {selected, _ , [ Ok ]} -> Ok;
+            {selected, _ , [ ]} -> { -1, -1, -1, -1, -1, -1, -1 }
+        end,
+   [?XAE("form",[{"action",?LINK("config/submit/global")}],
+         [?XE("label",[?CT("Disable or enable automatic archiving globaly: "), select_element("global_auto_save",
+                        [{"-1",?T("--Server Default--")},{"1",?T("Enabled")},{"0",?T("Disabled")}],decode_integer(Auto_save))]),
+          ?BR,
+          ?XE("label",[?CT("Default for contact not specified bellow : "), select_element("global_save",
+                             [{"-1",?T("--Server Default--")},{"1",?T("Enabled")},{"0",?T("Disabled")}],decode_integer(Save))]),
+          ?BR, ?XE("label",[?CT("Default expiration time: "), ?INPUT("text","global_expire",integer_to_list(decode_integer(Expire)))]),
+               ?CT("(number of seconds before deleting message, '-1' = server default)"),
+          ?BR, ?INPUTT("submit","global_submit","Submit")]
+         )].
+
+global_config_form_complex({LUser,LServer},Lang) ->
     {Save,Expire,Otr,Method_auto,Method_local,Method_manual,Auto_save} =
         case run_sql_transaction(LServer, fun() -> run_sql_query(
                 "SELECT save,expire,otr,method_auto,method_local,method_manual,auto_save"
@@ -222,7 +251,7 @@ global_config_form({LUser,LServer},Lang) ->
             {selected, _ , [ ]} -> { -1, -1, -1, -1, -1, -1, -1 }
         end,
     MethodList = [ {"-1",?T("--Undefined--")}, {"0",?T("Prefer")}, {"1",?T("Concede")}, {"2",?T("Forbid")} ],
-    [?XAE("form",[{"action",?LINK("config/submit/global")}],[table_element([[
+    [?XAE("form",[{"action",?LINK("config/submit/complex_global")}],[table_element([[
             [?XE("label",[?CT("Save: "), select_element("global_save",[{"-1",?T("--Default--")},{"1",?T("Enabled")},{"0",?T("Disabled")}],decode_integer(Save))])],
             [?XE("label",[?CT("Expire: "), ?INPUT("text","global_expire",integer_to_list(decode_integer(Expire)))])],
             [?XE("label",[?CT("Otr: "), select_element("global_otr",[{"-1",?T("--Undefined--")},
@@ -259,8 +288,24 @@ get_from_query_escaped(Key,Query) ->
         Value -> "'" ++ ejabberd_odbc:escape(Value) ++ "'"
     end.
 
-
 submit_config_global(Query , {LUser,LServer}) ->
+    SUS = get_us_escaped({LUser,LServer}),
+    SQLQuery = 
+        "UPDATE archive_global_prefs"
+        " SET save = " ++ get_from_query_escaped("global_save",Query) ++ ","
+        "     expire = " ++ get_from_query_escaped("global_expire",Query) ++ ","
+        "     auto_save = " ++ get_from_query_escaped("global_auto_save",Query) ++ 
+        " WHERE us = " ++ SUS,
+    F = fun() ->
+        %TODO: use REPLACE
+        case run_sql_query("SELECT us FROM archive_global_prefs WHERE us = " ++ SUS) of
+            {selected, _, Rs} when Rs /= [] -> ok;
+            _ -> run_sql_query("INSERT INTO archive_global_prefs (us) VALUES (" ++ SUS ++ ")")
+        end,
+        run_sql_query(SQLQuery) end,
+    run_sql_transaction(LServer, F).
+
+submit_config_global_complex(Query , {LUser,LServer}) ->
     SUS = get_us_escaped({LUser,LServer}),
     SQLQuery = 
         "UPDATE archive_global_prefs"
@@ -273,14 +318,14 @@ submit_config_global(Query , {LUser,LServer}) ->
         "     auto_save = " ++ get_from_query_escaped("global_auto_save",Query) ++ 
         " WHERE us = " ++ SUS,
     F = fun() ->
+        %TODO: use REPLACE
         case run_sql_query("SELECT us FROM archive_global_prefs WHERE us = " ++ SUS) of
             {selected, _, Rs} when Rs /= [] -> ok;
             _ -> run_sql_query("INSERT INTO archive_global_prefs (us) VALUES (" ++ SUS ++ ")")
         end,
         run_sql_query(SQLQuery) end,
     run_sql_transaction(LServer, F).
-    
-    
+
 get_from_query_with_default(Key,Query,Default) ->
     case  lists:keysearch(Key, 1, Query) of
         {value, {_, Value}} -> Value;
