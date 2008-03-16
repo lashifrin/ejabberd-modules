@@ -90,7 +90,7 @@ process2(["contact" , Jid], #request{lang = Lang } = _Request , US) ->
     make_xhtml(?T("Chat with ") ++ Jid, contact_config(Jid,US,Lang) ++
                            [?XE("ul", lists:map( fun({Id, Node, Server, Resource, Utc, Subject }) -> 
                                                     With = jlib:jid_to_string({Node,Server,Resource}),
-                                                    ?LI([?AC(?LINK("show/" ++ integer_to_list(Id)), "On " ++ Utc ++ " with " ++ With ++ " -> " ++ Subject  )] ) end,
+                                                    ?LI([?AC(?LINK("show/" ++ integer_to_list(Id)), "On " ++ Utc ++ " with " ++ With ++ " -> " ++ escape_str(Subject)  )] ) end,
                                                 get_collection_list(jlib:string_to_jid(Jid), US)))
                ], Lang);
 
@@ -98,12 +98,12 @@ process2(["show" , Id], #request{lang = Lang } = _Request , US) ->
     { With, Utc, Subject,  List, NPId } = get_collection(Id, US),
     [Date, _Time] = string:tokens(Utc, " "),
     
-    make_xhtml(?T("Chat with ") ++ jlib:jid_to_string(With) ++ ?T(" on ") ++ Date ++ ?T(" : ") ++ Subject,
+    make_xhtml(?T("Chat with ") ++ jlib:jid_to_string(With) ++ ?T(" on ") ++ Date ++ ?T(" : ") ++ escape_str(Subject),
                lists:map(fun(Msg) -> format_message(Msg,With, US) end, List)
                ++ links_previous_next(NPId, Lang)
                ++ [?X("hr"), ?XAE("form",[{"action",?LINK("edit/" ++ Id)},{"metohd","post"}],
                                   [?XE("label",[?CT("Edit subject: "),
-                                                ?INPUT("text","subject",Subject)]),
+                                                ?INPUT("text","subject",escape_str(Subject))]),
                                    ?INPUT("submit","submit",?T("Ok"))]),
                   ?XAE("form",[{"action",?LINK("delete/" ++ Id)},{"metohd","post"},
                                {"onsubmit","return confirm('"++ ?T("Do you realy want to delete this chat") ++"')"}],
@@ -351,7 +351,7 @@ search_results( #request{lang = Lang, q = Query } = _Request, {_, LServer} = US)
 
 format_search_result( {Id,Subject,User,Server,Resource,Utc,Body} ,_Lang) ->
     ?XAE("p",[{"class","search_result"}],
-         [?AC(?LINK("show/" ++ integer_to_list(Id)), jlib:jid_to_string({User,Server,Resource}) ++ " : " ++ Subject),
+         [?AC(?LINK("show/" ++ integer_to_list(Id)), jlib:jid_to_string({User,Server,Resource}) ++ " : " ++ escape_str(Subject)),
           ?C(Body), ?XE("em",[?C(Utc)]) ] ).
           
 links_previous_next({PrevId,NextId},Lang) ->
@@ -488,3 +488,7 @@ decode_integer(null) ->
     -1;
 decode_integer(Val) ->
     list_to_integer(Val).
+
+escape_str(null) -> "";
+
+escape_str(Str) -> Str.
