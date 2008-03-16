@@ -21,6 +21,7 @@ CREATE INDEX IDX_archive_colls_with ON archive_collections(us(16),with_user(8),w
 CREATE INDEX IDX_archive_colls_prev_id ON archive_collections(prev_id);
 CREATE INDEX IDX_archive_colls_next_id ON archive_collections(next_id);
 CREATE INDEX IDX_archive_colls_utc ON archive_collections(us(16),utc);
+CREATE INDEX IDX_archive_colls_change ON archive_collections(deleted,change_utc);
 
 CREATE TABLE archive_messages(id INTEGER NOT NULL AUTO_INCREMENT,
                               coll_id INTEGER NOT NULL,
