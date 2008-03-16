@@ -37,7 +37,7 @@
 %process([], Request) -> process2([], Request, {}).
 
 process(["style.css"], _) ->
-    {200,[], "
+    {200,[{"Content-Type", "text/css"}], "
 #navigation li { list-style:none; display:inline;  }
 .message_from, .message_to { margin:0; padding:0; }
 .message_from .time { color:#BD2134; font-weight:bold; }
