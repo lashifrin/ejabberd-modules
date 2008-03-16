@@ -76,6 +76,10 @@ process2(["config" , "submit", "global"], #request{q = Query } = Request , US) -
     submit_config_global( Query  , US),
     process2(["config"], Request, US);
 
+% process2(["config" , "submit", "contact"], #request{q = Query } = Request , US) ->
+%     submit_config_contact( Query  , US),
+%     process2(["config"], Request, US);
+
 process2(["config" , "complex" ], #request{lang = Lang } = _Request , {User, Server}) ->
     make_xhtml(?T("Config"),
         [?XE("h3", [?CT("Global Settings")]) ] ++ global_config_form_complex({User, Server}, Lang) ++
@@ -94,8 +98,7 @@ process2(["contact"], #request{lang = Lang } = _Request , US) ->
                                                          ?C(" (" ++ Count  ++")")] ) end,
                                                 get_contacts(US)))
                ], Lang);
-               
-               
+
 process2(["contact" , Jid], #request{lang = Lang } = _Request , US) ->
     make_xhtml(?T("Chat with ") ++ Jid, contact_config(Jid,US,Lang) ++
                            [?XE("ul", lists:map( fun({Id, Node, Server, Resource, Utc, Subject }) -> 
@@ -107,7 +110,6 @@ process2(["contact" , Jid], #request{lang = Lang } = _Request , US) ->
 process2(["show" , Id], #request{lang = Lang } = _Request , US) ->
     { With, Utc, Subject,  List, NPId } = get_collection(Id, US),
     [Date, _Time] = string:tokens(Utc, " "),
-    
     make_xhtml(?T("Chat with ") ++ jlib:jid_to_string(With) ++ ?T(" on ") ++ Date ++ ?T(" : ") ++ escape_str(Subject),
                lists:map(fun(Msg) -> format_message(Msg,With, US) end, List)
                ++ links_previous_next(NPId, Lang)
@@ -271,12 +273,26 @@ global_config_form_complex({LUser,LServer},Lang) ->
 
     
 contact_config_form({LUser,LServer},Lang) ->
-%     {selected, _, List} =
-%          run_sql_transaction(LServer, fun() -> run_sql_query(
-%             "SELECT with_user,with_server,with_resource,save,expire,otr"
-%             " FROM archive_jid_prefs"
-%             " WHERE us = " ++ get_us_escaped({LUser,LServer}) ) end),
-    [?PCT("TODO")].
+     {selected, _, List} =
+          run_sql_transaction(LServer, fun() -> run_sql_query(
+             "SELECT with_user,with_server,with_resource,save,expire"
+             " FROM archive_jid_prefs"
+             " WHERE us = " ++ get_us_escaped({LUser,LServer}) ) end),
+    [ table_element([[[?CT("JID")],[?CT("Auto archive")],[?CT("Expire")]] |
+        lists:map(fun({WithU,WithS,WithR,Save,Expire}) -> 
+            [ [?C(jlib:jid_to_string({WithU,WithS,WithR}))],
+              [case decode_integer(Save) of 1 -> ?CT("Enabled"); 0 -> ?CT("Disabled"); _ -> ?CT("Default") end],
+              [?C(integer_to_list(decode_integer(Expire)))]  ] end , List ) ]) %,
+%       ?XAE("form",[{"action",?LINK("config/submit/contact")}],
+%          [?XE("label",[?CT("Add/Modify settings for Jid: "), ?INPUT("text","jid","")]),
+%           ?BR,
+%           ?XE("label",[?CT("Archiving : "), select_element("save",
+%                              [{"-1",?T("--Default--")},{"1",?T("Enabled")},{"0",?T("Disabled")}],"-1")]),
+%           ?BR, ?XE("label",[?CT("Expiration time: "), ?INPUT("text","expire","-1")]),
+%           ?BR, ?INPUTT("submit","submit","Submit")]
+%          )
+    ].
+
 
 
 get_from_query_escaped(Key,Query) ->
@@ -325,7 +341,7 @@ submit_config_global_complex(Query , {LUser,LServer}) ->
         end,
         run_sql_query(SQLQuery) end,
     run_sql_transaction(LServer, F).
-
+    
 get_from_query_with_default(Key,Query,Default) ->
     case  lists:keysearch(Key, 1, Query) of
         {value, {_, Value}} -> Value;
@@ -535,5 +551,4 @@ decode_integer(Val) ->
     list_to_integer(Val).
 
 escape_str(null) -> "";
-
 escape_str(Str) -> Str.
