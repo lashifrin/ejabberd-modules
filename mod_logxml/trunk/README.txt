@@ -1,9 +1,8 @@
 
 	mod_logxml - Log XMPP packets to XML file
 
-	Homepage: http://ejabberd.jabber.ru/mod_logxml
+	Homepage: http://www.ejabberd.im/mod_logxml
 	Author: Badlop
-	Version: 0.2.4 - 2007-07-20
 	Module for ejabberd 0.7.5 or newer
 
 
@@ -45,14 +44,14 @@ logdir:
     Default value: "/tmp/jabberlogs/"
 timezone:
     The time zone for the logs is configurable with this option. 
-	Allowed values are 'local' and 'universal'.
-	With the first value, the local time, 
-	as reported to Erlang by the operating system, will be used. 
-	With the latter, GMT/UTC time will be used. 
-	Default value: local
+    Allowed values are 'local' and 'universal'.
+    With the first value, the local time, 
+    as reported to Erlang by the operating system, will be used. 
+    With the latter, GMT/UTC time will be used. 
+    Default value: local
 show_ip: 
     If the IP address of the local user should be logged to file.
-    This option requires ejabberd SVN r772 (2007-05-21) or newer.
+    This option requires ejabberd 2.0.0 or newer, specifically SVN r772 (2007-05-21)
     Default value: false
 rotate_days: 
     Rotate logs every X days
@@ -71,46 +70,33 @@ check_rotate_kpackets:
     Default value: 1
 
 
+
 	EXAMPLE CONFIGURATION
 	---------------------
 
+{modules, [
+  ...
   {mod_logxml, [
      {stanza, [message, other]},
      {direction, [external]},
      {orientation, [send, recv]},
      {logdir, "/var/jabber/logs/"},
      {timezone, universal}, 
-     {show_ip, true}, 
+     {show_ip, false},  % To enable this option you need ejabberd 2.0.0 or newer
      {rotate_days, 1}, 
      {rotate_megs, 100}, 
      {rotate_kpackets, no},
      {check_rotate_kpackets, 1}
   ]},
+  ...
+]}.
 
 
-	CHANGELOG
-	---------
 
-0.2.4 - 2007-07-20
-  * Added new option: show_ip
+	FORMAT OF XML
+	-------------
 
-0.2.3 - 2007-03-20
-  * The file name respects the timezone option
-
-0.2.2 - 2007-02-13
-  * Added new option: timezone
-
-0.2.1 - 2006-08-08
-  * Fixed small bug on start/2 
-
-0.2 - 2006-03-08
-  * Changed some configuration options: 
-      rotate_days, rotate_mages and rotate_kpackets can now be set independently
-  * New format of XML logs: now XMPP packets are enclosed in <packet>, with attributes:
-      or: orientation of the packet, either 'send' or 'recv'
-      ljid: local JID of the sender or receiver, depending on the orientation
-      ts: timestamp when the packet was logged
-
-0.1 - 2005-11-11
-  * Initial version
-
+XMPP packets are enclosed in <packet>, with attributes:
+  or: orientation of the packet, either 'send' or 'recv'
+  ljid: local JID of the sender or receiver, depending on the orientation
+  ts: timestamp when the packet was logged
