@@ -98,6 +98,10 @@ bind(NamePortal, NamePrepared,Parameters, ResultFormats) ->
 			       Bin = list_to_binary(List), %%TODO: this isn't neccesary?
 			       Size = size(Bin),
 			       <<Size:32/integer, Bin/binary>>;
+			   (Atom) when is_atom(Atom) ->
+			   	   Bin = list_to_binary(atom_to_list(Atom)),
+			       Size = size(Bin),
+			       <<Size:32/integer, Bin/binary>>;
 			   (Text) ->
 			       Bin = list_to_binary(Text),
 			       Size = size(Bin),

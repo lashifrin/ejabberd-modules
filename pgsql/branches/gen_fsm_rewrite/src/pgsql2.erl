@@ -19,7 +19,7 @@
 %
 %
 
--export([connect/4,stop/1,q/2,q/3,q/4,execute/3,execute_many/3,get_parameters/1]).	
+-export([connect/4,stop/1,q/2,q/3,q/4,execute/3,execute_many/3,get_parameters/1,apply_in_tx/3]).	
 
 
 % @spec connect(User,Password,Database,[Option]) -> {ok,Pid} 
@@ -119,7 +119,31 @@ execute(_Pid,_Query,_Params) ->
 	{error,"Not implemented yet, use execute_many instead"}.
 
 
-
+%% @doc Apply the given function in a transactional context 
+%%      whithin this connection.
+%%      The transaction will be commited if the function 
+%%      returns normally, and a rollback is done if the function
+%%      throws any exception.
+%%      The Function is called with the connection as the first 
+%%      argument with the rest of the arguments following.
+%%      apply_in_tx(Connection,F,[a,b]) would result in
+%%      apply(F,[Connection,a,b])
+%%
+%%      IMPORTANT!: this implementation isn't safe to be used
+%%                  from multiple client process. 
+%%TODO: See status field in ready_for_query, to be sure
+%% that the transaction is going ok
+apply_in_tx(Pid,Fun,Args) ->
+	gen_fsm:sync_send_event(Pid,{q,"BEGIN"}),
+	try 
+		R = apply(Fun,[Pid|Args]),
+		gen_fsm:sync_send_event(Pid,{q,"COMMIT"}),
+		R
+	catch
+		Type:Error -> gen_fsm:sync_send_event(Pid,{q,"ROLLBACK"}),
+					  throw({tx_error,Type,Error})
+	end.
+		
  
 % @spec get_parameters(Pid) -> {ok,[Parameter]}
 % @type Parameter = {Key,Value}
