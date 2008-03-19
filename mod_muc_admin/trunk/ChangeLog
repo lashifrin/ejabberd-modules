@@ -1,5 +1,8 @@
 2008-03-19  Badlop  <badlop@process-one.net>
 
+	* src/mod_muc_admin.erl (join): Copied the new function
+	string:join/2 introduced in Erlang R12
+
 	* README.txt: Clarified requirements
 
 	* src/mod_muc_admin.erl (split_roomjid): Small fix

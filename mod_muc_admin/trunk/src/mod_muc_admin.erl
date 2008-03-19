@@ -314,8 +314,13 @@ read_room(F) ->
 split_roomjid(RoomJID) ->
     [Name, Host] = string:tokens(RoomJID, "@"),
     [_MUC_service_name | ServerHostList] = string:tokens(Host, "."),
-    ServerHost = lists:join(ServerHostList, "."),
+    ServerHost = join(ServerHostList, "."),
     {Name, Host, ServerHost}.
+
+%% This function is copied from string:join/2 in Erlang/OTP R12B-1
+%% Note that string:join/2 is not implemented in Erlang/OTP R11B
+join([H|T], Sep) ->
+    H ++ lists:concat([Sep ++ X || X <- T]).
 
 destroy_room({N, H, SH}) ->
     io:format("Destroying room: ~s@~s - vhost: ~s~n", [N, H, SH]),
