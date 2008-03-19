@@ -1,3 +1,9 @@
+2008-03-19  Badlop  <badlop@process-one.net>
+
+	* src/mod_ctlextra.erl: Added two new commands for administration
+	of Shared Roster Groups: "srg-list-groups host" and "srg-get-info
+	group host" (thanks to Taylor Laramie)
+
 2008-03-09  Badlop  <badlop@process-one.net>
 
 	* src/mod_ctlextra.erl: Show the result of each table export

@@ -59,6 +59,8 @@ commands_global() ->
      {"srg-delete group host", "delete the group"},
      {"srg-user-add user server group host", "add user@server to group on host"},
      {"srg-user-del user server group host", "delete user@server from group on host"},
+     {"srg-list-groups host", "list the shared roster groups from host"},
+     {"srg-get-info group host", "get info of a specific group on host"},
 
      %% mod_vcard
      {"vcard-get user host data [data2]", "get data from the vCard of the user"},
@@ -181,6 +183,25 @@ ctl_process(_Val, ["srg-user-add", User, Server, Group, Host]) ->
 
 ctl_process(_Val, ["srg-user-del", User, Server, Group, Host]) ->
     {atomic, ok} = mod_shared_roster:remove_user_from_group(Host, {User, Server}, Group),
+    ?STATUS_SUCCESS;
+
+ctl_process(_Val, ["srg-list-groups", Host]) ->
+    lists:foreach(
+      fun(SrgGroup) ->
+	      io:format("~s~n",[SrgGroup])
+      end,
+      lists:sort(mod_shared_roster:list_groups(Host))),
+    ?STATUS_SUCCESS;
+
+ctl_process(_Val, ["srg-get-info", Group, Host]) ->
+    Opts = mod_shared_roster:get_group_opts(Host,Group),
+    [io:format("~s: ~p~n", [Title, Value]) || {Title , Value} <- Opts],
+    
+    Members = mod_shared_roster:get_group_explicit_users(Host,Group),
+    Members_string = [ " " ++ jlib:jid_to_string(jlib:make_jid(MUser, MServer, "")) 
+		       || {MUser, MServer} <- Members],
+    io:format("members:~s~n", [Members_string]),
+    
     ?STATUS_SUCCESS;
 
 ctl_process(_Val, ["add-rosteritem", LocalUser, LocalServer, RemoteUser, RemoteServer, Nick, Group, Subs]) ->
