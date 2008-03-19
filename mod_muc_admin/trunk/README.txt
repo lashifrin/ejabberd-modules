@@ -2,9 +2,10 @@
 
 	mod_muc_admin - Administrative features for MUC
 
-	Homepage: http://ejabberd.jabber.ru/mod_muc_admin
+	Homepage: http://www.ejabberd.im/mod_muc_admin
 	Author: Badlop
-	Thid module requires ejabberd newer than 1.1.x
+	This module requires ejabberd 1.1.x for the basic functionality
+	and ejabberd 2.0.0 or newer to get all the functionality
 
 
 	CONFIGURATION

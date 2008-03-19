@@ -314,7 +314,7 @@ read_room(F) ->
 split_roomjid(RoomJID) ->
     [Name, Host] = string:tokens(RoomJID, "@"),
     [_MUC_service_name | ServerHostList] = string:tokens(Host, "."),
-    ServerHost = lists:concat(ServerHostList),
+    ServerHost = lists:join(ServerHostList, "."),
     {Name, Host, ServerHost}.
 
 destroy_room({N, H, SH}) ->

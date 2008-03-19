@@ -1,3 +1,9 @@
+2008-03-19  Badlop  <badlop@process-one.net>
+
+	* README.txt: Clarified requirements
+
+	* src/mod_muc_admin.erl (split_roomjid): Small fix
+
 2008-02-01  Badlop  <badlop@process-one.net>
 
 	* src/mod_muc_admin.erl: New command: muc-unregister-nick.
