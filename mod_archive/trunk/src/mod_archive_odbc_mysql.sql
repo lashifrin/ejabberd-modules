@@ -1,5 +1,8 @@
-CREATE DATABASE ejabberd CHARACTER SET utf8 COLLATE utf8_general_ci;
+CREATE DATABASE IF NOT EXISTS ejabberd CHARACTER SET utf8 COLLATE utf8_general_ci;
+
 USE ejabberd;
+
+SET table_type=InnoDB;
 
 CREATE TABLE archive_collections(id INTEGER NOT NULL AUTO_INCREMENT,
                                  prev_id INTEGER,
@@ -16,7 +19,9 @@ CREATE TABLE archive_collections(id INTEGER NOT NULL AUTO_INCREMENT,
                                  thread VARCHAR(1023),
                                  crypt TINYINT,
                                  extra VARCHAR(32767),
-                                 PRIMARY KEY(id));
+                                 PRIMARY KEY(id))
+                                 CHARACTER SET utf8
+                                 COLLATE utf8_general_ci;
 CREATE INDEX IDX_archive_colls_with ON archive_collections(us(16),with_user(8),with_server(8),utc);
 CREATE INDEX IDX_archive_colls_prev_id ON archive_collections(prev_id);
 CREATE INDEX IDX_archive_colls_next_id ON archive_collections(next_id);
@@ -27,9 +32,11 @@ CREATE TABLE archive_messages(id INTEGER NOT NULL AUTO_INCREMENT,
                               coll_id INTEGER NOT NULL,
                               utc DATETIME NOT NULL,
                               dir TINYINT,
-                              body VARCHAR(32768),
+                              body VARCHAR(63488),
                               name VARCHAR(1023),
-                              PRIMARY KEY(id));
+                              PRIMARY KEY(id))
+                              CHARACTER SET utf8
+                              COLLATE utf8_general_ci;
 CREATE INDEX IDX_archive_msgs_coll_id ON archive_messages(coll_id,utc);
 
 CREATE TABLE archive_jid_prefs(us VARCHAR(2047) NOT NULL,
@@ -39,7 +46,9 @@ CREATE TABLE archive_jid_prefs(us VARCHAR(2047) NOT NULL,
                                save TINYINT,
                                expire INTEGER,
                                otr TINYINT,
-                               PRIMARY KEY  (us(16),with_user(8),with_server(8),with_resource(8)));
+                               PRIMARY KEY  (us(16),with_user(8),with_server(8),with_resource(8)))
+                               CHARACTER SET utf8
+                               COLLATE utf8_general_ci;
 
 CREATE TABLE archive_global_prefs(us VARCHAR(2047) NOT NULL,
                                   save TINYINT,
@@ -49,8 +58,9 @@ CREATE TABLE archive_global_prefs(us VARCHAR(2047) NOT NULL,
                                   method_local TINYINT,
                                   method_manual TINYINT,
                                   auto_save TINYINT,
-                                  PRIMARY KEY  (us(16)));
-
+                                  PRIMARY KEY  (us(16)))
+                                  CHARACTER SET utf8
+                                  COLLATE utf8_general_ci;
 
 DELIMITER |
 
