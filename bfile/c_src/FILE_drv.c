@@ -102,7 +102,6 @@
 
 static ErlDrvData FILE_start(ErlDrvPort port, char *buf);
 static void FILE_stop(ErlDrvData drv_data);
-static void FILE_from_erlangv(ErlDrvData drv_data,  ErlIOVec* ev);
 
 static ErlDrvEntry FILE_driver_entry;
 
@@ -122,6 +121,9 @@ static ErlDrvData FILE_start(ErlDrvPort port, char *buf)
     d->fp = NULL;
     d->port = port;
     d->linebuf_size = 255;   /* default line size */
+
+    set_port_control_flags(port, PORT_CONTROL_FLAG_BINARY);
+
     return (ErlDrvData) d;
 }
 
@@ -134,95 +136,79 @@ static void FILE_stop(ErlDrvData drv_data)
     driver_free(d);
 }
 
-/*
-** FIXME: use driver_vec_to_buf insted,
-** this is a patch until next release of otp
-*/
-static int vec_to_buf(ErlIOVec* vec, char* buf, int len)
-{
-    SysIOVec* iov = vec->iov;
-    int n = vec->vsize;
-    int orig_len = len;
 
-    while(n--) {
-	int ilen = iov->iov_len;
-	if (ilen < len) {
-	    memcpy(buf, iov->iov_base, ilen);
-	    len -= ilen;
-	    buf += ilen;
-	    iov++;   /* this line was miising */
-	}
-	else {
-	    memcpy(buf, iov->iov_base, len);
-	    return orig_len;
-	}
-    }
-    return (orig_len - len);
-}
-
-
-static int driver_error(ErlDrvPort port, int err)
+static char *driver_error(ErlDrvPort port, int err)
 {
     char response[256];		/* Response buffer. */
     char* s;
     char* t;
-
-    response[0] = XX_FERROR;
-    for (s = erl_errno_id(err), t = response+1; *s; s++, t++)
-	*t = tolower(*s);
-    driver_output2(port, response, t-response, NULL, 0);
-    return 0;
-}
-
-static void driver_ret32(ErlDrvPort port, unsigned int r)
-{
-    char ch = XX_I32;
-    unsigned char rbuf[4];
-
-    put_int32(r, rbuf);
-    driver_output2(port, &ch, 1, rbuf, 4);
-}
-
-static void driver_ok(ErlDrvPort port)
-{
-    char ch = XX_OK;
-    driver_output2(port, &ch, 1, NULL, 0);
-}
-
-static void driver_eof(ErlDrvPort port)
-{
-    char ch = XX_REOF;
-    driver_output2(port, &ch, 1, NULL, 0);
-}
-
-
-static void FILE_from_erlangv(ErlDrvData drv_data,  ErlIOVec* ev)
-{
-    Desc *desc = (Desc*) drv_data;
-    SysIOVec  *iov = ev->iov;
     ErlDrvBinary* bin;
 
-    switch ((&iov[1])->iov_base[0]) {
+    bin = driver_alloc_binary(1);
+    bin->orig_bytes[0] = XX_FERROR;
+
+    response[0] = XX_FERROR;
+    for (s = erl_errno_id(err), t = bin->orig_bytes + 1; *s; s++, t++)
+	*t = tolower(*s);
+    return (char *)bin;
+}
+
+static char *driver_ret32(ErlDrvPort port, unsigned int r)
+{
+    char ch = XX_I32;
+    ErlDrvBinary* bin;
+
+    bin = driver_alloc_binary(1);
+    bin->orig_bytes[0] = ch;
+    put_int32(r, bin->orig_bytes + 1);
+    return (char *)bin;
+}
+
+static char *driver_ok(ErlDrvPort port)
+{
+    char ch = XX_OK;
+    ErlDrvBinary* bin;
+    bin = driver_alloc_binary(1);
+    bin->orig_bytes[0] = ch;
+    return (char *)bin;
+}
+
+static char *driver_eof(ErlDrvPort port)
+{
+    char ch = XX_REOF;
+    ErlDrvBinary* bin;
+    bin = driver_alloc_binary(1);
+    bin->orig_bytes[0] = ch;
+    return (char *)bin;
+}
+
+
+static int FILE_control(ErlDrvData drv_data,
+			unsigned int command,
+			char *buf, int len,
+			char **rbuf, int rlen)
+{
+    Desc *desc = (Desc*) drv_data;
+    ErlDrvBinary* bin;
+
+    switch (command) {
 
     case XX_OPEN: {
-	char buf[BUFSIZ];
 	char file[BUFSIZ];  /* should be FILENAME_MAX */
 	char flags[4];       /* at most someething like rb+ */
 	char* src;
 	char* dst;
 	char* src_end;
 	char* dst_end;
-	int n;
 
 	if (desc->fp != NULL) {
-	    driver_error(desc->port, XX_EINVAL);
-	    return;
+	    *rbuf = driver_error(desc->port, XX_EINVAL);
+	    return 1;
 	}
 
 	/* play it safe ? */
-	n = vec_to_buf(ev, buf, BUFSIZ);
-	src = buf + 1;
-	src_end = buf + n;
+	src = buf;
+	src_end = buf + len;
 
 	/* get file name */
 	dst = file;
@@ -239,67 +225,68 @@ static void FILE_from_erlangv(ErlDrvData drv_data,  ErlIOVec* ev)
 	while((src < src_end) && (dst < dst_end) && (*src != '\0'))
 	    *dst++ = *src++;	
 	if (dst == dst_end) {
-	    driver_error(desc->port, XX_EINVAL);
-	    return;
+	    *rbuf = driver_error(desc->port, XX_EINVAL);
+	    return 1;
 	}
 	*dst = '\0';
 
-	if ((desc->fp = fopen(file, flags))==NULL) {
-	    driver_error(desc->port, errno);
-	    return;
+	if (src + 1 != src_end) {
+	    *rbuf = driver_error(desc->port, XX_EINVAL);
+	    return 1;
 	}
-	driver_ok(desc->port);
+
+	if ((desc->fp = fopen(file, flags))==NULL) {
+	    *rbuf = driver_error(desc->port, errno);
+	    return 1;
+	}
+	*rbuf = driver_ok(desc->port);
+	return 1;
 	break;
     }
 
     case XX_WRITE: {
-	int i;
-	iov[1].iov_base++;
-	iov[1].iov_len--;
-	for(i=1; i<ev->vsize; i++) {
-	    if (fwrite(iov[i].iov_base, 1, iov[i].iov_len, desc->fp) !=
-		iov[i].iov_len) {
-		driver_error(desc->port, errno);
-		return;
-	    }
+        if (fwrite(buf, 1, len, desc->fp) != len) {
+	    *rbuf = driver_error(desc->port, errno);
+	    return 1;
 	}
-	driver_ok(desc->port);
+	*rbuf = driver_ok(desc->port);
+	return 1;
 	break;
     }
 
     case XX_READ: {
 	char ch = XX_VALUE;
 	int rval;
-	int sz = get_int32((&iov[1])->iov_base+1);
+	int sz = get_int32(buf);
 
-	if ((bin = driver_alloc_binary(sz)) == NULL) {
-	    driver_error(desc->port, -1);
-	    return;
+	if ((bin = driver_alloc_binary(sz + 1)) == NULL) {
+	    *rbuf = driver_error(desc->port, -1);
+	    return 1;
 	}
 
-	if ((rval = fread(bin->orig_bytes, 1, sz, desc->fp)) != sz) {
+	bin->orig_bytes[0] = ch;
+	if ((rval = fread(bin->orig_bytes + 1, 1, sz, desc->fp)) != sz) {
 	    if (feof(desc->fp)) {
 		if (rval == 0) {
 		    driver_free_binary(bin);
-		    driver_eof(desc->port);
-		    return;
+		    *rbuf = driver_eof(desc->port);
+		    return 1;
 		}
-		driver_output_binary(desc->port, &ch, 1,bin, 0, rval);
-		driver_free_binary(bin);
-		return;
+		bin = driver_realloc_binary(bin, rval + 1);
+		*rbuf = (char *)bin;
+		return 1;
 	    }
 	    driver_free_binary(bin);
-	    driver_error(desc->port, errno);
-	    return;
+	    *rbuf = driver_error(desc->port, errno);
+	    return 1;
 	}
-	driver_output_binary(desc->port, &ch, 1,bin, 0, sz);
-	driver_free_binary(bin);
-	break;
+	*rbuf = (char *)bin;
+	return 1;
     }
 
     case XX_SEEK: {
-	int offs = get_int32((&iov[1])->iov_base+1);
-	int w = (int) (&iov[1])->iov_base[5];
+	int offs = get_int32(buf);
+	int w = (int) buf[4];
 	int whence;
 	switch (w) {
 	case 1: whence = SEEK_SET; break;
@@ -307,20 +294,21 @@ static void FILE_from_erlangv(ErlDrvData drv_data,  ErlIOVec* ev)
 	case 3: whence = SEEK_END; break;
 	}
 	if ((w = fseek(desc->fp, offs, whence)) != 0) {
-	    driver_error(desc->port, errno);
-	    return;
+	    *rbuf = driver_error(desc->port, errno);
+	    return 1;
 	}
-	driver_ok(desc->port);
-	return;
+	*rbuf = driver_ok(desc->port);
+	return 1;
     }
 
     case XX_TELL: {
 	int offs;
 	if ((offs = ftell(desc->fp)) == -1) {
-	    driver_error(desc->port, errno);
-	    return;
+	    *rbuf = driver_error(desc->port, errno);
+	    return 1;
 	}
-	driver_ret32(desc->port, offs);
+	*rbuf = driver_ret32(desc->port, offs);
+	return 1;
 	break;
     }
 
@@ -329,68 +317,73 @@ static void FILE_from_erlangv(ErlDrvData drv_data,  ErlIOVec* ev)
         int offs;
 	/* is this really safe? */
         if (fflush(desc->fp) != 0) {
-	    driver_error(desc->port, errno);
-	    return;
+	    *rbuf = driver_error(desc->port, errno);
+	    return 1;
 	}
 	if ((offs = ftell(desc->fp)) == -1) {
-	    driver_error(desc->port, errno);
-	    return;
+	    *rbuf = driver_error(desc->port, errno);
+	    return 1;
 	}
         fno = fileno(desc->fp);
 #ifdef WIN32
 	if (SetEndOfFile((HANDLE)fno) !=  0) {
-	    driver_error(desc->port, GetLastError());
-	    return;
+	    *rbuf = driver_error(desc->port, GetLastError());
+	    return 1;
 	}
 #else
         if (ftruncate(fno, offs) == -1) {
-	    driver_error(desc->port, errno);
-	    return;
+	    *rbuf = driver_error(desc->port, errno);
+	    return 1;
 	}
 #endif
-	driver_ok(desc->port);
-	return;
+	*rbuf = driver_ok(desc->port);
+	return 1;
     }
 
     case XX_FLUSH:
 	if (fflush(desc->fp) != 0)
-	    driver_error(desc->port, errno);
+	    *rbuf = driver_error(desc->port, errno);
 	else
-	    driver_ok(desc->port);
+	    *rbuf = driver_ok(desc->port);
+	return 1;
 	break;
 
     case XX_OEOF:
 	if (feof(desc->fp))
-	    driver_ret32(desc->port, 1);
+	    *rbuf = driver_ret32(desc->port, 1);
 	else
-	    driver_ret32(desc->port,0);
+	    *rbuf = driver_ret32(desc->port, 0);
+	return 1;
 	break;
 
     case XX_ERROR:
 	if (ferror(desc->fp))
-	    driver_ret32(desc->port, 1);
+	    *rbuf = driver_ret32(desc->port, 1);
 	else
-	    driver_ret32(desc->port,0);
+	    *rbuf = driver_ret32(desc->port,0);
+	return 1;
 	break;
 
     case XX_GETC: {
 	int ch;
 	if ((ch = getc(desc->fp)) == EOF) {
 	    if (feof(desc->fp)) {
-		driver_eof(desc->port);
-		return;
+		*rbuf = driver_eof(desc->port);
+		return 1;
 	    }
-	    driver_error(desc->port, errno);
-	    return;
+	    *rbuf = driver_error(desc->port, errno);
+	    return 1;
 	}
-	driver_ret32(desc->port, ch);
+	*rbuf = driver_ret32(desc->port, ch);
+	return 1;
 	break;
     }
 
     case XX_SET_LINEBUF_SIZE: {
-	int sz = get_int32((&iov[1])->iov_base+1);
+	int sz = get_int32(buf);
 	desc->linebuf_size = sz;
-	driver_ok(desc->port);
+	*rbuf = driver_ok(desc->port);
+	return 1;
 	break;
     }
 
@@ -400,61 +393,64 @@ static void FILE_from_erlangv(ErlDrvData drv_data,  ErlIOVec* ev)
 	long cpos1, cpos2;
 	char header;
 	
-	if ((bin = driver_alloc_binary(desc->linebuf_size)) == NULL) {
-	    driver_error(desc->port, -1);
-	    return;
+	if ((bin = driver_alloc_binary(desc->linebuf_size + 1)) == NULL) {
+	    *rbuf = driver_error(desc->port, -1);
+	    return 1;
 	}
 
 	if ((cpos1 = ftell(desc->fp)) == -1) {
 	    driver_free_binary(bin);
-	    driver_error(desc->port, errno);
-	    return;
+	    *rbuf = driver_error(desc->port, errno);
+	    return 1;
 	}
 
-	if ((fgets(bin->orig_bytes, desc->linebuf_size,
+	if ((fgets(bin->orig_bytes + 1, desc->linebuf_size,
 		   desc->fp)) == NULL) {
 	    driver_free_binary(bin);
 	    if (feof(desc->fp)) {
-		driver_eof(desc->port);
-		return;
+		*rbuf = driver_eof(desc->port);
+		return 1;
 	    }
-	    driver_error(desc->port, errno);
-	    return;
+	    *rbuf = driver_error(desc->port, errno);
+	    return 1;
 	}
 	if ((cpos2 = ftell(desc->fp)) == -1) {
 	    driver_free_binary(bin);
-	    driver_error(desc->port, errno);
-	    return;
+	    *rbuf = driver_error(desc->port, errno);
+	    return 1;
 	}
 	rval = cpos2 - cpos1;
 
-	if (bin->orig_bytes[rval-1] == '\n' &&
-	    bin->orig_bytes[rval] == 0) {
+	if (bin->orig_bytes[rval] == '\n' &&
+	    bin->orig_bytes[rval + 1] == 0) {
 	    header = XX_FLINE;
 	    /* GETS keep newline, GETS2 remove newline */
-	    rval = rval - ((&iov[1])->iov_base[0] == XX_GETS ? 0 : 1);
+	    rval = rval - (command == XX_GETS ? 0 : 1);
 	}
 	else
 	    header = XX_NOLINE;
-	driver_output_binary(desc->port, &header, 1,bin, 0, rval);
-	driver_free_binary(bin);
-	break;
+	bin->orig_bytes[0] = header;
+	bin = driver_realloc_binary(bin, rval + 1);
+	*rbuf = (char *)bin;
+	return 1;
     }
 
     case XX_UNGETC: {
-	int ch = (&iov[1])->iov_base[1];
+	int ch = buf[0];
 	if (ungetc(ch, desc->fp) == EOF)
-	    driver_error(desc->port, errno);
+	    *rbuf = driver_error(desc->port, errno);
 	else
-	    driver_ok(desc->port);
+	    *rbuf = driver_ok(desc->port);
+	return 1;
 	break;
     }
     
     default:
 #ifdef DEBUG
-	fprintf(stderr, "Unknown opcode %c\n\r", ((&iov[1])->iov_base[0]));
+	fprintf(stderr, "Unknown opcode %c\n\r", command);
 #endif
-	driver_error(desc->port, XX_EINVAL);
+	*rbuf = driver_error(desc->port, XX_EINVAL);
+	return 1;
 	break;
     }
 	
@@ -487,7 +483,8 @@ DRIVER_INIT(FILE_drv)
     FILE_driver_entry.ready_output = NULL;
     FILE_driver_entry.driver_name  = "FILE_drv";
     FILE_driver_entry.finish       = FILE_finish;
-    FILE_driver_entry.outputv      = FILE_from_erlangv;
+    FILE_driver_entry.outputv      = NULL;
+    FILE_driver_entry.control      = FILE_control;
     return &FILE_driver_entry;
 }
 

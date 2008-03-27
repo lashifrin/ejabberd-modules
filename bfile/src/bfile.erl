@@ -80,8 +80,8 @@ load_driver() ->
 
 fopen(Fname, Flags) ->  
     P = open_port({spawn, 'FILE_drv'}, [binary]),
-    erlang_port_command(P, [?OPEN, Fname, [0], Flags, [0]]),
-    case recp(P) of
+    Res = erlang_port_control(P, ?OPEN, [Fname, 0, Flags, 0]),
+    case decode(Res) of
 	ok ->
 	    {ok, {bfile, P}};
 	Err ->
@@ -97,14 +97,14 @@ fclose({bfile, Fd}) ->
 
 %% {ok, #Bin} | {error, Reason} | eof
 fread({bfile, Fd}, Sz) ->
-    erlang_port_command(Fd, [?READ|?int32(Sz)]),
-    recp(Fd).
+    Res = erlang_port_control(Fd, ?READ, ?int32(Sz)),
+    decode(Res).
 
 %% ok | {error, Reason}
 fwrite({bfile, Fd}, IoList) ->
-    erlang_port_command(Fd, [?WRITE , IoList]),
-    recp(Fd).
-	      
+    Res = erlang_port_control(Fd, ?WRITE, IoList),
+    decode(Res).
+
 %% ok | {error, Reason}
 pwrite(BFd, Pos, IoList) ->
     case fseek(BFd, Pos, seek_set) of
@@ -113,7 +113,7 @@ pwrite(BFd, Pos, IoList) ->
 	Error ->
 	    Error
     end.
-    
+
 %% {ok, #Bin} | {error, Reason} | eof
 pread(BFd, Pos, Sz) ->
     case fseek(BFd, Pos, seek_set) of
@@ -122,43 +122,43 @@ pread(BFd, Pos, Sz) ->
 	Error ->
 	    Error
     end.
-    
+
 %% bool
 feof({bfile, Fd}) ->
-    erlang_port_command(Fd, [?OEOF]),
-    bool(recp(Fd)).
+    Res = erlang_port_control(Fd, ?OEOF, []),
+    bool(decode(Res)).
 
 %% bool
 ferror({bfile, Fd}) ->
-    erlang_port_command(Fd, [?ERROR]),
-    bool(recp(Fd)).
+    Res = erlang_port_control(Fd, ?ERROR, []),
+    bool(decode(Res)).
 
 
 %% void()
 set_linebuf_size({bfile, Fd}, Sz) ->
-    erlang_port_command(Fd, [?SET_LINEBUF_SIZE|?int32(Sz)]),
-    recp(Fd).
-    
+    Res = erlang_port_control(Fd, ?SET_LINEBUF_SIZE, ?int32(Sz)),
+    decode(Res).
+
 %% Whence  == seek_set | seek_cur || seek_end
 %% ok | {error, Reason}
 fseek({bfile, Fd}, Offs, Whence) ->
-    erlang_port_command(Fd, [?SEEK, ?int32(Offs), whence_enc(Whence)]),
-    recp(Fd).
+    Res = erlang_port_control(Fd, ?SEEK, [?int32(Offs), whence_enc(Whence)]),
+    decode(Res).
 
 %% {ok, Int} | {error, Reason}
 ftell({bfile, Fd}) ->
-    erlang_port_command(Fd, [?TELL]),
-    recp(Fd).
+    Res = erlang_port_control(Fd, ?TELL, []),
+    decode(Res).
 
 %% ok | {error, Reason}
 ftruncate({bfile, Fd}) ->
-    erlang_port_command(Fd, [?TRUNCATE]),
-    recp(Fd).
+    Res = erlang_port_control(Fd, ?TRUNCATE, []),
+    decode(Res).
 
 %% ok | {error, Reason}
 fflush({bfile, Fd}) ->
-    erlang_port_command(Fd, [?FLUSH]),
-    recp(Fd).
+    Res = erlang_port_control(Fd, ?FLUSH, []),
+    decode(Res).
 
 %% ok | {error, Reason}
 frewind(BFd) ->
@@ -166,26 +166,26 @@ frewind(BFd) ->
 
 %% {ok, Char} | {error, Reason} | eof
 fgetc({bfile, Fd}) ->
-    erlang_port_command(Fd, [?GETC]),
-    recp(Fd).
+    Res = erlang_port_control(Fd, ?GETC, []),
+    decode(Res).
 
 %% ok | {error, Reason}
 fungetc({bfile, Fd}, Char) ->
-    erlang_port_command(Fd, [?UNGETC, Char]),
-    recp(Fd).
+    Res = erlang_port_control(Fd, ?UNGETC, [Char]),
+    decode(Res).
 
 %% {line, #Bin} | {noline, #Bin} | {error, Reason} | eof
 %% including newline
 fgets({bfile, Fd}) ->
-    erlang_port_command(Fd, [?GETS]),
-    recp(Fd).
-    
+    Res = erlang_port_control(Fd, ?GETS, []),
+    decode(Res).
+
 %% {line, #Bin} | {noline, #Bin} | {error, Reason} | eof
 %% not including newline
 gets({bfile, Fd}) ->
-    erlang_port_command(Fd, [?GETS2]),
-    recp(Fd).
-    
+    Res = erlang_port_control(Fd, ?GETS2, []),
+    decode(Res).
+
 
 whence_enc(seek_set) ->
     1;
@@ -201,29 +201,24 @@ bool({ok, 0}) ->
     false.
 
 
-recp(P) when port(P) ->
-    receive
-	{P, {data, [?VALUE|Bin]}} ->
+decode(Res)  ->
+    case Res of
+	<<?VALUE, Bin/binary>> ->
 	    {ok, Bin};
-	{P, {data, [?FLINE|Bin]}} ->
+	<<?FLINE, Bin/binary>> ->
 	    {line, Bin};
-	{P, {data, [?OK|_]}} ->
+	<<?OK>> ->
 	    ok;
-	{P, {data, [?I32|Bin]}} ->
-	    [X1,X2,X3,X4] = binary_to_list(Bin),
+	<<?I32, X1, X2, X3, X4>> ->
 	    {ok, ?i32(X1, X2, X3, X4)};
-	{P, {data, [?NOLINE|Bin]}} ->
+	<<?NOLINE, Bin/binary>> ->
 	    {noline, Bin};
-	{P, {data, [?FERROR|Err]}} ->
-	    {error, list_to_atom(Err)};
-	{P, {data, [?REOF|_]}} ->
+	<<?FERROR, Err/binary>> ->
+	    {error, list_to_atom(binary_to_list(Err))};
+	<<?REOF>> ->
 	    eof
-    end;
+    end.
 
-
-recp(_PP) ->
-    {error, badarg}.
-
-erlang_port_command(P, C) ->
-    erlang:port_command(P, C).
+erlang_port_control(P, C, Data) ->
+    erlang:port_control(P, C, Data).
 
