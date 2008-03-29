@@ -194,27 +194,47 @@ web_page_main(_, #request{path=["muc"], lang = Lang} = _Request) ->
 	  ],
     {stop, Res};
 
-web_page_main(_, #request{path=["muc", "rooms"], lang = Lang} = _Request) ->
-    Res = make_rooms_page(global, Lang),
+web_page_main(_, #request{path=["muc", "rooms"], q = Q, lang = Lang} = _Request) ->
+    Sort_query = get_sort_query(Q),
+    Res = make_rooms_page(global, Lang, Sort_query),
     {stop, Res};
 
 web_page_main(Acc, _) -> Acc.
 
 web_page_host(_, Host,
 	      #request{path = ["muc"],
+		       q = Q,
 		       lang = Lang} = _Request) ->
-    Res = make_rooms_page(find_host(Host), Lang),
+    Sort_query = get_sort_query(Q),
+    Res = make_rooms_page(find_host(Host), Lang, Sort_query),
     {stop, Res};
 web_page_host(Acc, _, _) -> Acc.
 
-make_rooms_page(Host, Lang) ->
-    Rooms1 = get_rooms(Host),
-    Rooms2 = lists:ukeysort(1, Rooms1),
-    Rooms3 = stringize_rooms(Rooms2),
+
+%% Returns: {normal | reverse, Integer} 
+get_sort_query(Q) ->
+    case catch get_sort_query2(Q) of
+	{ok, Res} -> Res;
+	_ -> {normal, 1}
+    end.
+
+get_sort_query2(Q) ->
+    {value, {_, String}} = lists:keysearch("sort", 1, Q),
+    Integer = list_to_integer(String),
+    case Integer >= 0 of
+	true -> {ok, {normal, Integer}};
+	false -> {ok, {reverse, abs(Integer)}}
+    end.
+	
+make_rooms_page(Host, Lang, {Sort_direction, Sort_column}) ->
+    Rooms_names = get_rooms(Host),
+    Rooms_infos = build_info_rooms(Rooms_names),
+    Rooms_sorted = sort_rooms(Sort_direction, Sort_column, Rooms_infos),
+    Rooms_prepared = prepare_rooms_infos(Rooms_sorted),
     TList = lists:map(
 	      fun(Room) ->
 		      ?XE("tr", [?XC("td", E) || E <- Room])
-	      end, Rooms3),
+	      end, Rooms_prepared),
     Titles = ["Jabber ID",
 	      "# participants",
 	      "Last message",
@@ -223,36 +243,85 @@ make_rooms_page(Host, Lang) ->
 	      "Logging",
 	      "Just created",
 	      "Title"],
+    {Titles_TR, _} =
+	lists:mapfoldl(
+	  fun(Title, Num_column) ->
+		  NCS = integer_to_list(Num_column),
+		  TD = ?XE("td", [?CT(Title),
+				  ?C(" "),
+				  ?ACT("?sort="++NCS, "<"),
+				  ?C(" "),
+				  ?ACT("?sort=-"++NCS, ">")]),
+		  {TD, Num_column+1}
+	  end,
+	  1,
+	  Titles),
     [?XC("h1", "Multi-User Chat"),
      ?XC("h2", "Rooms"),
      ?XE("table",
 	 [?XE("thead",
-	      [?XE("tr", [?XCT("td", Title) || Title <- Titles])
-	      ]
+	      [?XE("tr", Titles_TR)]
 	     ),
 	  ?XE("tbody", TList)
 	 ]
 	)
     ].
 
-stringize_rooms(Rooms) ->
-    [stringize_room(Room) || Room <- Rooms].
+sort_rooms(Direction, Column, Rooms) ->
+    Rooms2 = lists:keysort(Column, Rooms),
+    case Direction of
+    	normal -> Rooms2;
+	reverse -> lists:reverse(Rooms2)
+    end.
 
-stringize_room({Name, Host, Pid}) ->
+build_info_rooms(Rooms) ->
+    [build_info_room(Room) || Room <- Rooms].
+
+build_info_room({Name, Host, Pid}) ->
     C = get_room_config(Pid),
     Title = C#config.title,
     Public = C#config.public,
     Persistent = C#config.persistent,
     Logging = C#config.logging,
-
+    
     S = get_room_state(Pid),
     Just_created = S#state.just_created,
     Num_participants = length(dict:fetch_keys(S#state.users)),
-    Last_message = "a long time ago", % TODO
+    
+    History = (S#state.history)#lqueue.queue,
+    Ts_last_message = 
+	case queue:is_empty(History) of
+	    true ->
+		"A long time ago";
+	    false ->
+		Last_message1 = queue:last(History),
+		{_, _, _, Ts_last, _} = Last_message1,
+		jlib:timestamp_to_iso(Ts_last)
+	end,
+    
+    {Name++"@"++Host, 
+     Num_participants,
+     Ts_last_message,
+     Public,
+     Persistent,
+     Logging,
+     Just_created,
+     Title}.
 
-    [Name++"@"++Host, 
+prepare_rooms_infos(Rooms) ->
+    [prepare_room_info(Room) || Room <- Rooms].
+prepare_room_info(Room_info) ->
+    {NameHost, 
+     Num_participants,
+     Ts_last_message,
+     Public,
+     Persistent,
+     Logging,
+     Just_created,
+     Title} = Room_info,
+    [NameHost, 
      integer_to_list(Num_participants),
-     Last_message,
+     Ts_last_message,
      atom_to_list(Public),
      atom_to_list(Persistent), 
      atom_to_list(Logging), 
