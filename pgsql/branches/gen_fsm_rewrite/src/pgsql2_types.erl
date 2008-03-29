@@ -75,7 +75,7 @@ decode_bool(text,<<$t>>) ->
 
 
 decode_int(binary,Bin) -> 
-	Size = bit_size(Bin), %%TODO: see how to make this simpler
+	Size = size(Bin) *8, %%TODO: see how to make this simpler
 	<<I:Size/integer-signed>> = Bin, % big-endian
 	I;
 decode_int(text,Bin) ->
@@ -84,7 +84,7 @@ decode_int(text,Bin) ->
 	
 
 decode_float(binary,Bin) ->
-	Size = bit_size(Bin),  %%TODO: see how to make this simpler
+	Size = size(Bin) *8,  %%TODO: see how to make this simpler
  	<<F:Size/float>> = Bin,
  	F;
 

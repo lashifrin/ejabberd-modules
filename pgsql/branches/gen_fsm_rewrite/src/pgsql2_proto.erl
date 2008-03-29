@@ -36,6 +36,7 @@
 %% Listener process
 -export([receiver_loop/3]).
 
+
 -include("pg_msgs.hrl").
 
 -define(REQUIRED_OPTIONS,[database,user,password]).	     
@@ -121,9 +122,6 @@ handle_event(Event,StateName,StateData) ->
 
 handle_sync_event(tcp_closed,_From,_StateName,StateData) ->
 	{stop,connection_closed,StateData};
-handle_sync_event(stop,_From,_StateName,StateData) ->
-	StateData#pgsql2.listener ! stop,
-	{stop,normal,ok,StateData};
 	
 handle_sync_event(get_parameters,_From,StateName,StateData) ->
 	{reply,{ok,StateData#pgsql2.parameters},StateName,StateData};	
@@ -231,9 +229,14 @@ ready_for_query({q,Query,Params,Options},Client,St) ->
 ready_for_query({execute_batch,Query,Params},Client,St) ->
 	Msg = pgsql2_proto_msgs:execute_batch(Query,Params),
 	ok = gen_tcp:send(St#pgsql2.socket,Msg),
-	{next_state,wait_for_execute_batch_response,St#pgsql2{client_pid=Client}}.
-	
-	
+	{next_state,wait_for_execute_batch_response,St#pgsql2{client_pid=Client}};
+	 
+ready_for_query(stop,_Client,StateData)	->
+	Msg = pgsql2_proto_msgs:terminate(),
+	ok = gen_tcp:send(StateData#pgsql2.socket,Msg),
+	StateData#pgsql2.listener ! stop,
+	{stop,normal,ok,StateData}.
+
 	
 
 
@@ -391,6 +394,10 @@ decode_row([X|RestCols],[{F,Format}|RestDecoders],Accum) ->
 decode_row([],[],Accum) ->	
 	lists:reverse(Accum).
 	
+
+
+		
+
 
 % Type: [<<"16">>,<<"bool">>]
 % Type: [<<"17">>,<<"bytea">>]

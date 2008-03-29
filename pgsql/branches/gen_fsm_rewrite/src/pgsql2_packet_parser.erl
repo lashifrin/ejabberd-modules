@@ -196,7 +196,7 @@ notice_response(<<FieldType:8/integer,Rest/binary>>,Acc) ->
 
 binary_split(ByteValue,Bin) ->
 	%binary_split(ByteValue,Bin,[]). 
-	binary_split(ByteValue,Bin,0,byte_size(Bin)).
+	binary_split(ByteValue,Bin,0,size(Bin)).
 	%%TODO: see the use if binaries as accumulators
 	%%TODO: see to use a counter, and match agains <<Passed:Count,Value,Rest/binary>>
 	%%      and incremenet counter (like an array, the benefict is that when we find the

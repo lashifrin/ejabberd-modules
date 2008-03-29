@@ -4,13 +4,18 @@
 
 
 
--export([startup_msg/2,plain_text_password_msg/1,md5_password_msg/3,simple_query/1,extended_query/3,execute_batch/2]).
+-export([startup_msg/2,plain_text_password_msg/1,md5_password_msg/3,
+         simple_query/1,extended_query/3,execute_batch/2,terminate/0]).
 
 %%% Version 3.0 of the protocol.
 %%% Supported in postgres from version 7.4
 -define(PROTOCOL_MAJOR, 3).
 -define(PROTOCOL_MINOR, 0).
 
+
+
+terminate() ->
+	encode($X,<<>>).
 
 startup_msg(UserName,DatabaseName) ->
     Version = <<?PROTOCOL_MAJOR:16/integer, ?PROTOCOL_MINOR:16/integer>>,

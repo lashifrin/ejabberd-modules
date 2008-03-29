@@ -50,7 +50,7 @@ connect(User,Password,Database,Options) ->
 	
 	
 stop(Pid) ->
-	gen_fsm:sync_send_all_state_event(Pid,stop).
+	gen_fsm:sync_send_event(Pid,stop).
 
 % @spec q(Pid,Query) -> {ok,[Row]} | {error,Reason}
 % @type Query = iolist()
