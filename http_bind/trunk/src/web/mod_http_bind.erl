@@ -89,10 +89,8 @@ start(Host, _Opts) ->
         {ok, _Pid, _Info} ->
             ok;
         {error, {already_started, _PidOther}} ->
-            ErrorText = "mod_http_bind is already started, "
-		"so it will not be started again for "
-		++ Host,
-            {'EXIT', {start_child_error, ErrorText}};
+            % mod_http_bind is already started so it will not be started again
+            ok;
         {error, Error} ->
             {'EXIT', {start_child_error, Error}}
     end.
