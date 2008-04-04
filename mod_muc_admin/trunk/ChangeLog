@@ -1,3 +1,8 @@
+2008-04-04  Badlop  <badlop@process-one.net>
+
+	* src/mod_muc_admin.erl: New command muc-create-file to create the
+	rooms indicated in the file
+
 2008-03-29  Badlop  <badlop@process-one.net>
 
 	* src/mod_muc_admin.erl: Improvements in the list of rooms of web

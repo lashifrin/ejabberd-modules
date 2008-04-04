@@ -94,6 +94,7 @@ stop(Host) ->
 commands_global() ->
     [
      {"muc-unregister-nick nick", "unregister the nick in the muc service"},
+     {"muc-create-file file", "create the rooms indicated in file"},
      {"muc-destroy-file file", "destroy the rooms whose JID is indicated in file"},
      {"muc-unused-list days", "list rooms without activity in last days"},
      {"muc-unused-destroy days", "destroy rooms without activity last days"},
@@ -115,6 +116,11 @@ ctl_process(_Val, ["muc-unregister-nick", Nick]) ->
 	    io:format("Error unregistering ~p: ~p~n", [Nick, Error]),
 	    ?STATUS_ERROR
     end;
+
+ctl_process(_Val, ["muc-create-file", Filename]) ->
+    muc_create_file(Filename),
+    io:format("Restart MUC or ejabberd for changes to take effect.~n"),
+    ?STATUS_SUCCESS;
 
 ctl_process(_Val, ["muc-destroy-file", Filename]) ->
     muc_destroy_file(Filename),
@@ -395,6 +401,25 @@ destroy_room({N, H, SH}) ->
     io:format("Destroying room: ~s@~s - vhost: ~s~n", [N, H, SH]),
     mod_muc:room_destroyed(H, N, SH),
     mod_muc:forget_room(H, N).
+
+
+%%----------------------------
+%% MUC Create File
+%%----------------------------
+
+muc_create_file(Filename) ->
+    {ok, F} = file:open(Filename, [read]),
+    RJID = read_room(F),
+    Rooms = read_rooms(F, RJID, []),
+    file:close(F),
+    %% Read the default room options defined for the first virtual host
+    DefRoomOpts = gen_mod:get_module_opt(?MYNAME, mod_muc,
+					 default_room_options, []),
+    [muc_create_room(A, DefRoomOpts) || A <- Rooms].
+
+muc_create_room({Name, Host, _}, DefRoomOpts) ->
+    io:format("Creating room ~s@~s~n", [Name, Host]),
+    mod_muc:store_room(Host, Name, DefRoomOpts).
 
 
 %%----------------------------
