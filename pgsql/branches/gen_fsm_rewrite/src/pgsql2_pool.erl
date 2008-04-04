@@ -17,7 +17,7 @@
 
 
 %% API
--export([start_link/5,apply_in_tx/3]).
+-export([start_link/6,apply_in_tx/3]).
 
 -record(pool_state, {
             pool,
@@ -62,8 +62,8 @@ apply_in_tx2(Pool,Connection,Fun,Args) ->
 %% @doc Start a connection pool      
 %%      User,Password,Db and ConnOpts haven the same meaning than in pgsql2:connect/4
 %%      PoolSize is the number of connection that this pool will utilize.
-start_link(User,Password,Db,ConnOpts,PoolSize) ->
-  gen_server:start_link(?MODULE,{User,Password,Db,ConnOpts,PoolSize},[]).
+start_link(PoolName,User,Password,Db,ConnOpts,PoolSize) ->
+  gen_server:start_link({local,PoolName},?MODULE,{User,Password,Db,ConnOpts,PoolSize},[]).
   
   
   
