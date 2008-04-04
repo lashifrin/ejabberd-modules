@@ -4,7 +4,8 @@
 		'./src/pgsql2_proto_msgs',
 		'./src/pgsql2_types',
 		'./src/pgsql2_packet_parser',
-		'./src/pgsql2'
+		'./src/pgsql2',
+		'./src/pgsql2_pool'
 	],
 	[
 		{outdir, "./ebin"},
