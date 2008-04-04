@@ -76,6 +76,7 @@ commands_global() ->
      %%{"", "example: add-roster peter localhost mike server.com MiKe Employees both"},
      %%{"", "will add mike@server.com to peter@localhost roster"},
      {"rem-rosteritem user1 server1 user2 server2", "Remove user2@server2 from user1@server1's roster"},
+     {"rosteritem-purge [options]", "Purge all rosteritems that match filtering options"},
      {"pushroster file user server", "push template roster in file to user@server"},
      {"pushroster-all file", "push template roster in file to all those users"},
      {"push-alltoall server group", "adds all the users to all the users in Group"},
@@ -229,6 +230,67 @@ ctl_process(_Val, ["rem-rosteritem", LocalUser, LocalServer, RemoteUser, RemoteS
 	{badrpc, Reason} ->
 	    io:format("Can't remove roster item to user ~p: ~p~n",
 		      [LocalUser, Reason]),
+	    ?STATUS_BADRPC
+    end;
+
+ctl_process(_Val, ["rosteritem-purge"]) ->
+    io:format("Rosteritems that match all the filtering will be removed.~n"),
+    io:format("Options for filtering:~n"),
+    io:format("~n"),
+    io:format("  -subs none|from|to|both~n"),
+    io:format("       Subscription type. By default all values~n"),
+    io:format("~n"),
+    io:format("  -ask none|out|in~n"),
+    io:format("       Pending subscription. By default all values~n"),
+    io:format("~n"),
+    io:format("  -user JID~n"),
+    io:format("       The JID of the local user.~n"),
+    io:format("       Can use these globs: *, ? and [...].~n"),
+    io:format("       By default it is: * *@*~n"),
+    io:format("~n"),
+    io:format("  -contact JID~n"),
+    io:format("       Similar to 'user', but for the contact JID.~n"),
+    io:format("~n"),
+    io:format("Example:~n"),
+    io:format("  ejabberdctl rosteritem-purge -subs none from to -ask out in -contact *@*icq*~n"),
+    io:format("~n"),
+    ?STATUS_SUCCESS;
+ctl_process(_Val, ["rosteritem-purge" | Options_list]) ->
+    Options_prop_list = lists:foldl(
+			  fun(O, R) ->
+				  case O of
+				      [$- | K] ->
+					  [{K, []} | R];
+				      V ->
+					  [{K, Vs} | RT] = R,
+					  [{K, [V|Vs]} | RT]
+				  end
+			  end,
+			  [],
+			  Options_list),
+    
+    Subs = [list_to_atom(S)
+	    || S <- proplists:get_value("subs", 
+					Options_prop_list, 
+					["none", "from", "to", "both"])],
+    Asks = [list_to_atom(S)
+	    || S <- 
+		   proplists:get_value("ask",
+				       Options_prop_list, 
+				       ["none", "out", "in"])],
+    User = proplists:get_value("user", Options_prop_list, ["*", "*@*"]),
+    Contact = proplists:get_value("contact", Options_prop_list, ["*", "*@*"]),
+    
+    case rosteritem_purge({Subs, Asks, User, Contact}) of
+	{atomic, ok} ->
+	    ?STATUS_SUCCESS;
+	{error, Reason} ->
+	    io:format("Error purging rosteritems: ~p~n",
+		      [Reason]),
+	    ?STATUS_ERROR;
+	{badrpc, Reason} ->
+	    io:format("BadRPC purging rosteritems: ~p~n",
+		      [Reason]),
 	    ?STATUS_BADRPC
     end;
 
@@ -430,6 +492,99 @@ route_rosteritem(LocalUser, LocalServer, RemoteUser, RemoteServer, Nick, Group, 
     Query = {xmlelement, "query", [{"xmlns", ?NS_ROSTER}], [Item]},
     Packet = {xmlelement, "iq", [{"type", "set"}, {"to", ToS}], [Query]},
     ejabberd_router:route(LJID, LJID, Packet).
+
+
+
+%%-----------------------------
+%% Purge roster items
+%%-----------------------------
+
+rosteritem_purge(Options) ->
+    Num_rosteritems = mnesia:table_info(roster, size),
+    io:format("There are ~p roster items in total.~n", [Num_rosteritems]),
+    Key = mnesia:dirty_first(roster),
+    ok = rip(Key, Options, {0, Num_rosteritems, 0, 0}),
+    {atomic, ok}.
+
+rip('$end_of_table', _Options, Counters) ->
+    print_progress_line(Counters),
+    ok;
+rip(Key, Options, {Pr, NT, NV, ND}) ->
+    Key_next = mnesia:dirty_next(roster, Key),
+    ND2 = case decide_rip(Key, Options) of
+	      true ->
+		  mnesia:dirty_delete(roster, Key),
+		  ND+1;
+	      false ->
+		  ND
+	  end,
+    NV2 = NV+1,
+    Pr2 = print_progress_line({Pr, NT, NV2, ND2}),
+    rip(Key_next, Options, {Pr2, NT, NV2, ND2}).
+
+print_progress_line({Pr, NT, NV, ND}) ->
+    Pr2 = trunc((NV/NT)*100),
+    case Pr == Pr2 of
+	true ->
+	    ok;
+	false ->
+	    io:format("Progress ~p% - visited ~p - deleted ~p~n", [Pr2, NV, ND])
+    end,
+    Pr2.
+
+decide_rip(Key, {Subs, Asks, User, Contact}) ->
+    case catch mnesia:dirty_read(roster, Key) of
+	[RI] ->
+	    lists:member(RI#roster.subscription, Subs)
+		andalso lists:member(RI#roster.ask, Asks)
+		andalso decide_rip_jid(RI#roster.us, User)
+		andalso decide_rip_jid(RI#roster.jid, Contact);
+	_ ->
+	    false
+    end.
+
+%% Returns true if the server of the JID is included in the servers
+decide_rip_jid({UName, UServer, _UResource}, Match_list) ->
+    decide_rip_jid({UName, UServer}, Match_list);
+decide_rip_jid({UName, UServer}, Match_list) ->
+    lists:any(
+      fun(Match_string) ->
+	      MJID = jlib:string_to_jid(Match_string),
+	      MName = MJID#jid.luser,
+	      MServer = MJID#jid.lserver,
+	      Is_server = is_glob_match(UServer, MServer),
+	      case MName of
+		  [] when UName == [] ->
+		      Is_server;
+		  [] ->
+		      false;
+		  _ ->
+		      Is_server
+			  andalso is_glob_match(UName, MName)
+	      end
+      end,
+      Match_list).
+
+%% Copied from ejabberd-2.0.0/src/acl.erl
+is_regexp_match(String, RegExp) ->
+    case regexp:first_match(String, RegExp) of
+	nomatch ->
+	    false;
+	{match, _, _} ->
+	    true;
+	{error, ErrDesc} ->
+	    io:format(
+	      "Wrong regexp ~p in ACL: ~p",
+	      [RegExp, lists:flatten(regexp:format_error(ErrDesc))]),
+	    false
+    end.
+is_glob_match(String, Glob) ->
+    is_regexp_match(String, regexp:sh_to_awk(Glob)).
+
+
+%%-----------------------------
+%% Push Roster from file 
+%%-----------------------------
 
 pushroster(File, User, Server) ->
     {ok, [Roster]} = file:consult(File),
