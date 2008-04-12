@@ -7,7 +7,6 @@
 %%%----------------------------------------------------------------------
 
 -module(mod_muc_log_http).
--define(ejabberd_debug, false).
 
 -behaviour(gen_mod).
 
@@ -20,6 +19,7 @@
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
+-include_lib("kernel/include/file.hrl").
 
 -define(PROCNAME, mod_muc_log_http).
 
@@ -45,6 +45,7 @@ serve(LocalPath, Request) ->
 			?DEBUG("Delivering content.", []),
 			{200,
 			 [{"Server", "ejabberd"},
+			  {"Last-Modified", last_modified(FileName)},
 			  {"Content-type", content_type(FileName)}],
 			 FileContents};
 		{error, eisdir} ->
@@ -66,8 +67,6 @@ serve(LocalPath, Request) ->
 %%%----------------------------------------------------------------------
 %%% Dir listing
 %%%----------------------------------------------------------------------
-
--include_lib("kernel/include/file.hrl").
 
 build_datetimelist(DateTime) ->
 	{{Ye, Mo, Da}, {Ho, Mi, Se}} = DateTime,
@@ -238,6 +237,11 @@ content_type(Filename) ->
 		".xpi"  -> "application/x-xpinstall";
 		_Else   -> "application/octet-stream"
 	end.
+
+last_modified(FileName) ->
+    {ok, FileInfo} = file:read_file_info(FileName),
+    Then = FileInfo#file_info.mtime,
+    httpd_util:rfc1123_date(Then).
 
 loop(DocRoot) ->
 	receive
