@@ -1,0 +1,4 @@
+2008-04-25  Badlop  <badlop@process-one.net>
+
+	* mod_logsession: New module to log session connections
+
