@@ -25,6 +25,7 @@
 %% Copied from ejabberd_sm.erl
 -record(session, {sid, usr, us, priority, info}).
 
+-compile(export_all).
 
 %%-------------
 %% gen_mod
@@ -101,7 +102,10 @@ commands_host() ->
      {"status-list status", "list the logged users with status"},
      {"status-num status", "number of logged users with status"},
      {"stats registeredusers", "number of registered users"},
-     {"stats onlineusers", "number of logged users"}
+     {"stats onlineusers", "number of logged users"},
+
+     %% misc
+     {"ban-account username [reason]", "ban account: kick sessions and change password"}
     ].
 
 
@@ -370,11 +374,8 @@ ctl_process(_Val, ["get-cookie"]) ->
     io:format("~s~n", [atom_to_list(erlang:get_cookie())]),
     ?STATUS_SUCCESS;
 
-ctl_process(_Val, ["killsession", User, Server, Resource]) ->
-    ejabberd_router:route(
-      jlib:make_jid("", "", ""), 
-      jlib:make_jid(User, Server, Resource),
-      {xmlelement, "broadcast", [], [{exit, "killed"}]}),
+ctl_process(_Val, ["killsession", User, Server, Resource | Tail]) ->
+    kick_session(User, Server, Resource, prepare_reason(Tail)),
     ?STATUS_SUCCESS;
 
 ctl_process(Val, _Args) ->
@@ -406,6 +407,10 @@ ctl_process(_Val, Host, ["status-num", Status_required]) ->
 ctl_process(_Val, Host, ["status-list", Status_required]) ->
     Res = get_status_list(Host, Status_required),
     [ io:format("~s@~s ~s ~p \"~s\"~n", [U, S, R, P, St]) || {U, S, R, P, St} <- Res],
+    ?STATUS_SUCCESS;
+
+ctl_process(_Val, Host, ["ban-account", User | Tail]) ->
+    ban_account(User, Host, prepare_reason(Tail)),
     ?STATUS_SUCCESS;
 
 ctl_process(Val, _Host, _Args) ->
@@ -493,6 +498,60 @@ route_rosteritem(LocalUser, LocalServer, RemoteUser, RemoteServer, Nick, Group, 
     Packet = {xmlelement, "iq", [{"type", "set"}, {"to", ToS}], [Query]},
     ejabberd_router:route(LJID, LJID, Packet).
 
+
+%%-----------------------------
+%% Ban user
+%%-----------------------------
+
+ban_account(User, Server, Reason) ->
+    kick_sessions(User, Server, Reason),
+    set_random_password(User, Server, Reason).
+
+kick_sessions(User, Server, Reason) ->
+    lists:map(
+      fun(Resource) ->
+	      kick_session(User, Server, Resource, Reason)
+      end,
+      get_resources(User, Server)).
+
+kick_session(User, Server, Resource, Reason) ->
+    ejabberd_router:route(
+      jlib:make_jid("", "", ""),
+      jlib:make_jid(User, Server, Resource),
+      {xmlelement, "broadcast", [], [{exit, Reason}]}).
+
+get_resources(User, Server) ->
+    lists:map(
+      fun(Session) ->
+	      element(3, Session#session.usr)
+      end,
+      get_sessions(User, Server)).
+
+get_sessions(User, Server) ->
+    LUser = jlib:nodeprep(User),
+    LServer = jlib:nameprep(Server),
+    Sessions =  mnesia:dirty_index_read(session, {LUser, LServer}, #session.us),
+    true = is_list(Sessions),
+    Sessions.
+
+set_random_password(User, Server, Reason) ->
+    NewPass = build_random_password(Reason),
+    set_password(User, Server, NewPass).
+
+build_random_password(Reason) ->
+    Date = jlib:timestamp_to_iso(calendar:universal_time()),
+    RandomString = randoms:get_string(),
+    "BANNED_ACCOUNT--" ++ Date ++ "--" ++ RandomString ++ "--" ++ Reason.
+
+set_password(User, Server, Password) ->
+    {atomic, ok} = ejabberd_auth:set_password(User, Server, Password).
+
+prepare_reason([]) ->
+    "Kicked by administrator";
+prepare_reason([Reason]) ->
+    Reason;
+prepare_reason(StringList) ->
+    string:join(StringList, "_").
 
 
 %%-----------------------------
