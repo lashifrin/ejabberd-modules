@@ -49,7 +49,39 @@ if ($_POST) {
 // clear _post data
 $_POST="";
 
-$res = pg_query($bazaj, "select a.nick, a.jid, b.grp from rosterusers a left outer join rostergroups b on (a.jid=b.jid and a.username=b.username) where a.username='$token' and a.nick !='' order by b.grp,lower(a.nick)");
+// sorting options
+$get_sort = $_GET['sort'];
+$get_dir = $_GET['o'];
+
+// validate
+if (!ctype_digit($get_sort) AND !ctype_digit($get_dir)) { unset($get_sort); unset($get_dir); }
+
+if ($get_dir=="1") {
+		$s_direction="desc";
+		$get_dir="2";
+	}
+	elseif($get_dir=="2"){
+		$s_direction="asc";
+		$get_dir="1";
+	}
+	else{
+		$get_dir="2";
+	}
+
+if ($get_sort=="1") {
+		$order="a.jid";
+	}
+	elseif($get_sort=="2") {
+		$order="lower(a.nick)";
+	}
+	elseif($get_sort=="3") {
+		$order="b.grp";
+	}
+	else{
+		$order="b.grp,lower(a.nick)";
+	}
+
+$res = pg_query($bazaj, "select a.nick, a.jid, b.grp from rosterusers a left outer join rostergroups b on (a.jid=b.jid and a.username=b.username) where a.username='$token' and a.nick !='' order by $order $s_direction");
 if (!$res) {
 	print "Ooops...";
 	pg_close($jmon);
@@ -63,7 +95,17 @@ if (pg_num_rows($res)!=0) {
 	print '<center>';
 	print '<form action="contacts.php" method="post">'."\n";
 	print '<table id="maincontent" border="0" class="ff" cellspacing="0">'."\n";
-	print '<tr class="header"><td>'.$con_tab2[$lang].'</td><td>'.$con_tab3[$lang].'</td><td style="text-align: center;">'.$con_tab6[$lang].'</td><td>'.$show_chats[$lang].':</td><td style="padding-left: 10px;">'.$con_tab4[$lang].'</td></tr>'."\n";
+	// show "reset sorting" only when sorting
+	if ($get_sort) {
+		print '<tr><td colspan="5" style="text-align: right; font-size: x-small;"><a href="contacts.php">'.$reset_sort[$lang].'</a></td></tr>';
+		}
+	print '<tr class="header">
+		<td><a href="?sort=2&o='.$get_dir.'"><span style="color: white;">'.$con_tab2[$lang].'&nbsp;&#8593;&#8595;</span></a></td>
+		<td><a href="?sort=1&o='.$get_dir.'"><span style="color: white;">'.$con_tab3[$lang].'&nbsp;&#8593;&#8595;</span></a></td>
+		<td style="text-align: center;"><a href="?sort=3&o='.$get_dir.'"><span style="color: white;">'.$con_tab6[$lang].'&nbsp;&#8593;&#8595;</span></a></td>
+		<td>'.$show_chats[$lang].':</td>
+		<td style="padding-left: 10px;">'.$con_tab4[$lang].'</td>
+		</tr>'."\n";
 	print '<tr class="spacer"><td colspan="5"></td></tr>';
 	print '<tbody id="searchfield">';
 

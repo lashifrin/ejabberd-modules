@@ -737,6 +737,7 @@ $fav_empty[eng] = "You dont have any <i>Favorites</i> chats saved";
 $ajax_error[pol] = pl_znaczki("Oooups...There was a problem during processing your request");
 $ajax_error[eng] = "Oooups...There was a problem during processing your request";
 
-
+$reset_sort[pol] = pl_znaczki("resetuj sortowanie");
+$reset_sort[eng] = "reset sorting";
 
 ?>
