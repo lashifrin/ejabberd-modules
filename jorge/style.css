@@ -13,6 +13,7 @@ h2 {
 input.cc { width: 400px; border: 1px solid gray; }
 select.cc { width: 70pt; border: 1px solid gray; }
 select.cc2 { width: 40pt; border: 1px solid gray; text-align: center; }
+select.cc3 { width: 100pt; border: 1px solid gray; text-align: center; }
 
 input.log { width: 250px; border: 1px solid gray;}
 input.ccc { width: 400px; border: 1px solid gray; }
