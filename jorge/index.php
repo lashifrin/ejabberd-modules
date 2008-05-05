@@ -64,7 +64,7 @@ if ($wo_sess || $$inpLogin || $inpPass) {
 
 if ($_GET['act']=='logout') {
 	$ui = get_user_id($sess->get('uid_l'),$xmpp_host);
-	mysql_query("insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time) values ('$ui',2,1,NOW())");
+	mysql_query("insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time,extra) values ('$ui',2,1,NOW(),'$rem_adre')");
 	$sess->finish();
 	header("Location: index.php");
 	} else {
