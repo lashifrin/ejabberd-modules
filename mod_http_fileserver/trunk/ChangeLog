@@ -1,3 +1,7 @@
+2008-05-05  Badlop  <badlop@process-one.net>
+
+	* src/web/mod_http_fileserver.erl: Added JavaScript content type
+
 2008-04-12  Badlop  <badlop@process-one.net>
 
 	* src/web/mod_http_fileserver.erl: Include Last-Modified HTTP
