@@ -1,7 +1,7 @@
 %%%----------------------------------------------------------------------
 %%% File    : mod_muc_admin.erl
 %%% Author  : Badlop <badlop@ono.com>
-%%% Purpose : Adds more commands to ejabberd_ctl
+%%% Purpose : Tools for additional MUC administration
 %%% Created : 8 Sep 2007 by Badlop <badlop@ono.com>
 %%% Id      : $Id$
 %%%----------------------------------------------------------------------
@@ -11,12 +11,12 @@
 
 -behaviour(gen_mod).
 
--export([start/2,
-	 stop/1,
-	 web_menu_main/2, web_page_main/2,
+-export([
+	 start/2, stop/1, % gen_mod API
+	 create_room/3, destroy_room/3, % MUC Admin API
+	 web_menu_main/2, web_page_main/2, % Web Admin API
 	 web_menu_host/3, web_page_host/3,
-	 ctl_process/2,
-	 ctl_process/3
+	 ctl_process/2, ctl_process/3 % ejabberdctl API
 	]).
 
 -include("ejabberd.hrl").
@@ -110,7 +110,7 @@ commands_host() ->
 
 ctl_process(_Val, ["muc-unregister-nick", Nick]) ->
     case muc_unregister_nick(Nick) of
-	unregistered -> 
+	unregistered ->
 	    ?STATUS_SUCCESS;
 	{error, Error} ->
 	    io:format("Error unregistering ~p: ~p~n", [Nick, Error]),
@@ -182,7 +182,7 @@ web_menu_host(Acc, _Host, Lang) ->
 %%---------------
 %% Web Admin Page
 
--define(TDTD(L, N), 
+-define(TDTD(L, N),
 	?XE("tr", [?XCT("td", L),
 		   ?XC("td", integer_to_list(N))
 		  ])).
@@ -217,7 +217,7 @@ web_page_host(_, Host,
 web_page_host(Acc, _, _) -> Acc.
 
 
-%% Returns: {normal | reverse, Integer} 
+%% Returns: {normal | reverse, Integer}
 get_sort_query(Q) ->
     case catch get_sort_query2(Q) of
 	{ok, Res} -> Res;
@@ -231,7 +231,7 @@ get_sort_query2(Q) ->
 	true -> {ok, {normal, Integer}};
 	false -> {ok, {reverse, abs(Integer)}}
     end.
-	
+
 make_rooms_page(Host, Lang, {Sort_direction, Sort_column}) ->
     Rooms_names = get_rooms(Host),
     Rooms_infos = build_info_rooms(Rooms_names),
@@ -276,7 +276,7 @@ make_rooms_page(Host, Lang, {Sort_direction, Sort_column}) ->
 sort_rooms(Direction, Column, Rooms) ->
     Rooms2 = lists:keysort(Column, Rooms),
     case Direction of
-    	normal -> Rooms2;
+	normal -> Rooms2;
 	reverse -> lists:reverse(Rooms2)
     end.
 
@@ -289,13 +289,13 @@ build_info_room({Name, Host, Pid}) ->
     Public = C#config.public,
     Persistent = C#config.persistent,
     Logging = C#config.logging,
-    
+
     S = get_room_state(Pid),
     Just_created = S#state.just_created,
     Num_participants = length(dict:fetch_keys(S#state.users)),
-    
+
     History = (S#state.history)#lqueue.queue,
-    Ts_last_message = 
+    Ts_last_message =
 	case queue:is_empty(History) of
 	    true ->
 		"A long time ago";
@@ -304,8 +304,8 @@ build_info_room({Name, Host, Pid}) ->
 		{_, _, _, Ts_last, _} = Last_message1,
 		jlib:timestamp_to_iso(Ts_last)
 	end,
-    
-    {Name++"@"++Host, 
+
+    {Name++"@"++Host,
      Num_participants,
      Ts_last_message,
      Public,
@@ -317,7 +317,7 @@ build_info_room({Name, Host, Pid}) ->
 prepare_rooms_infos(Rooms) ->
     [prepare_room_info(Room) || Room <- Rooms].
 prepare_room_info(Room_info) ->
-    {NameHost, 
+    {NameHost,
      Num_participants,
      Ts_last_message,
      Public,
@@ -325,31 +325,88 @@ prepare_room_info(Room_info) ->
      Logging,
      Just_created,
      Title} = Room_info,
-    [NameHost, 
+    [NameHost,
      integer_to_list(Num_participants),
      Ts_last_message,
      atom_to_list(Public),
-     atom_to_list(Persistent), 
-     atom_to_list(Logging), 
+     atom_to_list(Persistent),
+     atom_to_list(Logging),
      atom_to_list(Just_created),
      Title].
 
 
 %%----------------------------
-%% MUC Unregister Nick
+%% MUC Create/Delete Room
 %%----------------------------
 
-muc_unregister_nick(Nick) ->
-    F2 = fun(N) -> 
-		 [{_,Key,_}] = mnesia:index_read(muc_registered, N, 3), 
-		 mnesia:delete({muc_registered, Key})
-	 end,
-    case mnesia:transaction(F2, [Nick], 1) of
-	{atomic, ok} ->
-	    unregistered;
-	{aborted, Error} ->
-	    {error, Error}
+%% @spec (Name::string(), Host::string(), ServerHost::string()) ->
+%%       ok | {error, room_already_exists}
+%% @doc Create a room immediately with the default options.
+create_room(Name, Host, ServerHost) ->
+
+    %% Get the default room options from the muc configuration
+    DefRoomOpts = gen_mod:get_module_opt(ServerHost, mod_muc,
+					 default_room_options, []),
+
+    %% Store the room on the server, it is not started yet though at this point
+    mod_muc:store_room(Host, Name, DefRoomOpts),
+
+    %% Get all remaining mod_muc parameters that might be utilized
+    Access = gen_mod:get_module_opt(ServerHost, mod_muc, access, all),
+    AcCreate = gen_mod:get_module_opt(ServerHost, mod_muc, access_create, all),
+    AcAdmin = gen_mod:get_module_opt(ServerHost, moc_muc, access_admin, none),
+    AcPer = gen_mod:get_module_opt(ServerHost, mod_muc, access_persistent, all),
+    HistorySize = gen_mod:get_module_opt(ServerHost, mod_muc, history_size, 20),
+    RoomShaper = gen_mod:get_module_opt(ServerHost, mod_muc, room_shaper, none),
+
+    %% If the room does not exist yet in the muc_online_room
+    case mnesia:dirty_read(muc_online_room, {Name, Host}) of
+        [] ->
+	    %% Start the room
+	    {ok, Pid} = mod_muc_room:start(
+			  Host,
+			  ServerHost,
+			  {Access, AcCreate, AcAdmin, AcPer},
+			  Name,
+			  HistorySize,
+			  RoomShaper,
+			  DefRoomOpts),
+	    {atomic, ok} = register_room(Host, Name, Pid),
+	    ok;
+	_ ->
+	    {error, room_already_exists}
     end.
+
+register_room(Host, Name, Pid) ->
+    F = fun() ->
+		mnesia:write(#muc_online_room{name_host = {Name, Host},
+					      pid = Pid})
+	end,
+    mnesia:transaction(F).
+
+%% Create the room only in the database.
+%% It is required to restart the MUC service for the room to appear.
+muc_create_room({Name, Host, _}, DefRoomOpts) ->
+    io:format("Creating room ~s@~s~n", [Name, Host]),
+    mod_muc:store_room(Host, Name, DefRoomOpts).
+
+%% @spec (Name::string(), Host::string(), ServerHost::string()) ->
+%%       ok | {error, room_not_exists}
+%% @doc Destroy the room immediately.
+destroy_room(Name, Host, ServerHost) ->
+    case mnesia:dirty_read(muc_online_room, {Name, Host}) of
+	[R] ->
+	    Pid = R#muc_online_room.pid,
+	    mod_muc:room_destroyed(Host, Name, Pid, ServerHost),
+	    {atomic, ok} = mod_muc:forget_room(Host, Name),
+	    ok;
+	[] ->
+	    {error, room_not_exists}
+    end.
+
+destroy_room({N, H, SH}) ->
+    io:format("Destroying room: ~s@~s - vhost: ~s~n", [N, H, SH]),
+    destroy_room(N, H, SH).
 
 
 %%----------------------------
@@ -397,11 +454,6 @@ split_roomjid(RoomJID) ->
 join([H|T], Sep) ->
     H ++ lists:concat([Sep ++ X || X <- T]).
 
-destroy_room({N, H, SH}) ->
-    io:format("Destroying room: ~s@~s - vhost: ~s~n", [N, H, SH]),
-    mod_muc:room_destroyed(H, N, SH),
-    mod_muc:forget_room(H, N).
-
 
 %%----------------------------
 %% MUC Create File
@@ -416,10 +468,6 @@ muc_create_file(Filename) ->
     DefRoomOpts = gen_mod:get_module_opt(?MYNAME, mod_muc,
 					 default_room_options, []),
     [muc_create_room(A, DefRoomOpts) || A <- Rooms].
-
-muc_create_room({Name, Host, _}, DefRoomOpts) ->
-    io:format("Creating room ~s@~s~n", [Name, Host]),
-    mod_muc:store_room(Host, Name, DefRoomOpts).
 
 
 %%----------------------------
@@ -541,6 +589,23 @@ act_on_room(destroy, {N, H, Pid}, SH) ->
 
 act_on_room(list, _, _) ->
     ok.
+
+
+%%----------------------------
+%% MUC Unregister Nick
+%%----------------------------
+
+muc_unregister_nick(Nick) ->
+    F2 = fun(N) -> 
+		 [{_,Key,_}] = mnesia:index_read(muc_registered, N, 3), 
+		 mnesia:delete({muc_registered, Key})
+	 end,
+    case mnesia:transaction(F2, [Nick], 1) of
+	{atomic, ok} ->
+	    unregistered;
+	{aborted, Error} ->
+	    {error, Error}
+    end.
 
 
 %%----------------------------

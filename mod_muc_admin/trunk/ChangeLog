@@ -1,3 +1,8 @@
+2008-05-06  Badlop  <badlop@process-one.net>
+
+	* src/mod_muc_admin.erl: New exported functions create_room and
+	destroy_room (thanks to Darren Ferguson)
+
 2008-04-04  Badlop  <badlop@process-one.net>
 
 	* src/mod_muc_admin.erl: New command muc-create-file to create the
