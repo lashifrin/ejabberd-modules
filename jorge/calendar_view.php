@@ -382,7 +382,7 @@ if ($talker) {
 	print '&nbsp; | &nbsp;';
         print '<a id="pretty" title="'.$tip_delete[$lang].'" class="menu_chat" href="calendar_view.php?a='.$action_link.'">'.$del_t[$lang].'</a>';
 	print '</td></tr>';
-        print '<tr class="spacer"><td colspan="6"></td></tr>';
+        print '<tr class="spacer"><td colspan="7"></td></tr>';
         print '<tbody id="searchfield">'."\n";
         while ($entry = mysql_fetch_array($result))
                 {
@@ -405,6 +405,14 @@ if ($talker) {
 
                         } // splitting line - defaults to 900s = 15min
 
+		# check if chat is continuation from previous day
+		if ($ts_mark!="1" AND substr($ts, 0 , strpos($ts, ":")) == 00 ) {
+			if ( check_thread($user_id,$talker,$server_id,$tslice,$xmpp_host,2)===TRUE) {
+				print '<tr><td colspan="5" style="text-align: left; padding-left: 5px;" class="message"><a href="calendar_view.php?a='.$to_base_prev.'">'.$cont_chat_p[$lang].'</a></td></tr>'."\n";
+			}
+			#check only first line
+			$ts_mark="1";
+		}
                 print '<tr class="'.$col.'">'."\n";
                 print '<td class="time_chat" style="padding-left: 10px; padding-right: 10px;";>'.$ts.'</td>'."\n";
 
@@ -463,7 +471,7 @@ if ($talker) {
 
 
 // limiting code
-print '<tr class="spacer" height="1px"><td colspan="6"></td></tr>';
+print '<tr class="spacer" height="1px"><td colspan="7"></td></tr>';
 print '<tr class="foot"><td style="text-align: center;" colspan="9">';
 for($i=0;$i < $nume;$i=$i+$num_lines_bro){
 
@@ -478,9 +486,18 @@ for($i=0;$i < $nume;$i=$i+$num_lines_bro){
 print '</td></tr>';
 // limiting code - end
 
-        if (($nume-$start)>40) { print '<tr><td colspan="6" style="text-align: right; padding-right: 5px;"><a href="#top"><small>'.$back_t[$lang].'</small></a></td></tr>'."\n"; }
-        print '</table>'."\n";
+        if (($nume-$start)>40) { 
 
+			if (substr($ts, 0 , strpos($ts, ":")) == 23) {
+				if ( check_thread($user_id,$talker,$server_id,$tslice,$xmpp_host,1)===TRUE) {
+					print '<tr><td colspan="6" style="text-align: right; padding-right: 5px;" class="message"><a href="calendar_view.php?a='.$to_base_next.'">'.$cont_chat[$lang].'</a></td></tr>'."\n";
+				}
+			}
+
+			print '<tr><td colspan="6" style="text-align: right; padding-right: 5px;"><a href="#top"><small>'.$back_t[$lang].'</small></a></td></tr>'."\n"; 
+		
+		}
+        print '</table>'."\n";
         print '</tr></table></td>'."\n";
 }
 

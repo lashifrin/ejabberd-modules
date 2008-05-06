@@ -740,4 +740,11 @@ $ajax_error[eng] = "Oooups...There was a problem during processing your request"
 $reset_sort[pol] = pl_znaczki("resetuj sortowanie");
 $reset_sort[eng] = "reset sorting";
 
+$cont_chat[pol] = pl_znaczki("rozmowa kontynuowana jest nastêpnego dnia >>>");
+$cont_chat[eng] = "chat continues on next day >>>";
+
+$cont_chat_p[pol] = pl_znaczki("<<< rozmowa jest kontynuacj± z dnia poprzedniego");
+$cont_chat_p[eng] = "<<< this chat is continuation from last day";
+
+
 ?>
