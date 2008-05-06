@@ -1056,7 +1056,7 @@ function check_thread($user_id,$peer_name_id,$peer_server_id,$at,$xmpp_host,$dir
 	elseif($dir=="2"){
 		$day="-1 day";
 		$bhour="23:00:00";
-		$ehour="23:59:00";
+		$ehour="23:59:59";
 	}
 
 	$get_date = date("Y-n-j", strtotime($day, strtotime(date("$at"))));
