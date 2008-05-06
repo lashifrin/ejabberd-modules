@@ -1051,11 +1051,11 @@ function check_thread($user_id,$peer_name_id,$peer_server_id,$at,$xmpp_host,$dir
 	if ($dir=="1") {
 		$day="+1 day";
 		$bhour="00:00:00";
-		$ehour="01:00:00";
+		$ehour="00:30:00";
 	}
 	elseif($dir=="2"){
 		$day="-1 day";
-		$bhour="23:00:00";
+		$bhour="23:30:00";
 		$ehour="23:59:59";
 	}
 
@@ -1070,9 +1070,9 @@ function check_thread($user_id,$peer_name_id,$peer_server_id,$at,$xmpp_host,$dir
 		AND 
 			peer_server_id='$peer_server_id' 
 		AND 
-			from_unixtime(timestamp) > str_to_date('$get_date $bhour','%Y-%m-%d %H') 
+			from_unixtime(timestamp) > str_to_date('$get_date $bhour','%Y-%m-%d %H:%i:%s') 
 		AND 
-			from_unixtime(timestamp) < str_to_date('$get_date $ehour','%Y-%m-%d %H')
+			from_unixtime(timestamp) < str_to_date('$get_date $ehour','%Y-%m-%d %H:%i:%s')
 		ORDER BY 
 			from_unixtime(timestamp)";
 	$result=mysql_query($query);

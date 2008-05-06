@@ -408,7 +408,7 @@ if ($talker) {
 		# check if chat is continuation from previous day
 		if ($ts_mark!="1" AND substr($ts, 0 , strpos($ts, ":")) == 00 ) {
 			if ( check_thread($user_id,$talker,$server_id,$tslice,$xmpp_host,2)===TRUE) {
-				print '<tr><td colspan="5" style="text-align: left; padding-left: 5px;" class="message"><a href="calendar_view.php?a='.$to_base_prev.'">'.$cont_chat_p[$lang].'</a></td></tr>'."\n";
+				print '<tr><td colspan="6" style="text-align: left; padding-left: 5px;" class="message"><a href="calendar_view.php?a='.$to_base_prev.'">'.$cont_chat_p[$lang].'</a></td></tr>'."\n";
 			}
 			#check only first line
 			$ts_mark="1";
