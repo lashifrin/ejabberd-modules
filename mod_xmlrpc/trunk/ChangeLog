@@ -1,3 +1,10 @@
+2008-05-06  Badlop  <badlop@process-one.net>
+
+	* src/mod_xmlrpc.erl: Added new calls delete_account,
+	delete_rosteritem, create_muc_room and destroy_muc_room (thanks to
+	Darren Ferguson)
+	* README.txt: Likewise
+
 2008-02-29  Badlop  <badlop@process-one.net>
 
 	* src/mod_xmlrpc.erl: Added module options: maxsessions, timeout

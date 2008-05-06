@@ -29,6 +29,7 @@ directly the database are:
 
     ejabberd 1.1.2 or newer
     XMLRPC-Erlang 1.13 with IP, Ruby and Xmerl 1.x patches
+    Optional: mod_muc_admin for MUC-related calls
 
 
  - Install XMLRPC-Erlang
@@ -80,26 +81,33 @@ Example configurations:
 
 You can send calls to http://host:4560/ 
 
-Call:           Arguments:                                                  Returns:
+Call:           Arguments:                                                 Returns:
 
  -- debug
-echothis        String                                                      String
+echothis        String                                                       String
 multhis         struct[{a, Integer}, {b, Integer}]                          Integer
 
  -- statistics
-tellme_title    String                                                      String
-tellme_value    String                                                      String
+tellme_title    String                                                       String
+tellme_value    String                                                       String
 tellme          String                     struct[{title, String}, {value. String}]
 
  -- user administration
 create_account  struct[{user, String}, {host, String}, {password, String}]  Integer
+delete_account  struct[{user, String}, {host, String}, {password, String}]  Integer
 change_password struct[{user, String}, {host, String}, {newpass, String}]   Integer
 num_resources   struct[{user, String}, {host, String}]                      Integer
-resource_num    struct[{user, String}, {host, String}, {num, Integer}]      String
+resource_num    struct[{user, String}, {host, String}, {num, Integer}]       String
 set_nickname    struct[{user, String}, {host, String}, {nickname, String}]  Integer
 add_rosteritem  struct[{localuser, String}, {localserver, String}, 
-                 {user, String}, {server, String}, 
-				 {nick, String}, {group, String}, {subs, String}]           String
+                       {user, String}, {server, String}, 
+                       {nick, String}, {group, String}, {subs, String}]      String
+delete_rosteritem  struct[{localuser, String}, {localserver, String},
+                          {user, String}, {server, String}]                  String
+
+ -- MUC administration
+create_muc_room struct[{name, String}, {service, String}, {server, String}] Integer
+delete_muc_room struct[{name, String}, {service, String}, {server, String}] Integer
 
 
 	TEST
