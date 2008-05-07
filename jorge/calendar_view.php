@@ -369,11 +369,11 @@ if ($talker) {
         $action_link = encode_url($action_link,$token,$url_key);
         print '<td align="right" style="padding-right: 5px; font-weight: normal;">';
 	print '
-	<form style="margin-bottom: 0;" id="fav_form" action="req_process.php" method="post">
-	<input type="hidden" name="a" value="'.$_GET[a].'" />
-	<input type="hidden" name="req" value="1">
-	<input class="fav" type="submit" value="'.$fav_add[$lang].'" />
-	</form>';	
+		<form style="margin-bottom: 0;" id="fav_form" action="req_process.php" method="post">
+		<input type="hidden" name="a" value="'.$_GET[a].'" />
+		<input type="hidden" name="req" value="1">
+		<input class="fav" type="submit" value="'.$fav_add[$lang].'" />
+		</form>';	
 	print '<a id="pretty" title="'.$tip_export[$lang].'" class="menu_chat" href="export.php?a='.$e_string.'">'.$export_link[$lang].'</a>&nbsp; | &nbsp;';
 	print $all_for_u[$lang];
         print '<a id="pretty" title="'.$all_for_u_m2_d[$lang].'" class="menu_chat" href="chat_map.php?chat_map='.$predefined.'"><u>'.$all_for_u_m2[$lang].'</u></a>';
@@ -468,10 +468,16 @@ if ($talker) {
                 }
 	        print '</tbody>'."\n";
 
-
+# Check thread. ToDo: Run code only on last page
+if (substr($ts, 0 , strpos($ts, ":")) == 23) {
+	if ( check_thread($user_id,$talker,$server_id,$tslice,$xmpp_host,1)===TRUE) {
+		
+		print '<tr><td colspan="6" style="text-align: right; padding-right: 5px;" class="message"><a href="calendar_view.php?a='.$to_base_next.'">'.$cont_chat[$lang].'</a></td></tr>'."\n";
+	}
+}
 
 // limiting code
-print '<tr class="spacer" height="1px"><td colspan="7"></td></tr>';
+print '<tr class="spacer"><td colspan="7"></td></tr>';
 print '<tr class="foot"><td style="text-align: center;" colspan="9">';
 for($i=0;$i < $nume;$i=$i+$num_lines_bro){
 
@@ -487,12 +493,6 @@ print '</td></tr>';
 // limiting code - end
 
         if (($nume-$start)>40) { 
-
-			if (substr($ts, 0 , strpos($ts, ":")) == 23) {
-				if ( check_thread($user_id,$talker,$server_id,$tslice,$xmpp_host,1)===TRUE) {
-					print '<tr><td colspan="6" style="text-align: right; padding-right: 5px;" class="message"><a href="calendar_view.php?a='.$to_base_next.'">'.$cont_chat[$lang].'</a></td></tr>'."\n";
-				}
-			}
 
 			print '<tr><td colspan="6" style="text-align: right; padding-right: 5px;"><a href="#top"><small>'.$back_t[$lang].'</small></a></td></tr>'."\n"; 
 		

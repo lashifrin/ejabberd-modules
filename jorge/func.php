@@ -1070,9 +1070,9 @@ function check_thread($user_id,$peer_name_id,$peer_server_id,$at,$xmpp_host,$dir
 		AND 
 			peer_server_id='$peer_server_id' 
 		AND 
-			from_unixtime(timestamp) > str_to_date('$get_date $bhour','%Y-%m-%d %H:%i:%s') 
+			from_unixtime(timestamp) >= str_to_date('$get_date $bhour','%Y-%m-%d %H:%i:%s') 
 		AND 
-			from_unixtime(timestamp) < str_to_date('$get_date $ehour','%Y-%m-%d %H:%i:%s')
+			from_unixtime(timestamp) <= str_to_date('$get_date $ehour','%Y-%m-%d %H:%i:%s')
 		ORDER BY 
 			from_unixtime(timestamp)";
 	$result=mysql_query($query);
