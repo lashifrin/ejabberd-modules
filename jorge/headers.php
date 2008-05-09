@@ -94,6 +94,7 @@ $lang=$sess->get('language');
 	<meta name="Author" content="Zbyszek Zolkiewski at jabster.pl" />
 	<meta name="Keywords" content="jorge message archiving ejabberd mod_logdb erlang" />
 	<meta name="Description" content="Jorge" />
+	<link rel="shortcut icon" href="favicon.ico" /> 
 	<link rel="stylesheet" href="style.css" type="text/css" />
 	<link rel="stylesheet" href="jquery.autocomplete.css" type="text/css" />
 <?
