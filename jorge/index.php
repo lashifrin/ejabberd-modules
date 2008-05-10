@@ -74,6 +74,7 @@ if ($_GET['act']=='logout') {
 	          $sess->set('login',$inpLogin);
 		  $sess->set('uid_l',$inpLogin);
 		  $sess->set('uid_p',$inpPass);
+		  $sess->set('host',$xmpp_host);
 		  $ret_v=is_log_enabled(get_user_id($sess->get('uid_l'),$xmpp_host),$xmpp_host);
 		  if (($ret_v[0]) == "t") {
 		  $sess->set('enabled','t');

@@ -39,7 +39,6 @@ include("config.php"); // read configuration
 // get client addr
 $rem_adre = $_SERVER['REMOTE_ADDR'];
 
-
 // get location
 $location=$_SERVER['PHP_SELF'];
 
@@ -65,10 +64,11 @@ if (!preg_match("/index.php/i",$location)) {
 	if(!preg_match("/not_enabled.php/i",$_SERVER['PHP_SELF'])) {
 		$user_id=get_user_id($token,$xmpp_host);
 		if (!ctype_digit($user_id)) { print 'Ooops...error(0.1)'; exit; }
-		}
-
 	}
 
+	// domain check. prevent floating auth between jorge instalations on multiple domains
+	if ($sess->get('host')!=$xmpp_host OR !$sess->get('host')) { header("Location: index.php?act=logout"); exit; }
+}
 
 $time_start=getmicrotime(); // debuging info _start_
 // charset - by default we work under utf-8. If you need other type of charset see pl_znaczki() in func.php and adjust encoding to your needs
