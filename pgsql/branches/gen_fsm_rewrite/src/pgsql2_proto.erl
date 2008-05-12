@@ -68,7 +68,7 @@ start_link(Options) ->
 		{ok,Pid} ->	receive
 						{fsm_started,Pid} -> {ok,Pid}
 					after
-						5000 -> {error,timeout}
+						15000 -> {error,timeout}
 					end;
 		X -> X
 	end.
@@ -231,6 +231,11 @@ ready_for_query({execute_batch,Query,Params},Client,St) ->
 	ok = gen_tcp:send(St#pgsql2.socket,Msg),
 	{next_state,wait_for_execute_batch_response,St#pgsql2{client_pid=Client}};
 	 
+ready_for_query({execute,Query,Params},Client,St) ->
+    Msg = pgsql2_proto_msgs:execute_batch(Query,[Params]),
+    ok = gen_tcp:send(St#pgsql2.socket,Msg),
+    {next_state,wait_for_execute_batch_response,St#pgsql2{client_pid=Client}};
+
 ready_for_query(stop,_Client,StateData)	->
 	Msg = pgsql2_proto_msgs:terminate(),
 	ok = gen_tcp:send(StateData#pgsql2.socket,Msg),
@@ -355,7 +360,7 @@ process_buffer(Bin = <<Code:8/integer, Size:4/integer-unit:8, Rest/binary>>,Clie
     end;
 process_buffer(Bin,_ClientFSM)  ->
     {ok, Bin}. 
-%%SEE: perhaps we can obtain better performance by passing the binary to thr fsm rather
+%%SEE: perhaps we can obtain better performance by passing the binary to the fsm rather
 	%%     than the decoded packet.. as the binaries doesn't need to be copied accross process
 	%%     boundaries??
 
@@ -370,7 +375,7 @@ check_options(Options) ->
 	                 	false -> throw({option_required,Required})
 	                 end
 	              end,?REQUIRED_OPTIONS).
-
+%%TODO: a *required* option?.. shouldn't it be a normal parameter?
 
 
 

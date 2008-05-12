@@ -19,7 +19,15 @@
 %
 %
 
--export([connect/4,stop/1,q/2,q/3,q/4,execute/3,execute_many/3,get_parameters/1,apply_in_tx/3]).	
+-export([connect/4,
+    stop/1,
+    q/2,
+    q/3,
+    q/4,
+    execute/3,
+    execute_many/3,
+    get_parameters/1,
+    apply_in_tx/3]).	
 
 
 % @spec connect(User,Password,Database,[Option]) -> {ok,Pid} 
@@ -44,6 +52,11 @@
 %      Note that queries using q/2 aren't affected by this setting, and the response from postgres is always
 %      in text format. 
 %      Currently, the driver only sends data to the server in text format.
+%
+%      TODO: would be better to remove the option that allows binary format,
+%      from the postgres manuall: "Keep in mind that binary representations for
+%      complex data types might change across server versions; the text format
+%      is usually the more portable choice."
 connect(User,Password,Database,Options) ->
 	Opts = [{user,User},{password,Password},{database,Database}|Options],
 	pgsql2_proto:start_link(Opts).
@@ -114,9 +127,8 @@ execute_many(Pid,Query,Params) ->
 %      For batch insert/updates use execute_many/3.
 %      For select-like queries use any of q/2,q/3,q/4
 %      instead. 
-execute(_Pid,_Query,_Params) ->
-	%gen_fsm:sync_send_event(Pid,{execute,Query,Params}).
-	{error,"Not implemented yet, use execute_many instead"}.
+execute(Pid,Query,Params) ->
+	gen_fsm:sync_send_event(Pid,{execute,Query,Params}).
 
 
 %% @doc Apply the given function in a transactional context 
