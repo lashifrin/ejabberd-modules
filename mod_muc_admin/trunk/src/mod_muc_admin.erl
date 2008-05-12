@@ -14,6 +14,7 @@
 -export([
 	 start/2, stop/1, % gen_mod API
 	 create_room/3, destroy_room/3, % MUC Admin API
+	 change_room_option/4,
 	 web_menu_main/2, web_page_main/2, % Web Admin API
 	 web_menu_host/3, web_page_host/3,
 	 ctl_process/2, ctl_process/3 % ejabberdctl API
@@ -336,7 +337,7 @@ prepare_room_info(Room_info) ->
 
 
 %%----------------------------
-%% MUC Create/Delete Room
+%% Create/Delete Room
 %%----------------------------
 
 %% @spec (Name::string(), Host::string(), ServerHost::string()) ->
@@ -410,7 +411,7 @@ destroy_room({N, H, SH}) ->
 
 
 %%----------------------------
-%% MUC Destroy File
+%% Destroy Rooms in File
 %%----------------------------
 
 %% The format of the file is: one chatroom JID per line
@@ -456,7 +457,7 @@ join([H|T], Sep) ->
 
 
 %%----------------------------
-%% MUC Create File
+%% Create Rooms in File
 %%----------------------------
 
 muc_create_file(Filename) ->
@@ -471,7 +472,7 @@ muc_create_file(Filename) ->
 
 
 %%----------------------------
-%% MUC Unused
+%% List/Delete Unused Rooms
 %%----------------------------
 
 %%---------------
@@ -592,7 +593,59 @@ act_on_room(list, _, _) ->
 
 
 %%----------------------------
-%% MUC Unregister Nick
+%% Change Room Option
+%%----------------------------
+
+%% @spec(Name::string(), Service::string(), Option::string(), Value) -> ok
+%%       Value = atom() | integer() | string()
+%% @doc Change an option in an existing room.
+%% Requires the name of the room, the MUC service where it exists,
+%% the option to change (for example title or max_users),
+%% and the value to assign to the new option.
+%% For example:
+%%   change_room_option("testroom", "conference.localhost", title, "Test Room")
+change_room_option(Name, Service, Option, Value) ->
+    Pid = get_room_pid(Name, Service),
+    {ok, _} = change_room_option(Pid, Option, Value),
+    ok.
+
+change_room_option(Pid, Option, Value) ->
+    Config = get_room_config(Pid),
+    Config2 = change_option(Option, Value, Config),
+    gen_fsm:sync_send_all_state_event(Pid, {change_config, Config2}).
+
+%% @doc Get the Pid of an existing MUC room.
+%% If the room doesn't exist, the function will crash.
+get_room_pid(Name, Service) ->
+    [Room] = mnesia:dirty_read(muc_online_room, {Name, Service}),
+    Room#muc_online_room.pid.
+
+%% It is required to put explicitely all the options because
+%% the record elements are replaced at compile time.
+%% So, this can't be parametrized.
+change_option(Option, Value, Config) -> 
+    case Option of
+	allow_change_subj -> Config#config{allow_change_subj = Value};
+	allow_private_messages -> Config#config{allow_private_messages = Value};
+	allow_query_users -> Config#config{allow_query_users = Value};
+	allow_user_invites -> Config#config{allow_user_invites = Value};
+	anonymous -> Config#config{anonymous = Value};
+	logging -> Config#config{logging = Value};
+	max_users -> Config#config{max_users = Value};
+	members_by_default -> Config#config{members_by_default = Value};
+	members_only -> Config#config{members_only = Value};
+	moderated -> Config#config{moderated = Value};
+	password -> Config#config{password = Value};
+	password_protected -> Config#config{password_protected = Value};
+	persistent -> Config#config{persistent = Value};
+	public -> Config#config{public = Value};
+	public_list -> Config#config{public_list = Value};
+	title -> Config#config{title = Value}
+    end.
+
+
+%%----------------------------
+%% Unregister Nick
 %%----------------------------
 
 muc_unregister_nick(Nick) ->
