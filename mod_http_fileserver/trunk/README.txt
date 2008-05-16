@@ -1,6 +1,11 @@
 mod_http_fileserver - Description
 
 
+If you want to compile this module with Erlang/OTP R11B-3 or older,
+edit Emakefile and remove this:
+   {d, 'SSL39'},
+
+
 	CONFIGURATION
 	=============
 
