@@ -17,6 +17,9 @@
 	 stop/1]).
 
 -include("ejabberd.hrl").
+-include("mod_roster.hrl").
+-include("jlib.hrl").
+
 -define(PROCNAME, ejabberd_mod_xmlrpc).
 
 %% -----------------------------
@@ -127,6 +130,16 @@ handler(_State, {call, delete_account, [{struct, AttrL}]}) ->
     end,
     {false, {response, [0]}};
 
+%% check_password struct[{user, String}, {host, String}, {password, String}]       Integer
+handler(_State, {call, check_password, [{struct, AttrL}]}) ->
+    [U, H, P] = get_attrs([user, host, password], AttrL),
+    case ejabberd_auth:check_password(U, H, P) of
+	true ->
+	    {false, {response, [0]}};
+	false ->
+	    {false, {response, [1]}}
+    end;
+
 %% change_password struct[{user, String}, {host, String}, {newpass, String}]       Integer
 handler(_State, {call, change_password, [{struct, AttrL}]}) ->
     [U, H, P] = get_attrs([user, host, newpass], AttrL),
@@ -180,36 +193,38 @@ handler(_State, {call, set_nickname, [{struct, AttrL}]}) ->
 %%                  {nick, String}, {group, String}, 
 %%                  {subs, String}]                                String
 handler(_State, {call, add_rosteritem, [{struct, AttrL}]}) ->
-    [Localuser, Localserver, User, Server, Nick, Group, Subs] = 
+    [LocalUser, LocalServer, User, Server, Nick, Group, Subs] = 
 	get_attrs([localuser, localserver, user, server, nick, group, subs], AttrL),
     Node = node(),
-    R = case add_rosteritem(Localuser, Localserver, User, Server, Nick, Group, list_to_atom(Subs), []) of
+    R = case add_rosteritem(LocalUser, LocalServer, User, Server, Nick, Group, list_to_atom(Subs), []) of
 	    {atomic, ok} ->
+                push_roster_item(LocalUser, LocalServer, User, Server, {add, Nick, Subs, Group}),
 		0;
 	    {error, Reason} ->
 		io:format("Can't add roster item to user ~p@~p on node ~p: ~p~n",
-			  [Localuser, Localserver, Node, Reason]);
+			  [LocalUser, LocalServer, Node, Reason]);
 	    {badrpc, Reason} ->
 		io:format("Can't add roster item to user ~p@~p on node ~p: ~p~n",
-			  [Localuser, Localserver, Node, Reason])
+			  [LocalUser, LocalServer, Node, Reason])
 	end,
     {false, {response, [R]}};
 
- 
+
 %% delete_rosteritem  struct[{localuser, String}, {localserver, String},
 %%                     {user, String}, {server, String}]            String
 handler(_State, {call, delete_rosteritem, [{struct, AttrL}]}) ->
-    [Localuser, Localserver, User, Server] = get_attrs([localuser, localserver, user, server], AttrL),
+    [LocalUser, LocalServer, User, Server] = get_attrs([localuser, localserver, user, server], AttrL),
     Node = node(),
-    R = case delete_rosteritem(Localuser, Localserver, User, Server) of
+    R = case delete_rosteritem(LocalUser, LocalServer, User, Server) of
             {atomic, ok} ->
+                push_roster_item(LocalUser, LocalServer, User, Server, remove),
                 0;
             {error, Reason} ->
                 io:format("Can't remove roster item from user ~p@~p on node ~p: ~p~n",
-			  [Localuser, Localserver, Node, Reason]);
+			  [LocalUser, LocalServer, Node, Reason]);
 	    {badrpc, Reason} ->
 		io:format("Can't remove roster item from user ~p@~p on node ~p: ~p~n",
-			  [Localuser, Localserver, Node, Reason])
+			  [LocalUser, LocalServer, Node, Reason])
 	end,
     {false, {response, [R]}};
 
@@ -228,6 +243,25 @@ handler(_State, {call, create_muc_room, [{struct, AttrL}]}) ->
 handler(_State, {call, delete_muc_room, [{struct, AttrL}]}) ->
     [Name, Service, Server] = get_attrs([name, service, server], AttrL),
     R = case mod_muc_admin:destroy_room(Name, Service, Server) of
+	    ok ->
+		0;
+	    {error, room_not_exists} ->
+		?INFO_MSG("~n MUC: ~p does not exist on service ~p ~n", [Name, Service]),
+		1
+	end,
+    {false, {response, [R]}};
+
+%% muc_room_change_option  struct[{name, String}, {service, String}, {option, String}, {value String}]  Integer
+handler(_State, {call, muc_room_change_option, [{struct, AttrL}]}) ->
+    [Name, Service, OptionString, Value] = get_attrs([name, service, option, value], AttrL),
+    Option = list_to_atom(OptionString),
+    mod_muc_admin:change_room_option(Name, Service, Option, Value),
+    {false, {response, [0]}};
+
+%% muc_room_set_affiliation  struct[{name, String}, {service, String}, {jid, String}, {affiliation, String}] Integer
+handler(_State, {call, muc_room_set_affiliation, [{struct, AttrL}]}) ->
+    [Name, Service, JID, Affiliation] = get_attrs([name, service, jid, affiliation], AttrL),
+    R = case mod_muc_admin:set_affiliation(Name, Service, JID, list_to_atom(Affiliation)) of
 	    ok ->
 		0;
 	    {error, room_not_exists} ->
@@ -274,6 +308,45 @@ unsubscribe(LU, LS, User, Server) ->
       fun() ->
               mnesia:delete({roster, {LU, LS, {User, Server, []}}})
       end).
+
+%% @spec(LU, LS, U, S, Action) -> ok
+%%       Action = {add, Nick, Subs, Group} | remove
+%% @doc Push to the roster of account LU@LS the contact U@S.
+%% The specific action to perform is defined in Action.
+push_roster_item(LU, LS, U, S, Action) ->
+    lists:foreach(fun(R) ->
+			  push_roster_item(LU, LS, R, U, S, Action)
+		  end, ejabberd_sm:get_user_resources(LU, LS)).
+
+push_roster_item(LU, LS, R, U, S, Action) ->
+    Item = build_roster_item(U, S, Action),
+    ResIQ = build_iq_roster_push(Item),
+    LJID = jlib:make_jid(LU, LS, R),
+    ejabberd_router:route(LJID, LJID, ResIQ).
+
+build_roster_item(U, S, {add, Nick, Subs, Group}) ->
+    {xmlelement, "item",
+     [{"jid", jlib:jid_to_string(jlib:make_jid(U, S, ""))},
+      {"name", Nick},
+      {"subscription", Subs}],
+     [{xmlelement, "group", [], [{xmlcdata, Group}]}]
+    };
+build_roster_item(U, S, remove) ->
+    {xmlelement, "item",
+     [{"jid", jlib:jid_to_string(jlib:make_jid(U, S, ""))},
+      {"subscription", "remove"}],
+     []
+    }.
+
+build_iq_roster_push(Item) ->
+    {xmlelement, "iq",
+     [{"type", "set"}, {"id", "push"}],
+     [{xmlelement, "query",
+       [{"xmlns", ?NS_ROSTER}],
+       [Item]
+      }
+     ]
+    }.
 
 
 %% -----------------------------

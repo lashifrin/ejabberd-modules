@@ -30,6 +30,7 @@ directly the database are:
     ejabberd 1.1.2 or newer
     XMLRPC-Erlang 1.13 with IP, Ruby and Xmerl 1.x patches
     Optional: mod_muc_admin for MUC-related calls
+    Optional: ejabberd SVN trunk r1329 or newer is required for muc_room_set_affiliation
 
 
  - Install XMLRPC-Erlang
@@ -95,6 +96,7 @@ tellme          String                     struct[{title, String}, {value. Strin
  -- user administration
 create_account  struct[{user, String}, {host, String}, {password, String}]  Integer
 delete_account  struct[{user, String}, {host, String}, {password, String}]  Integer
+check_password  struct[{user, String}, {host, String}, {password, String}]  Integer
 change_password struct[{user, String}, {host, String}, {newpass, String}]   Integer
 num_resources   struct[{user, String}, {host, String}]                      Integer
 resource_num    struct[{user, String}, {host, String}, {num, Integer}]       String
@@ -108,6 +110,10 @@ delete_rosteritem  struct[{localuser, String}, {localserver, String},
  -- MUC administration
 create_muc_room struct[{name, String}, {service, String}, {server, String}] Integer
 delete_muc_room struct[{name, String}, {service, String}, {server, String}] Integer
+muc_room_change_option struct[{name, String}, {service, String},
+                              {option, String}, {value, String}]            Integer
+muc_room_set_affiliation struct[{name, String}, {service, String},
+                                {jid, String}, {affiliation, Affiliation}]  Integer
 
 
 	TEST
@@ -137,6 +143,18 @@ $ erl -pa '/home/jabber/xmlrpc-1.13/ebin'
 5> xmlrpc:call({127, 0, 0, 1}, 4560, "/", {call, create_account, 
 [{struct, [{user, "ggeo"}, {host, "example.com"}, {password, "gogo11"}]}]}).
 {ok,{response,[409]}}
+
+6> xmlrpc:call({127, 0, 0, 1}, 4560, "/", {call, muc_room_change_option,
+[{struct, [{name, "test"}, {service, "conference.localhost"},
+ {option, "title"}, {value, "Test Room"}]}]}).
+
+7> xmlrpc:call({127, 0, 0, 1}, 4560, "/", {call, muc_room_set_affiliation, 
+[{struct, [{name, "test"}, {service, "conference.example.com"}, 
+{jid, "ex@example.com"}, {affiliation, "member"}]}]}).
+
+8> xmlrpc:call({127, 0, 0, 1}, 4560, "/", {call, muc_room_set_affiliation, 
+[{struct, [{name, "test"}, {service, "conference.example.com"}, 
+{jid, "ex@example.com"}, {affiliation, "none"}]}]}).
 
 
  - Some possible XML-RPC error messages:

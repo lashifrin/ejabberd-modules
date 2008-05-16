@@ -1,3 +1,11 @@
+2008-05-16  Badlop  <badlop@process-one.net>
+
+	* src/mod_xmlrpc.erl: New calls muc_room_change_option and
+	muc_room_set_affiliation. Improved calls add_rosteritem and
+	delete_rosteritem: they push the changed roster item to connected
+	resources (thanks to Darren Ferguson). New call check_password.
+	* README.txt: Likewise
+
 2008-05-06  Badlop  <badlop@process-one.net>
 
 	* src/mod_xmlrpc.erl: Added new calls delete_account,
