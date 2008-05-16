@@ -1,3 +1,8 @@
+2008-05-16  Badlop  <badlop@process-one.net>
+
+	* src/mod_muc_admin.erl: New exported function
+	set_affiliation/4 (thanks to Darren Ferguson)
+
 2008-05-12  Badlop  <badlop@process-one.net>
 
 	* src/mod_muc_admin.erl: Added new function: change_room_option/4

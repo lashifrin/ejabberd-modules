@@ -15,6 +15,7 @@
 	 start/2, stop/1, % gen_mod API
 	 create_room/3, destroy_room/3, % MUC Admin API
 	 change_room_option/4,
+	 set_affiliation/4,
 	 web_menu_main/2, web_page_main/2, % Web Admin API
 	 web_menu_host/3, web_page_host/3,
 	 ctl_process/2, ctl_process/3 % ejabberdctl API
@@ -659,6 +660,66 @@ muc_unregister_nick(Nick) ->
 	{aborted, Error} ->
 	    {error, Error}
     end.
+
+%%----------------------------
+%% Change Room Affiliation
+%%----------------------------
+
+%% @spec(Name, Service, JID, Affiliation) -> ok | {error, Error}
+%%       Name = string()
+%%       Service = string()
+%%       JID = string()
+%%	 Affiliation = outcast, none, member, admin, owner
+%% @doc Set the affiliation of JID in the room Name@Service.
+%% If the affiliation is 'none', the action is to remove,
+%% In any other case the action will be to create the affiliation.
+set_affiliation(Name, Service, JID, Affiliation) ->
+    case mnesia:dirty_read(muc_online_room, {Name, Service}) of
+	[R] ->
+	    %% Get the PID for the online room so we can get the state of the room
+	    Pid = R#muc_online_room.pid,
+	    {ok, StateData} = gen_fsm:sync_send_all_state_event(Pid, get_state),
+	    SJID = jlib:string_to_jid(JID),
+	    LJID = jlib:jid_remove_resource(jlib:jid_tolower(SJID)),
+	    Affiliations = change_affiliation(Affiliation, LJID, StateData#state.affiliations),
+	    Res = StateData#state{affiliations = Affiliations},
+	    {ok, _State} = gen_fsm:sync_send_all_state_event(Pid, {change_state, Res}),
+	    mod_muc:store_room(Res#state.host, Res#state.room, make_opts(Res)),
+	    ok;
+	[] ->
+	    {error, room_not_exists}
+    end.
+
+change_affiliation(none, LJID, Affiliations) ->
+    ?DICT:erase(LJID, Affiliations);
+change_affiliation(Affiliation, LJID, Affiliations) ->
+    ?DICT:store(LJID, Affiliation, Affiliations).
+
+-define(MAKE_CONFIG_OPT(Opt), {Opt, Config#config.Opt}).
+
+make_opts(StateData) ->
+    Config = StateData#state.config,
+    [
+     ?MAKE_CONFIG_OPT(title),
+     ?MAKE_CONFIG_OPT(allow_change_subj),
+     ?MAKE_CONFIG_OPT(allow_query_users),
+     ?MAKE_CONFIG_OPT(allow_private_messages),
+     ?MAKE_CONFIG_OPT(public),
+     ?MAKE_CONFIG_OPT(public_list),
+     ?MAKE_CONFIG_OPT(persistent),
+     ?MAKE_CONFIG_OPT(moderated),
+     ?MAKE_CONFIG_OPT(members_by_default),
+     ?MAKE_CONFIG_OPT(members_only),
+     ?MAKE_CONFIG_OPT(allow_user_invites),
+     ?MAKE_CONFIG_OPT(password_protected),
+     ?MAKE_CONFIG_OPT(password),
+     ?MAKE_CONFIG_OPT(anonymous),
+     ?MAKE_CONFIG_OPT(logging),
+     ?MAKE_CONFIG_OPT(max_users),
+     {affiliations, ?DICT:to_list(StateData#state.affiliations)},
+     {subject, StateData#state.subject},
+     {subject_author, StateData#state.subject_author}
+    ].
 
 
 %%----------------------------
