@@ -23,6 +23,11 @@
 
 -define(PROCNAME, mod_muc_log_http).
 
+-ifdef(SSL39).
+-define(STRING2LOWER, string).
+-else.
+-define(STRING2LOWER, httpd_util).
+-endif.
 
 % TODO:
 %  - If chatroom is password protected, ask password
@@ -224,7 +229,7 @@ show_dir_listing(DirName, LocalPath) ->
 %%%----------------------------------------------------------------------
 
 content_type(Filename) ->
-	case string:to_lower(filename:extension(Filename)) of
+	case ?STRING2LOWER:to_lower(filename:extension(Filename)) of
 		".jpg"  -> "image/jpeg";
 		".jpeg" -> "image/jpeg";
 		".gif"  -> "image/gif";

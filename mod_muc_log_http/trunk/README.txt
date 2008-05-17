@@ -19,6 +19,10 @@ of mod_http_fileserver, customized for log serving.
 	CONFIGURATION
 	=============
 
+If you want to compile this module with Erlang/OTP R11B-3 or older,
+edit Emakefile and remove this:
+   {d, 'SSL39'},
+
 Sample ejabberd.cfg options. The directory to serve is already defined
 on mod_muc_log.
 

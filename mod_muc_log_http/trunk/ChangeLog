@@ -1,3 +1,10 @@
+2008-05-17  Badlop  <badlop@process-one.net>
+
+	* src/mod_muc_log_http.erl: Use httpd_util:to_lower when not
+	compiling with Erlang R12 (EJAB-628)
+	* Emakefile: Assumes that Erlang/OTP R11B-4 or newer is used
+	* README.txt: Explain how to compile in older versions
+
 2008-04-12  Badlop  <badlop@process-one.net>
 
 	* src/mod_muc_log_http.erl: Include Last-Modified HTTP
