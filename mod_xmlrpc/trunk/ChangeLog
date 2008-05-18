@@ -1,3 +1,9 @@
+2008-05-18  Badlop  <badlop@process-one.net>
+
+	* src/mod_xmlrpc.erl: Convert from DOS to Unix line format
+	* README.txt: Likewise
+	* ChangeLog: Likewise
+
 2008-05-16  Badlop  <badlop@process-one.net>
 
 	* src/mod_xmlrpc.erl: New calls muc_room_change_option and
