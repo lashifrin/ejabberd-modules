@@ -1,0 +1,5 @@
+2008-05-18  Badlop  <badlop@process-one.net>
+
+	* mod_register_web: New module that provides web pages to register
+	account and other related tasks
+
