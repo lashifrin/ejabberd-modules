@@ -175,30 +175,30 @@ $ erl -pa '/home/jabber/xmlrpc-1.13/ebin'
 {ok,{response,{fault,-1,"Unknown call: {call,bububu,[800]}"}}}
 
 
-	TEST 2: PYTHON
-	--------------
+	EXAMPLE IN PYTHON
+	-----------------
 
-This is an example XML-RPC client in Python that you can use to get started (thanks to Diddek):
+This is an example XML-RPC client in Python, thanks to Diddek:
 -------
-  import xmlrpclib
+import xmlrpclib
 
-  server_url = 'http://127.0.0.1:4560';
-  server = xmlrpclib.Server(server_url);
+server_url = 'http://127.0.0.1:4560';
+server = xmlrpclib.Server(server_url);
 
-  params = {}
-  params["user"] = "ggeo"
-  params["host"] = "localhost"
-  params["password"] = "gogo11"
+params = {}
+params["user"] = "ggeo"
+params["host"] = "localhost"
+params["password"] = "gogo11"
 
-  result = server.create_account(params)
-  print result
+result = server.create_account(params)
+print result
 -------
 
 
-	TEST 3: RUBY
-	--------------
+	EXAMPLE IN RUBY
+	---------------
 
-This is an example XML-RPC client in Ruby that you can use to get started (thanks to Diddek):
+This is an example XML-RPC client in Ruby, thanks to Diddek:
 -------
 require 'xmlrpc/client'
 
@@ -209,3 +209,31 @@ result = client.call("echothis", "800")
 puts result 
 -------
 
+
+
+	EXAMPLE IN PHP
+	--------------
+
+This is an example XML-RPC client in PHP, thanks to Zbyszek Żółkiewski:
+-------
+<?
+$parm=array("user"=>"test_user","host"=>"example.com","password"=>"some_password");
+$request = xmlrpc_encode_request("check_password",$parm);
+
+$context = stream_context_create(array('http' => array(
+    'method' => "POST",
+    'header' => "Content-Type: text/xml; charset=utf-8\r\n" .
+                "User-Agent: XMLRPC::Client mod_xmlrpc",
+    'content' => $request
+)));
+
+$file = file_get_contents("http://127.0.0.1:4666", false, $context);
+$response = xmlrpc_decode($file);
+if (xmlrpc_is_fault($response)) {
+    trigger_error("xmlrpc: $response[faultString] ($response[faultCode])");
+} else {
+    print_r($response);
+}
+
+?>
+-------

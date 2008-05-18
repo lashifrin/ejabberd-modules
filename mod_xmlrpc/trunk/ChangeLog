@@ -1,5 +1,8 @@
 2008-05-18  Badlop  <badlop@process-one.net>
-
+	
+	* README.txt: Added example client in PHP (thanks to Zbyszek
+	Żółkiewski)
+	
 	* src/mod_xmlrpc.erl: Convert from DOS to Unix line format
 	* README.txt: Likewise
 	* ChangeLog: Likewise
