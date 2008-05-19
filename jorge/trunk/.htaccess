@@ -1,0 +1,4 @@
+RewriteEngine On
+RewriteCond %{SERVER_PORT} 80 
+RewriteCond %{REQUEST_URI} /a/
+RewriteRule ^(.*)$ https://www.jabber.autocom.pl/a/$1 [R,L]
