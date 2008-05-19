@@ -17,13 +17,14 @@
 
 
 %% API
--export([start_link/6,apply_in_tx/3]).
+-export([start_link/6,start_link/7,apply_in_tx/3]).
 
 -record(pool_state, {
             pool,
             size,
             pending,
-            db_info}).
+            db_info,
+            tx_timeout}).
 
 
 -define(TX_TIMEOUT,5 * 1000). %5 seg
@@ -32,11 +33,13 @@
 %% @see pgsql2:apply_in_tx/3
 apply_in_tx(Pool,Fun,Args) ->
   case gen_server:call(Pool,get_connection) of
-      {ok,Connection} -> apply_in_tx2(Pool,Connection,Fun,Args);
-      {error,X} -> {error,X}
+      {ok,{Connection,Timeout}} -> 
+        apply_in_tx2(Pool,Connection,Timeout,Fun,Args);
+      {error,X} -> 
+        {error,X}
   end.
   
-apply_in_tx2(Pool,Connection,Fun,Args) ->
+apply_in_tx2(Pool,Connection,Timeout,Fun,Args) ->
   Client = self(),
   
   TransactionPid = spawn(fun() ->
@@ -53,30 +56,38 @@ apply_in_tx2(Pool,Connection,Fun,Args) ->
       {tx_error,TransactionPid,Error} -> gen_server:cast(Pool,{tx_error,Connection,Error}),
                                          {error,Error}
   after
-      ?TX_TIMEOUT -> exit(TransactionPid,transaction_timeout),
+      Timeout -> exit(TransactionPid,transaction_timeout),
                      gen_server:cast(Pool,{tx_error,Connection,transaction_timeout}),
                      {error,timeout}
   end.
   
   
+start_link(PoolName,User,Password,Db,ConnOpts,PoolSize) ->
+    start_link(PoolName,?TX_TIMEOUT,User,Password,Db,ConnOpts,PoolSize).
+    
 %% @doc Start a connection pool      
 %%      User,Password,Db and ConnOpts haven the same meaning than in pgsql2:connect/4
 %%      PoolSize is the number of connection that this pool will utilize.
-start_link(PoolName,User,Password,Db,ConnOpts,PoolSize) ->
-  gen_server:start_link({local,PoolName},?MODULE,{User,Password,Db,ConnOpts,PoolSize},[]).
+start_link(PoolName,TxTimeout,User,Password,Db,ConnOpts,PoolSize) ->
+  gen_server:start_link({local,PoolName},?MODULE,{TxTimeout,User,Password,Db,ConnOpts,PoolSize},[]).
   
   
   
   
-init({User,Password,Db,ConnOpts,PoolSize}) ->
+init({TxTimeout,User,Password,Db,ConnOpts,PoolSize}) ->
     PoolList = lists:map(fun(_) -> make_connection(User,Password,Db,ConnOpts) end, lists:duplicate(PoolSize,1) ),
     Pool = queue:from_list(PoolList),
-    {ok,#pool_state{pool=Pool,size=PoolSize,db_info={User,Password,Db,ConnOpts},pending=queue:new()}}.
+    {ok,#pool_state{pool=Pool,
+                    size=PoolSize,
+                    db_info={User,Password,Db,ConnOpts},
+                    pending=queue:new(),
+                    tx_timeout=TxTimeout}}.
     
     
-handle_call(get_connection,From,State=#pool_state{pool=Pool,pending=Pending}) ->
+handle_call(get_connection,From,
+    State=#pool_state{pool=Pool,pending=Pending,tx_timeout=Timeout}) ->
   case queue:out(Pool) of
-     {{value, Item}, Q2} -> {reply,{ok,Item},State#pool_state{pool=Q2}};
+     {{value, Item}, Q2} -> {reply,{ok,{Item,Timeout}},State#pool_state{pool=Q2}};
      {empty, Pool} -> {noreply,State#pool_state{pending=queue:in(From,Pending)}}
   end.
   
@@ -102,9 +113,10 @@ code_change(_Old,State,_Extra) ->
   
   
   
-return_connection(Connection,State=#pool_state{pool=Pool,pending=Pending}) ->
+return_connection(Connection,
+    State=#pool_state{pool=Pool,pending=Pending,tx_timeout=Timeout}) ->
   case queue:out(Pending) of
-     {{value, Item}, Q2} -> gen_server:reply(Item,{ok,Connection}),
+     {{value, Item}, Q2} -> gen_server:reply(Item,{ok,{Connection,Timeout}}),
                             {noreply,State#pool_state{pending=Q2}};
      {empty, Pending} -> {noreply,State#pool_state{pool=queue:in(Connection,Pool)}}
   end.
