@@ -96,6 +96,7 @@ tellme          String                     struct[{title, String}, {value. Strin
  -- user administration
 create_account  struct[{user, String}, {host, String}, {password, String}]  Integer
 delete_account  struct[{user, String}, {host, String}, {password, String}]  Integer
+check_account   struct[{user, String}, {host, String}]                      Integer
 check_password  struct[{user, String}, {host, String}, {password, String}]  Integer
 change_password struct[{user, String}, {host, String}, {newpass, String}]   Integer
 num_resources   struct[{user, String}, {host, String}]                      Integer

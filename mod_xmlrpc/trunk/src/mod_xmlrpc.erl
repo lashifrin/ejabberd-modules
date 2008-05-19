@@ -130,6 +130,16 @@ handler(_State, {call, delete_account, [{struct, AttrL}]}) ->
     end,
     {false, {response, [0]}};
 
+%% check_account  struct[{user, String}, {host, String}]                           Integer
+handler(_State, {call, check_account, [{struct, AttrL}]}) ->
+    [U, H] = get_attrs([user, host], AttrL),
+    case ejabberd_auth:is_user_exists(U, H) of
+	true ->
+	    {false, {response, [0]}};
+	false ->
+	    {false, {response, [1]}}
+    end;
+
 %% check_password struct[{user, String}, {host, String}, {password, String}]       Integer
 handler(_State, {call, check_password, [{struct, AttrL}]}) ->
     [U, H, P] = get_attrs([user, host, password], AttrL),

@@ -1,3 +1,9 @@
+2008-05-19  Badlop  <badlop@process-one.net>
+
+	* src/mod_xmlrpc.erl: New function check_account (thanks to
+	Zbyszek Żółkiewski)
+	* README.txt: Likewise
+
 2008-05-18  Badlop  <badlop@process-one.net>
 	
 	* README.txt: Added example client in PHP (thanks to Zbyszek
