@@ -746,5 +746,18 @@ $cont_chat[eng] = "chat continues on next day >>>";
 $cont_chat_p[pol] = pl_znaczki("<<< rozmowa jest kontynuacj± z dnia poprzedniego");
 $cont_chat_p[eng] = "<<< this chat is continuation from last day";
 
+$close_account[pol] = pl_znaczki("Usuñ konto z serwera:");
+$close_account[eng] = "Close your account:";
+
+$close_warn[pol] = pl_znaczki("Czy napewno usun±æ konto i wszystkie wiadomo¶ci?");
+$close_warn[eng] = "Do you really want to remove all messages and user account?";
+
+$close_commit[pol] = pl_znaczki("- Usuñ teraz -");
+$close_commit[eng] = "- Close now -";
+
+$close_failed[pol] = pl_znaczki("Usuniêcie konta nie powiod³o siê. Proszê spróbowaæ pó¼niej");
+$close_failed[eng] = "Close account failed. Please try again later";
+
+
 
 ?>

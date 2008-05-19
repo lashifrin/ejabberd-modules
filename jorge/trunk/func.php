@@ -50,50 +50,6 @@ function db_e_connect($db_ejabberd)
 	}
 
 
-
-function auth($bazaj,$uid,$puid) {
-
-
-$uid_s=pg_escape_string($uid);
-$puid_s=pg_escape_string($puid);
-
-
-$res = pg_query($bazaj, "select username, password from users where username='$uid_s' and password='$puid_s'");
-if (!$res) {
-	print "<h2>STOP: Internal system error. Please refresh this page.</h2>";
-	exit;
-}
-
-if ((pg_num_rows($res))!=1) { return "f"; }
-
-$row=pg_fetch_row($res);
-$j_uid=$row[0];
-$j_puid=$row[1];
-
-
-
-if ($j_uid!=$uid) 
-	{ 
-		pg_close($bazaj);
-		return "f";
-	} 
-	
-	else 
-	{ 
-		if ($puid_s===$j_puid) {
-			return "t";
-			}
-			else
-			{
-			return "f";
-			}
-	}
-
-
-return "f";
-
-}
-
 function query_nick_name($bazaj,$token, $talker, $server="") {
 
 	$res = pg_query($bazaj, "select nick from rosterusers where username='$token' and jid = '$talker@$server'");
@@ -231,7 +187,7 @@ function decrypt_aes($key, $c_t) {
 
 
 
-function check_registered_user ($bazaj,$sess) {
+function check_registered_user ($sess,$xmpp_host_dotted,$rpc_host,$rpc_port) {
 
 	if (!$sess->is_registered('login')) 
 		{
@@ -239,13 +195,13 @@ function check_registered_user ($bazaj,$sess) {
   		}
 	else {
 
-		if (auth($bazaj,$sess->get('uid_l'),$sess->get('uid_p')) != "t") { 
+		if (rpc_auth($sess->get('uid_l'),$sess->get('uid_p'),$xmpp_host_dotted,$rpc_host,$rpc_port) === true) {
 
-			return "f";
+			return "t";
 
 		}
 		else {
-			return "t";
+			return "f";
 			}
 
 
@@ -1090,5 +1046,112 @@ function check_thread($user_id,$peer_name_id,$peer_server_id,$at,$xmpp_host,$dir
 return FALSE;
 
 }
+
+function rpc_close_account($user_id,$xmpp_host_dotted,$xmpp_host,$sess,$rpc_host,$rpc_port) {
+
+	$un=$sess->get('uid_l');
+	$up=$sess->get('uid_p');
+	$parms=array("user"=>"$un","host"=>"$xmpp_host_dotted","password"=>"$up");
+	$call=send_rpc_request("delete_account",$parms,$rpc_host,$rpc_port);
+	# we need to check weather user exist or not, since ejabberd:remove_user() always return true...
+	$parms=array("user"=>"$un","host"=>"$xmpp_host_dotted");
+	$call=send_rpc_request("check_user",$parms,$rpc_host,$rpc_port);
+	if ($call===1) {
+	
+		// this is to be removed some day as mod_logdb should use hook for ejabberd_auth:remove(), but for now it does not.
+		$result=remove_messages($user_id,$xmpp_host);
+		if ($result=="t") {
+				
+				if (jorge_cleanup($user_id,$xmpp_host)===true) {
+						return true; 
+					}
+					else{
+						return false;
+					}
+
+				}
+			elseif($result=="f") {
+				return false;
+				}
+			else{
+				// remove_messages() can return other status beside error
+				if (jorge_cleanup($user_id,$xmpp_host)===true) {
+						return true; 
+					}
+					else{
+						return false;
+					}
+
+				}
+			
+	}
+	elseif($call===0) {
+
+		return false;
+
+	}
+
+return false;
+
+}
+
+function rpc_auth($uid_l,$uid_p,$xmpp_host_dotted,$rpc_host,$rpc_port) {
+
+	$parms=array("user"=>"$uid_l","host"=>"$xmpp_host_dotted","password"=>"$uid_p");
+	$call=send_rpc_request("check_password",$parms,$rpc_host,$rpc_port);
+	if ($call===0) {
+			return true;
+		}
+		else{
+			return false;
+		}
+
+return false;
+
+}
+
+function send_rpc_request($method,$parms,$rpc_host,$rpc_port) {
+
+	$request = xmlrpc_encode_request($method,$parms);
+	$context = stream_context_create(array('http' => array(
+    		'method' => "POST",
+    		'header' => "Content-Type: text/xml; charset=utf-8\r\n" .
+                "User-Agent: XMLRPC::Client JorgeRPCclient",
+    		'content' => $request
+	)));
+
+	$file = file_get_contents("http://$rpc_host".":"."$rpc_port", false, $context);
+	$response = xmlrpc_decode($file);
+	if (xmlrpc_is_fault($response)) {
+
+    		#trigger_error("xmlrpc: $response[faultString] ($response[faultCode])");
+		return false;
+
+	} else {
+
+		return $response;
+	}
+
+return false;
+
+}
+
+function jorge_cleanup($user_id,$xmpp_host) {
+
+	if (!ctype_digit($user_id)) { return false; }
+	$query="delete from jorge_pref where owner_id='$user_id'";
+	mysql_query($query);
+	if (mysql_errno()>0) { return false; }
+	$query="delete from `logdb_settings_".$xmpp_host."` where owner_id='$user_id'";
+	mysql_query($query);
+	if (mysql_errno()>0) { return false; }
+	return true;
+
+}
+
+
+
+
+
 
 ?>

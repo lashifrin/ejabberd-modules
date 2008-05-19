@@ -24,6 +24,7 @@ require ("headers.php");
 
 $tgle=$_POST['toggle'];
 $del_a=$_POST['del_all'];
+$close=$_POST['close_acc'];
 
 include("upper.php");
 
@@ -70,6 +71,25 @@ if ($del_a) {
 
 }
 
+// close account
+if($close)	{
+
+	$close_now=rpc_close_account($user_id,$xmpp_host_dotted,$xmpp_host,$sess,$rpc_host,$rpc_port);
+	if ($close_now===false) { 
+
+		print '<center><p class="message">'.$close_failed[$lang].'</p></center>'; }
+
+	elseif($close_now===true) {
+
+		$sess->finish();
+		header("Location: index.php?act=logout");
+		exit;
+	}
+
+}
+
+
+// this is horrible! must be fixed:
 print '<h2>'.$settings_desc[$lang].'</h2>';
 print '<center>'."\n";
 print '<table>';
@@ -78,9 +98,11 @@ print '<tr style="font-size: x-small;"><td>'.$setting_d1[$lang].'</td><td><input
 if ($sess->get('log_status') == "0") { print $arch_on[$lang]; } else { print $arch_off[$lang]; }
 print '"></td></tr></form>'."\n";
 print '<form action="settings.php" method="post">';
-print '<tr style="font-size: x-small;"><td>'.$setting_d2[$lang].'</td><td><input class="btn_set" type="submit" name="del_all" value="'.$settings_del[$lang].'" onClick="if (!confirm(\''.$del_all_conf[$lang].'\')) return false;"></form></td></tr>'."\n";
+print '<tr style="font-size: x-small;"><td>'.$setting_d2[$lang].'</td>';
+print '<td><input class="btn_set" type="submit" name="del_all" value="'.$settings_del[$lang].'" onClick="if (!confirm(\''.$del_all_conf[$lang].'\')) return false;"></form></td></tr>'."\n";
 print '<form action="settings.php" method="get" name="save_pref">';
-print '<tr style="font-size: x-small;"><td>'.$select_view[$lang].'</td><td><select style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="v" size="0" onchange="javascript:document.save_pref.submit();">'."\n";
+print '<tr style="font-size: x-small;"><td>'.$select_view[$lang].'</td>';
+print '<td><select style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="v" size="0" onchange="javascript:document.save_pref.submit();">'."\n";
 if ($sess->get('view_type') == "1") { $std="selected"; } else { $cal="selected"; }
 print '<option '.$std.' value="1">'.$view_standard[$lang].'</option>'."\n";
 print '<option '.$cal.' value="2">'.$view_calendar[$lang].'</optin>'."\n";
@@ -89,15 +111,21 @@ print '<input name="set_pref" type="hidden" value="1">';
 print '</td></tr>';
 print '</form>';
 print '<form action="settings.php" method="get" name="save_pref_lang">';
-print '<tr style="font-size: x-small;"><td>'.$sel_language[$lang].'</td><td><select style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="v" size="0" onchange="javascript:document.save_pref_lang.submit();">'."\n";
+print '<tr style="font-size: x-small;"><td>'.$sel_language[$lang].'</td>';
+print '<td><select style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="v" size="0" onchange="javascript:document.save_pref_lang.submit();">'."\n";
 if ($sess->get('language') == "pol") { $pol_sel="selected"; } else { $eng_sel="selected"; }
 print '<option '.$pol_sel.' value="1">'.$lang_sw[eng].'</option>'."\n";
 print '<option '.$eng_sel.' value="2">'.$lang_sw[pol].'</optin>'."\n";
 print '</select>';
 print '<input name="set_pref" type="hidden" value="2">';
 print '<input name="sw_lang" type="hidden" value="t">';
-print '</td></tr>';
-print '</form>';
+print '</td></tr></form>';
+print '<form action="settings.php" method="post" name="close_account">';
+print '<tr><td colspan="2"><hr size="1"/></td></tr>';
+print '<tr>';
+print '<td style="font-size: x-small;">'.$close_account[$lang].'</td>';
+print '<td><input name="close_acc" class="btn_set" type="submit" value="'.$close_commit[$lang].'" onClick="if (!confirm(\''.$close_warn[$lang].'\')) return false;"></td>';
+print '</tr></form>';
 print '</table>';
 print '<hr size="1" noshade="" color="#c9d7f1"/>';
 // personal stats

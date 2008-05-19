@@ -29,7 +29,7 @@ ob_start();
 // init session
 $sess = new session;
 $bazaj=db_e_connect($db_ejabberd);
-if (check_registered_user($bazaj,$sess) != "t") { header("Location: index.php?act=logout"); exit; }
+if (check_registered_user($sess,$xmpp_host_dotted,$rpc_host,$rpc_port) != "t") { header("Location: index.php?act=logout"); exit; }
 
 db_connect($mod_logdb);
 

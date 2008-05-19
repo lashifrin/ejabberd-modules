@@ -69,7 +69,7 @@ if ($_GET['act']=='logout') {
 	header("Location: index.php");
 	} else {
 	if ($inpLogin!="" || $inpPass!="") {
-	if(auth($bazaj,$inpLogin,$inpPass)=="t") {
+	if(rpc_auth($inpLogin,$inpPass,$xmpp_host_dotted,$rpc_host,$rpc_port) === true) {
 
 	          $sess->set('login',$inpLogin);
 		  $sess->set('uid_l',$inpLogin);

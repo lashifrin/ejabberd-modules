@@ -41,6 +41,9 @@ $admin_name = "";
 // jabber server host name. Replace dots with underline (f.e: jabber_example_com)
 $xmpp_host = "";
 
+// do not touch this
+$xmpp_host_dotted=str_replace("_",".",$xmpp_host);
+
 // secret key for scrambling URLs. We use AES encryption for urls so put here some random data
 $url_key = "";
 
@@ -69,6 +72,9 @@ $brand_logo = "logo_jabster.png";
 // ignore this ID in queries - this is ID of user without name. see your users table for ID of this user and define it here (it is must)
 $ignore_id="";
 
+// RPC settings for mod_xmlrpc
+$rpc_host="";
+$rpc_port="";
 
 
 ?>
