@@ -1,0 +1,7 @@
+Since revision 583 (19 May 2008) Jorge is splitted into 2 versions:
+ - considered "stable" but still in "beta stage" available in branch/Jorge_Beta_pre_RPC
+ - development available in trunk/
+
+Jorge_Beta_pre_RPC will not be developed anymore, beside security updates and bug fixes if found.
+
+The trunk version since rev 583 is using XML-RPC backend for ejabberd making it "backend" independent.
