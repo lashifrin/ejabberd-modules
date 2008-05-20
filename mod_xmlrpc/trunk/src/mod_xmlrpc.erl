@@ -212,10 +212,12 @@ handler(_State, {call, add_rosteritem, [{struct, AttrL}]}) ->
 		0;
 	    {error, Reason} ->
 		io:format("Can't add roster item to user ~p@~p on node ~p: ~p~n",
-			  [LocalUser, LocalServer, Node, Reason]);
+			  [LocalUser, LocalServer, Node, Reason]),
+		1;
 	    {badrpc, Reason} ->
 		io:format("Can't add roster item to user ~p@~p on node ~p: ~p~n",
-			  [LocalUser, LocalServer, Node, Reason])
+			  [LocalUser, LocalServer, Node, Reason]),
+		1
 	end,
     {false, {response, [R]}};
 
@@ -231,10 +233,33 @@ handler(_State, {call, delete_rosteritem, [{struct, AttrL}]}) ->
                 0;
             {error, Reason} ->
                 io:format("Can't remove roster item from user ~p@~p on node ~p: ~p~n",
-			  [LocalUser, LocalServer, Node, Reason]);
+			  [LocalUser, LocalServer, Node, Reason]),
+		1;
 	    {badrpc, Reason} ->
 		io:format("Can't remove roster item from user ~p@~p on node ~p: ~p~n",
-			  [LocalUser, LocalServer, Node, Reason])
+			  [LocalUser, LocalServer, Node, Reason]),
+		1
+	end,
+    {false, {response, [R]}};
+
+%% get_roster  struct[{user, String}, {server, String}]
+%%                       array[struct[{jid, String}, {nick, String}, {Group, String}]]
+%% Currently works only with mod_roster_odbc
+handler(_State, {call, get_roster, [{struct, AttrL}]}) ->
+    [User, Server] = get_attrs([user, server], AttrL),
+    Node = node(),
+    R = case get_roster(User, Server) of
+	    {ok, Roster} ->
+                RosterXMLRPC = make_roster_xmlrpc(Roster),
+		{array, RosterXMLRPC};
+	    {error, Reason} ->
+		io:format("Can't get roster of user ~p@~p on node ~p: ~p~n",
+			  [User, Server, Node, Reason]),
+		1;
+	    {badrpc, Reason} ->
+		io:format("Can't get roster of user ~p@~p on node ~p: ~p~n",
+			  [User, Server, Node, Reason]),
+		1
 	end,
     {false, {response, [R]}};
 
@@ -357,6 +382,31 @@ build_iq_roster_push(Item) ->
       }
      ]
     }.
+
+
+%% -----------------------------
+%% Get Roster
+%% -----------------------------
+
+%% TODO: support also mod_roster, and detect at runtime which storage to use
+get_roster(User, Server) ->
+    Roster = mod_roster_odbc:get_user_roster([], {User, Server}),
+    {ok, Roster}.
+
+%% Note: if a contact is in several groups, the contact is returned 
+%% several times, each one in a different group.
+make_roster_xmlrpc(Roster) ->
+    lists:foldl(
+      fun(Item, Res) ->
+	      JIDS = jlib:jid_to_string(Item#roster.jid),
+	      Nick = Item#roster.name,
+	      Groups = Item#roster.groups,
+	      ItemsX = [{struct, [{jid, JIDS}, {nick, Nick}, {group, Group}]}
+			|| Group <- Groups],
+	      ItemsX ++ Res
+      end,
+      [],
+      Roster).
 
 
 %% -----------------------------

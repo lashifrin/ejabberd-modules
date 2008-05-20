@@ -107,6 +107,9 @@ add_rosteritem  struct[{localuser, String}, {localserver, String},
                        {nick, String}, {group, String}, {subs, String}]      String
 delete_rosteritem  struct[{localuser, String}, {localserver, String},
                           {user, String}, {server, String}]                  String
+get_roster  struct[{user, String}, {server, String}]
+                      array[struct[{jid, String}, {nick, String}, {Group, String}]]
+    Currently works only with mod_roster_odbc
 
  -- MUC administration
 create_muc_room struct[{name, String}, {service, String}, {server, String}] Integer
