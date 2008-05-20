@@ -241,28 +241,28 @@ while ($entry = mysql_fetch_array($result)) {
 				f.e. by adding "back" button be my guest...
 				*/
 				$r=$r+1;
-				#print "all: $r, num_r: $num_rows, internal: $internal <br>"; // debug 
+				debug(DEBUG,"all: $r, num_r: $num_rows, internal: $internal");
 				if ($r==$num_search_results) { 
 
 					if ($num_rows>$internal) { 
-						#print '-->more results in this day...'.$entry["at"].' offset:'.$internal.'<br>'; // debug
+						debug(DEBUG,"-->more results in this day...$entry[at] offset: $internal");
 						$tag_count="t";
 						}
 					$next_r=$external+$offset_arch;
-					#print "before cutdown: $next_r<br>"; // debug
+					debug(DEBUG,"before cutdown: $next_r");
 					if ($tag_count=="t") { $next_r=$next_r-1; } // back to one day and continue with offset
-					#print "after cutdown: $next_r<br>"; // debug
-					#print "Internal: $internal, offset: $offset_day, is_tag: $s_variables[tag_count]<br>"; // debug
+					debug(DEBUG,"after cutdown: $next_r");
+					debug(DEBUG,"Internal: $internal, offset: $offset_day, is_tag: $s_variables[tag_count]");
 					if ($internal==$offset_day AND $s_variables[tag_count] == "t") 
 						{ 
 							$internal=$internal+$offset_day; 
-							#print 'Increasing offset...<br>';  // debug
+							debug(DEBUG,"Increasing offset...");
 							
 							} // if the same day - we increase offset
 
 					if ($qquery[from] == "t") { $plain_phase=str_replace("@","//",$plain_phase);  } // hack
 					$lnk_n="$entry[at]@$next_r@$internal@$plain_phase@$zz@$tag_count@";
-					#print "Constructed link: $lnk_n <br>"; // debug
+					debug(DEBUG,"Constructed link $lnk_n");
 					print '<tr class="spacer"><td colspan="4"></td></tr>';
 					print '<tr class="maint" style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold; color: #fff;">';
 					print '<td colspan="2" style="text-align: left;">';

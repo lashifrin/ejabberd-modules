@@ -1167,7 +1167,14 @@ return false;
 	
 }
 
+function debug($debug=false,$string) {
 
+	if ($debug===true) {
+		
+		print "<small>".htmlspecialchars($string)."</small><br>";
+	}
 
+return;
+}
 
 ?>

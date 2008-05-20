@@ -48,6 +48,9 @@ $sess = new session;
 // RPC server redundancy
 $rpc_host = check_rpc_server($rpc_arr,$rpc_port);
 
+//debug
+debug(DEBUG,"Active RPC host: $rpc_host");
+
 // in case no RPC servers are available stop jorge
 if ($rpc_host===false) {
 
@@ -61,6 +64,9 @@ db_connect($mod_logdb);
 
 // user name - we hold it in session, lets fetch it...
 $token=$sess->get('uid_l');
+
+//debug
+debug(DEBUG,"User session: $token");
 
 // authentication checks. Ensure if session data is not altered... (only when we are inside Jorge)
 if (!preg_match("/index.php/i",$location)) {
