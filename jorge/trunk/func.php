@@ -43,38 +43,13 @@ function db_connect($mod_logdb)
 }
 
 
-function db_e_connect($db_ejabberd)
-	{
-		$bazaj = pg_pconnect("host=$db_ejabberd[host] port=5432 dbname=$db_ejabberd[name] user=$db_ejabberd[user]");
-		return $bazaj;
-	}
+function query_nick_name($talker, $server="") {
 
-
-function query_nick_name($bazaj,$token, $talker, $server="") {
-
-	$res = pg_query($bazaj, "select nick from rosterusers where username='$token' and jid = '$talker@$server'");
-		if (!$res) {
-		print "<h2>STOP: Internal system error(1.1)</h2>";
-		exit;
-	}
-	$row=pg_fetch_row($res);
+	$get_nick=mysql_query("select nick from temp_user_roster where jid = '$talker@$server'");
+	$row = mysql_fetch_row($get_nick);
 	$nickname = $row[0];
 	if ($nickname=="") { $nickname=$talker; }
 	return $nickname;
-
-}
-
-function spool_count($bazaj,$token) {
-
-	$res=pg_query($bazaj,"select count(xml) from spool where username = '$token'");
-		if (!$res) {
-		print "<h2>STOP: Internal system error(1.2)";
-		exit;
-	}
-
-	$row=pg_fetch_row($res);
-	$spool = $row[0];
-	return $spool;
 
 }
 
@@ -1109,6 +1084,21 @@ function rpc_auth($uid_l,$uid_p,$xmpp_host_dotted,$rpc_host,$rpc_port) {
 return false;
 
 }
+
+function rpc_get_roster($token,$rpc_host,$rpc_port,$xmpp_host_dotted) {
+
+	$parms=array("user"=>"$token","server"=>"$xmpp_host_dotted");
+	$call=send_rpc_request("get_roster",$parms,$rpc_host,$rpc_port);
+	if ($call!=false) {
+			return $call;
+		}
+		else{
+			return false;
+		}
+
+return false;
+}
+
 
 function send_rpc_request($method,$parms,$rpc_host,$rpc_port) {
 

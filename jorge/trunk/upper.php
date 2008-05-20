@@ -244,9 +244,6 @@ if ($sess->get('log_status') == "0") {
 	}
 if ($start) { $cur_loc="&start=$start"; }
 
-// check number of offline messages - this feature is pushed into later betas...
-$spool = spool_count($bazaj,$token);
-
 print '<a name="top"></a>'."\n";
 print '<table border="0" cellspacing="0" class="ff" width="100%">'."\n";
 print '<tr>'."\n";
@@ -341,4 +338,27 @@ print '<td colspan="11" width="100%" style="text-align: left; padding-left: 30px
 print '</tr>'."\n";
 print '</table>'."\n";
 print '<p align="center"><b>'.$alert.'</b></p>';
+
+// Get user roster. Needed for: autocompleat, chat maps and contact manager
+
+$rpc_roster = rpc_get_roster($token,$rpc_host,$rpc_port,$xmpp_host_dotted);
+mysql_query("create temporary table temp_user_roster (
+		jid varchar(255),
+		nick varchar(255),
+		grp varchar(100)
+		)") or die("Unexpected error");
+
+foreach ($rpc_roster as $roster_record) {
+
+	// put no group if user is in general group
+	if ($roster_record[group]=="") { $roster_record[group] = $con_no_g[$lang]; }
+
+	// avoid contacts without nick
+	if ($roster_record[nick]!="") {
+		mysql_query("insert into temp_user_roster(jid,nick,grp) values ('$roster_record[jid]','$roster_record[nick]','$roster_record[group]')") or die("Unexpected error");
+	}
+
+}
+
+
 ?>

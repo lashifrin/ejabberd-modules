@@ -28,7 +28,6 @@ ob_start();
 
 // init session
 $sess = new session;
-$bazaj=db_e_connect($db_ejabberd);
 if (check_registered_user($sess,$xmpp_host_dotted,$rpc_host,$rpc_port) != "t") { header("Location: index.php?act=logout"); exit; }
 
 db_connect($mod_logdb);
@@ -61,7 +60,7 @@ $result=db_q($user_id,$server,$tslice_table,$talker,$search_p,"3",$start,$xmpp_h
 
 $user_name=get_user_name($talker,$xmpp_host);
 $server_name=get_server_name($server,$xmpp_host);
-$nickname=query_nick_name($bazaj,pg_escape_string($token),pg_escape_string($user_name),pg_escape_string($server_name));
+$nickname=query_nick_name(mysql_escape_string($user_name),mysql_escape_string($server_name));
 
 $lang=$sess->get('language');
 

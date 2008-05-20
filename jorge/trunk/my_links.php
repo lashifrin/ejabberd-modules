@@ -69,7 +69,7 @@ if ($variables[ismylink]=="1") {
 
 	$sname = get_server_name($variables[server],$xmpp_host);
 	$uname = get_user_name($variables[talker],$xmpp_host);
-	$nickname=query_nick_name($bazaj,$token,$uname,$sname);
+	$nickname=query_nick_name($uname,$sname);
 	$jid=''.$uname.'@'.$sname.'';
 
 	print '<center>'."\n";
@@ -124,7 +124,7 @@ if (mysql_num_rows($result) == "0") {
 
 			print '<tr style="cursor: pointer;" bgcolor="#e8eef7" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#e8eef7\';">'."\n";
 			print '<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';" style="padding-left: 10px; padding-right: 10px">'.pl_znaczki(verbose_date($entry['datat'],$lang)).'</td>'."\n";
-			$nickname=query_nick_name($bazaj,  $token,  get_user_name($entry[peer_name_id],$xmpp_host), get_server_name($entry[peer_server_id],$xmpp_host));
+			$nickname=query_nick_name(get_user_name($entry[peer_name_id],$xmpp_host), get_server_name($entry[peer_server_id],$xmpp_host));
 			$jid=get_user_name($entry[peer_name_id],$xmpp_host).'@'.get_server_name($entry[peer_server_id],$xmpp_host);
 			print '<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';">&nbsp;<b>'.cut_nick(htmlspecialchars($nickname)).'</b> ('.htmlspecialchars($jid).')&nbsp;</td>'."\n";
 			$opis=htmlspecialchars($entry[description]);

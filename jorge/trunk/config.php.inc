@@ -26,11 +26,13 @@ define("DEBUG", false);
 // Default language (currently Polish and English translations are available):
 $lang_def = "eng"; // eng for English, pol for Polish
 
-// Configuration for database access (ejabberd's postgresql server):
-$db_ejabberd[user] = ""; // username
-$db_ejabberd[pass] = ""; // password
-$db_ejabberd[name] = ""; // db name
-$db_ejabberd[host] = ""; // host ip
+// RPC Server settings (mod_xmlrpc)
+// RPC port:
+$rpc_port="4666";
+
+// RPC servers. Jorge can be configured to take advantage of redundancy XML-RPC servers. Add servers below. There is no limit in number of RPC servers.
+$rpc_arr[0] = "192.168.0.1"; // example
+$rpc_arr[1] = "192.168.0.2"; // example
 
 // MySQL database where mod_logdb is running on:
 $mod_logdb[user] = ""; // username
@@ -74,14 +76,5 @@ $brand_logo = "logo_jabster.png";
 
 // ignore this ID in queries - this is ID of user without name. see your users table for ID of this user and define it here (it is must)
 $ignore_id="";
-
-// RPC settings:
-// RPC port:
-$rpc_port="4666";
-
-// RPC servers. Jorge can be configured to take advantage of redundancy XML-RPC servers. Add servers below. There is no limit in number of RPC servers.
-$rpc_arr[0] = "192.168.0.1"; // example
-$rpc_arr[1] = "192.168.0.2"; // example
-
 
 ?>

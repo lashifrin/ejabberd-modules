@@ -103,7 +103,7 @@ if (mysql_num_rows($result)==0) {
 			$talker = get_user_name($entry["peer_name_id"],$xmpp_host);
 			$server_name = get_server_name($entry["peer_server_id"],$xmpp_host);
 			$tslice = $entry["date"];
-			$nickname = query_nick_name($bazaj,$token,$talker,$server_name);
+			$nickname = query_nick_name($talker,$server_name);
 			print '<tr><td style="padding-left: 10px; padding-right: 10px;"><b>'.htmlspecialchars($nickname).'</b> (<i>'.htmlspecialchars($talker).'@'.htmlspecialchars($server_name).'</i>)</td><td style="text-align: center;">'.$tslice.'</td>';
 			print '<td style="padding-left: 5px; padding-right: 5px; font-size: x-small;">'.$entry[timeframe].'</td>';	
 			$reconstruct_link = encode_url("$tslice@$entry[peer_name_id]@$entry[peer_server_id]@", $token,$url_key); // try to reconstruct oryginal link

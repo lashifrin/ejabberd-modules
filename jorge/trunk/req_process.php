@@ -28,7 +28,6 @@ require("config.php");
 require("lang.php");
 // sessions and db connections
 $sess = new session;
-$bazaj=db_e_connect($db_ejabberd);
 db_connect($mod_logdb);
 $xmpp_host_dotted=str_replace("_",".",$xmpp_host);
 $token=$sess->get('uid_l');

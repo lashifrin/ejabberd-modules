@@ -197,7 +197,7 @@ while ($entry = mysql_fetch_array($result)) {
 				print '<td width="120">'.$results["ts"].'</td>'."\n";
 
 				// username from user roster
-				$talk = htmlspecialchars(query_nick_name($bazaj,$token,$talk,$sname)); // remove if there are performance issues
+				$talk = htmlspecialchars(query_nick_name($talk,$sname));
 
 				// if there is no user in roster - advise that
 				if ($talk=="f") { $talk=$not_in_r[$lang]; }
@@ -338,7 +338,7 @@ if ($type!="7") {
 	if ($col=="e0e9f7") { $col="e8eef7"; } else { $col="e0e9f7"; }
 
 	// get username from user roster:
-	$talk = htmlspecialchars(query_nick_name($bazaj,$token,$talk,$sname)); // remove if there are performance issues
+	$talk = htmlspecialchars(query_nick_name($talk,$sname));
 
 	// if user is not in list, advise about that
 	if ($talk=="f") { $talk=$not_in_r[$lang]; }

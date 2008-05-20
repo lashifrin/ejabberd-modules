@@ -59,7 +59,6 @@ if ($rpc_host===false) {
 	}
 
 // db connection:
-$bazaj=db_e_connect($db_ejabberd);
 db_connect($mod_logdb);
 
 // user name - we hold it in session, lets fetch it...

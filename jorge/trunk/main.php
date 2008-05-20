@@ -205,7 +205,7 @@ if ($tslice) {
 		)") or die;
 	while ($sort_me = mysql_fetch_array($result)) {
 		
-		$roster_name=pg_escape_string(query_nick_name($bazaj,$token,pg_escape_string($sort_me[username]),pg_escape_string($sort_me[server_name])));
+		$roster_name=mysql_escape_string(query_nick_name(mysql_escape_string($sort_me[username]),mysql_escape_string($sort_me[server_name])));
 
 		mysql_query("insert into tslice_temp (roster_name,username,server_name,todaytalk,server,lcount) values (
 			'$roster_name',
@@ -228,7 +228,7 @@ if ($tslice) {
 		$user_name = $entry[username];
 		$server_name = $entry[server_name];
 		if ($talker==$entry["todaytalk"] AND $server==$entry[server]) { $bold_b="<b>"; $bold_e="</b>"; } else { $bold_b=""; $bold_e=""; }
-			$nickname = query_nick_name($bazaj,$token,$user_name,$server_name);
+			$nickname = query_nick_name($user_name,$server_name);
 			if ($nickname=="f") { $nickname=$not_in_r[$lang]; }
 			$to_base2 = "$tslice@$entry[todaytalk]@$entry[server]@";
 			$to_base2 = encode_url($to_base2,$token,$url_key);
@@ -255,7 +255,7 @@ if ($talker) {
 	if ($result=="f") { header ("Location: main.php");  }
 	$talker_name = get_user_name($talker,$xmpp_host);
 	$server_name = get_server_name($server,$xmpp_host);
-	$nickname = query_nick_name($bazaj,$token,$talker_name,$server_name);
+	$nickname = query_nick_name($talker_name,$server_name);
 	if ($nickname=="f") { $nickname=$not_in_r[$lang]; }
 	$predefined="$talker_name@$server_name";
 	$predefined=encode_url($predefined,$token,$url_key);

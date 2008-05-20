@@ -46,7 +46,7 @@ print '<div align="right" style="clear: left;"><a href="mailto:zbyszek@jabster.p
 <div style="background-image: url(img/bell-down.png); height: 3px;"></div>
 <div align="center"><? print $links; ?></div><br>
 <div align="center" style="color: gray;"><? print $copy; ?></div>
-<p style="font-size: xx-small; text-align: right;">v1.2.000</p><br>
+<p style="font-size: xx-small; text-align: right;">v1.3.100</p><br>
 <?
 
 // footer for admins...
@@ -66,16 +66,11 @@ if (!preg_match("/index.php/i",$location)) {
 
 	<?
 	// this is for local autocomplete, TODO: make it dynamic via AJAX
-	$jquery_search="select jid from rosterusers where username='$token' order by jid";
-	$res = pg_query($bazaj, $jquery_search);
-	if (!$res) {
-	        print "Ooops...";
-		        pg_close($bazaj);
-			        exit;
-				}
+	$jquery_search="select jid from temp_user_roster order by jid";
+	$result=mysql_query($jquery_search) or die("Unexpected error");
+	while($row=mysql_fetch_array($result)) {
 
-	for ($lt = 0; $lt < pg_numrows($res); $lt++) {
-		$jid = pg_result($res, $lt, 0);
+		$jid = $row[jid];
 		print '"from:'.$jid.'", ';
 	}
 

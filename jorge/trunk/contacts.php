@@ -69,26 +69,22 @@ if ($get_dir=="1") {
 	}
 
 if ($get_sort=="1") {
-		$order="a.jid";
+		$order="jid";
 	}
 	elseif($get_sort=="2") {
-		$order="lower(a.nick)";
+		$order="nick";
 	}
 	elseif($get_sort=="3") {
-		$order="b.grp";
+		$order="grp";
 	}
 	else{
-		$order="b.grp,lower(a.nick)";
+		$order="grp,nick";
 	}
 
-$res = pg_query($bazaj, "select a.nick, a.jid, b.grp from rosterusers a left outer join rostergroups b on (a.jid=b.jid and a.username=b.username) where a.username='$token' and a.nick !='' order by $order $s_direction");
-if (!$res) {
-	print "Ooops...";
-	pg_close($jmon);
-	exit;
-}
 
-if (pg_num_rows($res)!=0) {
+$con_arr=mysql_query("select jid,nick,grp from temp_user_roster order by $order $s_direction") or die("Unexpected error");
+
+if (mysql_num_rows($con_arr)!=0) {
 
 	$do_notlog_list = get_do_log_list($user_id,$xmpp_host);
 
@@ -109,10 +105,10 @@ if (pg_num_rows($res)!=0) {
 	print '<tr class="spacer"><td colspan="5"></td></tr>';
 	print '<tbody id="searchfield">';
 
-	for ($lt = 0; $lt < pg_numrows($res); $lt++) {
-		$nick = pg_result($res, $lt, 0);
-		$jid = pg_result($res,$lt,1);
-		$grp = pg_result($res,$lt,2);
+	while ($con_row=mysql_fetch_array($con_arr)) {
+		$nick = $con_row[nick];
+		$jid = $con_row[jid];
+		$grp = $con_row[grp];
 		if ($grp=="") { $grp=$con_no_g[$lang]; }
 		if ($col=="e0e9f7") { $col="e8eef7"; } else { $col="e0e9f7"; }
 		$predefined="$jid";

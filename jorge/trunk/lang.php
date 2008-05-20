@@ -356,7 +356,7 @@ $con_tab_submit[eng] = "Save changes";
 $con_tab6[pol] = pl_znaczki("Grupa");
 $con_tab6[eng] = "Group";
 
-$con_no_g[pol] = pl_znaczki("Ogólne (brak grupy)");
+$con_no_g[pol] = pl_znaczki("Ogólna (brak grupy)");
 $con_no_g[eng] = "General (no group)";
 
 $map_no_g[pol] = pl_znaczki("brak grupy");

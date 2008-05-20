@@ -30,23 +30,18 @@ if ($_POST['chat_map']) {
 	$con_map=decode_url_simple($_GET['chat_map'],$token,$url_key);
 	}
 
-// this is tempory workaround.
-$contact_list="select a.nick, a.jid, b.grp from rosterusers a left outer join rostergroups b on (a.jid=b.jid and a.username=b.username) where a.username='$token' and a.nick !='' order by lower(a.nick)";
-	$res = pg_query($bazaj, $contact_list);
-	if (!$res) {
-	        print "Ooops...";
-		        pg_close($bazaj);
-			        exit;
-				}
+// get list
+$contacts_arr=mysql_query("select jid,nick,grp from temp_user_roster order by nick") or die("Unexpected error");
 
 print '<form action="chat_map.php" method="post" name="chat_map_form">'."\n";
 print '<span style="padding-right: 20px">'.$chat_m_select[$lang].'</span>'."\n";
 print '<select id="c_map" style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="chat_map" size="0" onchange="javascript:document.chat_map_form.submit();">'."\n";
 print '<option value="null">'.$chat_c_list[$lang].'</option>';
-	for ($lt = 0; $lt < pg_numrows($res); $lt++) {
-		$name = pg_result($res, $lt, 0);
-		$jid = pg_result($res,$lt,1);
-		$grp = pg_result($res,$lt,2);
+
+	while($con_row=mysql_fetch_array($contacts_arr)) {
+		$name = $con_row[nick];
+		$jid = $con_row[jid];
+		$grp = $con_row[grp];
 		if ($grp=="") { $grp=$map_no_g[$lang]; }
 		if ($con_map==$jid) { $selected="selected"; } else { $selected=""; }
 		print '<option '.$selected.' value=\''.encode_url($jid,$token,$url_key).'\'>'.htmlspecialchars($name).' ('.htmlspecialchars($grp).')</option>'."\n";
