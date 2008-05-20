@@ -1055,7 +1055,7 @@ function rpc_close_account($user_id,$xmpp_host_dotted,$xmpp_host,$sess,$rpc_host
 	$call=send_rpc_request("delete_account",$parms,$rpc_host,$rpc_port);
 	# we need to check weather user exist or not, since ejabberd:remove_user() always return true...
 	$parms=array("user"=>"$un","host"=>"$xmpp_host_dotted");
-	$call=send_rpc_request("check_user",$parms,$rpc_host,$rpc_port);
+	$call=send_rpc_request("check_account",$parms,$rpc_host,$rpc_port);
 	if ($call===1) {
 	
 		// this is to be removed some day as mod_logdb should use hook for ejabberd_auth:remove(), but for now it does not.
