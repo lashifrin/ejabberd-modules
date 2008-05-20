@@ -1149,7 +1149,23 @@ function jorge_cleanup($user_id,$xmpp_host) {
 
 }
 
+function check_rpc_server($rpc_arr,$rpc_port) {
 
+	foreach($rpc_arr as $rpc_host) {
+
+		// assume if response time is greater then 1 second RPC server is down
+		$fp=fsockopen("$rpc_host", $rpc_port, $errno, $errstr, 1);
+		if ($fp!=false) {
+
+			return $rpc_host;
+
+		}
+
+	}
+
+return false;
+	
+}
 
 
 

@@ -72,9 +72,13 @@ $brand_logo = "logo_jabster.png";
 // ignore this ID in queries - this is ID of user without name. see your users table for ID of this user and define it here (it is must)
 $ignore_id="";
 
-// RPC settings for mod_xmlrpc
-$rpc_host="";
-$rpc_port="";
+// RPC settings:
+// RPC port:
+$rpc_port="4666";
+
+// RPC servers. Jorge can be configured to take advantage of redundancy XML-RPC servers. Add servers below. There is no limit in number of RPC servers.
+$rpc_arr[0] = "192.168.0.1"; // example
+$rpc_arr[1] = "192.168.0.2"; // example
 
 
 ?>

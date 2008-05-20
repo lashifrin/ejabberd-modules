@@ -45,6 +45,16 @@ $location=$_SERVER['PHP_SELF'];
 // init session
 $sess = new session;
 
+// RPC server redundancy
+$rpc_host = check_rpc_server($rpc_arr,$rpc_port);
+
+// in case no RPC servers are available stop jorge
+if ($rpc_host===false) {
+
+		print "<br><center><b>Currently service is unavailable. Please try again later.</b></center>";
+		exit;
+	}
+
 // db connection:
 $bazaj=db_e_connect($db_ejabberd);
 db_connect($mod_logdb);
