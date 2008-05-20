@@ -400,7 +400,10 @@ make_roster_xmlrpc(Roster) ->
       fun(Item, Res) ->
 	      JIDS = jlib:jid_to_string(Item#roster.jid),
 	      Nick = Item#roster.name,
-	      Groups = Item#roster.groups,
+	      Groups = case Item#roster.groups of
+			   [] -> [""];
+			   Gs -> Gs
+		       end,
 	      ItemsX = [{struct, [{jid, JIDS}, {nick, Nick}, {group, Group}]}
 			|| Group <- Groups],
 	      ItemsX ++ Res
