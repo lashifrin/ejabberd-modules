@@ -28,12 +28,16 @@ require("config.php");
 require("lang.php");
 // sessions and db connections
 $sess = new session;
+
+// RPC server redundancy
+$rpc_host = check_rpc_server($rpc_arr,$rpc_port);
+
 db_connect($mod_logdb);
-$xmpp_host_dotted=str_replace("_",".",$xmpp_host);
 $token=$sess->get('uid_l');
 
 // check user session
-if (check_registered_user($bazaj,$sess) != "t") { header("Location: index.php?act=logout"); exit; }
+if (check_registered_user($sess,$xmpp_host_dotted,$rpc_host,$rpc_port) != "t") { header("Location: index.php?act=logout"); exit; }
+
 $user_id=get_user_id($token,$xmpp_host);
 if (!ctype_digit($user_id)) { print 'Service unavailable'; exit; }
 
