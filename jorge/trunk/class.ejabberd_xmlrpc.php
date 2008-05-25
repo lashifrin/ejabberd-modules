@@ -123,19 +123,27 @@ class rpc_connector {
 
 	}
 
+	protected function clean_password($password) {
+
+		if (get_magic_quotes_gpc() === 1) {
+
+			return stripslashes($password);
+		}
+
+		return $password;
+	}
+
 	public function auth() {
 
 		$this->method = "check_password";
 		$this->parms = array("user"=>"$this->username","host"=>"$this->vhost","password"=>"$this->password");
 		if ($this->commit_rpc() === 0 ) {
-				
-				#password ok
+			
 				return true;
 
 				}
 			else{
 
-				#bad password
 				return false;
 
 			} 
@@ -151,14 +159,14 @@ class rpc_connector {
 		$call = $this->commit_rpc();
 		if ($call === 0) {
 
-						return true;
+					return true;
 				}
 				elseif($call === 409) {
-						return "exist";
-					}
-					elseif($call = 1) {
-						return false;
-					}
+					return "exist";
+				}
+				elseif($call === 1) {
+					return false;
+				}
 
 	}
 
