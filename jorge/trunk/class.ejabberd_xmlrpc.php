@@ -78,17 +78,17 @@ class rpc_connector {
 	protected $parms;
 	protected $method;
 
-	public function __construct($rpc_server, $rpc_port, $username,$password, $vhost) {
-		$this->setData($rpc_server, $rpc_port, $username, $password,$vhost);
+	public function __construct($rpc_server,$rpc_port,$vhost,$username = null ,$password = null) {
+		$this->setData($rpc_server,$rpc_port,$vhost,$username,$password);
 	}
 
 
-	public function setData($rpc_server, $rpc_port, $username, $password,$vhost) {
+	public function setData($rpc_server, $rpc_port, $vhost, $username, $password) {
 		$this->rpc_server = $rpc_server;
 		$this->rpc_port = $rpc_port;
+		$this->vhost = $vhost;
 		$this->username = $username;
 		$this->password = $password;
-		$this->vhost = $vhost;
 	}
 
 	protected function commit_rpc() {
