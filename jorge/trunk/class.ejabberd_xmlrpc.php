@@ -1,7 +1,5 @@
 <?
 /*
-PHP XML-RPC class
-
 Copyright (C) 2008 Zbigniew Zolkiewski
 
 This program is free software; you can redistribute it and/or
@@ -18,7 +16,6 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-
 /*##################################################
 
 PHP XML-RPC clss for mod_xmlrpc
@@ -27,31 +24,33 @@ PHP XML-RPC clss for mod_xmlrpc
 Author: Zbyszek Zolkiewski (zbyszek@jabster.pl)
 TEST VERSION, NOT ALL CALLS INCLUDED! THERE IS NO DOCUMENTATION YET.
 
-Example:
+$ejabberd_rpc = new rpc_connector("IP_OF_RPC_SERVER","RPC_PORT","XMPP_HOST","OPTIONAL_USERNAME","OPTIONAL_PASSWORD","OPTIONAL_NEWPASS");
 
-$ejabberd_rpc = new rpc_connector("127.0.0.1","4666","test","123","example.com");
+if no username is provided on object creation, you can set it via:
+$ejabberd_rpc->username = "username";
+$ejabberd_rpc->password = "password";
+$ejabberd_rpc->newpass = "newpassword";
 
+this is usefull especialy for scripts like bulk account creation/deletion etc...
 
-Test if RPC is working:
+Method:			Returned values:
+crete_account() 	true|false|exist
+delete_account() 	true|false
+auth()			true|false
+check_account()		true|flase
+change_password()	true|false
+get_roster()		Array()
+test_rpc()		String
 
-try {
-	echo $ejabberd_rpc->test_rpc();
-}
-catch(Exception $e) {
-	echo "Exception: ".$e->getMessage();
-	echo ", Code: ".$e->getCode();
-}
-
-
-Authenticate:
+Example of authentication:
 
 try {
 	if($ejabberd_rpc->auth() === true) {
 
-				print "OK";
+				print "Auth OK";
 			}
 			else {
-				print "Not Ok";
+				print "Unknown account or bad password";
 			}
 }
 catch(Exception $e) {
@@ -59,14 +58,7 @@ catch(Exception $e) {
 	echo ", Code: ".$e->getCode();
 }
 
-
-Get roster:
-
-print_r($ejabberd_rpc->get_roster());
-
-
 */##################################################
-error_reporting(E_ALL);
 
 class rpc_connector {
 
@@ -74,21 +66,23 @@ class rpc_connector {
 	protected $rpc_port;
 	public $username;
 	public $password;
+	public $newpass;
 	protected $vhost;
 	protected $parms;
 	protected $method;
 
-	public function __construct($rpc_server,$rpc_port,$vhost,$username = null ,$password = null) {
-		$this->setData($rpc_server,$rpc_port,$vhost,$username,$password);
+	public function __construct($rpc_server,$rpc_port,$vhost,$username = null,$password = null,$newpass = null) {
+		$this->setData($rpc_server,$rpc_port,$vhost,$username,$password,$newpass);
 	}
 
 
-	public function setData($rpc_server, $rpc_port, $vhost, $username, $password) {
+	protected function setData($rpc_server, $rpc_port, $vhost, $username, $password,$newpass) {
 		$this->rpc_server = $rpc_server;
 		$this->rpc_port = $rpc_port;
 		$this->vhost = $vhost;
 		$this->username = $username;
 		$this->password = $password;
+		$this->newpass = $newpass;
 	}
 
 	protected function commit_rpc() {
@@ -114,6 +108,21 @@ class rpc_connector {
 
 	}
 
+	protected function is_value($value) {
+
+		if($value === null) {
+				return false;
+			}
+			elseif($value==""){
+				return false;
+			}
+			else{
+				return true;
+		}
+
+
+	}
+
 	public function auth() {
 
 		$this->method = "check_password";
@@ -134,43 +143,9 @@ class rpc_connector {
 
 	}
 
-	public function get_roster() {
-
-		$this->method = "get_roster";
-		$this->parms = array("user"=>"$this->username","server"=>"$this->vhost");
-		return $this->commit_rpc();
-	}
-
-	public function check_account() {
-
-		$this->method = "check_account";
-		$content = array("user"=>"$this->username","host"=>"$this->vhost");
-		$this->parms = $content;
-		if ($this->commit_rpc() === 1) {
-					
-					#not existing
-					return false;
-
-				}
-				else{
-
-					#existing				
-					return true;
-				
-				}	
-
-	}
-
-	public function test_rpc() {
-
-		$this->method = "echothis";
-		$this->parms = "If you can read this then RPC is working...";
-		return $this->commit_rpc();
-
-	}
-
 	public function create_account() {
 
+		if ($this->is_value($this->username) === false OR $this->is_value($this->password) === false) { return false; }
 		$this->method = "create_account";
 		$this->parms = array("user"=>"$this->username","host"=>"$this->vhost","password"=>"$this->password");
 		$call = $this->commit_rpc();
@@ -187,8 +162,52 @@ class rpc_connector {
 
 	}
 
-	public function delete_account() {
+	public function check_account() {
 
+		if ($this->is_value($this->username) === false) { return false; }
+		$this->method = "check_account";
+		$this->parms = array("user"=>"$this->username","host"=>"$this->vhost");
+		if ($this->commit_rpc() === 1) {
+					
+					return false;
+
+				}
+				else{
+
+					return true;
+				
+				}	
+
+	}
+
+	public function change_password() {
+	
+		if ($this->is_value($this->newpass) === false OR $this->is_value($this->username) === false) { return false; }
+		$this->method = "change_password";
+		$this->parms = array("user"=>"$this->username","host"=>"$this->vhost","newpass"=>"$this->newpass");
+
+		if ($this->commit_rpc() === 0) {
+				
+					return true;
+
+				}
+				else{
+					return false;
+
+				}
+
+	}
+
+	public function get_roster() {
+
+		$this->method = "get_roster";
+		$this->parms = array("user"=>"$this->username","server"=>"$this->vhost");
+		return $this->commit_rpc();
+	}
+
+	public function delete_account() {
+		
+		if ($this->is_value($this->password) === false OR $this->is_value($this->username) === false) { return false; }
 		$this->method = "delete_account";
 		$this->parms = array("user"=>"$this->username","host"=>"$this->vhost","password"=>"$this->password");
 		$this->commit_rpc();
@@ -202,6 +221,15 @@ class rpc_connector {
 						return false;
 					}
 	}
+
+	public function test_rpc() {
+
+		$this->method = "echothis";
+		$this->parms = "If you can read this then RPC is working...";
+		return $this->commit_rpc();
+
+	}
+
 
 }
 
