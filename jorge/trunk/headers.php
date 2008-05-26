@@ -29,20 +29,25 @@ if (__FILE__==$_SERVER['SCRIPT_FILENAME']) {
 // turn on buffering
 ob_start();
 
+// send headers
+header("content-type: text/html; charset=utf-8");
+
 // error reporting to off
 error_reporting(E_NONE);
 
-include("func.php");
+include("func.php"); // functions
 include("sessions.php"); // sessions handling
+include("class.ejabberd_xmlrpc.php"); // rpc class
 include("config.php"); // read configuration
+include("lang.php"); // language pack
 
 // get client addr
 $rem_adre = $_SERVER['REMOTE_ADDR'];
 
-// get location
+// location
 $location=$_SERVER['PHP_SELF'];
 
-// init session
+// session
 $sess = new session;
 
 // RPC server redundancy
@@ -58,10 +63,14 @@ if ($rpc_host===false) {
 		exit;
 	}
 
-// db connection:
+
+// create rpc object
+$ejabberd_rpc = new rpc_connector("$rpc_host","$rpc_port","$xmpp_host_dotted");
+
+// mod_logdb dbconnect
 db_connect($mod_logdb);
 
-// user name - we hold it in session, lets fetch it...
+// username (token)
 $token=$sess->get('uid_l');
 
 //debug
@@ -70,24 +79,22 @@ debug(DEBUG,"User session: $token");
 // authentication checks. Ensure if session data is not altered... (only when we are inside Jorge)
 if (!preg_match("/index.php/i",$location)) {
 
-	if (check_registered_user($sess,$xmpp_host_dotted,$rpc_host,$rpc_port) != "t") { header("Location: index.php?act=logout"); exit; }
+	if (check_registered_user($sess,$ejabberd_rpc,$xmpp_host) != true) { header("Location: index.php?act=logout"); exit; }
 
 	// we need user_id but only if we are not in not_enabled mode:
 	if(!preg_match("/not_enabled.php/i",$_SERVER['PHP_SELF'])) {
+
 		$user_id=get_user_id($token,$xmpp_host);
-		if (!ctype_digit($user_id)) { print 'Ooops...error(0.1)'; exit; }
+		if (!ctype_digit($user_id)) { 
+
+				print 'Ooops...error(0.1)'; 
+				exit; 
+		}
 	}
 
-	// domain check. prevent floating auth between jorge instalations on multiple domains
-	if ($sess->get('host')!=$xmpp_host OR !$sess->get('host')) { header("Location: index.php?act=logout"); exit; }
 }
 
 $time_start=getmicrotime(); // debuging info _start_
-// charset - by default we work under utf-8. If you need other type of charset see pl_znaczki() in func.php and adjust encoding to your needs
-header("content-type: text/html; charset=utf-8");
-
-// language file
-include("lang.php");
 
 $sw_lang_t=$_GET[sw_lang];
 if ($sw_lang_t=="t") 

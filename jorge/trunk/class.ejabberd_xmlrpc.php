@@ -27,9 +27,7 @@ TEST VERSION, NOT ALL CALLS INCLUDED! THERE IS NO DOCUMENTATION YET.
 $ejabberd_rpc = new rpc_connector("IP_OF_RPC_SERVER","RPC_PORT","XMPP_HOST","OPTIONAL_USERNAME","OPTIONAL_PASSWORD","OPTIONAL_NEWPASS");
 
 if no username is provided on object creation, you can set it via:
-$ejabberd_rpc->username = "username";
-$ejabberd_rpc->password = "password";
-$ejabberd_rpc->newpass = "newpassword";
+$ejabberd_rpc->set_user("username","password","optional-new_password");
 
 this is usefull especialy for scripts like bulk account creation/deletion etc...
 
@@ -64,9 +62,9 @@ class rpc_connector {
 
 	protected $rpc_server;
 	protected $rpc_port;
-	public $username;
-	public $password;
-	public $newpass;
+	protected $username;
+	protected $password;
+	protected $newpass;
 	protected $vhost;
 	protected $parms;
 	protected $method;
@@ -81,8 +79,16 @@ class rpc_connector {
 		$this->rpc_port = $rpc_port;
 		$this->vhost = $vhost;
 		$this->username = $username;
-		$this->password = $password;
-		$this->newpass = $newpass;
+		$this->password = $this->clean_password($password);
+		$this->newpass = $this->clean_password($newpass);
+	}
+
+	public function set_user($username,$password,$newpass = null) {
+
+		$this->username = $username;
+		$this->password = $this->clean_password($password);
+		$this->newpass = $this->clean_password($newpass);
+
 	}
 
 	protected function commit_rpc() {
@@ -126,10 +132,9 @@ class rpc_connector {
 	protected function clean_password($password) {
 
 		if (get_magic_quotes_gpc() === 1) {
-
 			return stripslashes($password);
 		}
-
+		
 		return $password;
 	}
 
@@ -195,7 +200,8 @@ class rpc_connector {
 		$this->parms = array("user"=>"$this->username","host"=>"$this->vhost","newpass"=>"$this->newpass");
 
 		if ($this->commit_rpc() === 0) {
-				
+			
+					$this->password = $this->newpass;
 					return true;
 
 				}

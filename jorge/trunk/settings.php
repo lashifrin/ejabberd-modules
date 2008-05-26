@@ -74,20 +74,21 @@ if ($del_a) {
 // close account
 if($close)	{
 
-	$close_now=rpc_close_account($user_id,$xmpp_host_dotted,$xmpp_host,$sess,$rpc_host,$rpc_port);
-	if ($close_now===false) { 
+	$close_now=rpc_close_account($user_id,$xmpp_host,$ejabberd_rpc);
+	if ($close_now === false) { 
 
-		print '<center><p class="message">'.$close_failed[$lang].'</p></center>'; }
+			print '<center><p class="message">'.$close_failed[$lang].'</p></center>'; 
+		
+		}
 
-	elseif($close_now===true) {
+	elseif($close_now === true) {
 
-		$sess->finish();
-		header("Location: index.php?act=logout");
-		exit;
+			$sess->finish();
+			header("Location: index.php?act=logout");
+			exit;
 	}
 
 }
-
 
 // this is horrible! must be fixed:
 print '<h2>'.$settings_desc[$lang].'</h2>';

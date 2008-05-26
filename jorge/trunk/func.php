@@ -162,27 +162,29 @@ function decrypt_aes($key, $c_t) {
 
 
 
-function check_registered_user ($sess,$xmpp_host_dotted,$rpc_host,$rpc_port) {
-
-	if (!$sess->is_registered('login')) 
+function check_registered_user ($sess,$ejabberd_rpc,$xmpp_host) {
+	
+	if ($sess->get('host')!=$xmpp_host OR !$sess->get('host')) { return false; }
+	if (!$sess->is_registered('uid_l') OR !$sess->is_registered('uid_p')) 
 		{
-			return "f";
+			return false;
   		}
 	else {
 
-		if (rpc_auth($sess->get('uid_l'),$sess->get('uid_p'),$xmpp_host_dotted,$rpc_host,$rpc_port) === true) {
+		$ejabberd_rpc->set_user($sess->get('uid_l'),$sess->get('uid_p'));
+		if ($ejabberd_rpc->auth() === true) {
 
-			return "t";
+			return true;
 
 		}
 		else {
-			return "f";
-			}
+			return false;
+		}
 
 
 	}
 
-return "f";
+return false;
 
 }
 
@@ -1022,45 +1024,52 @@ return FALSE;
 
 }
 
-function rpc_close_account($user_id,$xmpp_host_dotted,$xmpp_host,$sess,$rpc_host,$rpc_port) {
+function rpc_close_account($user_id,$xmpp_host,$ejabberd_rpc) {
 
-	$un=$sess->get('uid_l');
-	$up=$sess->get('uid_p');
-	$parms=array("user"=>"$un","host"=>"$xmpp_host_dotted","password"=>"$up");
-	$call=send_rpc_request("delete_account",$parms,$rpc_host,$rpc_port);
-	# we need to check weather user exist or not, since ejabberd:remove_user() always return true...
-	$parms=array("user"=>"$un","host"=>"$xmpp_host_dotted");
-	$call=send_rpc_request("check_account",$parms,$rpc_host,$rpc_port);
-	if ($call===1) {
+	if ($ejabberd_rpc->delete_account() === true) {
 	
 		// this is to be removed some day as mod_logdb should use hook for ejabberd_auth:remove(), but for now it does not.
 		$result=remove_messages($user_id,$xmpp_host);
 		if ($result=="t") {
 				
 				if (jorge_cleanup($user_id,$xmpp_host)===true) {
+
 						return true; 
-					}
-					else{
-						return false;
+
 					}
 
-				}
-			elseif($result=="f") {
-				return false;
-				}
-			else{
-				// remove_messages() can return other status beside error
-				if (jorge_cleanup($user_id,$xmpp_host)===true) {
-						return true; 
-					}
 					else{
+
 						return false;
+					
 					}
 
 				}
 			
+				elseif($result=="f") {
+					
+						return false;
+					
+					}
+				else {
+				
+						// remove_messages() can return other status beside error
+						if (jorge_cleanup($user_id,$xmpp_host)===true) {
+						
+								return true; 
+						
+							}
+							
+							else {
+						
+								return false;
+							}
+
+				}
+			
 	}
-	elseif($call===0) {
+	
+	else {
 
 		return false;
 
@@ -1070,61 +1079,6 @@ return false;
 
 }
 
-function rpc_auth($uid_l,$uid_p,$xmpp_host_dotted,$rpc_host,$rpc_port) {
-
-	$parms=array("user"=>"$uid_l","host"=>"$xmpp_host_dotted","password"=>"$uid_p");
-	$call=send_rpc_request("check_password",$parms,$rpc_host,$rpc_port);
-	if ($call===0) {
-			return true;
-		}
-		else{
-			return false;
-		}
-
-return false;
-
-}
-
-function rpc_get_roster($token,$rpc_host,$rpc_port,$xmpp_host_dotted) {
-
-	$parms=array("user"=>"$token","server"=>"$xmpp_host_dotted");
-	$call=send_rpc_request("get_roster",$parms,$rpc_host,$rpc_port);
-	if ($call!=false) {
-			return $call;
-		}
-		else{
-			return false;
-		}
-
-return false;
-}
-
-
-function send_rpc_request($method,$parms,$rpc_host,$rpc_port) {
-
-	$request = xmlrpc_encode_request($method,$parms);
-	$context = stream_context_create(array('http' => array(
-    		'method' => "POST",
-    		'header' => "Content-Type: text/xml; charset=utf-8\r\n" .
-                "User-Agent: XMLRPC::Client JorgeRPCclient",
-    		'content' => $request
-	)));
-
-	$file = file_get_contents("http://$rpc_host".":"."$rpc_port", false, $context);
-	$response = xmlrpc_decode($file);
-	if (xmlrpc_is_fault($response)) {
-
-    		#trigger_error("xmlrpc: $response[faultString] ($response[faultCode])");
-		return false;
-
-	} else {
-
-		return $response;
-	}
-
-return false;
-
-}
 
 function jorge_cleanup($user_id,$xmpp_host) {
 

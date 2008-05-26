@@ -339,9 +339,9 @@ print '</tr>'."\n";
 print '</table>'."\n";
 print '<p align="center"><b>'.$alert.'</b></p>';
 
-// Get user roster. Needed for: autocompleat, chat maps and contact manager
+// Get user roster.
+$rpc_roster = $ejabberd_rpc->get_roster();
 
-$rpc_roster = rpc_get_roster($token,$rpc_host,$rpc_port,$xmpp_host_dotted);
 mysql_query("create temporary table temp_user_roster (
 		jid varchar(255),
 		nick varchar(255),
@@ -351,7 +351,9 @@ mysql_query("create temporary table temp_user_roster (
 foreach ($rpc_roster as $roster_record) {
 
 	// put no group if user is in general group
-	if ($roster_record[group]=="") { $roster_record[group] = $con_no_g[$lang]; }
+	if ($roster_record[group]=="") { 
+		$roster_record[group] = $con_no_g[$lang]; 
+	}
 
 	// avoid contacts without nick
 	if ($roster_record[nick]!="") {

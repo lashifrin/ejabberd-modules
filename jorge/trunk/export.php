@@ -22,6 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 require("func.php");
 require("lang.php");
 require("sessions.php");
+require("class.ejabberd_xmlrpc.php");
 require("config.php");
 
 ob_start();
@@ -39,7 +40,9 @@ if ($rpc_host===false) {
 		exit;
 	}
 
-if (check_registered_user($sess,$xmpp_host_dotted,$rpc_host,$rpc_port) != "t") { header("Location: index.php?act=logout"); exit; }
+$ejabberd_rpc = new rpc_connector("$rpc_host","$rpc_port","$xmpp_host_dotted");
+
+if (check_registered_user($sess,$ejabberd_rpc,$xmpp_host) != true) { header("Location: index.php?act=logout"); exit; }
 
 db_connect($mod_logdb);
 

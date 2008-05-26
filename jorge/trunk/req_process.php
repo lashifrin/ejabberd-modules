@@ -24,6 +24,7 @@ header("content-type: text/html; charset=utf-8");
 // includes
 require("func.php");
 require("sessions.php");
+require("class.ejabberd_xmlrpc.php");
 require("config.php");
 require("lang.php");
 // sessions and db connections
@@ -32,11 +33,16 @@ $sess = new session;
 // RPC server redundancy
 $rpc_host = check_rpc_server($rpc_arr,$rpc_port);
 
+// rcp object
+$ejabberd_rpc = new rpc_connector("$rpc_host","$rpc_port","$xmpp_host_dotted");
+
+// db connect
 db_connect($mod_logdb);
+
 $token=$sess->get('uid_l');
 
 // check user session
-if (check_registered_user($sess,$xmpp_host_dotted,$rpc_host,$rpc_port) != "t") { header("Location: index.php?act=logout"); exit; }
+if (check_registered_user($sess,$ejabberd_rpc,$xmpp_host) != true) { header("Location: index.php?act=logout"); exit; }
 
 $user_id=get_user_id($token,$xmpp_host);
 if (!ctype_digit($user_id)) { print 'Service unavailable'; exit; }
