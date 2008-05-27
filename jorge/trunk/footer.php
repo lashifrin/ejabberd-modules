@@ -67,7 +67,7 @@ if (!preg_match("/index.php/i",$location)) {
 	<?
 	// this is for local autocomplete, TODO: make it dynamic via AJAX
 	$jquery_search="select jid from temp_user_roster order by jid";
-	$result=mysql_query($jquery_search) or die("Unexpected error");
+	$result=mysql_query($jquery_search) or die("Unexpected error(3)");
 	while($row=mysql_fetch_array($result)) {
 
 		$jid = $row[jid];

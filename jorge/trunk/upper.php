@@ -346,7 +346,7 @@ mysql_query("create temporary table temp_user_roster (
 		jid varchar(255),
 		nick varchar(255),
 		grp varchar(100)
-		)") or die("Unexpected error");
+		)") or die("Unexpected error(1)");
 
 foreach ($rpc_roster as $roster_record) {
 
@@ -357,7 +357,13 @@ foreach ($rpc_roster as $roster_record) {
 
 	// avoid contacts without nick
 	if ($roster_record[nick]!="") {
-		mysql_query("insert into temp_user_roster(jid,nick,grp) values ('$roster_record[jid]','$roster_record[nick]','$roster_record[group]')") or die("Unexpected error");
+
+		// cleaning up data
+		$roster_jid = mysql_escape_string($roster_record[jid]);
+		$roster_nick = mysql_escape_string($roster_record[nick]);
+		$roster_grp = mysql_escape_string($roster_record[group]);
+		mysql_query("insert into temp_user_roster(jid,nick,grp) values ('$roster_jid','$roster_nick','$roster_grp')") or die("Unexpected error(2)");
+	
 	}
 
 }

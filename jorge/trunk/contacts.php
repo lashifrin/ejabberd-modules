@@ -82,7 +82,7 @@ if ($get_sort=="1") {
 	}
 
 
-$con_arr=mysql_query("select jid,nick,grp from temp_user_roster order by $order $s_direction") or die("Unexpected error");
+$con_arr=mysql_query("select jid,nick,grp from temp_user_roster order by $order $s_direction") or die("Unexpected error(4)");
 
 if (mysql_num_rows($con_arr)!=0) {
 
