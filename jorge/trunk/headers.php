@@ -79,7 +79,7 @@ debug(DEBUG,"User session: $token");
 // authentication checks. Ensure if session data is not altered... (only when we are inside Jorge)
 if (!preg_match("/index.php/i",$location)) {
 
-	if (check_registered_user($sess,$ejabberd_rpc,$xmpp_host) != true) { header("Location: index.php?act=logout"); exit; }
+	if (check_registered_user($sess,$ejabberd_rpc,$xmpp_host) !== true) { header("Location: index.php?act=logout"); exit; }
 
 	// we need user_id but only if we are not in not_enabled mode:
 	if(!preg_match("/not_enabled.php/i",$_SERVER['PHP_SELF'])) {

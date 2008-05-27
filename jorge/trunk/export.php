@@ -42,7 +42,7 @@ if ($rpc_host===false) {
 
 $ejabberd_rpc = new rpc_connector("$rpc_host","$rpc_port","$xmpp_host_dotted");
 
-if (check_registered_user($sess,$ejabberd_rpc,$xmpp_host) != true) { header("Location: index.php?act=logout"); exit; }
+if (check_registered_user($sess,$ejabberd_rpc,$xmpp_host) !== true) { header("Location: index.php?act=logout"); exit; }
 
 db_connect($mod_logdb);
 

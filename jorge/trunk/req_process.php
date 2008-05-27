@@ -42,7 +42,7 @@ db_connect($mod_logdb);
 $token=$sess->get('uid_l');
 
 // check user session
-if (check_registered_user($sess,$ejabberd_rpc,$xmpp_host) != true) { header("Location: index.php?act=logout"); exit; }
+if (check_registered_user($sess,$ejabberd_rpc,$xmpp_host) !== true) { header("Location: index.php?act=logout"); exit; }
 
 $user_id=get_user_id($token,$xmpp_host);
 if (!ctype_digit($user_id)) { print 'Service unavailable'; exit; }
