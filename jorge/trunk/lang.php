@@ -701,7 +701,7 @@ $fav_main[eng] = "Favorites";
 $fav_desc[pol] = pl_znaczki("Lista rozmów oznaczonych jako \"Ulubione\"");
 $fav_desc[eng] = "List of chats marked as favorites";
 
-$fav_add[pol] = pl_znaczki("Dodaj t± rozmowê do ulubionych");
+$fav_add[pol] = pl_znaczki("Dodaj tê rozmowê do ulubionych");
 $fav_add[eng] = "Add this chat to favorites";
 
 $fav_success[pol] = pl_znaczki("Rozmowa zosta³a dodana do Twoich <i>Ulubionych</i> !");
