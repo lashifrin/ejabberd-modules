@@ -70,7 +70,7 @@ if (!preg_match("/index.php/i",$location)) {
 	$result=mysql_query($jquery_search) or die("Unexpected error(3)");
 	while($row=mysql_fetch_array($result)) {
 
-		$jid = $row[jid];
+		$jid = htmlspecialchars($row[jid]);
 		print '"from:'.$jid.'", ';
 	}
 
