@@ -216,7 +216,7 @@ ready_for_query({q,Query},Client,St) ->
 	ok = gen_tcp:send(St#pgsql2.socket,Msg),
 	%{next_state,wait_for_squery_response,St#pgsql2{client_pid=Client,state_data=[]}};
 	{next_state,wait_for_equery_response,St#pgsql2{client_pid=Client,
-		state_data=#equery_r{decode_response=St#pgsql2.decode_response}}};
+		state_data=#equery_r{decode_response=St#pgsql2.decode_response,rows=[]}}};
 	
 ready_for_query({q,Query,Params,Options},Client,St) ->
 	ResponseFormat = proplists:get_value(protocol_response_format,Options,St#pgsql2.response_format),
@@ -224,7 +224,7 @@ ready_for_query({q,Query,Params,Options},Client,St) ->
 	Msg = pgsql2_proto_msgs:extended_query(Query,Params,ResponseFormat),
 	ok = gen_tcp:send(St#pgsql2.socket,Msg),
 	{next_state,wait_for_equery_response,
-		St#pgsql2{client_pid=Client,state_data=#equery_r{decode_response=DecodeResponse}}};
+		St#pgsql2{client_pid=Client,state_data=#equery_r{decode_response=DecodeResponse,rows=[]}}};
 	
 ready_for_query({execute_batch,Query,Params},Client,St) ->
 	Msg = pgsql2_proto_msgs:execute_batch(Query,Params),
@@ -262,7 +262,7 @@ wait_for_equery_response(#pg_error{msg=Error},_Listener,St) ->
 	
 wait_for_equery_response(#pg_ready_for_query{status=_Status},_Listener,St)->
 	#equery_r{rows=Rows} = St#pgsql2.state_data,
-	gen_fsm:reply(St#pgsql2.client_pid,{ok,Rows}),
+	gen_fsm:reply(St#pgsql2.client_pid,{ok,lists:reverse(Rows)}),
 	{reply,ok,ready_for_query,St#pgsql2{state_data=none}};
 		
 wait_for_equery_response(#pg_data_row{row=Row},_Listener,St=#pgsql2{state_data=EqueryData})->

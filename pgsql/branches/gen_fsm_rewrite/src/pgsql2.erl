@@ -146,13 +146,13 @@ execute(Pid,Query,Params) ->
 %%TODO: See status field in ready_for_query, to be sure
 %% that the transaction is going ok
 apply_in_tx(Pid,Fun,Args) ->
-	gen_fsm:sync_send_event(Pid,{q,"BEGIN"}),
+	ok = gen_fsm:sync_send_event(Pid,{execute,"BEGIN",[]}),
 	try 
 		R = apply(Fun,[Pid|Args]),
-		gen_fsm:sync_send_event(Pid,{q,"COMMIT"}),
+		ok = gen_fsm:sync_send_event(Pid,{execute,"COMMIT",[]}),
 		R
 	catch
-		Type:Error -> gen_fsm:sync_send_event(Pid,{q,"ROLLBACK"}),
+		Type:Error -> ok=gen_fsm:sync_send_event(Pid,{execute,"ROLLBACK",[]}),
 					  throw({tx_error,Type,Error})
 	end.
 		
