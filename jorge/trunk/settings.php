@@ -72,7 +72,7 @@ if ($del_a) {
 }
 
 // close account
-if($close)	{
+if ($close === $close_commit[$lang])	{
 
 	$close_now=rpc_close_account($user_id,$xmpp_host,$ejabberd_rpc);
 	if ($close_now === false) { 
@@ -152,7 +152,7 @@ print '<input name="set_pref" type="hidden" value="2">';
 print '<input name="sw_lang" type="hidden" value="t">';
 print '</td></tr></form>';
 print '<form action="settings.php" method="post" name="close_account">';
-print '<tr><td colspan="2"><hr size="1"/></td></tr>';
+print '<tr><td colspan="2" height="40"><hr size="1"/></td></tr>';
 print '<tr>';
 print '<td style="font-size: x-small;">'.$close_account[$lang].'</td>';
 print '<td><input name="close_acc" class="btn_set" type="submit" value="'.$close_commit[$lang].'" onClick="if (!confirm(\''.$close_warn[$lang].'\')) return false;"></td>';
