@@ -40,6 +40,12 @@ $mod_logdb[pass] = ""; // password
 $mod_logdb[name] = ""; // db name
 $mod_logdb[host] = ""; // host ip
 
+// Optional Google Apps support
+define("GAPPS", false);
+define("GAPPS_ACCOUNT","");
+define("GAPPS_PASSWORD","");
+define("GAPPS_DOMAIN","");
+
 // admin name (only name - without domain name):
 $admin_name = "";
 

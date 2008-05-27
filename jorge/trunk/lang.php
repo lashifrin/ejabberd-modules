@@ -749,6 +749,9 @@ $cont_chat_p[eng] = "<<< this chat is continuation from last day";
 $close_account[pol] = pl_znaczki("Usuñ konto z serwera:");
 $close_account[eng] = "Close your account:";
 
+$close_info[pol] = pl_znaczki("UWAGA: wraz z kontem XMPP zostanie usuniête konto z Google Apps!");
+$close_info[eng] = "WARNING: during account removal also account on Google Apps will be removed!";
+
 $close_warn[pol] = pl_znaczki("Czy napewno usun±æ konto i wszystkie wiadomo¶ci?");
 $close_warn[eng] = "Do you really want to remove all messages and user account?";
 

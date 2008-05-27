@@ -83,9 +83,39 @@ if($close)	{
 
 	elseif($close_now === true) {
 
-			$sess->finish();
-			header("Location: index.php?act=logout");
-			exit;
+			if(GAPPS === true) {
+
+				set_include_path('lib');
+	        		require_once 'lib/Zend/Loader.php';
+        			Zend_Loader::loadClass('Zend_Gdata');
+        			Zend_Loader::loadClass('Zend_Gdata_ClientLogin');
+        			Zend_Loader::loadClass('Zend_Gdata_Gapps');
+
+	        		try {
+        	        		$client = Zend_Gdata_ClientLogin::getHttpClient(GAPPS_ACCOUNT, GAPPS_PASSWORD, Zend_Gdata_Gapps::AUTH_SERVICE_NAME);
+                			$service = new Zend_Gdata_Gapps($client, GAPPS_DOMAIN);
+
+        			} catch (Zend_Gdata_App_HttpException $e) {
+                		
+					print "<center><b>Removal of Google Apps account failed. Please report it to admin!</b></center>";
+					exit;
+
+        			}
+
+				$user = $service->retrieveUser($token);
+                                $gapps_token = $user->login->username;
+	
+				if ($gapps_token === $token) {
+						
+						debug(DEBUG,"Deleting user: $gapps_token");
+						$service->deleteUser($token);
+				
+					}
+			}
+			
+		$sess->finish();
+		header("Location: index.php?act=logout");
+		exit;
 	}
 
 }
@@ -127,6 +157,11 @@ print '<tr>';
 print '<td style="font-size: x-small;">'.$close_account[$lang].'</td>';
 print '<td><input name="close_acc" class="btn_set" type="submit" value="'.$close_commit[$lang].'" onClick="if (!confirm(\''.$close_warn[$lang].'\')) return false;"></td>';
 print '</tr></form>';
+
+if (GAPPS === true) {
+		print '<tr><td colspan="2" style="color: red; font-size: xx-small; text-align: center;">'.$close_info[$lang].'</small></td></tr>';
+	}
+
 print '</table>';
 print '<hr size="1" noshade="" color="#c9d7f1"/>';
 // personal stats
