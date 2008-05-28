@@ -94,6 +94,13 @@ class roster {
 
 	}
 
+	public function sort_by_nick_group() {
+
+		$arr = $this->roster;
+		array_multisort($this->prepare_multisort("group"),SORT_ASC, $this->prepare_multisort("nick"),SORT_ASC,$arr);
+		$this->roster = $arr;
+	}
+
 	protected function sort_roster($dir,$field) {
 
 		$arr = $this->roster;
@@ -124,6 +131,7 @@ class roster {
 		return $ret;
 
 	}
+
 }
 
 ?>

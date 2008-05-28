@@ -23,6 +23,7 @@ require("func.php");
 require("lang.php");
 require("sessions.php");
 require("class.ejabberd_xmlrpc.php");
+require("class.roster.php");
 require("config.php");
 
 ob_start();
@@ -74,7 +75,7 @@ $result=db_q($user_id,$server,$tslice_table,$talker,$search_p,"3",$start,$xmpp_h
 
 $user_name=get_user_name($talker,$xmpp_host);
 $server_name=get_server_name($server,$xmpp_host);
-$nickname=query_nick_name($user_name,$server_name);
+$nickname=query_nick_name($ejabberd_roster,$user_name,$server_name);
 
 $lang=$sess->get('language');
 

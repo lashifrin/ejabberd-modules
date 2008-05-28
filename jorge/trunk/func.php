@@ -43,11 +43,9 @@ function db_connect($mod_logdb)
 }
 
 
-function query_nick_name($talker, $server="") {
+function query_nick_name($ejabberd_roster,$talker, $server="") {
 
-	$get_nick=mysql_query("select nick from temp_user_roster where jid = '$talker@$server'");
-	$row = mysql_fetch_row($get_nick);
-	$nickname = $row[0];
+	$nickname = $ejabberd_roster->get_nick("$talker"."@"."$server");
 	if ($nickname=="") { $nickname=$talker; }
 	return $nickname;
 

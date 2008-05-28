@@ -57,34 +57,36 @@ $get_dir = $_GET['o'];
 if (!ctype_digit($get_sort) AND !ctype_digit($get_dir)) { unset($get_sort); unset($get_dir); }
 
 if ($get_dir=="1") {
-		$s_direction="desc";
+		$dir="za";
 		$get_dir="2";
 	}
 	elseif($get_dir=="2"){
-		$s_direction="asc";
+		$dir="az";
 		$get_dir="1";
 	}
 	else{
+		$dir="az";
 		$get_dir="2";
 	}
 
 if ($get_sort=="1") {
-		$order="jid";
+		$ejabberd_roster->sort_by_jid($dir);
 	}
 	elseif($get_sort=="2") {
-		$order="nick";
+		$ejabberd_roster->sort_by_nick($dir);
 	}
 	elseif($get_sort=="3") {
-		$order="grp";
+
+		$ejabberd_roster->sort_by_group($dir);
 	}
 	else{
-		$order="grp,nick";
+		$ejabberd_roster->sort_by_nick_group();
 	}
 
 
-$con_arr=mysql_query("select jid,nick,grp from temp_user_roster order by $order $s_direction") or die("Unexpected error(4)");
+$roster_con = $ejabberd_roster->get_roster();
 
-if (mysql_num_rows($con_arr)!=0) {
+if ($roster_con) {
 
 	$do_notlog_list = get_do_log_list($user_id,$xmpp_host);
 
@@ -105,11 +107,12 @@ if (mysql_num_rows($con_arr)!=0) {
 	print '<tr class="spacer"><td colspan="5"></td></tr>';
 	print '<tbody id="searchfield">';
 
-	while ($con_row=mysql_fetch_array($con_arr)) {
-		$nick = $con_row[nick];
-		$jid = $con_row[jid];
-		$grp = $con_row[grp];
-		if ($grp=="") { $grp=$con_no_g[$lang]; }
+	while (array_keys($roster_con)) {
+
+		$jid = key($roster_con);
+		$roster_item = array_shift($roster_con);
+		$nick = $roster_item[nick];
+		$grp  = $roster_item[group];
 		if ($col=="e0e9f7") { $col="e8eef7"; } else { $col="e0e9f7"; }
 		$predefined="$jid";
 		$predefined=encode_url($predefined,$token,$url_key);

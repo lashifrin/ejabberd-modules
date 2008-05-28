@@ -30,24 +30,29 @@ if ($_POST['chat_map']) {
 	$con_map=decode_url_simple($_GET['chat_map'],$token,$url_key);
 	}
 
-// get list
-$contacts_arr=mysql_query("select jid,nick,grp from temp_user_roster order by nick") or die("Unexpected error");
+// prepare roster object
+$ejabberd_roster->sort_by_nick("az");
+$roster_chat = $ejabberd_roster->get_roster();
 
 print '<form action="chat_map.php" method="post" name="chat_map_form">'."\n";
 print '<span style="padding-right: 20px">'.$chat_m_select[$lang].'</span>'."\n";
 print '<select id="c_map" style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="chat_map" size="0" onchange="javascript:document.chat_map_form.submit();">'."\n";
 print '<option value="null">'.$chat_c_list[$lang].'</option>';
 
-	while($con_row=mysql_fetch_array($contacts_arr)) {
-		$name = $con_row[nick];
-		$jid = $con_row[jid];
-		$grp = $con_row[grp];
-		if ($grp=="") { $grp=$map_no_g[$lang]; }
+	while (array_keys($roster_chat)) {
+		
+		$jid = key($roster_chat);
+		$roster_item = array_shift($roster_chat);
+		$name = $roster_item[nick];
+		$grp  = $roster_item[group];
 		if ($con_map==$jid) { $selected="selected"; } else { $selected=""; }
 		print '<option '.$selected.' value=\''.encode_url($jid,$token,$url_key).'\'>'.htmlspecialchars($name).' ('.htmlspecialchars($grp).')</option>'."\n";
+
 	}
+
 print '</select>';
 print '</form>'."\n";
+
 if ($con_map AND $_POST['chat_map'] != "null") {
 
 	print "<h2>".$cal_head[$lang].":</h2>";

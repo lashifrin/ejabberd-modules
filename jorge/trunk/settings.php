@@ -178,7 +178,7 @@ while ($result=mysql_fetch_array($top_ten_personal)) {
 	print '<tr><td style="text-align: center; font-weight: bold;">';
 	print $result[count];
 	print '</td><td>';
-	$nickname=htmlspecialchars(query_nick_name(mysql_escape_string(get_user_name($result[peer_name_id],$xmpp_host)),mysql_escape_string(get_server_name($result[peer_server_id],$xmpp_host))));
+	$nickname=query_nick_name($ejabberd_roster,get_user_name($result[peer_name_id],$xmpp_host), get_server_name($result[peer_server_id],$xmpp_host));
 	print '<b>'.$nickname.'</b>';
 	print '&nbsp;<small>('.htmlspecialchars(get_user_name($result[peer_name_id],$xmpp_host)).'@'.htmlspecialchars(get_server_name($result[peer_server_id],$xmpp_host)).')</small>';
 	print '</td><td>';

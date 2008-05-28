@@ -224,7 +224,7 @@ if ($tslice) {
 		)") or die;
 	while ($sort_me = mysql_fetch_array($result)) {
 		
-		$roster_name=mysql_escape_string(query_nick_name(mysql_escape_string($sort_me[username]),mysql_escape_string($sort_me[server_name])));
+		$roster_name=mysql_escape_string(query_nick_name($ejabberd_roster,$sort_me[username]),$sort_me[server_name]);
 
 		mysql_query("insert into tslice_temp (roster_name,username,server_name,todaytalk,server,lcount) values (
 			'$roster_name',
@@ -265,7 +265,7 @@ if ($tslice) {
                 $user_name = $entry[username];
                 $server_name = $entry[server_name];
                 if ($talker==$entry["todaytalk"] AND $server==$entry[server]) { $bold_b="<font color=\"#FFCC00\"><b>"; $bold_e="</b></font>"; $mrk=1; } else { $bold_b=""; $bold_e=""; $mrk=0; }
-                        $nickname = query_nick_name($user_name,$server_name);
+                        $nickname = query_nick_name($ejabberd_roster,$user_name,$server_name);
                         if ($nickname=="f") { $nickname=$not_in_r[$lang]; }
 			// this is hack for not displaying chats with jids without names...
 			if ($user_name!="") {
@@ -284,7 +284,7 @@ if ($tslice) {
 				if ($mrk==1 AND $previous_t != NULL) { 
 						print '<a class="nav_np" id="pretty" title="'.$jump_to_prev[$lang].': '.$previous_t.'" href="calendar_view.php?a='.$to_base_prev.'"><<< </a>'; 
 					}
-				print '<a class="caldays3" id="pretty" href="?a='.$to_base2.'" title="JabberID:;'.htmlspecialchars($user_name).'@'.htmlspecialchars($server_name).';---;<b>'.$chat_lines[$lang].$entry[lcount].'</b>">'.$bold_b.cut_nick(htmlspecialchars($nickname)).$bold_e.'</a>';
+				print '<a class="caldays3" id="pretty" href="?a='.$to_base2.'" title="JabberID:;'.htmlspecialchars($user_name).'@'.htmlspecialchars($server_name).';---;<b>'.$chat_lines[$lang].$entry[lcount].'</b>">'.$bold_b.cut_nick($nickname).$bold_e.'</a>';
 				if ($mrk==1 AND $next_t != NULL) { 
 						print '<a class="nav_np" id="pretty" title="'.$jump_to_next[$lang].': '.$next_t.'" href="calendar_view.php?a='.$to_base_next.'"> >>></a>'; 
 					}
@@ -331,7 +331,7 @@ if ($talker) {
         if ($result=="f") { header ("Location: main.php");  }
         $talker_name = get_user_name($talker,$xmpp_host);
         $server_name = get_server_name($server,$xmpp_host);
-        $nickname = query_nick_name($talker_name,$server_name);
+        $nickname = query_nick_name($ejabberd_roster,$talker_name,$server_name);
         if ($nickname=="f") { $nickname=$not_in_r[$lang]; }
 	$predefined="$talker_name@$server_name";
 	$predefined=encode_url($predefined,$token,$url_key);
@@ -433,7 +433,7 @@ if ($talker) {
 
                 if ($aa<2 AND $tt<2) {
 
-                                print '<td style="padding-left: 5px; padding-right: 10px; nowrap="nowrap">'.cut_nick(htmlspecialchars($out));
+                                print '<td style="padding-left: 5px; padding-right: 10px; nowrap="nowrap">'.cut_nick($out);
                                 print '<a name="'.$licz.'"></a>';
 
                                 if ($out!=$token) {

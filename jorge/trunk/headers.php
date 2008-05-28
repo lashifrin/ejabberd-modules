@@ -26,6 +26,16 @@ if (__FILE__==$_SERVER['SCRIPT_FILENAME']) {
 
 }
 
+define(pol,pol);
+define(eng,eng);
+define(user,user);
+define(pass,pass);
+define(jid,jid);
+define(nick,nick);
+define(group,group);
+define(days,days);
+
+
 // turn on buffering
 ob_start();
 
@@ -33,11 +43,12 @@ ob_start();
 header("content-type: text/html; charset=utf-8");
 
 // error reporting to off
-error_reporting(E_NONE);
+#error_reporting(E_ALL);
 
 include("func.php"); // functions
 include("sessions.php"); // sessions handling
 include("class.ejabberd_xmlrpc.php"); // rpc class
+include("class.roster.php"); // roster
 include("config.php"); // read configuration
 include("lang.php"); // language pack
 

@@ -342,15 +342,11 @@ print '<p align="center"><b>'.$alert.'</b></p>';
 // Get user roster.
 $rpc_roster = $ejabberd_rpc->get_roster();
 
-mysql_query("create temporary table temp_user_roster (
-		jid varchar(255),
-		nick varchar(255),
-		grp varchar(100)
-		)") or die("Unexpected error(1)");
+// creater roster object and rewrite it to portable multidimentional array
+$ejabberd_roster = new roster();
 
 foreach ($rpc_roster as $roster_record) {
 
-	// put no group if user is in general group
 	if ($roster_record[group]=="") { 
 		$roster_record[group] = $con_no_g[$lang]; 
 	}
@@ -358,15 +354,9 @@ foreach ($rpc_roster as $roster_record) {
 	// avoid contacts without nick
 	if ($roster_record[nick]!="") {
 
-		// cleaning up data
-		$roster_jid = mysql_escape_string($roster_record[jid]);
-		$roster_nick = mysql_escape_string($roster_record[nick]);
-		$roster_grp = mysql_escape_string($roster_record[group]);
-		mysql_query("insert into temp_user_roster(jid,nick,grp) values ('$roster_jid','$roster_nick','$roster_grp')") or die("Unexpected error(2)");
+		$ejabberd_roster->add_item($roster_record[jid],$roster_record[nick],$roster_record[group]);
 	
 	}
-
 }
-
 
 ?>
