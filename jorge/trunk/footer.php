@@ -66,12 +66,14 @@ if (!preg_match("/index.php/i",$location)) {
 
 	<?
 	// this is for local autocomplete, TODO: make it dynamic via AJAX
-	$jquery_search="select jid from temp_user_roster order by jid";
-	$result=mysql_query($jquery_search) or die("Unexpected error(3)");
-	while($row=mysql_fetch_array($result)) {
+	$ejabberd_roster->sort_by_jid("az");
+	$roster_auto = $ejabberd_roster->get_roster();
+	while(array_keys($roster_auto)) {
 
-		$jid = htmlspecialchars($row[jid]);
-		print '"from:'.$jid.'", ';
+		$jid = htmlspecialchars(key($roster_auto));
+		array_shift($roster_auto);
+		print '"from:'.$jid.'",';
+
 	}
 
 	print "\" \"";

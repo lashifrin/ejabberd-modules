@@ -17,6 +17,13 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+/*
+Known issue:
+Roster index have unique key set on JabberID so if user have same jid in 2 or more groups only first is included in index. As this is quite rare situation i consider it as minor bug and will be fixed later.
+
+*/
+
+
 class roster {
 
         protected $roster_item;
