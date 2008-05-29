@@ -228,7 +228,7 @@ if ($tslice) {
 		$user_name = $entry[username];
 		$server_name = $entry[server_name];
 		if ($talker==$entry["todaytalk"] AND $server==$entry[server]) { $bold_b="<b>"; $bold_e="</b>"; } else { $bold_b=""; $bold_e=""; }
-			$nickname = query_nick_name($ejabberd_roster,$user_name,$server_name);
+			$nickname = $entry[roster_name];
 			if ($nickname=="f") { $nickname=$not_in_r[$lang]; }
 			$to_base2 = "$tslice@$entry[todaytalk]@$entry[server]@";
 			$to_base2 = encode_url($to_base2,$token,$url_key);

@@ -9,7 +9,7 @@ modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
 of the License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
+/This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -224,7 +224,7 @@ if ($tslice) {
 		)") or die;
 	while ($sort_me = mysql_fetch_array($result)) {
 		
-		$roster_name=mysql_escape_string(query_nick_name($ejabberd_roster,$sort_me[username]),$sort_me[server_name]);
+		$roster_name=mysql_escape_string(query_nick_name($ejabberd_roster,$sort_me[username],$sort_me[server_name]));
 
 		mysql_query("insert into tslice_temp (roster_name,username,server_name,todaytalk,server,lcount) values (
 			'$roster_name',
@@ -265,7 +265,7 @@ if ($tslice) {
                 $user_name = $entry[username];
                 $server_name = $entry[server_name];
                 if ($talker==$entry["todaytalk"] AND $server==$entry[server]) { $bold_b="<font color=\"#FFCC00\"><b>"; $bold_e="</b></font>"; $mrk=1; } else { $bold_b=""; $bold_e=""; $mrk=0; }
-                        $nickname = query_nick_name($ejabberd_roster,$user_name,$server_name);
+			$nickname = $entry[roster_name];
                         if ($nickname=="f") { $nickname=$not_in_r[$lang]; }
 			// this is hack for not displaying chats with jids without names...
 			if ($user_name!="") {
