@@ -89,7 +89,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
 		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
 		$search_loc=1;
-		if ($token==$admin_name) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
+		if ($token==ADMIN_NAME) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 	}
 	elseif(preg_match("/main.php/i",$location))
 	{
@@ -101,7 +101,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
 		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
 		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
-		if ($token==$admin_name) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
+		if ($token==ADMIN_NAME) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 
 	}
 	elseif(preg_match("/my_links.php/i",$location))
@@ -114,7 +114,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
 		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
 		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
-		if ($token==$admin_name) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
+		if ($token==ADMIN_NAME) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 
 
 	}
@@ -128,7 +128,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
 		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
 		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
-		if ($token==$admin_name) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
+		if ($token==ADMIN_NAME) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 
 	}
 	elseif(preg_match("/contacts.php/i", $location))
@@ -141,7 +141,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_contacts='<b>'.$menu_item_contacts[$lang].'</b>';
 		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
 		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
-		if ($token==$admin_name) { $menu_stats=' | <a class="mmenu" href="stats.php">Stats</a>'; }
+		if ($token==ADMIN_NAME) { $menu_stats=' | <a class="mmenu" href="stats.php">Stats</a>'; }
 
 	}
 	elseif(preg_match("/stats.php/i", $location))
@@ -154,7 +154,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
 		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
 		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
-		if ($token==$admin_name) { $menu_stats=' | <b>Stats</b></a>'; }
+		if ($token==ADMIN_NAME) { $menu_stats=' | <b>Stats</b></a>'; }
 
 		
 	}
@@ -168,7 +168,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
 		$menu_logger='<b>'.$menu_item_logs[$lang].'</b>';
 		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
-		if ($token==$admin_name) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
+		if ($token==ADMIN_NAME) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 
 		
 	}
@@ -182,7 +182,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
 		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
 		$menu_trash='<b>'.$menu_item_trash[$lang].'('.$tr_n.')</b>';
-		if ($token==$admin_name) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
+		if ($token==ADMIN_NAME) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 
 		
 	}
@@ -196,7 +196,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
 		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
 		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
-		if ($token==$admin_name) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
+		if ($token==ADMIN_NAME) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 
 		
 	}
@@ -210,7 +210,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
 		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
 		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
-		if ($token==$admin_name) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
+		if ($token==ADMIN_NAME) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 
 		
 	}
@@ -224,7 +224,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
 		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
 		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
-		if ($token==$admin_name) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
+		if ($token==ADMIN_NAME) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 	}
 	elseif(preg_match("/favorites.php/i", $location))
 	{
@@ -236,7 +236,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
 		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
 		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
-		if ($token==$admin_name) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
+		if ($token==ADMIN_NAME) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 	}
 // check if archivization is currently enabled...
 if ($sess->get('log_status') == "0") { 

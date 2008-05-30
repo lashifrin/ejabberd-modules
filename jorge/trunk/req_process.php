@@ -37,7 +37,7 @@ $rpc_host = check_rpc_server($rpc_arr,$rpc_port);
 $ejabberd_rpc = new rpc_connector("$rpc_host","$rpc_port","$xmpp_host_dotted");
 
 // db connect
-db_connect($mod_logdb);
+db_connect(MYSQL_HOST,MYSQL_USER,MYSQL_PASS,MYSQL_NAME);
 
 $token=$sess->get('uid_l');
 

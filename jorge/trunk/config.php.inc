@@ -35,10 +35,10 @@ $rpc_arr[0] = "192.168.0.1"; // example
 $rpc_arr[1] = "192.168.0.2"; // example
 
 // MySQL database where mod_logdb is running on:
-$mod_logdb[user] = ""; // username
-$mod_logdb[pass] = ""; // password
-$mod_logdb[name] = ""; // db name
-$mod_logdb[host] = ""; // host ip
+define("MYSQL_USER", ""); // username
+define("MYSQL_PASS", ""); // password
+define("MYSQL_NAME",""); // db name
+define("MYSQL_HOST", ""); // host ip
 
 // Optional Google Apps support
 define("GAPPS", false);
@@ -47,7 +47,7 @@ define("GAPPS_PASSWORD","");
 define("GAPPS_DOMAIN","");
 
 // admin name (only name - without domain name):
-$admin_name = "";
+define("ADMIN_NAME","");
 
 // jabber server host name. Replace dots with underline (f.e: jabber_example_com)
 $xmpp_host = "";

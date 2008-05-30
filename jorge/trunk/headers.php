@@ -26,16 +26,6 @@ if (__FILE__==$_SERVER['SCRIPT_FILENAME']) {
 
 }
 
-define(pol,pol);
-define(eng,eng);
-define(user,user);
-define(pass,pass);
-define(jid,jid);
-define(nick,nick);
-define(group,group);
-define(days,days);
-
-
 // turn on buffering
 ob_start();
 
@@ -43,7 +33,7 @@ ob_start();
 header("content-type: text/html; charset=utf-8");
 
 // error reporting to off
-#error_reporting(E_ALL);
+error_reporting(E_NONE);
 
 include("func.php"); // functions
 include("sessions.php"); // sessions handling
@@ -79,7 +69,7 @@ if ($rpc_host===false) {
 $ejabberd_rpc = new rpc_connector("$rpc_host","$rpc_port","$xmpp_host_dotted");
 
 // mod_logdb dbconnect
-db_connect($mod_logdb);
+db_connect(MYSQL_HOST,MYSQL_USER,MYSQL_PASS,MYSQL_NAME);
 
 // username (token)
 $token=$sess->get('uid_l');
@@ -105,7 +95,12 @@ if (!preg_match("/index.php/i",$location)) {
 
 }
 
-$time_start=getmicrotime(); // debuging info _start_
+// run only for admins
+if ($token===ADMIN_NAME) {
+
+		$time_start=getmicrotime();
+
+}
 
 $sw_lang_t=$_GET[sw_lang];
 if ($sw_lang_t=="t") 
@@ -151,7 +146,7 @@ if (preg_match("/main.php/i",$location)) {
 	<script type="text/javascript" src="lib/jquery.autocomplete.pack.js"></script>
 <?
 // prevent loading includes as long as user is not admin.
-if ($token==$admin_name) {
+if ($token==ADMIN_NAME) {
 ?>
 	<script language="javascript" type="text/javascript" src="lib/jquery.flot-0.1.pack.js"></script>
 <?

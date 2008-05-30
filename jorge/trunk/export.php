@@ -45,7 +45,8 @@ $ejabberd_rpc = new rpc_connector("$rpc_host","$rpc_port","$xmpp_host_dotted");
 
 if (check_registered_user($sess,$ejabberd_rpc,$xmpp_host) !== true) { header("Location: index.php?act=logout"); exit; }
 
-db_connect($mod_logdb);
+// connect to mod_logdb
+db_connect(MYSQL_HOST,MYSQL_USER,MYSQL_PASS,MYSQL_NAME);
 
 $token=$sess->get('uid_l');
 $user_id=get_user_id($token,$xmpp_host);

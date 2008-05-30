@@ -52,7 +52,7 @@ print '<div align="right" style="clear: left;"><a href="mailto:zbyszek@jabster.p
 // footer for admins...
 $time_end = getmicrotime();
 $time = substr($time_end - $time_start, 0, 10);
-if ($token==$admin_name) {print '<small>'.$admin_site_gen[$lang].$time.'s.</small>'; };
+if ($token==ADMIN_NAME) {print '<small>'.$admin_site_gen[$lang].$time.'s.</small>'; };
 
 // execude following code only when user is logged in
 if (!preg_match("/index.php/i",$location)) {

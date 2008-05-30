@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 require ("headers.php");
 include ("upper.php");
 
-if ($admin_name!=$token) { print 'no access'; exit; }
+if (ADMIN_NAME!=$token) { print 'no access'; exit; }
 
 // get dates
 $today = date("Y-n-j");

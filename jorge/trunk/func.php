@@ -35,10 +35,10 @@ function getmicrotime(){
 
 
 
-function db_connect($mod_logdb)
+function db_connect($MYSQL_HOST,$MYSQL_USER,$MYSQL_PASS,$MYSQL_NAME)
 {
-	$conn=mysql_connect("$mod_logdb[host]", "$mod_logdb[user]", "$mod_logdb[pass]") or die ("Us³uga chwilowo niedostêpna. Spróbuj za chwile. We're sorry but service is currently unavailable. Please try in few seconds.");
-	mysql_select_db ("$mod_logdb[name]") or die ("Oops...");
+	$conn=mysql_connect("$MYSQL_HOST", "$MYSQL_USER", "$MYSQL_PASS") or die ("We're sorry but service is currently unavailable. Please try in few seconds.");
+	mysql_select_db ("$MYSQL_NAME") or die ("DB Error");
 	return $conn;
 }
 
