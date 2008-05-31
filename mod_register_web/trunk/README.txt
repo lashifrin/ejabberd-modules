@@ -3,7 +3,7 @@
 
 	Homepage: http://www.ejabberd.im/mod_register_web
 	Author: Badlop
-	Module for ejabberd 2.0.0 or newer
+	Module for ejabberd 2.0.2 or newer
 
 
 	DESCRIPTION
@@ -24,8 +24,7 @@ Add to ejabberd.cfg, 'modules' section the basic configuration:
 ]}.
 
 
-In the 'listen' section enable the web page.
-In this example the page is served in https://example.org:5281/register/
+In the 'listen' section enable the web page:
 {listen, [
   ...
   {5281, ejabberd_http, [
@@ -38,9 +37,17 @@ In this example the page is served in https://example.org:5281/register/
   ...
 ]}.
 
+In this example the page is served in https://example.org:5281/register/
+
+Make sure to include the last / character in the URL.
+Otherwise when you enter a subpage the URL will not be correct, 
+for example: http://localhost:5281/new  --->  404 Not Found
+
 
 	FEATURE REQUESTS
 	----------------
+
+ * In the pages, hide the password characters: replace with ***
 
  * The request record should include Host, Port and BasePath of request.
  * Allow configuration of the hardcoded "register" path in URL.
