@@ -4,7 +4,7 @@
 
 	Homepage: http://www.ejabberd.im/mod_ctlextra
 	Author: Badlop
-	Module for ejabberd 2.0.0 or newer
+	Module for ejabberd 1.1.x
 
 
 	CONFIGURATION
