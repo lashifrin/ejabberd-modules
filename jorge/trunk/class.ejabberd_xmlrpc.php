@@ -236,6 +236,13 @@ class rpc_connector {
 					}
 	}
 
+	public function online_users() {
+		
+		$this->method = "online_users";
+		$this->parms = "null";
+		return $this->commit_rpc();
+	}
+
 	public function test_rpc() {
 
 		$this->method = "echothis";

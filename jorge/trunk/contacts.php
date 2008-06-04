@@ -115,9 +115,9 @@ if ($roster_con) {
 		$grp  = $roster_item[group];
 		if ($col=="e0e9f7") { $col="e8eef7"; } else { $col="e0e9f7"; }
 		$predefined="$jid";
-		$predefined=encode_url($predefined,$token,$url_key);
+		$predefined=encode_url($predefined,TOKEN,$url_key);
 		$predefined_s="from:$jid";
-		$predefined_s=encode_url($predefined_s,$token,$url_key);
+		$predefined_s=encode_url($predefined_s,TOKEN,$url_key);
 		if (in_array($jid,$do_notlog_list) == TRUE ) { $selected="selected"; } else { $selected=""; }
 		if ($selected!="") { $col="b7b7b7"; }
 		print '<tr bgcolor="'.$col.'" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#'.$col.'\';">'."\n";

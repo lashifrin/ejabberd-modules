@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 require ("headers.php");
 include ("upper.php");
 
-if (ADMIN_NAME!=$token) { print 'no access'; exit; }
+if (ADMIN_NAME!==TOKEN) { print 'no access'; exit; }
 
 // get dates
 $today = date("Y-n-j");
@@ -34,12 +34,13 @@ $top_ten_talkers_today="select at, owner_id, peer_name_id, peer_server_id, count
 $top_ten_talkers_yesterday="select at, owner_id, peer_name_id, peer_server_id, count from `logdb_stats_$xmpp_host` where at = (select date_format((date_sub(curdate(),interval 1 day)), \"%Y-%c-%e\")) order by count desc limit 10";
 
 // global user stats and total messages - last 30 days
-$month_stats="select count(distinct(owner_id)) users_total, at, sum(count) as messages from `logdb_stats_$xmpp_host` group by at order by str_to_date(at,'%Y-%m-%d') desc limit 30";
-$result=mysql_query($month_stats);
+$month_stats="select count(distinct(owner_id)) users_total, unix_timestamp(at)*1000 as time_unix, sum(count) as messages from `logdb_stats_$xmpp_host` group by at order by str_to_date(at,'%Y-%m-%d') desc limit 30";
+$result=mysql_query($month_stats) or die;
 if (mysql_num_rows($result)<30) { $mark1="1"; } else { $mark1="0"; }
 
 while ($entry=mysql_fetch_array($result)) {
 	$i++;
+	$f[$i] = $entry[time_unix];
 	$d[$i] = $entry[messages];
 	$e[$i] = $entry[users_total];
 	
@@ -118,7 +119,7 @@ $(function () {
 	$cn=31;
 	for ($z=1;$z<31;$z++) {
 		$cn--;
-		print "[$z,$e[$cn]],";
+		print "[$f[$cn],$e[$cn]],";
 	}
 ?>
 
@@ -131,7 +132,7 @@ $(function () {
 	$cn=31;
 	for ($z=1; $z<31; $z++) {
 		$cn--;
-		print "[$z,$d[$cn]],";
+		print "[$f[$cn],$d[$cn]],";
 	}
 ?>
 
@@ -158,30 +159,25 @@ $(function () {
 
 	];
     
-    $.plot($("#no_users"), [
+    $.plot($("#no_users"),
+    			[d1], {
+				xaxis: { mode: "time" },
+				label: "Users who enabled message archivization - last 30 days",
+				shadowSize: 10,
+				lines: { show: true, fill: true },
+				points: { show: true, fill: true, radius: 3}
+			});
 
-		{
-		color: "#ff0000",
-		label: "Users who enabled message archivization - last 30 days", shadowSize: 10, data: d1,
-		lines: { show: true, fill: true },
-		points: { show: true, fill: true, radius: 3}
-		}
-
-
-
-	]);
-    $.plot($("#no_messages"), [
-
-		{
-		color: "#3480ff",
-		label: "Messages logged by server - last 30 days", shadowSize: 10, data: d2,
-		lines: { show: true, fill: true },
-		points: { show: true, fill: true, radius: 3}
-		}
-
-
-
-	]);
+    $.plot($("#no_messages"), 
+    			[d2],{ 
+				xaxis: { mode: "time" },
+				label: "Messages logged by server - last 30 days",
+				shadowSize: 10,
+				lines: { show: true, fill: true },
+				points: { show: true, fill: true, radius: 3}
+				
+			});
+    
     $.plot($("#hourly_yesterday"), [
 
 		{

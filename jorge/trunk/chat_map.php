@@ -24,10 +24,10 @@ include ("upper.php");
 print '<h2>'.$chat_map[$lang].'</h2>';
 print '<small>'.$chat_select[$lang].'</small><br><br>';
 if ($_POST['chat_map']) {
-	$con_map=decode_url_simple($_POST['chat_map'],$token,$url_key);
+	$con_map=decode_url_simple($_POST['chat_map'],TOKEN,$url_key);
 	}
 	elseif ($_GET['chat_map']) {
-	$con_map=decode_url_simple($_GET['chat_map'],$token,$url_key);
+	$con_map=decode_url_simple($_GET['chat_map'],TOKEN,$url_key);
 	}
 
 // prepare roster object
@@ -46,7 +46,7 @@ print '<option value="null">'.$chat_c_list[$lang].'</option>';
 		$name = $roster_item[nick];
 		$grp  = $roster_item[group];
 		if ($con_map==$jid) { $selected="selected"; } else { $selected=""; }
-		print '<option '.$selected.' value=\''.encode_url($jid,$token,$url_key).'\'>'.htmlspecialchars($name).' ('.htmlspecialchars($grp).')</option>'."\n";
+		print '<option '.$selected.' value=\''.encode_url($jid,TOKEN,$url_key).'\'>'.htmlspecialchars($name).' ('.htmlspecialchars($grp).')</option>'."\n";
 
 	}
 
@@ -91,7 +91,7 @@ if ($con_map AND $_POST['chat_map'] != "null") {
 
 		if (count($days)>=1) {
 			print '<div style="float: left;">';
-			echo pl_znaczki(calendar($user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,2,$name_peer,$server_peer,$cal_days));
+			echo pl_znaczki(calendar($user_id,$xmpp_host,$y,$m,$days,TOKEN,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,2,$name_peer,$server_peer,$cal_days));
 			unset($days);
 			print '</div>';
 			}

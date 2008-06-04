@@ -46,13 +46,13 @@ print '<div align="right" style="clear: left;"><a href="mailto:zbyszek@jabster.p
 <div style="background-image: url(img/bell-down.png); height: 3px;"></div>
 <div align="center"><? print $links; ?></div><br>
 <div align="center" style="color: gray;"><? print $copy; ?></div>
-<p style="font-size: xx-small; text-align: right;">v1.3.500</p><br>
+<p style="font-size: xx-small; text-align: right;">v1.4.0</p><br>
 <?
 
 // footer for admins...
 $time_end = getmicrotime();
 $time = substr($time_end - $time_start, 0, 10);
-if ($token==ADMIN_NAME) {print '<small>'.$admin_site_gen[$lang].$time.'s.</small>'; };
+if (TOKEN==ADMIN_NAME) {print '<small>'.$admin_site_gen[$lang].$time.'s.</small>'; };
 
 // execude following code only when user is logged in
 if (!preg_match("/index.php/i",$location)) {

@@ -27,7 +27,7 @@ print '<small>'.$trash_desc[$lang].'</small></h2>';
 $action=$_GET['a'];
 
 // decompose link
-$variables = decode_url2($action,$token,$url_key);
+$variables = decode_url2($action,TOKEN,$url_key);
 $tslice = $variables[tslice];
 $talker = $variables[talker];
 $server = $variables[server];
@@ -43,7 +43,7 @@ if ($action=="undelete") {
         	if (undo_deleted_chat($talker,$server,$user_id,$tslice,$xmpp_host,$lnk)=="t") {
 
 			$back_link="$tslice@$talker@$server@";
-			$back_link=encode_url($back_link,$token,$url_key);
+			$back_link=encode_url($back_link,TOKEN,$url_key);
                 	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 200pt;">'.$undo_info[$lang].'<br>';
 			print '<a href="'.$view_type.'?a='.$back_link.'" style="color: blue;">'.$trash_vit[$lang].'</a></div></center><br>';
 
@@ -106,11 +106,11 @@ if (mysql_num_rows($result)==0) {
 			$nickname = query_nick_name($ejabberd_roster,$talker,$server_name);
 			print '<tr><td style="padding-left: 10px; padding-right: 10px;"><b>'.$nickname.'</b> (<i>'.htmlspecialchars($talker).'@'.htmlspecialchars($server_name).'</i>)</td><td style="text-align: center;">'.$tslice.'</td>';
 			print '<td style="padding-left: 5px; padding-right: 5px; font-size: x-small;">'.$entry[timeframe].'</td>';	
-			$reconstruct_link = encode_url("$tslice@$entry[peer_name_id]@$entry[peer_server_id]@", $token,$url_key); // try to reconstruct oryginal link
+			$reconstruct_link = encode_url("$tslice@$entry[peer_name_id]@$entry[peer_server_id]@",TOKEN,$url_key); // try to reconstruct oryginal link
 			$undelete_link = "$tslice@$entry[peer_name_id]@$entry[peer_server_id]@@@$reconstruct_link@undelete@";
-			$undelete_link = encode_url($undelete_link,$token,$url_key);
+			$undelete_link = encode_url($undelete_link,TOKEN,$url_key);
 			$delete_link = "$tslice@$entry[peer_name_id]@$entry[peer_server_id]@@@$reconstruct_link@delete@";
-			$delete_link = encode_url($delete_link,$token,$url_key);
+			$delete_link = encode_url($delete_link,TOKEN,$url_key);
 			print '<td style="padding-left: 10px;"><a href="trash.php?a='.$undelete_link.'">'.$trash_undel[$lang].'</a></td>';
 			print '<td style="padding-left: 10px;"><a href="trash.php?a='.$delete_link.'" onClick="if (!confirm(\''.$del_conf[$lang].'\')) return false;">'.$trash_del[$lang].'</a></td>';
 			print '</tr>';

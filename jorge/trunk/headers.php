@@ -72,10 +72,10 @@ $ejabberd_rpc = new rpc_connector("$rpc_host","$rpc_port","$xmpp_host_dotted");
 db_connect(MYSQL_HOST,MYSQL_USER,MYSQL_PASS,MYSQL_NAME);
 
 // username (token)
-$token=$sess->get('uid_l');
+define(TOKEN,$sess->get('uid_l'));
 
 //debug
-debug(DEBUG,"User session: $token");
+debug(DEBUG,"User session:".TOKEN);
 
 // authentication checks. Ensure if session data is not altered... (only when we are inside Jorge)
 if (!preg_match("/index.php/i",$location)) {
@@ -85,7 +85,7 @@ if (!preg_match("/index.php/i",$location)) {
 	// we need user_id but only if we are not in not_enabled mode:
 	if(!preg_match("/not_enabled.php/i",$_SERVER['PHP_SELF'])) {
 
-		$user_id=get_user_id($token,$xmpp_host);
+		$user_id=get_user_id(TOKEN,$xmpp_host);
 		if (!ctype_digit($user_id)) { 
 
 				print 'Ooops...error(0.1)'; 
@@ -96,7 +96,7 @@ if (!preg_match("/index.php/i",$location)) {
 }
 
 // run only for admins
-if ($token===ADMIN_NAME) {
+if (TOKEN===ADMIN_NAME) {
 
 		$time_start=getmicrotime();
 
@@ -146,9 +146,9 @@ if (preg_match("/main.php/i",$location)) {
 	<script type="text/javascript" src="lib/jquery.autocomplete.pack.js"></script>
 <?
 // prevent loading includes as long as user is not admin.
-if ($token==ADMIN_NAME) {
+if (TOKEN==ADMIN_NAME) {
 ?>
-	<script language="javascript" type="text/javascript" src="lib/jquery.flot-0.1.pack.js"></script>
+	<script language="javascript" type="text/javascript" src="lib/jquery.flot.pack.js"></script>
 <?
 }
 ?>

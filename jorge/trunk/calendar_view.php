@@ -48,8 +48,8 @@ print '<h2>'.$cal_head[$lang].'</h2>';
 print '<small>'.$cal_notice[$lang].'. <a href="main.php?set_pref=1&v=1"><u>'.$change_view[$lang].'</u></a></small><br><br>';
 
 // fetch some get and posts
-if (isset($_GET['left'])) { $left=decode_url_simple($_GET['left'],$token,$url_key); }
-if (isset($_GET['right'])) { $right=decode_url_simple($_GET['right'],$token,$url_key) ; }
+if (isset($_GET['left'])) { $left=decode_url_simple($_GET['left'],TOKEN,$url_key); }
+if (isset($_GET['right'])) { $right=decode_url_simple($_GET['right'],TOKEN,$url_key) ; }
 $jump_to=$_POST['jump_box'];
 $resource_id=mysql_escape_string($_GET['b']);
 
@@ -65,7 +65,7 @@ $e_string=mysql_escape_string($_GET['a']);
 
 // decompose link
 if ($e_string) {
-$variables = decode_url2($e_string,$token,$url_key);
+$variables = decode_url2($e_string,TOKEN,$url_key);
 $tslice = $variables[tslice];
 $talker = $variables[talker];
 $server = $variables[server];
@@ -108,7 +108,7 @@ if ($action=="undelete") {
 // chat deletion
 if ($action=="del") {
 
-	$del_result=delete_chat($talker,$server,$xmpp_host,$user_id,$tslice,$token,$url_key,$lnk);
+	$del_result=delete_chat($talker,$server,$xmpp_host,$user_id,$tslice,TOKEN,$url_key,$lnk);
 	if ($del_result!="f") {
 
 		unset($talker);
@@ -204,7 +204,7 @@ while ($row_d=mysql_fetch_array($result_for_days)) {
 
 // display calendar
 list($y,$m) = split("-", $mo);
-echo pl_znaczki(calendar($user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,1,$null_a=0,$null_b=0,$cal_days));
+echo pl_znaczki(calendar($user_id,$xmpp_host,$y,$m,$days,TOKEN,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,1,$null_a=0,$null_b=0,$cal_days));
 unset($days);
 
 // generate table name
@@ -272,15 +272,15 @@ if ($tslice) {
 				if ($mrk==1) { 
 					$previous_t = prev_c_day($xmpp_host,$tslice,$user_id,$entry[todaytalk],$entry[server]); 
 					$to_base_prev = "$previous_t@$entry[todaytalk]@$entry[server]@";
-					$to_base_prev = encode_url($to_base_prev,$token,$url_key);
+					$to_base_prev = encode_url($to_base_prev,TOKEN,$url_key);
 
 					$next_t = next_c_day($xmpp_host,$tslice,$user_id,$entry[todaytalk],$entry[server]);
 					$to_base_next = "$next_t@$entry[todaytalk]@$entry[server]@";
-					$to_base_next = encode_url($to_base_next,$token,$url_key);
+					$to_base_next = encode_url($to_base_next,TOKEN,$url_key);
 				}
 
                         	$to_base2 = "$tslice@$entry[todaytalk]@$entry[server]@";
-                        	$to_base2 = encode_url($to_base2,$token,$url_key);
+                        	$to_base2 = encode_url($to_base2,TOKEN,$url_key);
 				if ($mrk==1 AND $previous_t != NULL) { 
 						print '<a class="nav_np" id="pretty" title="'.$jump_to_prev[$lang].': '.$previous_t.'" href="calendar_view.php?a='.$to_base_prev.'"><<< </a>'; 
 					}
@@ -334,9 +334,9 @@ if ($talker) {
         $nickname = query_nick_name($ejabberd_roster,$talker_name,$server_name);
         if ($nickname=="f") { $nickname=$not_in_r[$lang]; }
 	$predefined="$talker_name@$server_name";
-	$predefined=encode_url($predefined,$token,$url_key);
+	$predefined=encode_url($predefined,TOKEN,$url_key);
 	$predefined_s="from:$talker_name@$server_name";
-	$predefined_s=encode_url($predefined_s,$token,$url_key);
+	$predefined_s=encode_url($predefined_s,TOKEN,$url_key);
         print '<table id="maincontent" border="0" cellspacing="0" class="ff">'."\n";
 	// if we come from chat maps put the link back...its the same link as "show all chats" but, it is more self explaining
 	print '<tr><td colspan="4"><div id="fav_result"></div>';
@@ -366,14 +366,16 @@ if ($talker) {
         $server_id=get_server_id($server_name,$xmpp_host);
         $loc_link = $e_string;
         $action_link = "$tslice@$talker@$server_id@0@null@$loc_link@del@";
-        $action_link = encode_url($action_link,$token,$url_key);
+        $action_link = encode_url($action_link,TOKEN,$url_key);
         print '<td align="right" style="padding-right: 5px; font-weight: normal;">';
 	print '
 		<form style="margin-bottom: 0;" id="fav_form" action="req_process.php" method="post">
 		<input type="hidden" name="a" value="'.$_GET[a].'" />
 		<input type="hidden" name="req" value="1">
 		<input class="fav" type="submit" value="'.$fav_add[$lang].'" />
-		</form>';	
+		</form>';
+	// workaround to nickname pass to export:
+	$sess->set('export_nickname',$nickname);
 	print '<a id="pretty" title="'.$tip_export[$lang].'" class="menu_chat" href="export.php?a='.$e_string.'">'.$export_link[$lang].'</a>&nbsp; | &nbsp;';
 	print $all_for_u[$lang];
         print '<a id="pretty" title="'.$all_for_u_m2_d[$lang].'" class="menu_chat" href="chat_map.php?chat_map='.$predefined.'"><u>'.$all_for_u_m2[$lang].'</u></a>';
@@ -424,7 +426,7 @@ if ($talker) {
                         }
                         else
                         {
-                                $out = $token;
+                                $out = TOKEN;
                                 $aa=$aa+1;
                                 $tt=0;
                         }
@@ -436,7 +438,7 @@ if ($talker) {
                                 print '<td style="padding-left: 5px; padding-right: 10px; nowrap="nowrap">'.cut_nick($out);
                                 print '<a name="'.$licz.'"></a>';
 
-                                if ($out!=$token) {
+                                if ($out!=TOKEN) {
 
                                 print '<br><div style="text-align: left; padding-left: 5px;"><a class="export" id="pretty" title="'.$resource_only[$lang].'" href="?a='.$e_string.'&b='.$entry[peer_resource_id].'">';
                                 print '<small><i>'.cut_nick(htmlspecialchars($resource)).'</i></small></a></div>';
@@ -461,7 +463,7 @@ if ($talker) {
                 print '<td width="800" colspan="3">'.$new_s.'</td>'."\n";
                 $lnk=encode_url("$tslice@$entry[peer_name_id]@$entry[peer_server_id]@",$ee,$url_key);
                 $to_base2 = "$tslice@$entry[peer_name_id]@$entry[peer_server_id]@1@$licz@$lnk@NULL@$start@";
-                $to_base2 = encode_url($to_base2,$token,$url_key);
+                $to_base2 = encode_url($to_base2,TOKEN,$url_key);
                 if ($here=="1") { print '<td colspan="2" style="padding-left: 2px; font-size: 9px;"><a style="color: #1466bc" href="my_links.php?a='.$to_base2.'">'.$my_links_save[$lang].'</a></td>'."\n"; } else { print '<td></td>'."\n"; }
                 if ($t=2) { $c=1; $t=0; }
                 print '</tr>'."\n";

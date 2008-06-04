@@ -24,10 +24,10 @@ require ("headers.php");
 
 $tigger=$_POST['trigger'];
 $aaa=mysql_escape_string($_POST['aaa']);
-$datat=mysql_escape_string(decode_url_simple($_POST['datat'],$token,$url_key));
+$datat=mysql_escape_string(decode_url_simple($_POST['datat'],TOKEN,$url_key));
 $desc=mysql_escape_string($_POST['desc']);
-$peer_user=mysql_escape_string(decode_url_simple($_POST['peer_user'],$token,$url_key));
-$peer_server=mysql_escape_string(decode_url_simple($_POST['peer_server'],$token,$url_key));
+$peer_user=mysql_escape_string(decode_url_simple($_POST['peer_user'],TOKEN,$url_key));
+$peer_server=mysql_escape_string(decode_url_simple($_POST['peer_server'],TOKEN,$url_key));
 $del=$_GET['del'];
 $link_id=mysql_escape_string($_GET['link_id']);
 
@@ -38,7 +38,7 @@ if ($peer_server) { if (!ctype_digit($peer_server)) { print 'Ooops...'; exit; } 
 if ($link_id) { if (!ctype_digit($link_id)) { print 'Ooops...'; exit; } }
 
 include("upper.php");
-$variables = decode_url2($_GET[a],$token,$url_key);
+$variables = decode_url2($_GET[a],TOKEN,$url_key);
 
 // ...and validation
 $talker=mysql_escape_string($talker);
@@ -55,7 +55,7 @@ if ($del=="t") {
 
 if ($tigger==$my_links_commit[$lang]) {
 
-	$user_id=get_user_id($token,$xmpp_host);
+	$user_id=get_user_id(TOKEN,$xmpp_host);
 	if ($desc==$my_links_optional[$lang]) { $desc=$my_links_none[$lang]; }
 	$desc=substr($desc,0,120);
 	$query="insert into jorge_mylinks (owner_id,peer_name_id,peer_server_id,datat,link,description) values ('$user_id','$peer_user','$peer_server','$datat','$aaa','$desc')";
@@ -88,10 +88,10 @@ if ($variables[ismylink]=="1") {
 	print '<input class="red" type="button" value="'.$my_links_cancel[$lang].'" onClick="parent.location=\''.$view_type.'?a='.htmlspecialchars($variables[lnk]).'&start='.htmlspecialchars($variables[strt]).'#'.htmlspecialchars($variables[linktag]).'\'"></td>';
 	print '</tr>'."\n";
 	print '<tr><td>'."\n";
-	print '<input type="hidden" name="peer_user" value="'.encode_url($variables[talker],$token,$url_key).'">'."\n";
-	print '<input type="hidden" name="peer_server" value="'.encode_url($variables[server],$token,$url_key).'">'."\n";
+	print '<input type="hidden" name="peer_user" value="'.encode_url($variables[talker],TOKEN,$url_key).'">'."\n";
+	print '<input type="hidden" name="peer_server" value="'.encode_url($variables[server],TOKEN,$url_key).'">'."\n";
 	print '<input type="hidden" name="aaa" value="'.htmlspecialchars($variables[lnk]).'&start='.htmlspecialchars($variables[strt]).'#'.$variables[linktag].'">'."\n";
-	print '<input type="hidden" name="datat" value="'.encode_url($variables[tslice],$token,$url_key).'"> </td></tr>'."\n";
+	print '<input type="hidden" name="datat" value="'.encode_url($variables[tslice],TOKEN,$url_key).'"> </td></tr>'."\n";
 	print '</form>'."\n";
 	print '</table>'."\n";
 	print '</center>'."\n";

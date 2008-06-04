@@ -27,10 +27,10 @@ $search_phase=mysql_escape_string($_POST['query']); // for normal search
 $next_link = $_GET['a']; // for pagination
 $predefined = $_GET['b']; // for predefined
 
-if ($predefined) { $search_phase = decode_predefined($predefined,$token,$url_key);  }  // for predefined
+if ($predefined) { $search_phase = decode_predefined($predefined,TOKEN,$url_key);  }  // for predefined
 
 if ($next_link) { 
-	$s_variables=decode_search_url($next_link,$token,$url_key);
+	$s_variables=decode_search_url($next_link,TOKEN,$url_key);
 	$tslice_next = validate_date($s_variables[tslice]);
 	$search_phase = $s_variables[search_phase];
 	$offset_arch = $s_variables[offset_arch];
@@ -211,7 +211,7 @@ while ($entry = mysql_fetch_array($result)) {
 					} 
 					else 
 					{ 
-						$out = $token;
+						$out = TOKEN;
 						$aa=$aa+1;
 						$tt=0;
 					}
@@ -269,7 +269,7 @@ while ($entry = mysql_fetch_array($result)) {
 					print '<a href="search_v2.php?a='.$lnk_p.'"></a></td>'; // fix me
 					$trange = "$time2_start@$time2_end"; // this is needed for time range to pass to next page
 					print '<td colspan="2" style="text-align: right;">';
-					print '<a href="search_v2.php?a='.encode_url($lnk_n,$token,$url_key).'&c='.encode_url($trange,$token,$url_key).'">'.$search_next[$lang].'</a></td></tr>';
+					print '<a href="search_v2.php?a='.encode_url($lnk_n,TOKEN,$url_key).'&c='.encode_url($trange,TOKEN,$url_key).'">'.$search_next[$lang].'</a></td></tr>';
 					break 2;
 					
 					}

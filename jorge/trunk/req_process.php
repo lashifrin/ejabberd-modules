@@ -39,13 +39,14 @@ $ejabberd_rpc = new rpc_connector("$rpc_host","$rpc_port","$xmpp_host_dotted");
 // db connect
 db_connect(MYSQL_HOST,MYSQL_USER,MYSQL_PASS,MYSQL_NAME);
 
-$token=$sess->get('uid_l');
+define(TOKEN,$sess->get('uid_l'));
 
 // check user session
 if (check_registered_user($sess,$ejabberd_rpc,$xmpp_host) !== true) { header("Location: index.php?act=logout"); exit; }
 
-$user_id=get_user_id($token,$xmpp_host);
-if (!ctype_digit($user_id)) { print 'Service unavailable'; exit; }
+define(USER_ID,get_user_id(TOKEN,$xmpp_host));
+
+if (!ctype_digit(USER_ID)) { print 'Service unavailable'; exit; }
 
 // language
 $lang=$sess->get('language');
@@ -60,7 +61,7 @@ if ($process_id=="1") {
 	// processing favorites request
 
 	// decompose data
-	$variables = decode_url2($request,$token,$url_key);
+	$variables = decode_url2($request,TOKEN,$url_key);
 	$tslice = $variables[tslice];
 	$talker = $variables[talker];
 	$server = $variables[server];
@@ -69,7 +70,7 @@ if ($process_id=="1") {
 			print '<div class="message">'.$ajax_error[$lang].'<br><a href="#" onClick="$(\'#fav_result\').fadeOut(\'slow\');" ><u>'.$fav_discard[$lang].'</u></a></div>'; exit; 
 		}
 
-	$check=ch_favorite($user_id,$tslice,$talker,$server);
+	$check=ch_favorite(USER_ID,$tslice,$talker,$server);
 	if ($check=="f") {
 		print '<div class="message">';
 		print $ajax_error[$lang].'<br><a style="font-weight: normal;" href="#" onClick="$(\'#fav_result\').fadeOut(\'slow\');" ><u>'.$fav_discard[$lang].'</u></a>';
@@ -85,7 +86,7 @@ if ($process_id=="1") {
 		
 	elseif($check=="0") {
 		$query="insert into jorge_favorites(owner_id,peer_name_id,peer_server_id,tslice) values(
-			'$user_id',
+			'".USER_ID."',
 			'$talker',
 			'$server',
 			'$tslice')";
@@ -123,7 +124,7 @@ if ($process_id=="2") {
 		$i++;
 		$enc_data=array_shift($_POST);
 		// decompose data
-		$variables = decode_url2($enc_data,$token,$url_key);
+		$variables = decode_url2($enc_data,TOKEN,$url_key);
 		$tslice = $variables[tslice];
 		$talker = $variables[talker];
 		$server = $variables[server];
@@ -134,7 +135,7 @@ if ($process_id=="2") {
 			exit; 
 		}
 
-		$query="delete from jorge_favorites where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server' and tslice='$tslice'";
+		$query="delete from jorge_favorites where owner_id='".USER_ID."' and peer_name_id='$talker' and peer_server_id='$server' and tslice='$tslice'";
 		mysql_query($query);
 		
 		// stop on any error
