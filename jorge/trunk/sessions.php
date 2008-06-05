@@ -29,7 +29,7 @@ if (__FILE__==$_SERVER['SCRIPT_FILENAME']) {
 
 class session {
 
-    var $id;
+    public $id;
 
     function session ($lifetime=10800) { // czas ¿ycia sesji
           @session_start();
