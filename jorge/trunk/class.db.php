@@ -470,7 +470,7 @@ class db_manager {
 
 	}
 
-	public function get_user_stats($talker_id,$talker_server_id){
+	public function get_user_talker_stats($talker_id,$talker_server_id){
 
 		$this->id_query = "Q014";
 		$this->vital_check();
