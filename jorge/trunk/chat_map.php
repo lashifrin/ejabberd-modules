@@ -19,8 +19,9 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 */
-require ("headers.php");
-include ("upper.php");
+require_once("headers.php");
+require_once("upper.php");
+
 print '<h2>'.$chat_map[$lang].'</h2>';
 print '<small>'.$chat_select[$lang].'</small><br><br>';
 if ($_POST['chat_map']) {
@@ -111,5 +112,5 @@ if ($score==$cc_cmp) { print '<span style="text-align: center;"><h2>'.$chat_no_c
 }
 
 
-include ("footer.php");
+require_once("footer.php");
 ?>

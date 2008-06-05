@@ -21,7 +21,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
 // all we need is header.php file - be sure to include it in all Jorge files! as it containg authentication futures.
-require ("headers.php");
+require_once("headers.php");
 
 // if already logged in (session active), move to main screen according to user preferences
 if ($sess->get('uid_l')) { 
@@ -229,5 +229,7 @@ print '</tr></table>'."\n";
     echo '</form>'."\n";
     print $error_m;
     echo '</center>'."\n";
-include("footer.php");
+
+require_once("footer.php");
+
 ?>

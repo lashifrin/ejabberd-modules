@@ -19,7 +19,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 */
-require ("headers.php");
+require_once("headers.php");
 
 // clear capch image
 $sess->set('image_w','');
@@ -48,7 +48,8 @@ $talker=mysql_escape_string($talker);
 $server=mysql_escape_string($server);
 if (validate_date($tslice) == "f") { unset ($tslice); unset($e_string); unset($talker); unset($action); }
 
-include("upper.php");
+require_once("upper.php");
+
 ?>
 <script language="javascript" type="text/javascript">
 
@@ -408,5 +409,6 @@ print '</td></tr>';
 
 print '</td></tr>'."\n";
 print '</table>'."\n";
-include("footer.php");
+
+require_once("footer.php");
 ?>

@@ -21,7 +21,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 require("func.php");
 require("lang.php");
-require("sessions.php");
+require("class.sessions.php");
 require("class.ejabberd_xmlrpc.php");
 require("class.roster.php");
 require("config.php");

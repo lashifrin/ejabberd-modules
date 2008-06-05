@@ -20,8 +20,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 */
 
-require ("headers.php");
-include ("upper.php");
+require_once("headers.php");
+require_once("upper.php");
 
 ?>
 <script language="javascript" type="text/javascript">
@@ -509,7 +509,7 @@ print '</div>'."\n";
 // end master div
 print '</div>';
 
-include ("footer.php");
+require_once("footer.php");
 
 
 ?> 

@@ -22,11 +22,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 header("content-type: text/html; charset=utf-8");
 // includes
-require("func.php");
-require("sessions.php");
-require("class.ejabberd_xmlrpc.php");
-require("config.php");
-require("lang.php");
+require_once("func.php");
+require_once("class.sessions.php");
+require_once("class.ejabberd_xmlrpc.php");
+require_once("config.php");
+require_once("lang.php");
 // sessions and db connections
 $sess = new session;
 

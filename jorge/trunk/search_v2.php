@@ -20,7 +20,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 */
 
-require ("headers.php");
+require_once("headers.php");
 
 $search_phase=mysql_escape_string($_POST['query']); // for normal search
 
@@ -42,7 +42,7 @@ if ($tag_count=="t") { $start_from=$offset_day; }
 
 $plain_phase=$search_phase; // fix me
 
-include ("upper.php");
+require_once("upper.php");
 
 //need to initialize counter here
 $r=0;
@@ -406,6 +406,5 @@ if ($search_phase!="") {
 
 }
 
-include("footer.php");
-
+require_once("footer.php");
 ?>

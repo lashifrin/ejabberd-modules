@@ -20,13 +20,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 */
 
-require ("headers.php");
+require_once("headers.php");
 
 $tgle=$_POST['toggle'];
 $del_a=$_POST['del_all'];
 $close=$_POST['close_acc'];
 
-include("upper.php");
+require_once("upper.php");
 
 // toggle message saving
 if ($tgle) { 
@@ -199,5 +199,5 @@ else {
 }
 print '</center>'."\n";
 print '<br /><br /><br />';
-include("footer.php");
+require_once("footer.php");
 ?>

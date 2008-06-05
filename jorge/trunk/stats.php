@@ -19,8 +19,8 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 */
-require ("headers.php");
-include ("upper.php");
+require_once("headers.php");
+require_once("upper.php");
 
 if (ADMIN_NAME!==TOKEN) { print 'no access'; exit; }
 
@@ -207,5 +207,5 @@ $(function () {
 
 }
 
-include ("footer.php");
+require_once("footer.php");
 ?>

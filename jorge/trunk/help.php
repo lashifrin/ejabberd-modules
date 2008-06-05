@@ -20,8 +20,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 */
 
-require ("headers.php");
-include ("upper.php");
+require_once("headers.php");
+require_once("upper.php");
+
 print '<h2>'.$help_but[$lang].'</h2>';
 print '<small>'.$help_notice[$lang].'</small>';
 
@@ -31,5 +32,5 @@ print $help_advanced_tips[$lang];
 
 
 
-include ("footer.php");
+require_once("footer.php");
 ?>

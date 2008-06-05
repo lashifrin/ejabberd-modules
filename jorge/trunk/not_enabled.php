@@ -20,7 +20,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 */
 
-require ("headers.php");
+require_once("headers.php");
 
 $action=$_POST[activate];
 print $sess->get('log_status');
@@ -62,8 +62,6 @@ print '<br /><br />';
 print '<form action="index.php?act=logout" method="post"><input class="red" type="submit" name="logout" value="'.$log_out_b[$lang].'"></form>';
 }
 
-include ("footer.php");
-
-
+require_once("footer.php");
 ?>
 

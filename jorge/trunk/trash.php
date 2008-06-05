@@ -19,8 +19,9 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 */
-require ("headers.php");
-include ("upper.php");
+require_once("headers.php");
+require_once("upper.php");
+
 print '<h2>'.$trash_name[$lang].'</h2>';
 print '<small>'.$trash_desc[$lang].'</small></h2>';
 
@@ -122,5 +123,6 @@ if (mysql_num_rows($result)==0) {
 		print '</table>';
 		print '</center>';
 	}
-include("footer.php");
+
+require_once("footer.php");
 ?>

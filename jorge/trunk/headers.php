@@ -35,12 +35,12 @@ header("content-type: text/html; charset=utf-8");
 // error reporting to off
 error_reporting(E_NONE);
 
-include("func.php"); // functions
-include("sessions.php"); // sessions handling
-include("class.ejabberd_xmlrpc.php"); // rpc class
-include("class.roster.php"); // roster
-include("config.php"); // read configuration
-include("lang.php"); // language pack
+require_once("func.php"); // functions
+require_once("class.sessions.php"); // sessions handling
+require_once("class.ejabberd_xmlrpc.php"); // rpc class
+require_once("class.roster.php"); // roster
+require_once("config.php"); // read configuration
+require_once("lang.php"); // language pack
 
 // get client addr
 $rem_adre = $_SERVER['REMOTE_ADDR'];

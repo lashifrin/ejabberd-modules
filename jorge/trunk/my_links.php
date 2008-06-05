@@ -20,7 +20,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 */
 
-require ("headers.php");
+require_once("headers.php");
 
 $tigger=$_POST['trigger'];
 $aaa=mysql_escape_string($_POST['aaa']);
@@ -37,7 +37,7 @@ if ($peer_user) { if (!ctype_digit($peer_user)) { print 'Ooops...'; exit; } }
 if ($peer_server) { if (!ctype_digit($peer_server)) { print 'Ooops...'; exit; } }
 if ($link_id) { if (!ctype_digit($link_id)) { print 'Ooops...'; exit; } }
 
-include("upper.php");
+require_once("upper.php");
 $variables = decode_url2($_GET[a],TOKEN,$url_key);
 
 // ...and validation
@@ -140,5 +140,5 @@ if (mysql_num_rows($result) == "0") {
 	}
 
 
-include("footer.php");
+require_once("footer.php");
 ?>
