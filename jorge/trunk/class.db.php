@@ -15,6 +15,51 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+###########################################################################
+
+EXPERIMENTAL VERSION: DO NOT USE! IT IS NOT FINISHED AND NOT INCLUDE MANY METHODS YET!
+
+This class is for mod_logdb. It holds all logic needed for managing messages.
+All methods always return TRUE or FALSE. Results are always in:
+
+Query type:					Return type:		Example:
+single query (one result)			Object			$db->result->cnt;
+single query (multiple results)			Array			$db->result;
+update						num rows affected	$db->result;
+insert						num rows affected	$db->result;
+delete						num rows affected	$db->result;
+
+Methods list:
+
+method:			description:									result:
+
+$db->set_debug(bool); // Enable/Disable debug | 							true
+$db->set_user_id(integer); // Sets user ID for instance							true|flase
+$db->get_user_id(string); // Get user ID								$db->result->user_id;
+$db->get_user_name(integer); // Get user name								$db->result->username;
+$db->get_server_id(string); // Get server ID								$db->result->server_id;
+$db->get_server_name(integer); // Get server name							$db->result->server_name;
+$db->get_resource_name(integer); // Get resource name							$db->result->resource_name;
+$db->get_resource_id(string); // Get resource ID							$db->result->resource_id;
+$db->get_user_talker_stats(user_id integer, server_id integer); // Get array of chats with user		$db->result;
+$db->get_mylinks_count(); // Get number of mylinks saved						$db->result->cnt;
+$db->get_trash_count(); // Get number of elements in trash						$db->result->cnt; 
+$db->get_num_lines(date string, user_id integer, server_id integer); // get number of chat lines	$db->result->cnt;
+$db->$is_log_enabled(); // Check if message logging is enabled						$db->result->is_enabled;
+$db->total_messages(); // Total messages archivized by server 						$db->result->total_messages;
+$db->total_chats(); // Total conversations 								$db->result->total_chats;
+$db->get_log_list(); // Get list of users with user dont log messages					$db->result;
+$db->set_log(bool); // Enable/Disable message archiving							$db->result (num affected)
+$db->db_error(); If instance is affected by error							true|false
+
+
+See documentation for details.
+
+NOTICE: in case of any error (query error, validation error etc.) instance is marked as faulty, all queries are aborted and exception is thrown
+remember to handle errors gracefully!
+
+
 */
 
 class db_manager {
@@ -28,6 +73,7 @@ class db_manager {
 	private $messages_table = "logdb_messages_";
 	private $is_error = false;
 	private $id_query;
+	private $query_type;
 	private $is_debug = false;
 	private $user_id = null;
 	public $result;
@@ -79,7 +125,16 @@ class db_manager {
 	protected function do_query($query) {
 
 		$this->show_debug_info($query);
-		$result = mysql_query($query);
+		if ($this->is_error === false) {
+
+				$result = mysql_query($query);
+			}
+			elseif($this->is_error === true) {
+
+				throw new Exception("Error before queryID:".$this->id_query,3);
+				return false;
+		}
+
 		if ($result === false ) {
 					
 					$this->is_error = true;
@@ -89,7 +144,14 @@ class db_manager {
 				}
 			else {
 
-					return $result;
+					if ($this->query_type === "select") {
+
+								return $result;
+							}
+						elseif($this->query_type === "update" OR $this->query_type === "insert") {
+
+								return mysql_affected_rows();
+						}
 		}
 
 	}
@@ -171,8 +233,9 @@ class db_manager {
 			}
 	}
 
-	public function select($query,$return_type = null) {
+	private function select($query,$return_type = null) {
 
+		$this->query_type="select";
 		if (strpos(strtolower($query),"select") === 0) {
 
 			try{
@@ -215,7 +278,76 @@ class db_manager {
 		}
 	}
 
-	public function mylinks_count() {
+	private function update($query) {
+
+		$this->query_type = "update";
+		if (strpos(strtolower($query),"update") === 0) {
+
+			try{
+				$this->result = $this->db_query($query);
+			}
+                	catch(Exception $e) {
+                        	echo "Exception: ".$e->getMessage();
+                        	echo ", Code: ".$e->getCode();
+			}
+
+			if($this->is_error===false) {
+					
+					return true;	
+
+				}
+
+				else{
+					
+					return false;
+				
+				}
+
+		}
+
+		else {
+
+			return false;
+		
+		}
+	}
+
+	private function insert($query) {
+
+		$this->query_type = "insert";
+		if (strpos(strtolower($query),"insert") === 0) {
+
+			try{
+				$this->result = $this->db_query($query);
+			}
+                	catch(Exception $e) {
+                        	echo "Exception: ".$e->getMessage();
+                        	echo ", Code: ".$e->getCode();
+			}
+
+			if($this->is_error===false) {
+					
+					return true;	
+
+				}
+
+				else{
+					
+					return false;
+				
+				}
+
+		}
+
+		else {
+
+			return false;
+		
+		}
+	}
+
+
+	public function get_mylinks_count() {
 
 		$this->id_query = "Q004";
 		$this->vital_check();
@@ -234,7 +366,7 @@ class db_manager {
 		return $this->select($query);
 	}
 
-	public function trash_count() {
+	public function get_trash_count() {
 	
 		$this->id_query = "Q005";
 		$this->vital_check();
@@ -293,6 +425,56 @@ class db_manager {
 
 		return $this->select($query);
 
+	}
+
+	public function set_log($bool) {
+
+		$this->id_query = "Q020";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$xmpp_host = $this->xmpp_host;
+		if ($bool === true) {
+
+				$val = 1;
+			
+			}
+			elseif($bool === false) {
+
+				$val = 0;
+			
+			}
+			else{
+
+				return false;
+		}
+		
+		$query="UPDATE 
+				`logdb_settings_$xmpp_host`
+			SET 	
+				dolog_default = '$val' 
+			WHERE 
+				owner_id = '$user_id'
+		";
+
+		return $this->update($query);
+
+	}
+
+	public function set_logger($event_id,$event_level) {
+		
+		$this->id_query = "Q021";
+		$this->vital_check();
+		$id_log_detail = $this->sql_validate($event_id,"integer");
+		$id_log_level = $this->sql_validate($event_level,"integer");
+		$user_id = $this->user_id;
+		$query="insert into 
+				jorge_logger (id_user,id_log_detail,id_log_level,log_time) 
+			values 
+				('$user_id',7,1,NOW())
+				
+		";
+
+		return $this->insert($query);
 	}
 
 	public function total_messages() {
@@ -422,7 +604,7 @@ class db_manager {
 		$server_id = $this->sql_validate($server_id,"integer");
 		$table_name = "`logdb_servers_".$this->xmpp_host."`";
 		$query="SELECT
-				server
+				server as server_name
 			FROM 
 				$table_name 
 			WHERE 
@@ -441,7 +623,7 @@ class db_manager {
 		$resource_id = $this->sql_validate($resource_id,"integer");
 		$table_name = "`logdb_resources_".$this->xmpp_host."`";
 		$query="SELECT
-				resource
+				resource as resource_name
 			FROM 
 				$table_name 
 			WHERE 
@@ -525,7 +707,20 @@ class db_manager {
 
 	public function set_user_id($user_id) {
 
-		$this->user_id = $this->sql_validate($user_id,"integer");
+		$user_id = $this->sql_validate($user_id,"integer");
+		if ($user_id === false) {
+				
+				return false;
+
+			}
+			else {
+
+				$this->user_id = $user_id;
+				return true;
+		}
+
+		return false;
+		
 
 	}
 
@@ -583,6 +778,7 @@ class db_manager {
 
 		if($bool === true) { $this->is_debug = true; }
 		if($bool === false) { $this->is_debug = false; }
+		return true;
 
 	}
 
