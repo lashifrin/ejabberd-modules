@@ -25,7 +25,7 @@ All methods always return TRUE or FALSE. Results are always in:
 
 Query type:					Return type:		Example:
 single query (one result)			Object			$db->result->cnt;
-single query (multiple results)			Array			$db->result;
+single query (multiple results)			Array(multidim)			$db->result;
 update						num rows affected	$db->result;
 insert						num rows affected	$db->result;
 delete						num rows affected	$db->result;
@@ -51,7 +51,9 @@ $db->total_messages(); // Total messages archivized by server 						$db->result-
 $db->total_chats(); // Total conversations 								$db->result->total_chats;
 $db->get_log_list(); // Get list of users with user dont log messages					$db->result;
 $db->set_log(bool); // Enable/Disable message archiving							$db->result (num affected)
-$db->db_error(); If instance is affected by error							true|false
+$db->db_error(); // If instance is affected by error							true|false
+$db->get_user_stats_calendar(YYYY-M string, ignore_id integer) // User chat stats 			$db->result;
+$db->get_user_stats_drop_down() ; // User chat stats needed for jorge calendar				$db->result;
 
 
 See documentation for details.
@@ -477,6 +479,72 @@ class db_manager {
 		return $this->insert($query);
 	}
 
+	public function get_user_stats_drop_down() {
+
+		$this->id_query = "Q022";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$xmpp_host = $this->xmpp_host;
+		$query="SELECT 
+				substring(at,1,7) as at_send, 
+				at 
+			FROM 
+				`logdb_stats_$xmpp_host` 
+			WHERE 
+				owner_id = '$user_id' 
+			GROUP BY 
+				substring(at,1,7) 
+			ORDER BY 
+				str_to_date(at,'%Y-%m-%d') 
+			DESC
+		
+		";
+		
+		$this->select($query,"raw");
+		if ($this->is_error === true) {
+
+				return false; 
+			}
+		
+		$result = $this->result;
+		$this->object_to_array(array("at_send","at"));
+		return true;
+	}
+
+	public function get_user_stats_calendar($mo,$ignore_id) {
+
+		$this->id_query = "Q023";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$xmpp_host = $this->xmpp_host;
+		$mo = $this->sql_validate($mo,"string");
+		$ignore_id = $this->sql_validate($ignore_id, "integer");
+		$query="SELECT 
+				distinct(substring(at,8,9)) as days 
+			FROM 
+				`logdb_stats_$xmpp_host` 
+			WHERE 
+				owner_id = '$user_id' 
+			AND
+				at like '$mo%' 
+			AND 
+				peer_name_id!='$ignore_id' 
+			ORDER BY 
+				str_to_date(at,'%Y-%m-%d') 
+			DESC
+			
+		";
+
+		$this->select($query,"raw");
+		if ($this->is_error === true) { 
+			
+				return false; 
+				
+			}
+		$this->object_to_array(array("days"));
+		return true;
+	}
+
 	public function total_messages() {
 	
 		$this->id_query = "Q017";
@@ -671,25 +739,19 @@ class db_manager {
 				peer_name_id='$talker' 
 			AND 
 				peer_server_id='$talker_server' 
-			ORDER BY 
+			ORDER BY
 				str_to_date(at,'%Y-%m-%d') 
 			ASC
 			
 			";
 		
 		$this->select($query,"raw");
-		$result = $this->result;
+		if ($this->is_error === true) { 
 		
-		settype($i, "integer");	
-		
-		while($row = mysql_fetch_object($result)) {
-			
-			$i++;
-			$items[$i] = $row->at;
-
-		}
-
-		$this->result = $items;
+				return false; 
+				
+			}
+		$this->object_to_array(array("at"));
 		return true;
 	}
 
@@ -755,6 +817,28 @@ class db_manager {
 
 	return false;
 
+	}
+
+	private function object_to_array($arr) {
+		
+		settype($i, "integer");
+		settype($z, "integer");
+		$result = $this->result;
+		while($row = mysql_fetch_object($result)) {
+			
+			$i++;
+			foreach ($arr as $key) {
+				
+				$z++;
+				$items[$i][$key] = $row->$key;
+		
+			}
+
+
+		}
+
+		return $this->result = $items;
+		
 	}
 
 	private function construct_table($tslice) {
