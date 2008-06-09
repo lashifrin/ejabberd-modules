@@ -54,6 +54,8 @@ $db->set_log(bool); // Enable/Disable message archiving							$db->result (num a
 $db->db_error(); // If instance is affected by error							true|false
 $db->get_user_stats_calendar(YYYY-M string, ignore_id integer) // User chat stats 			$db->result;
 $db->get_user_stats_drop_down() ; // User chat stats needed for jorge calendar				$db->result;
+$db->get_user_chats(YYYY-M-D string); // Get chat list from day 					$db->result;
+$db->get_user_chat(YYYY-M-D,peer_name_id,peer_server_id,peer_resource_id = null, start = null,lines = null); // Get user chat $db->result;
 
 
 See documentation for details.
@@ -541,9 +543,121 @@ class db_manager {
 				return false; 
 				
 			}
+
 		$this->object_to_array(array("days"));
 		return true;
 	}
+
+	public function get_user_chats($tslice) {
+		
+		$this->id_query = "Q024";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$xmpp_host = $this->xmpp_host;
+		$tslice_table = $this->sql_validate($tslice,"string");
+		$query="SELECT 
+				a.username, 
+				b.server as server_name, 
+				c.peer_name_id as todaytalk, 
+				c.peer_server_id as server, 
+				c.count as lcount 
+			FROM 
+				`logdb_users_$xmpp_host` a, 
+				`logdb_servers_$xmpp_host` b, 
+				`logdb_stats_$xmpp_host` c 
+			WHERE 
+				c.owner_id = '$user_id' 
+			AND 
+				a.user_id=c.peer_name_id 
+			AND 
+				b.server_id=c.peer_server_id 
+			AND 
+				c.at = '$tslice' 
+			AND 
+				username!='' 
+			ORDER BY 
+				lower(username)
+				
+		";
+		
+		$this->select($query,"raw");
+		if ($this->is_error === true) {
+				
+				return false;
+
+			}
+
+		$this->object_to_array(array("username","server_name","todaytalk","server","lcount"));
+		return true;
+
+	}
+
+	public function get_user_chat($tslice,$talker_id,$server_id,$resource_id = null,$start = null,$num_lines = null) {
+	
+		$this->id_query = "Q025";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$tslice = $this->sql_validate($tslice,"string");
+		$talker_id = $this->sql_validate($talker_id,"integer");
+		$server_id = $this->sql_validate($server_id,"integer");
+		if ($resource_id !== null) { 
+		
+				$resource_id = $this->sql_validate($resource_id);
+				$sql = "AND (peer_resource_id='$resource_id' OR peer_resource_id='1')";
+
+			}
+			else{
+
+				settype($sql,"null");
+			}
+
+		$offset_start = $start;
+		if ($offset_start === null) {
+
+				$offset_start = "0";
+
+			}
+
+		$offset_end = $start + $num_lines;
+		$offset_start = $this->sql_validate($offset_start,"integer");
+		$offset_end = $this->sql_validate($offset_end,"integer");
+		$tslice_table = $this->construct_table($tslice);
+		$query="SELECT 
+				from_unixtime(timestamp+0) as ts,
+				direction, 
+				peer_name_id, 
+				peer_server_id, 
+				peer_resource_id, 
+				body 
+			FROM 
+				`$tslice_table` 
+			WHERE 
+				owner_id = '$user_id' 
+			AND 
+				peer_name_id='$talker_id' 
+			AND 
+				peer_server_id='$server_id' 
+				$sql 
+			AND 
+				ext is NULL 
+			ORDER BY 
+				ts 
+			LIMIT 
+				$offset_start,$offset_end
+		";
+
+		$this->select($query,"raw");
+		if ($this->is_error === true) {
+				
+				return false;
+
+			}
+
+		$this->object_to_array(array("ts","direction","peer_name_id","peer_server_id","peer_resource_id","body"));
+		return true;
+
+	}
+
 
 	public function total_messages() {
 	
