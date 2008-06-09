@@ -602,7 +602,7 @@ class db_manager {
 		$server_id = $this->sql_validate($server_id,"integer");
 		if ($resource_id !== null) { 
 		
-				$resource_id = $this->sql_validate($resource_id);
+				$resource_id = $this->sql_validate($resource_id,"integer");
 				$sql = "AND (peer_resource_id='$resource_id' OR peer_resource_id='1')";
 
 			}
