@@ -30,19 +30,37 @@ require_once("upper.php");
 
 // toggle message saving
 if ($tgle) { 
-	$rres=update_set_log_tgle($user_id,$xmpp_host);
-	if ($rres=="on") {
-				$sess->set('log_status','1');
-				$query="insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time) values ('$user_id',7,1,NOW())";
-				mysql_query($query) or die;
-				print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 400pt;">'.$status_msg2[$lang].'</div></center>';
+	
+	if ($tgle === $arch_on[$lang]) {
+				
+				if($db->set_log(true) === true) {
+
+						$sess->set('log_status','1');
+						$db->set_logger("7","1");
+						print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 400pt;">'.$status_msg2[$lang].'</div></center>';
+					
+					}
+					else{
+						
+						print $oper_fail[$lang];
+					
+					}
 
 		}
-		elseif($rres=="off") {
-				$sess->set('log_status','0');
-				$query="insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time) values ('$user_id',6,1,NOW())";
-				mysql_query($query) or die;
-				print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 400pt;">'.$status_msg3[$lang].'</div></center>';
+		elseif($tgle === $arch_off[$lang]) {
+				
+				if($db->set_log(false) === true) {
+
+						$sess->set('log_status','0');
+						$db->set_logger("6","1");
+						print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 400pt;">'.$status_msg3[$lang].'</div></center>';
+					
+					}
+					else{
+
+						print $oper_fail[$lang];
+
+					}
 
 		}
 }
@@ -55,7 +73,7 @@ if ($del_a) {
 
 		print '<center><div class="message" style="width: 250pt;">'.$deleted_all[$lang].'</div></center>';
 		//log event
-		mysql_query("insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time) values ('$user_id',9,2,NOW())");
+		$db->set_logger("9","2");
 
 	}
 	elseif($result=="0"){
@@ -126,7 +144,17 @@ print '<center>'."\n";
 print '<table>';
 print '<form action="settings.php" method="post">';
 print '<tr style="font-size: x-small;"><td>'.$setting_d1[$lang].'</td><td><input class="btn_set" type="submit" name="toggle" value="';
-if ($sess->get('log_status') == "0") { print $arch_on[$lang]; } else { print $arch_off[$lang]; }
+$db->is_log_enabled();
+if ($db->result->is_enabled === "0") { 
+		
+		print $arch_on[$lang]; 
+		
+	} 
+	else { 
+		
+		print $arch_off[$lang]; 
+		
+	}
 print '"></td></tr></form>'."\n";
 print '<form action="settings.php" method="post">';
 print '<tr style="font-size: x-small;"><td>'.$setting_d2[$lang].'</td>';

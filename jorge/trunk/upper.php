@@ -273,16 +273,19 @@ if ($search_loc==1) {
 	
 	}
 	if ($time2_start OR $time2_end) {
-		if (validate_date($time2_start=="f")) { unset($time2_start); }
-		if (validate_date($time2_start=="f")) { unset($time2_end); }
-		if ($time2_start AND $time2_end) { if (strtotime("$time2_start") > strtotime("$time2_end")) { $alert = $time_range_w[$lang]; unset ($search_phase); } }
+		
+			if (validate_date($time2_start=="f")) { unset($time2_start); }
+			if (validate_date($time2_start=="f")) { unset($time2_end); }
+			if ($time2_start AND $time2_end) { if (strtotime("$time2_start") > strtotime("$time2_end")) { $alert = $time_range_w[$lang]; unset ($search_phase); } }
+		
 		}
 
-	$result=db_q($user_id,$server,$tslice_table,$talker,$search_p,1,$offset_arch,$xmpp_host);
-	while ($results=mysql_fetch_array($result)) {
+	$db->get_uniq_chat_dates();
+	$result = $db->result;
+	foreach ($result as $row) {
 
 		$r++;
-		$to_tble[$r] = $results[at];
+		$to_tble[$r] = $row[at];
 
 	}
 

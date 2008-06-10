@@ -57,6 +57,7 @@ $db->get_user_stats_drop_down() ; // User chat stats needed for jorge calendar		
 $db->get_user_chats(YYYY-M-D string); // Get chat list from day 					$db->result;
 $db->get_user_chat(YYYY-M-D,peer_name_id,peer_server_id,peer_resource_id = null, start = null,lines = null); // Get user chat $db->result;
 $db->set_logger(event_id,event_level); 									$db->result;
+$db->get_uniq_chat_dates($limit_start integer,$limit_end integer);					$db->result;
 
 
 See documentation for details.

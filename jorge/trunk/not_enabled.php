@@ -32,19 +32,20 @@ if ($action==$activate_m[$lang]) {
 
 	if (set_log_t($user_name,$xmpp_host) == "t") {
 
-		print '<center><b>'.$act_su[$lang].'</b><br />';
-		print '<small>'.$act_su2[$lang].'</small><hr>';
-		print '<form action="index.php?act=logout" method="post"><input class="red" type="submit" name="logout" value="'.$log_out_b[$lang].'"></form></center>';
+				print '<center><b>'.$act_su[$lang].'</b><br>';
+				print '<small>'.$act_su2[$lang].'</small><hr>';
+				print '<form action="index.php?act=logout" method="post"><input class="red" type="submit" name="logout" value="'.$log_out_b[$lang].'"></form></center>';
+				$db->get_user_id($user_name);
+				$user_id = $db->result->user_id;
+				$db->set_user_id($user_id);
+				$db->set_logger("7","1");
+			
+			}
+			else {
 
-		// only now we can call get_user_id() - as there can be situation where there is no user_id in database so we must fetch it *atfer* insert ;)
-		$user_id=get_user_id($user_name,$xmpp_host);
-		$query="insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time) values ('$user_id',7,1,NOW())";
-		mysql_query($query) or die;
-		}
-		else {
 				print 'Ooops something goes wrong...its still beta...';
 				exit;
-		}	
+	}	
 
 }
 
@@ -53,13 +54,13 @@ else {
 
 $user_name=htmlspecialchars($user_name);
 print $act_info[$lang]."<b>".$user_name."</b> (<i>$user_name@".str_replace("_",".",$xmpp_host)."</i>)";
-print "<hr><br /><br />";
+print "<hr><br><br>";
 print '<center><form action="not_enabled.php" method="post"><input class="red" type="submit" name="activate" value="'.$activate_m[$lang].'"></form>';
-print '<br /><br />';
+print '<br><br>';
 print '<b>'.$warning2[$lang].'</b> '.$warning1[$lang].'<br />';
 print '<u>'.$devel_info[$lang].'</u></center>';
-print '<br /><br />';
-print '<form action="index.php?act=logout" method="post"><input class="red" type="submit" name="logout" value="'.$log_out_b[$lang].'"></form>';
+print '<br><br>';
+print '<center><form action="index.php?act=logout" method="post"><input class="red" type="submit" name="logout" value="'.$log_out_b[$lang].'"></form></center>';
 }
 
 require_once("footer.php");

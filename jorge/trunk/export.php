@@ -23,6 +23,7 @@ require("func.php");
 require("lang.php");
 require("class.sessions.php");
 require("class.ejabberd_xmlrpc.php");
+require("class.db.php");
 require("class.roster.php");
 require("config.php");
 

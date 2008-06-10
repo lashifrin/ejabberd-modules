@@ -761,4 +761,7 @@ $close_commit[eng] = "- Close now -";
 $close_failed[pol] = pl_znaczki("Usuniêcie konta nie powiod³o siê. Proszê spróbowaæ pó¼niej");
 $close_failed[eng] = "Close account failed. Please try again later";
 
+$oper_fail[pol] = pl_znaczki("<center><b>Operacja nie zosta³a wykonana! Proszê spróbowaæ pó¼niej lub skontaktowaæ siê z administratorem!</b></center>");
+$oper_fail[eng] = "<center><b>Operation failed! Please try again later or contact administrator!</b></center>";
+
 ?>

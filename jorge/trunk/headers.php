@@ -38,6 +38,7 @@ error_reporting(E_NONE);
 require_once("func.php"); // functions
 require_once("class.sessions.php"); // sessions handling
 require_once("class.ejabberd_xmlrpc.php"); // rpc class
+require_once("class.db.php"); // db_manager
 require_once("class.roster.php"); // roster
 require_once("config.php"); // read configuration
 require_once("lang.php"); // language pack
@@ -68,6 +69,10 @@ if ($rpc_host===false) {
 // create rpc object
 $ejabberd_rpc = new rpc_connector("$rpc_host","$rpc_port","$xmpp_host_dotted");
 
+// create db_manager object ----> EXPERIMENTAL USE ONLY <--------
+$db = new db_manager(MYSQL_HOST,MYSQL_NAME,MYSQL_USER,MYSQL_PASS,"mysql","$xmpp_host");
+$db->set_debug(false);
+
 // mod_logdb dbconnect
 db_connect(MYSQL_HOST,MYSQL_USER,MYSQL_PASS,MYSQL_NAME);
 
@@ -85,12 +90,10 @@ if (!preg_match("/index.php/i",$location)) {
 	// we need user_id but only if we are not in not_enabled mode:
 	if(!preg_match("/not_enabled.php/i",$_SERVER['PHP_SELF'])) {
 
-		$user_id=get_user_id(TOKEN,$xmpp_host);
-		if (!ctype_digit($user_id)) { 
-
-				print 'Ooops...error(0.1)'; 
-				exit; 
-		}
+		$db->get_user_id(TOKEN);
+		$user_id = $db->result->user_id;
+		// create user_id instance
+		$db->set_user_id($user_id);
 	}
 
 }

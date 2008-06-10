@@ -162,9 +162,6 @@ if (!isset($mo)) {
 // validate mo if fail, silently fallback to current date
 if (validate_date($mo."-1") == "f") { unset ($tslice); unset($e_string); unset($talker); $mo=date("Y-m");  }
 
-$get_chats="select substring(at,1,7) as at_send, at from `logdb_stats_$xmpp_host` where owner_id = '$user_id' group by substring(at,1,7) order by str_to_date(at,'%Y-%m-%d') desc";
-$ch_mo=mysql_query($get_chats);
-
 // master div
 print '<div>'."\n";
 
@@ -178,27 +175,30 @@ print '<form id="t_jump" action="calendar_view.php" method="post" name="t_jump">
 print '<select style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="jump_box" size="0" onchange="javascript:document.t_jump.submit();">'."\n";
 print '<option value="jump">'.$jump_to_l[$lang].'</option>'."\n";
 
-while ($mo_sel=mysql_fetch_array($ch_mo)) {
+// select list
+$db->get_user_stats_drop_down();
+$ch_mo = $db->result;
+foreach($ch_mo as $result) {
 
-	list($s_y,$s_m) = split("-",$mo_sel[at_send]);
+	list($s_y,$s_m) = split("-",$result[at_send]);
 	$sym="$s_y-$s_m";
 
 	if ($jump_to!="" AND $sym==$mo) { $sel_box="selected"; } else { $sel_box=""; }
-	print '<option value="'.$sym.'" '.$sel_box.'>'.pl_znaczki(verbose_mo($mo_sel[at],$lang)).'</option>'."\n";
+	print '<option value="'.$sym.'" '.$sel_box.'>'.pl_znaczki(verbose_mo($result[at],$lang)).'</option>'."\n";
 
 }
 print '</select>'."\n";
 print '</form>'."\n";
-// now generate claendar, the peer_name_id is hard-coded - this avoids of displaying chats with no-username
-$query_days="select distinct(substring(at,8,9)) as days from `logdb_stats_$xmpp_host` where owner_id = '$user_id' and at like '$mo%' and peer_name_id!='$ignore_id' order by str_to_date(at,'%Y-%m-%d') desc";
-$result_for_days=mysql_query($query_days);
-$i=0;
+// now generate calendar, the peer_name_id is hard-coded - this avoids of displaying chats with no-username
+$db->get_user_stats_calendar($mo,$ignore_id);
+$result_for_days = $db->result;
 
-// array of days
-while ($row_d=mysql_fetch_array($result_for_days)) {
+$i=0;
+// days
+foreach($result_for_days as $result) {
 
 	$i++;
-	$days[$i] = str_replace("-","",$row_d[days]); // hack for bad parsing
+	$days[$i] = str_replace("-","",$result[days]);
 
 }
 
@@ -213,7 +213,6 @@ $tslice_table='logdb_messages_'.$tslice.'_'.$xmpp_host;
 // if we got day, lets display chats from that day...
 if ($tslice) {
 	
-        $result=db_q($user_id,$server,$tslice,$talker,$search_p,"2",$start,$xmpp_host);
 	mysql_query("create temporary table tslice_temp (
 		roster_name varchar(255),
 		username varchar(255),
@@ -222,7 +221,10 @@ if ($tslice) {
 		server integer,
 		lcount integer
 		)") or die;
-	while ($sort_me = mysql_fetch_array($result)) {
+	
+	$db->get_user_chats($tslice);
+	$result = $db->result;
+	foreach($result as $sort_me) {
 		
 		$roster_name=mysql_escape_string(query_nick_name($ejabberd_roster,$sort_me[username],$sort_me[server_name]));
 
@@ -324,15 +326,29 @@ print '<div>';
 if ($talker) {
 
         print '<td valign="top"><table border="0" class="ff"><tr>'."\n";
-        if (!$start) { $start="0"; } // are we in the first page?
-        $nume=get_num_lines($tslice_table,$user_id,$talker,$server); // number of chat lines
-        if ($start>$nume) { $start=$nume-$num_lines_bro; } // checking start variable
-        $result=db_q($user_id,$server,$tslice_table,$talker,$search_p,"3",$start,$xmpp_host,$num_lines_bro,$time_s="",$end_s="",$resource_id);
-        if ($result=="f") { header ("Location: main.php");  }
-        $talker_name = get_user_name($talker,$xmpp_host);
-        $server_name = get_server_name($server,$xmpp_host);
-        $nickname = query_nick_name($ejabberd_roster,$talker_name,$server_name);
-        if ($nickname=="f") { $nickname=$not_in_r[$lang]; }
+        if (!$start) { 
+		
+			$start="0"; 
+			
+		}
+	$db->get_num_lines($tslice,$talker,$server);
+	$nume = $db->result->cnt;
+        if ($start>$nume) { 
+	
+			$start=$nume-$num_lines_bro; 
+			
+		} 
+
+	$db->get_user_name($talker);
+	$talker_name = $db->result->username;
+	$db->get_server_name($server);
+	$server_name = $db->result->server_name;
+	$nickname = query_nick_name($ejabberd_roster,$talker_name,$server_name);
+        if ($nickname=="f") { 
+		
+			$nickname=$not_in_r[$lang]; 
+			
+		}
 	$predefined="$talker_name@$server_name";
 	$predefined=encode_url($predefined,TOKEN,$url_key);
 	$predefined_s="from:$talker_name@$server_name";
@@ -342,30 +358,38 @@ if ($talker) {
 	print '<tr><td colspan="4"><div id="fav_result"></div>';
 	print '</td></tr>';
 	if ($_GET['loc']) {
+
 		$loc_id=$_GET['loc'];
 		if ($loc_id=="2") {
+
 				$back_link_message=$chat_map_back[$lang];
 				$back_link="chat_map.php?chat_map=$predefined";
+			
 			}
 			elseif($loc_id=="3") {
+			
 				$back_link_message=$fav_back[$lang];
 				$back_link="favorites.php";
+			
 			}
 		print '<tr>';
 		print '<td colspan="2" class="message"><a href="'.$back_link.'">'.$back_link_message.'</a></td>';
 		print '<td></td></tr>'."\n";
+	
 	}
         if ($resource_id) {
-        	$res_display=get_resource_name($resource_id,$xmpp_host);
+		
+		$db->get_resource_name($resource_id);
+		$res_display = $db->result->resource_name;
         	print '<tr><td colspan="4"><div style="background-color: #fad163; text-align: center; font-weight: bold;">'.$resource_warn[$lang].cut_nick(htmlspecialchars($res_display)).'. ';
         	print $resource_discard[$lang].'<a class="export" href="?a='.$e_string.'">'.$resource_discard2[$lang].'</a>';
         	print '</div></td></tr>';
-        }
+        
+	}
         print '<tr class="header">'."\n";
         print '<td><b> '.$time_t[$lang].' </b></td><td><b> '.$user_t[$lang].' </b></td><td><b> '.$thread[$lang].'</b></td>'."\n";
-        $server_id=get_server_id($server_name,$xmpp_host);
         $loc_link = $e_string;
-        $action_link = "$tslice@$talker@$server_id@0@null@$loc_link@del@";
+        $action_link = "$tslice@$talker@$server@0@null@$loc_link@del@";
         $action_link = encode_url($action_link,TOKEN,$url_key);
         print '<td align="right" style="padding-right: 5px; font-weight: normal;">';
 	print '
@@ -386,12 +410,31 @@ if ($talker) {
 	print '</td></tr>';
         print '<tr class="spacer"><td colspan="7"></td></tr>';
         print '<tbody id="searchfield">'."\n";
-        while ($entry = mysql_fetch_array($result))
-                {
+	if($db->get_user_chat($tslice,$talker,$server,$resource_id,$start,$num_lines_bro) === false) {
 
-                $resource=get_resource_name($entry[peer_resource_id],$xmpp_host);
+			print $oper_fail[$lang];
+
+		}
+	$result = $db->result;
+	foreach($result as $entry) {
+
+		if ($resource_last !== $entry[peer_resource_id]) {
+
+				$db->get_resource_name($entry[peer_resource_id]);
+				$resource = $db->result->resource_name;
+
+			}
+
+		$resource_last = $entry[peer_resource_id];
                 $licz++;        
-                if ($entry["direction"] == "to") { $col="main_row_a"; } else { $col="main_row_b"; }
+                if ($entry["direction"] == "to") { 
+		
+				$col="main_row_a"; 
+			} 
+			else { 
+
+				$col="main_row_b"; 
+		}
 
                 $ts=strstr($entry["ts"], ' ');
                 // time calc 
@@ -401,7 +444,8 @@ if ($talker) {
                 $old_d = $pass_to_next;
                 // end time calc
                 if ($time_diff>$split_line AND $licz>1) { 
-                                $in_minutes = round(($time_diff/60),0);
+                                
+				$in_minutes = round(($time_diff/60),0);
                                 print '<tr class="splitl">';
                                 print '<td colspan="6" style="font-size: 10px;"><i>'.verbose_split_line($in_minutes,$lang,$verb_h,$in_min).'</i><hr size="1" noshade="" color="#cccccc"/></td></tr>';
 
@@ -409,8 +453,9 @@ if ($talker) {
 
 		# check if chat is continuation from previous day
 		if ($ts_mark!="1" AND substr($ts, 0 , strpos($ts, ":")) == 00 ) {
-			if ( check_thread($user_id,$talker,$server_id,$tslice,$xmpp_host,2)===TRUE) {
-				print '<tr><td colspan="6" style="text-align: left; padding-left: 5px;" class="message"><a href="calendar_view.php?a='.$to_base_prev.'">'.$cont_chat_p[$lang].'</a></td></tr>'."\n";
+			if ( check_thread($user_id,$talker,$server,$tslice,$xmpp_host,2)===TRUE) {
+				
+					print '<tr><td colspan="6" style="text-align: left; padding-left: 5px;" class="message"><a href="calendar_view.php?a='.$to_base_prev.'">'.$cont_chat_p[$lang].'</a></td></tr>'."\n";
 			}
 			#check only first line
 			$ts_mark="1";
@@ -418,20 +463,20 @@ if ($talker) {
                 print '<tr class="'.$col.'">'."\n";
                 print '<td class="time_chat" style="padding-left: 10px; padding-right: 10px;";>'.$ts.'</td>'."\n";
 
-                if ($entry["direction"] == "from")
-                        {
+                if ($entry["direction"] == "from") {
+
                                 $out=$nickname;
                                 $tt=$tt+1;
                                 $aa=0;
-                        }
-                        else
-                        {
+                        
+			}
+                        else{
+
                                 $out = TOKEN;
                                 $aa=$aa+1;
                                 $tt=0;
-                        }
-
-
+                        
+			}
 
                 if ($aa<2 AND $tt<2) {
 
@@ -440,19 +485,20 @@ if ($talker) {
 
                                 if ($out!=TOKEN) {
 
-                                print '<br><div style="text-align: left; padding-left: 5px;"><a class="export" id="pretty" title="'.$resource_only[$lang].'" href="?a='.$e_string.'&b='.$entry[peer_resource_id].'">';
-                                print '<small><i>'.cut_nick(htmlspecialchars($resource)).'</i></small></a></div>';
+                                		print '<br><div style="text-align: left; padding-left: 5px;"><a class="export" id="pretty" title="'.$resource_only[$lang].'" href="?a='.$e_string.'&b='.$entry[peer_resource_id].'">';
+                                		print '<small><i>'.cut_nick(htmlspecialchars($resource)).'</i></small></a></div>';
 
-                                }
+                                	}
 
                                 print '</td>'."\n";
-
                                 $here="1";
+
                         }
-                        else
-                        {
+                        else {
+
                                 print '<td style="text-align: right; padding-right: 5px">-</td>'."\n"; $here="0";
-                        }
+                        
+		}
 
                 $new_s=htmlspecialchars($entry["body"]);
                 $to_r = array("\n");
@@ -472,7 +518,7 @@ if ($talker) {
 
 # Check thread. ToDo: Run code only on last page
 if (substr($ts, 0 , strpos($ts, ":")) == 23) {
-	if ( check_thread($user_id,$talker,$server_id,$tslice,$xmpp_host,1)===TRUE) {
+	if ( check_thread($user_id,$talker,$server,$tslice,$xmpp_host,1)===TRUE) {
 		
 		print '<tr><td colspan="6" style="text-align: right; padding-right: 5px;" class="message"><a href="calendar_view.php?a='.$to_base_next.'">'.$cont_chat[$lang].'</a></td></tr>'."\n";
 	}
