@@ -20,7 +20,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 EXPERIMENTAL VERSION: DO NOT USE! IT IS NOT FINISHED AND NOT INCLUDE MANY METHODS YET!
 
-This class is for mod_logdb. It holds all logic needed for managing messages.
+This class is for mod_logdb and project jorge. It holds all logic needed for managing messages.
 All methods always return TRUE or FALSE. Results are always in:
 
 Query type:					Return type:		Example:
@@ -503,14 +503,7 @@ class db_manager {
 		";
 		
 		$this->select($query,"raw");
-		if ($this->is_error === true) {
-
-				return false; 
-			}
-		
-		$result = $this->result;
-		$this->object_to_array(array("at_send","at"));
-		return true;
+		return $this->commit_select(array("at_send","at"));
 	}
 
 	public function get_user_stats_calendar($mo,$ignore_id) {
@@ -538,14 +531,7 @@ class db_manager {
 		";
 
 		$this->select($query,"raw");
-		if ($this->is_error === true) { 
-			
-				return false; 
-				
-			}
-
-		$this->object_to_array(array("days"));
-		return true;
+		return $this->commit_select(array("days"));
 	}
 
 	public function get_user_chats($tslice) {
@@ -581,14 +567,7 @@ class db_manager {
 		";
 		
 		$this->select($query,"raw");
-		if ($this->is_error === true) {
-				
-				return false;
-
-			}
-
-		$this->object_to_array(array("username","server_name","todaytalk","server","lcount"));
-		return true;
+		return $this->commit_select(array("username","server_name","todaytalk","server","lcount"));
 
 	}
 
@@ -647,17 +626,9 @@ class db_manager {
 		";
 
 		$this->select($query,"raw");
-		if ($this->is_error === true) {
-				
-				return false;
-
-			}
-
-		$this->object_to_array(array("ts","direction","peer_name_id","peer_server_id","peer_resource_id","body"));
-		return true;
+		return $this->commit_select(array("ts","direction","peer_name_id","peer_server_id","peer_resource_id","body"));
 
 	}
-
 
 	public function total_messages() {
 	
@@ -860,13 +831,7 @@ class db_manager {
 			";
 		
 		$this->select($query,"raw");
-		if ($this->is_error === true) { 
-		
-				return false; 
-				
-			}
-		$this->object_to_array(array("at"));
-		return true;
+		return $this->commit_select(array("at"));
 	}
 
 	public function db_error() {
@@ -931,6 +896,19 @@ class db_manager {
 
 	return false;
 
+	}
+
+	private function commit_select($arr) {
+
+		if ($this->is_error === true) {
+				
+				return false;
+
+			}
+
+		$this->object_to_array($arr);
+		return true;
+	
 	}
 
 	private function object_to_array($arr) {
