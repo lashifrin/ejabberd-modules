@@ -884,12 +884,6 @@ class db_manager {
 
 	}
 
-	public function db_close() {
-
-		mysql_close();
-
-	}
-
 	public function set_user_id($user_id) {
 
 		$user_id = $this->sql_validate($user_id,"integer");
@@ -1047,6 +1041,14 @@ class db_manager {
 
 	}
 
+	public function __destruct() {
+
+		mysql_free_result();
+		mysql_close();
+		$this->user_id = null;
+		$this->result = null;
+
+	}
 
 }
 
