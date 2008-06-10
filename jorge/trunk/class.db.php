@@ -80,6 +80,8 @@ class db_manager {
 	private $query_type;
 	private $is_debug = false;
 	private $user_id = null;
+	private $time_start = null;
+	private $time_result = null;
 	public $result;
 
 	public function __construct($db_host,$db_name,$db_user,$db_password,$db_driver,$xmpp_host = null) {
@@ -128,10 +130,14 @@ class db_manager {
 
 	protected function do_query($query) {
 
-		$this->show_debug_info($query);
+		$this->show_debug_info($query, $time = false);
 		if ($this->is_error === false) {
 
+				$this->time_start();
 				$result = mysql_query($query);
+				$this->time_end();
+				$this->show_debug_info($query = null, $time = true);
+
 			}
 			elseif($this->is_error === true) {
 
@@ -630,6 +636,41 @@ class db_manager {
 
 	}
 
+	public function get_uniq_chat_dates($limit_start = null, $limit_end = null) {
+
+		$this->id_query = "Q026";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$xmpp_host = $this->xmpp_host;
+		if ($limit_start !== null AND $limit_end !== null) {
+	
+				$this->sql_validate($limit_start,"string");
+				$this->sql_validate($limit_end,"string");
+				$sql=" and str_to_date(at,'%Y-%m-%d') >= str_to_date('$limit_start','%Y-%m-%d') and str_to_date(at,'%Y-%m-%d') <= str_to_date('$limit_end','%Y-%m-%d')";
+				
+			}
+			else{
+
+				settype($sql,"null");
+
+		}
+		
+		$query="SELECT 
+				distinct(at) 
+			FROM 
+				`logdb_stats_$xmpp_host` 
+			WHERE 
+				owner_id='$user_id' $sql 
+			ORDER BY 
+				str_to_date(at,'%Y-%m-%d') 
+			ASC
+		";
+
+		$this->select($query,"raw");
+		return $this->commit_select(array("at"));
+
+	}
+
 	public function total_messages() {
 	
 		$this->id_query = "Q017";
@@ -958,13 +999,49 @@ class db_manager {
 
 	}
 
-	private function show_debug_info($query) {
+	private function show_debug_info($query = null, $time = null) {
 
 		if ($this->is_debug === true) {
+		
+			if ($query !== null) {
+					
+					print "<br><small><b>QueryID:</b> ".$this->id_query.": ".htmlspecialchars($query)."<br>";
+				}
+			if ($query === null AND $time !== null) {
 			
-			print "<br><small>QueryID: ".$this->id_query.": ".htmlspecialchars($query)."</small><br>";
+					print "<b>SQL performed in:</b> ".$this->time_result."</small><br><br>";
+
+				}
 		
 		}
+	}
+
+	private function sql_time() {
+		
+		list($usec, $sec) = explode(" ",microtime());
+		return ((float)$usec + (float)$sec);
+	}
+
+	private function time_start() {
+
+		if ($this->is_debug === true) {
+		
+			return $this->time_start = $this->sql_time();
+		
+		}
+	
+	}
+
+	private function time_end() {
+
+		if ($this->is_debug === true) {
+		
+			$start = $this->time_start;
+			$end = $this->sql_time();
+			return $this->time_result = substr($end - $start, 0, 10);
+
+		}
+
 	}
 
 
