@@ -56,6 +56,7 @@ $db->get_user_stats_calendar(YYYY-M string, ignore_id integer) // User chat stat
 $db->get_user_stats_drop_down() ; // User chat stats needed for jorge calendar				$db->result;
 $db->get_user_chats(YYYY-M-D string); // Get chat list from day 					$db->result;
 $db->get_user_chat(YYYY-M-D,peer_name_id,peer_server_id,peer_resource_id = null, start = null,lines = null); // Get user chat $db->result;
+$db->set_logger(event_id,event_level); 									$db->result;
 
 
 See documentation for details.
@@ -470,17 +471,18 @@ class db_manager {
 
 	}
 
-	public function set_logger($event_id,$event_level) {
+	public function set_logger($event_id,$event_level,$extra = null) {
 		
 		$this->id_query = "Q021";
 		$this->vital_check();
 		$id_log_detail = $this->sql_validate($event_id,"integer");
 		$id_log_level = $this->sql_validate($event_level,"integer");
+		$extra = $this->sql_validate($extra,"string");
 		$user_id = $this->user_id;
 		$query="insert into 
-				jorge_logger (id_user,id_log_detail,id_log_level,log_time) 
+				jorge_logger (id_user,id_log_detail,id_log_level,log_time,extra) 
 			values 
-				('$user_id',7,1,NOW())
+				('$user_id','$id_log_detail','$id_log_level',NOW(),'$extra')
 				
 		";
 
