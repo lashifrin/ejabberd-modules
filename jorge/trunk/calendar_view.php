@@ -51,7 +51,7 @@ print '<small>'.$cal_notice[$lang].'. <a href="main.php?set_pref=1&v=1"><u>'.$ch
 if (isset($_GET['left'])) { $left=decode_url_simple($_GET['left'],TOKEN,$url_key); }
 if (isset($_GET['right'])) { $right=decode_url_simple($_GET['right'],TOKEN,$url_key) ; }
 $jump_to=$_POST['jump_box'];
-$resource_id=mysql_escape_string($_GET['b']);
+$resource_id = $_GET['b'];
 
 // validate resource_id
 if (!ctype_digit($resource_id)) { unset($resource_id); }
@@ -61,21 +61,25 @@ $start=$_GET['start'];
 if ($jump_to!="") { $mo=$jump_to; }
 if ($mo=="jump") { unset($mo); }
 
-$e_string=mysql_escape_string($_GET['a']);
+$e_string = $_GET['a'];
 
 // decompose link
 if ($e_string) {
-$variables = decode_url2($e_string,TOKEN,$url_key);
-$tslice = $variables[tslice];
-$talker = $variables[talker];
-$server = $variables[server];
-$action = $variables[action];
-$lnk = $variables[lnk];
+
+		$variables = decode_url2($e_string,TOKEN,$url_key);
+		$tslice = $variables[tslice];
+		$talker = $variables[talker];
+		$server = $variables[server];
+		$action = $variables[action];
+		$lnk = $variables[lnk];
+
+		// rebuild oryginal URL, so noone can bypass any new arguments
+		$reencoded_e_string = "$tslice@$talker@$server@";
+		$e_string = encode_url($reencoded_e_string,TOKEN,$url_key);
+
 }
 
 // validation
-$talker=mysql_escape_string($talker);
-$server=mysql_escape_string($server);
 if (validate_date($tslice) == "f") { unset ($tslice); unset($e_string); unset($talker); unset($left); unset($right); unset($mo); unset($action); }
 
 // some validation things...
@@ -213,35 +217,28 @@ $tslice_table='logdb_messages_'.$tslice.'_'.$xmpp_host;
 // if we got day, lets display chats from that day...
 if ($tslice) {
 	
-	mysql_query("create temporary table tslice_temp (
-		roster_name varchar(255),
-		username varchar(255),
-		server_name varchar(255),
-		todaytalk integer,
-		server integer,
-		lcount integer
-		)") or die;
-	
 	$db->get_user_chats($tslice);
 	$result = $db->result;
+	// we need to sort list by nickname so we need to combiet 2 results: roster and mod_logdb chatlist:
 	foreach($result as $sort_me) {
 		
-		$roster_name=mysql_escape_string(query_nick_name($ejabberd_roster,$sort_me[username],$sort_me[server_name]));
-
-		mysql_query("insert into tslice_temp (roster_name,username,server_name,todaytalk,server,lcount) values (
-			'$roster_name',
-			'$sort_me[username]',
-			'$sort_me[server_name]',
-			'$sort_me[todaytalk]',
-			'$sort_me[server]',
-			'$sort_me[lcount]'
-			)") or die;
-
+		$roster_name = query_nick_name($ejabberd_roster,$sort_me[username],$sort_me[server_name]);
+		$arr_key++;
+		$sorted_list[$arr_key] = array(
+				"roster_name"=>$roster_name,
+				"username"=>$sort_me[username],
+				"server_name"=>$sort_me[server_name],
+				"todaytalk"=>$sort_me[todaytalk],
+				"server"=>$sort_me[server],
+				"lcount"=>$sort_me[lcount]
+				);
+	
 	}
-	mysql_free_result($result);
 
-        if ($result=="f") { header ("Location: calendar_view.php");  }
-        print '<td valign="top" style="padding-top: 15px;">'."\n";
+	// sort list
+	asort($sorted_list);
+        
+	print '<td valign="top" style="padding-top: 15px;">'."\n";
         print '<table width="200" border="0" cellpadding="0" cellspacing="0" class="calbck_con">'."\n";
 	print '
       		<tr>
@@ -261,41 +258,67 @@ if ($tslice) {
 	print '<tr align="center" class="caldays">'."\n";
 	print '<td><div style="vertical-align: middle; overflow: auto; height: 210; border-left: 0px; border-bottom: 0px; padding:0px; margin: 0px;">'."\n";
 	// select chatters
-	$result_from_temp = do_sel("select * from tslice_temp order by roster_name asc");
-        while ($entry = mysql_fetch_array($result_from_temp))
-        {
+	foreach ($sorted_list as $entry) {
+
                 $user_name = $entry[username];
                 $server_name = $entry[server_name];
-                if ($talker==$entry["todaytalk"] AND $server==$entry[server]) { $bold_b="<font color=\"#FFCC00\"><b>"; $bold_e="</b></font>"; $mrk=1; } else { $bold_b=""; $bold_e=""; $mrk=0; }
-			$nickname = $entry[roster_name];
-                        if ($nickname=="f") { $nickname=$not_in_r[$lang]; }
-			// this is hack for not displaying chats with jids without names...
-			if ($user_name!="") {
-				if ($mrk==1) { 
-					$previous_t = prev_c_day($xmpp_host,$tslice,$user_id,$entry[todaytalk],$entry[server]); 
-					$to_base_prev = "$previous_t@$entry[todaytalk]@$entry[server]@";
-					$to_base_prev = encode_url($to_base_prev,TOKEN,$url_key);
+                if ($talker==$entry["todaytalk"] AND $server==$entry[server]) { 
 
-					$next_t = next_c_day($xmpp_host,$tslice,$user_id,$entry[todaytalk],$entry[server]);
-					$to_base_next = "$next_t@$entry[todaytalk]@$entry[server]@";
-					$to_base_next = encode_url($to_base_next,TOKEN,$url_key);
+					$bold_b="<font color=\"#FFCC00\"><b>"; 
+					$bold_e="</b></font>"; 
+					$mrk=1; 
+				
+				} 
+				else { 
+				
+				$bold_b=""; 
+				$bold_e=""; 
+				$mrk=0; 
+				
+			}
+		
+		$nickname = $entry[roster_name];
+		if ($nickname=="f") { 
+		
+				$nickname=$not_in_r[$lang]; 
+				
+			}
+
+		// this is hack for not displaying chats with jids without names...
+		if ($user_name!="") {
+		
+				if ($mrk==1) {
+
+						$previous_t = prev_c_day($xmpp_host,$tslice,$user_id,$entry[todaytalk],$entry[server]); 
+						$to_base_prev = "$previous_t@$entry[todaytalk]@$entry[server]@";
+						$to_base_prev = encode_url($to_base_prev,TOKEN,$url_key);
+
+						$next_t = next_c_day($xmpp_host,$tslice,$user_id,$entry[todaytalk],$entry[server]);
+						$to_base_next = "$next_t@$entry[todaytalk]@$entry[server]@";
+						$to_base_next = encode_url($to_base_next,TOKEN,$url_key);
+				
 				}
 
                         	$to_base2 = "$tslice@$entry[todaytalk]@$entry[server]@";
                         	$to_base2 = encode_url($to_base2,TOKEN,$url_key);
 				if ($mrk==1 AND $previous_t != NULL) { 
+
 						print '<a class="nav_np" id="pretty" title="'.$jump_to_prev[$lang].': '.$previous_t.'" href="calendar_view.php?a='.$to_base_prev.'"><<< </a>'; 
+					
 					}
-				print '<a class="caldays3" id="pretty" href="?a='.$to_base2.'" title="JabberID:;'.htmlspecialchars($user_name).'@'.htmlspecialchars($server_name).';---;<b>'.$chat_lines[$lang].$entry[lcount].'</b>">'.$bold_b.cut_nick($nickname).$bold_e.'</a>';
+					
+				print '<a class="caldays3" id="pretty" href="?a='.$to_base2.'" title="JabberID:;'.htmlspecialchars($user_name).'@'.htmlspecialchars($server_name).';---;
+					<b>'.$chat_lines[$lang].$entry[lcount].'</b>">'.$bold_b.cut_nick($nickname).$bold_e.'</a>';
+				
 				if ($mrk==1 AND $next_t != NULL) { 
+						
 						print '<a class="nav_np" id="pretty" title="'.$jump_to_next[$lang].': '.$next_t.'" href="calendar_view.php?a='.$to_base_next.'"> >>></a>'; 
 					}
 
 				print '<br>'."\n";
-			}
+		}
 
         }
-	mysql_free_result($result_from_temp);
 
 	print '</div>';
 	print '</td></tr>'."\n";
@@ -313,9 +336,6 @@ if ($tslice) {
     	</table>
 	
 	';
-
-	mysql_free_result ($result);
-
 }
 
 print '</div>';
@@ -453,7 +473,7 @@ if ($talker) {
 
 		# check if chat is continuation from previous day
 		if ($ts_mark!="1" AND substr($ts, 0 , strpos($ts, ":")) == 00 ) {
-			if ( check_thread($user_id,$talker,$server,$tslice,$xmpp_host,2)===TRUE) {
+			if ( check_thread($db,$talker,$server,$tslice,$xmpp_host,2)===TRUE) {
 				
 					print '<tr><td colspan="6" style="text-align: left; padding-left: 5px;" class="message"><a href="calendar_view.php?a='.$to_base_prev.'">'.$cont_chat_p[$lang].'</a></td></tr>'."\n";
 			}
@@ -518,7 +538,7 @@ if ($talker) {
 
 # Check thread. ToDo: Run code only on last page
 if (substr($ts, 0 , strpos($ts, ":")) == 23) {
-	if ( check_thread($user_id,$talker,$server,$tslice,$xmpp_host,1)===TRUE) {
+	if ( check_thread($db,$talker,$server,$tslice,$xmpp_host,1)===TRUE) {
 		
 		print '<tr><td colspan="6" style="text-align: right; padding-right: 5px;" class="message"><a href="calendar_view.php?a='.$to_base_next.'">'.$cont_chat[$lang].'</a></td></tr>'."\n";
 	}

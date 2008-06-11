@@ -33,16 +33,6 @@ function getmicrotime(){
 	return ((float)$usec + (float)$sec);
 }
 
-
-
-function db_connect($MYSQL_HOST,$MYSQL_USER,$MYSQL_PASS,$MYSQL_NAME)
-{
-	$conn=mysql_connect("$MYSQL_HOST", "$MYSQL_USER", "$MYSQL_PASS") or die ("We're sorry but service is currently unavailable. Please try in few seconds.");
-	mysql_select_db ("$MYSQL_NAME") or die ("DB Error");
-	return $conn;
-}
-
-
 function query_nick_name($ejabberd_roster,$talker, $server="") {
 
 	$nickname = $ejabberd_roster->get_nick("$talker"."@"."$server");
@@ -976,7 +966,7 @@ return "f";
 
 }
 
-function check_thread($user_id,$peer_name_id,$peer_server_id,$at,$xmpp_host,$dir=NULL) {
+function check_thread($db,$peer_name_id,$peer_server_id,$at,$xmpp_host,$dir=NULL) {
 
 	#adjust this hours as needed, we assume if chat is +/- 1 hour on the edge of day, then chat is related
 	if ($dir=="1") {
@@ -991,34 +981,18 @@ function check_thread($user_id,$peer_name_id,$peer_server_id,$at,$xmpp_host,$dir
 	}
 
 	$get_date = date("Y-n-j", strtotime($day, strtotime(date("$at"))));
-	$query="SELECT 1 
-		FROM 
-			`logdb_messages_".$get_date."_".$xmpp_host."` 
-		WHERE 
-			owner_id='$user_id' 
-		AND 
-			peer_name_id='$peer_name_id' 
-		AND 
-			peer_server_id='$peer_server_id' 
-		AND 
-			from_unixtime(timestamp) >= str_to_date('$get_date $bhour','%Y-%m-%d %H:%i:%s') 
-		AND 
-			from_unixtime(timestamp) <= str_to_date('$get_date $ehour','%Y-%m-%d %H:%i:%s')
-		ORDER BY 
-			from_unixtime(timestamp)";
-	$result=mysql_query($query);
-	if (mysql_num_rows($result)>0) { 
 
-			mysql_free_result($result);
-			return TRUE;
-		
+	$db->check_thread($get_date,$peer_name_id,$peer_server_id,$bhour,$ehour);
+	if ($db->result > 0) {
+
+			return true;
 		}
-
 		else{
-			return FALSE;
-		}
+			return false;
 
-return FALSE;
+	}
+
+return false;
 
 }
 

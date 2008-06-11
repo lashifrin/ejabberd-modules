@@ -25,6 +25,7 @@ require("class.sessions.php");
 require("class.ejabberd_xmlrpc.php");
 require("class.db.php");
 require("class.roster.php");
+require("class.helper.php");
 require("config.php");
 
 ob_start();

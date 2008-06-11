@@ -26,6 +26,7 @@ require_once("func.php");
 require_once("class.sessions.php");
 require_once("class.ejabberd_xmlrpc.php");
 require_once("class.db.php");
+require_once("class.helper.php");
 require_once("config.php");
 require_once("lang.php");
 // sessions and db connections

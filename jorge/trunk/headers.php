@@ -40,6 +40,7 @@ require_once("class.sessions.php"); // sessions handling
 require_once("class.ejabberd_xmlrpc.php"); // rpc class
 require_once("class.db.php"); // db_manager
 require_once("class.roster.php"); // roster
+require_once("class.helper.php"); // helper
 require_once("config.php"); // read configuration
 require_once("lang.php"); // language pack
 
@@ -69,12 +70,9 @@ if ($rpc_host===false) {
 // create rpc object
 $ejabberd_rpc = new rpc_connector("$rpc_host","$rpc_port","$xmpp_host_dotted");
 
-// create db_manager object ----> EXPERIMENTAL USE ONLY <--------
+// create db_manager object
 $db = new db_manager(MYSQL_HOST,MYSQL_NAME,MYSQL_USER,MYSQL_PASS,"mysql","$xmpp_host");
 $db->set_debug(false);
-
-// mod_logdb dbconnect
-db_connect(MYSQL_HOST,MYSQL_USER,MYSQL_PASS,MYSQL_NAME);
 
 // username (token)
 define(TOKEN,$sess->get('uid_l'));

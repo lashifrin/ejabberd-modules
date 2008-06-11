@@ -62,40 +62,43 @@ if ($con_map AND $_POST['chat_map'] != "null") {
 	list($name_peer,$server_peer) = split("@",$con_map);
 
 	// get the id's of user and server
-	$name_peer=get_user_id(mysql_escape_string($name_peer),$xmpp_host);
-	$server_peer=get_server_id(mysql_escape_string($server_peer),$xmpp_host);
-	//validate, always should be integers
-	if (!ctype_digit($name_peer) OR !ctype_digit($server_peer)) { unset($con_map); unset($name_peer); unset($server_peer); }
+	$db->get_user_id($name_peer);
+	$peer_name_id = $db->result->user_id;
+	$db->get_server_id($server_peer);
+	$peer_server_id = $db->result->server_id;
 
-	//begin
-	//first get the months
-	$get_months="select substring(at,1,7) as at from `logdb_stats_$xmpp_host` where owner_id='$user_id' and peer_name_id='$name_peer' and peer_server_id='$server_peer' group by substring(at,1,7) order by str_to_date(at,'%Y-%m-%d') asc";
-	$result_m=mysql_query($get_months);
-	$cc_cmp=mysql_num_rows($result_m);
-	while($row_m=mysql_fetch_array($result_m)) {
-		// hack for proper date parsing
-		list($y,$m) = split("-",$row_m[at]);
-		$mo="$y-$m";
+	if ($peer_name_id !== null AND $peer_server_id !== null) {
+	
+		//first get the months
+		$db->get_chat_map($peer_name_id,$peer_server_id);
+		$result1 = $db->result;
+		$cc_cmp = count($result1);
+		foreach ($result1 as $row_m) {
+
+			// hack for proper date parsing
+			list($y,$m) = split("-",$row_m[at]);
+			$mo="$y-$m";
 		
-		// now get the days in with user was talking
-		$days_to_scan="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' and peer_name_id='$name_peer' and peer_server_id='$server_peer' and at like '$mo%'";
+			// now get the days in with user was talking
+			$db->get_chat_map_specyfic($peer_name_id,$peer_server_id,$mo);
+			$result2 = $db->result;
+			
+			foreach($result2 as $row_day) {
 
-		$result=mysql_query($days_to_scan);
-
-			while($row_day=mysql_fetch_array($result)) {
-
-				// now scan day for chats, yep thats weak, but as long as we dont have right stats table this will work...
+					// now scan day for chats, yep thats weak, but as long as we dont have right stats table this will work...
 					$i++;
 					list($y,$m,$d) = split("-",$row_day[at]);
 					$days[$i] = $d;
 			}
 
-		if (count($days)>=1) {
-			print '<div style="float: left;">';
-			echo pl_znaczki(calendar($user_id,$xmpp_host,$y,$m,$days,TOKEN,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,2,$name_peer,$server_peer,$cal_days));
-			unset($days);
-			print '</div>';
-			}
+			if (count($days)>=1) {
+				
+					print '<div style="float: left;">';
+					echo pl_znaczki(calendar($user_id,$xmpp_host,$y,$m,$days,TOKEN,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,2,$peer_name_id,$peer_server_id,$cal_days));
+					unset($days);
+					print '</div>';
+				
+				}
 			else {
 			
 				$score++;
@@ -103,14 +106,19 @@ if ($con_map AND $_POST['chat_map'] != "null") {
 			}
 		$i=0;
 
+		}
+
+	}
+
+	else {
+
+		$cc_cmp = $score;
 	}
 
 
 if ($score==$cc_cmp) { print '<span style="text-align: center;"><h2>'.$chat_no_chats[$lang].'</h2></span>'; }
 
-
 }
-
 
 require_once("footer.php");
 ?>
