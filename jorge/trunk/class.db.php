@@ -58,7 +58,7 @@ $db->get_user_chats(YYYY-M-D string); // Get chat list from day 					$db->result
 $db->get_user_chat(YYYY-M-D,peer_name_id,peer_server_id,peer_resource_id = null, start = null,lines = null); // Get user chat $db->result;
 $db->set_logger(event_id,event_level); 									$db->result;
 $db->get_uniq_chat_dates($limit_start integer,$limit_end integer);					$db->result;
-
+$db->check_thread;											$db->result; 
 
 See documentation for details.
 
@@ -674,6 +674,99 @@ class db_manager {
 
 	}
 
+	public function check_thread($tslice,$peer_name_id,$peer_server_id,$begin_hour,$end_hour) {
+
+		$this->id_query = "Q027";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$xmpp_host = $this->xmpp_host;
+		$peer_name_id = $this->sql_validate($peer_name_id,"integer");
+		$peer_server_id = $this->sql_validate($peer_server_id,"integer");
+		$tslice = $this->sql_validate($tslice,"date");
+		$tslice_table = $this->construct_table($tslice);
+        	$query="SELECT 
+				1 
+                	FROM 
+                        	`$tslice_table`
+                	WHERE 
+                        	owner_id='$user_id' 
+                	AND 
+                        	peer_name_id='$peer_name_id' 
+                	AND 
+                        	peer_server_id='$peer_server_id' 
+                	AND 
+                        	from_unixtime(timestamp) >= str_to_date('$tslice $begin_hour','%Y-%m-%d %H:%i:%s') 
+                	AND 
+                        	from_unixtime(timestamp) <= str_to_date('$tslice $end_hour','%Y-%m-%d %H:%i:%s')
+                	ORDER BY 
+                        	from_unixtime(timestamp)
+
+		";
+		
+		return $this->row_count($query);
+
+	}
+
+	public function get_chat_map($peer_name_id,$peer_server_id) {
+
+		$this->id_query = "Q028";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$xmpp_host = $this->xmpp_host;
+		$peer_name_id = $this->sql_validate($peer_name_id,"integer");
+		$peer_server_id = $this->sql_validate($peer_server_id,"integer");
+		$query="SELECT 
+				substring(at,1,7) as at 
+			FROM 
+				`logdb_stats_$xmpp_host` 
+			WHERE 
+				owner_id='$user_id' 
+			AND 
+				peer_name_id='$peer_name_id' 
+			AND 
+				peer_server_id='$peer_server_id' 
+			GROUP BY 
+				substring(at,1,7) 
+			ORDER BY 
+				str_to_date(at,'%Y-%m-%d') 
+			ASC
+			
+		";
+		
+		$this->select($query,"raw");
+		return $this->commit_select(array("at"));
+
+	}
+
+	public function get_chat_map_specyfic($peer_name_id,$peer_server_id,$month) {
+
+		$this->id_query = "Q029";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$xmpp_host = $this->xmpp_host;
+		$peer_name_id = $this->sql_validate($peer_name_id,"integer");
+		$peer_server_id = $this->sql_validate($peer_server_id,"integer");
+		$mo = $this->sql_validate($month,"string");
+		$query="SELECT 
+				at 
+			FROM 
+				`logdb_stats_$xmpp_host` 
+			WHERE 
+				owner_id='$user_id' 
+			AND 
+				peer_name_id='$peer_name_id' 
+			AND 
+				peer_server_id='$peer_server_id' 
+			AND 
+				at like '$mo%'
+				
+		";
+
+		$this->select($query,"raw");
+		return $this->commit_select(array("at"));
+
+	}
+
 	public function total_messages() {
 	
 		$this->id_query = "Q017";
@@ -727,12 +820,16 @@ class db_manager {
 		$this->id_query = "Q006";
 		$result = mysql_num_rows($this->db_query($query));
 		if ($result === false) {
+
 				return false;
-			}
+			
+				}
 			else{
+
 				$this->result = $result;
 				return true;
-		}
+		
+			}
 		
 	}
 
@@ -929,14 +1026,14 @@ class db_manager {
 
 				list($ye, $mo, $da) = split("-", $val);
 				if (!ctype_digit($ye) || !ctype_digit($mo) || !ctype_digit($da)) { 
-				
+		
 						$this->is_error = true;
 						return false;
 						
 					} 
 					else { 
 					
-						return true;
+						return $val;
 						
 				}
 
