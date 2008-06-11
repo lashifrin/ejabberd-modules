@@ -923,6 +923,25 @@ class db_manager {
 
 				return mysql_escape_string($val);
 
+				}
+
+			elseif($type==="date") {
+
+				list($ye, $mo, $da) = split("-", $val);
+				if (!ctype_digit($ye) || !ctype_digit($mo) || !ctype_digit($da)) { 
+				
+						$this->is_error = true;
+						return false;
+						
+					} 
+					else { 
+					
+						return true;
+						
+				}
+
+				$this->is_error = true;
+				return false;
 			}
 			else{
 				$this->is_error = true;
