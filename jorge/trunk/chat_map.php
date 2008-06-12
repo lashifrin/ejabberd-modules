@@ -25,12 +25,25 @@ require_once("upper.php");
 print '<h2>'.$chat_map[$lang].'</h2>';
 print '<small>'.$chat_select[$lang].'</small><br><br>';
 if ($_POST['chat_map']) {
-	$con_map=decode_url_simple($_POST['chat_map'],TOKEN,$url_key);
+		
+		$con_map = $enc->decrypt_url($_POST['chat_map']);
+
 	}
 	elseif ($_GET['chat_map']) {
-	$con_map=decode_url_simple($_GET['chat_map'],TOKEN,$url_key);
+
+		$con_map = $enc->decrypt_url($_GET['chat_map']);
+	
 	}
 
+if($con_map === true) {
+
+		$con_map = $enc->peer_name."@".$enc->peer_server;
+	}
+	else{
+
+		unset($con_map);
+}
+	
 // prepare roster object
 $ejabberd_roster->sort_by_nick("az");
 $roster_chat = $ejabberd_roster->get_roster();
@@ -46,8 +59,19 @@ print '<option value="null">'.$chat_c_list[$lang].'</option>';
 		$roster_item = array_shift($roster_chat);
 		$name = $roster_item[nick];
 		$grp  = $roster_item[group];
-		if ($con_map==$jid) { $selected="selected"; } else { $selected=""; }
-		print '<option '.$selected.' value=\''.encode_url($jid,TOKEN,$url_key).'\'>'.htmlspecialchars($name).' ('.htmlspecialchars($grp).')</option>'."\n";
+		if ($con_map==$jid) { 
+		
+				$selected="selected"; 
+				
+			} 
+			else { 
+			
+				$selected=""; 
+				
+		}
+		
+		list($peer_name,$peer_server) = explode("@",$jid);
+		print '<option '.$selected.' value=\''.$enc->crypt_url("peer_name=$peer_name&peer_server=$peer_server").'\'>'.htmlspecialchars($name).' ('.htmlspecialchars($grp).')</option>'."\n";
 
 	}
 
@@ -94,7 +118,7 @@ if ($con_map AND $_POST['chat_map'] != "null") {
 			if (count($days)>=1) {
 				
 					print '<div style="float: left;">';
-					echo pl_znaczki(calendar($user_id,$xmpp_host,$y,$m,$days,TOKEN,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,2,$peer_name_id,$peer_server_id,$cal_days));
+					echo pl_znaczki(calendar($user_id,$xmpp_host,$y,$m,$days,TOKEN,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,2,$peer_name_id,$peer_server_id,$cal_days,$enc));
 					unset($days);
 					print '</div>';
 				

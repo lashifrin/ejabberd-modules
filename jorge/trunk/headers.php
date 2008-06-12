@@ -74,6 +74,9 @@ $ejabberd_rpc = new rpc_connector("$rpc_host","$rpc_port","$xmpp_host_dotted");
 $db = new db_manager(MYSQL_HOST,MYSQL_NAME,MYSQL_USER,MYSQL_PASS,"mysql","$xmpp_host");
 $db->set_debug(false);
 
+// create encryption object
+$enc = new url_crypt(ENC_KEY);
+
 // username (token)
 define(TOKEN,$sess->get('uid_l'));
 

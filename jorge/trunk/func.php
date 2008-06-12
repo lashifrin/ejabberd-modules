@@ -561,7 +561,7 @@ function new_parse_url($text) {
 	return $text;
 }
 
-function calendar($user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,$c_type,$name_peer=0,$server_peer=0,$cal_days=0) {
+function calendar($user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,$c_type,$name_peer=0,$server_peer=0,$cal_days=0,$enc=null) {
 	
 	$days=$days;
 	$month = $m;
@@ -632,8 +632,10 @@ function calendar($user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_name_e
 //links to next and previous month only for browser
 if ($c_type=="1") {
 	// encode links
-	$link_left= encode_url("$y-$prev",$token,$url_key);
-	$link_right= encode_url("$x-$next",$token,$url_key);
+	#$link_left= encode_url("$y-$prev",$token,$url_key);
+	$link_left = $enc->crypt_url("tslice=$y-$prev");
+	#$link_right= encode_url("$x-$next",$token,$url_key);
+	$link_right = $enc->crypt_url("tslice=$x-$next");
 
 	// check if we have chats in prev and next mo
 	$is_left="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' and at like '$y-$prev%' limit 1";
@@ -743,14 +745,17 @@ $verb_date = "$year-$m-1";
         if(in_array($n,$days)){
 	
 	if ($c_type=="1") {
-			$to_base = "$year-$m-$n@";
+
+			$to_base = $enc->crypt_url("tslice=$year-$m-$n");
 			$loc_orign="";
+
 		}
 		elseif($c_type=="2") {
-			$to_base = "$year-$m-$n@$name_peer@$server_peer@";
+
+			$to_base = $enc->crypt_url("tslice=$year-$m-$n&peer_name_id=$name_peer&peer_server_id=$server_peer");
 			$loc_orign="&loc=2";
+
 		}
-	$to_base = encode_url($to_base,$token,$url_key);
 
 	    if ($selected==$n) { $bgcolor = 'bgcolor="#6daae7"'; } else { $bgcolor=""; }
             $calendar .= '<td height="15" '.$bgcolor.' onclick="window.location=\''.$view_type.'?a='.$to_base.$loc_orign.'\'"><b><a class="caldays2" href="'.$view_type.'?a='.$to_base.$loc_orign.'">'.$n.'</a></b></td>
@@ -800,7 +805,7 @@ return "f";
 
 }
 
-function delete_chat($talker,$server,$xmpp_host,$user_id,$tslice,$token,$url_key,$lnk) {
+function delete_chat($talker,$server,$xmpp_host,$user_id,$tslice,$token,$enc,$lnk) {
 
         if (!ctype_digit($talker) OR !ctype_digit($server)) { return "f"; }
         $query="update `logdb_messages_$tslice"."_$xmpp_host` set ext = '1' where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server'";
@@ -823,8 +828,7 @@ function delete_chat($talker,$server,$xmpp_host,$user_id,$tslice,$token,$url_key
 	$result=mysql_query($query) or die ("Ooops...Error");
 	mysql_free_result($result);
 	// links
-        $undelete_link = "$tslice@$talker@$server@@@$lnk@undelete@";
-        $undelete_link = encode_url($undelete_link,$token,$url_key);
+	$undelete_link = $enc->crypt_url("tslice=$tslice&peer_name_id=$talker&peer_server_id=$server&lnk=$lnk&action=undelete");
 	
 return $undelete_link;
 

@@ -82,12 +82,21 @@ Class parser {
 
 	public $tslice = null;
 	public $peer_name_id = null;
+	public $peer_name = null;
 	public $peer_server_id = null;
+	public $peer_server = null;
 	public $ismylink = null;
 	public $linktag = null;
 	public $strt = null;
 	public $lnk = null;
 	public $action = null;
+	public $search_phase = null;
+	public $offset_arch = null;
+	public $offset_day = null;
+	public $tag_count = null;
+	public $time_start = null;
+	public $time_end = null;
+
 
 	protected function decode_string($url) {
 
@@ -96,14 +105,55 @@ Class parser {
 		settype($integrity,"string");
 		if ($integrity === md5($reconstructed)) { 
 				
-				if (isset($tslice)) { $this->tslice = $tslice; }
-				if (isset($peer_name_id)) { $this->peer_name_id = $peer_name_id; }
-				if (isset($peer_server_id)) { $this->peer_server_id = $peer_server_id; }
-				if (isset($lnk)) { $this->lnk = $lnk; }
-				if (isset($ismylink)) { $this->ismylink = $ismylink; }
-				if (isset($linktag)) { $this->linktag = $linktag; }
-				if (isset($strt)) { $this->strt = $strt; }
-				if (isset($action)) { $this->action = $action; }
+				if (isset($tslice)) { 
+						$this->tslice = $tslice; 
+					}
+				if (isset($peer_name_id)) { 
+						$this->peer_name_id = $peer_name_id; 
+					}
+				if (isset($peer_server_id)) { 
+						$this->peer_server_id = $peer_server_id; 
+					}
+				if (isset($lnk)) { 
+						$this->lnk = $lnk; 
+					}
+				if (isset($ismylink)) { 
+						$this->ismylink = $ismylink; 
+					}
+				if (isset($linktag)) { 
+						$this->linktag = $linktag; 
+					}
+				if (isset($strt)) { 
+						$this->strt = $strt; 
+					}
+				if (isset($action)) { 
+						$this->action = $action; 
+					}
+				if (isset($peer_name)) {
+						$this->peer_name = $peer_name;
+					}
+				if (isset($peer_server)) {
+						$this->peer_server = $peer_server;
+					}
+				if (isset($search_phase)) {
+						$this->search_phase = $search_phase;
+					}
+				if (isset($offset_arch)) {
+						$this->offset_arch = $offset_arch;
+					}
+				if (isset($offset_day)) {
+						$this->offset_day = $offset_day;
+					}
+				if (isset($tag_count)) {
+						$this->tag_count = $tag_count;
+					}
+				if (isset($time_start)) {
+						$this->time_start = $time_start;
+					}
+				if (isset($time_end)) {
+						$this->time_end = $time_end;
+					}
+				
 				return true;
 				
 			} 

@@ -85,8 +85,7 @@ if (mysql_num_rows($result)>0) {
 		$username=get_user_name($row[peer_name_id],$xmpp_host);
 		$server=get_server_name($row[peer_server_id],$xmpp_host);
 		$nickname=query_nick_name($ejabberd_roster,$username,$server);
-		$to_base = "$row[tslice]@$row[peer_name_id]@$row[peer_server_id]@";
-		$to_base = encode_url($to_base,TOKEN,$url_key);
+		$to_base = $enc->crypt_url("tslice=$row[tslice]&peer_name_id=$row[peer_name_id]&peer_server_id=$row[peer_server_id]");
 		print '<tr id="'.$i.'"><td class="rowspace"> <a href="'.$view_type.'?a='.$to_base.'&loc=3"><u><b>'.$nickname.'</b> (<i>'.htmlspecialchars($username).'@'.htmlspecialchars($server).'</i>)</u></a></td>';
 		print '<td class="rowspace">'.$row[tslice].'</td>';
 		// comments disabled for now

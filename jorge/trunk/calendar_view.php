@@ -2,7 +2,7 @@
 /*
 Jorge - frontend for mod_logdb - ejabberd server-side message archive module.
 
-Copyright (C) 2007 Zbigniew Zolkiewski
+Copyright (C) 2008 Zbigniew Zolkiewski
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -17,7 +17,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 */
 
 require_once("headers.php");
@@ -47,35 +46,62 @@ $(document).ready(function() {
 print '<h2>'.$cal_head[$lang].'</h2>';
 print '<small>'.$cal_notice[$lang].'. <a href="main.php?set_pref=1&v=1"><u>'.$change_view[$lang].'</u></a></small><br><br>';
 
-// fetch some get and posts
-if (isset($_GET['left'])) { $left=decode_url_simple($_GET['left'],TOKEN,$url_key); }
-if (isset($_GET['right'])) { $right=decode_url_simple($_GET['right'],TOKEN,$url_key) ; }
-$jump_to=$_POST['jump_box'];
-$resource_id = $_GET['b'];
+if (isset($_GET['left'])) { 
+	
+		if ($enc->decrypt_url($_GET['left']) === true) {
 
-// validate resource_id
-if (!ctype_digit($resource_id)) { unset($resource_id); }
+				$left = $enc->tslice;
 
-$start=$_GET['start'];
+			}
+			else {
 
-if ($jump_to!="") { $mo=$jump_to; }
-if ($mo=="jump") { unset($mo); }
+				unset($left);
+
+		}
+	
+}
+
+if (isset($_GET['right'])) { 
+
+		if ($enc->decrypt_url($_GET['right']) === true) {
+
+				$right = $enc->tslice;
+
+			}
+			else {
+
+				unset($left);
+
+		}
+		
+}
 
 $e_string = $_GET['a'];
+$resource_id = $_GET['b'];
+$start = $_GET['start'];
 
-// decompose link
-if ($e_string) {
+$jump_to=$_POST['jump_box'];
+if ($jump_to!="") { 
 
-		$variables = decode_url2($e_string,TOKEN,$url_key);
-		$tslice = $variables[tslice];
-		$talker = $variables[talker];
-		$server = $variables[server];
-		$action = $variables[action];
-		$lnk = $variables[lnk];
+		$mo=$jump_to; 
 
-		// rebuild oryginal URL, so noone can bypass any new arguments
-		$reencoded_e_string = "$tslice@$talker@$server@";
-		$e_string = encode_url($reencoded_e_string,TOKEN,$url_key);
+	}
+
+if ($mo=="jump") { 
+
+		unset($mo); 
+	}
+
+if ($enc->decrypt_url($e_string) === true) {
+
+		$tslice = $enc->tslice;
+		$talker = $enc->peer_name_id;
+		$server = $enc->peer_server_id;
+		$action = $enc->action;
+		$lnk = $enc->lnk;
+		
+		// reencode string:
+		$e_string = $enc->crypt_url("tslice=$tslice&peer_name_id=$talker&peer_server_id=$server");
 
 }
 
@@ -112,7 +138,7 @@ if ($action=="undelete") {
 // chat deletion
 if ($action=="del") {
 
-	$del_result=delete_chat($talker,$server,$xmpp_host,$user_id,$tslice,TOKEN,$url_key,$lnk);
+	$del_result=delete_chat($talker,$server,$xmpp_host,$user_id,$tslice,TOKEN,$enc,$lnk);
 	if ($del_result!="f") {
 
 		unset($talker);
@@ -208,7 +234,7 @@ foreach($result_for_days as $result) {
 
 // display calendar
 list($y,$m) = split("-", $mo);
-echo pl_znaczki(calendar($user_id,$xmpp_host,$y,$m,$days,TOKEN,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,1,$null_a=0,$null_b=0,$cal_days));
+echo pl_znaczki(calendar($user_id,$xmpp_host,$y,$m,$days,TOKEN,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,1,$null_a=0,$null_b=0,$cal_days,$enc));
 unset($days);
 
 // generate table name
@@ -290,17 +316,14 @@ if ($tslice) {
 				if ($mrk==1) {
 
 						$previous_t = prev_c_day($xmpp_host,$tslice,$user_id,$entry[todaytalk],$entry[server]); 
-						$to_base_prev = "$previous_t@$entry[todaytalk]@$entry[server]@";
-						$to_base_prev = encode_url($to_base_prev,TOKEN,$url_key);
+						$to_base_prev = $enc->crypt_url("tslice=$previous_t&peer_name_id=$entry[todaytalk]&peer_server_id=$entry[server]");
 
 						$next_t = next_c_day($xmpp_host,$tslice,$user_id,$entry[todaytalk],$entry[server]);
-						$to_base_next = "$next_t@$entry[todaytalk]@$entry[server]@";
-						$to_base_next = encode_url($to_base_next,TOKEN,$url_key);
+						$to_base_next = $enc->crypt_url("tslice=$next_t&peer_name_id=$entry[todaytalk]&peer_server_id=$entry[server]");
 				
 				}
 
-                        	$to_base2 = "$tslice@$entry[todaytalk]@$entry[server]@";
-                        	$to_base2 = encode_url($to_base2,TOKEN,$url_key);
+				$to_base2 = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[todaytalk]&peer_server_id=$entry[server]");
 				if ($mrk==1 AND $previous_t != NULL) { 
 
 						print '<a class="nav_np" id="pretty" title="'.$jump_to_prev[$lang].': '.$previous_t.'" href="calendar_view.php?a='.$to_base_prev.'"><<< </a>'; 
@@ -369,11 +392,9 @@ if ($talker) {
 			$nickname=$not_in_r[$lang]; 
 			
 		}
-	$predefined="$talker_name@$server_name";
-	$predefined=encode_url($predefined,TOKEN,$url_key);
-	$predefined_s="from:$talker_name@$server_name";
-	$predefined_s=encode_url($predefined_s,TOKEN,$url_key);
-        print '<table id="maincontent" border="0" cellspacing="0" class="ff">'."\n";
+	
+	$predefined = $enc->crypt_url("peer_name=$talker_name&peer_server=$server_name");
+	print '<table id="maincontent" border="0" cellspacing="0" class="ff">'."\n";
 	// if we come from chat maps put the link back...its the same link as "show all chats" but, it is more self explaining
 	print '<tr><td colspan="4"><div id="fav_result"></div>';
 	print '</td></tr>';
@@ -408,9 +429,7 @@ if ($talker) {
 	}
         print '<tr class="header">'."\n";
         print '<td><b> '.$time_t[$lang].' </b></td><td><b> '.$user_t[$lang].' </b></td><td><b> '.$thread[$lang].'</b></td>'."\n";
-        $loc_link = $e_string;
-        $action_link = "$tslice@$talker@$server@0@null@$loc_link@del@";
-        $action_link = encode_url($action_link,TOKEN,$url_key);
+	$action_link = $enc->crypt_url("tslice=$tslice&peer_name_id=$talker&peer_server_id=$server&lnk=$e_string&action=del");
         print '<td align="right" style="padding-right: 5px; font-weight: normal;">';
 	print '
 		<form style="margin-bottom: 0;" id="fav_form" action="req_process.php" method="post">
@@ -424,7 +443,7 @@ if ($talker) {
 	print $all_for_u[$lang];
         print '<a id="pretty" title="'.$all_for_u_m2_d[$lang].'" class="menu_chat" href="chat_map.php?chat_map='.$predefined.'"><u>'.$all_for_u_m2[$lang].'</u></a>';
 	print '&nbsp;<small>|</small>&nbsp;';
-	print '<a id="pretty" title="'.$all_for_u_m_d[$lang].'" class="menu_chat" href="search_v2.php?b='.$predefined_s.'"><u>'.$all_for_u_m[$lang].'</u></a>';
+	print '<a id="pretty" title="'.$all_for_u_m_d[$lang].'" class="menu_chat" href="search_v2.php?b='.$predefined.'"><u>'.$all_for_u_m[$lang].'</u></a>';
 	print '&nbsp; | &nbsp;';
         print '<a id="pretty" title="'.$tip_delete[$lang].'" class="menu_chat" href="calendar_view.php?a='.$action_link.'">'.$del_t[$lang].'</a>';
 	print '</td></tr>';
@@ -527,10 +546,19 @@ if ($talker) {
                 $new_s=wordwrap($new_s,107,"<br>",true);
                 $new_s=new_parse_url($new_s);
                 print '<td width="800" colspan="3">'.$new_s.'</td>'."\n";
-                $lnk=encode_url("$tslice@$entry[peer_name_id]@$entry[peer_server_id]@",$ee,$url_key);
-                $to_base2 = "$tslice@$entry[peer_name_id]@$entry[peer_server_id]@1@$licz@$lnk@NULL@$start@";
-                $to_base2 = encode_url($to_base2,TOKEN,$url_key);
-                if ($here=="1") { print '<td colspan="2" style="padding-left: 2px; font-size: 9px;"><a style="color: #1466bc" href="my_links.php?a='.$to_base2.'">'.$my_links_save[$lang].'</a></td>'."\n"; } else { print '<td></td>'."\n"; }
+		$lnk = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$peer_server_id");
+		$to_base2 = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$entry[peer_server_id]&ismylink=1&linktag=$licz&lnk=$lnk&strt=$start");
+                if ($here=="1") { 
+			
+				print '<td colspan="2" style="padding-left: 2px; font-size: 9px;"><a style="color: #1466bc" href="my_links.php?a='.$to_base2.'">'.$my_links_save[$lang].'</a></td>'."\n"; 
+			
+			} 
+			else { 
+			
+				print '<td></td>'."\n"; 
+				
+			}
+
                 if ($t=2) { $c=1; $t=0; }
                 print '</tr>'."\n";
                 }

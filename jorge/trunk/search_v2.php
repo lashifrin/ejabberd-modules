@@ -27,16 +27,39 @@ $search_phase=mysql_escape_string($_POST['query']); // for normal search
 $next_link = $_GET['a']; // for pagination
 $predefined = $_GET['b']; // for predefined
 
-if ($predefined) { $search_phase = decode_predefined($predefined,TOKEN,$url_key);  }  // for predefined
+if ($predefined) { 
+
+		if($enc->decrypt_url($predefined) === true) {
+
+				$search_phase = "from:".$enc->peer_name."@".$enc->peer_server;
+
+			}
+			else {
+
+				unset($search_phase);
+				unset($predefined);
+		}
+		
+}
 
 if ($next_link) { 
-	$s_variables=decode_search_url($next_link,TOKEN,$url_key);
-	$tslice_next = validate_date($s_variables[tslice]);
-	$search_phase = $s_variables[search_phase];
-	$offset_arch = $s_variables[offset_arch];
-	$offset_day = $s_variables[offset_day];
-	$tag_count = $s_variables[tag_count];
-	}
+
+		if($enc->decrypt_url($next_link) === true) {
+
+				$tslice_next = $enc->tslice;
+				$search_phase = $enc->search_phase;
+				$offset_arch = $enc->offset_arch;
+				$offset_day = $enc->offset_day;
+				$tag_count = $enc->tag_count;
+
+			}
+			else {
+				
+				unset ($next_link);
+				unset ($search_phase);
+		}
+
+}
 
 if ($tag_count=="t") { $start_from=$offset_day; }
 
@@ -65,8 +88,10 @@ if ($qquery[from] == "t") {
 	$user_chat_search = "1"; // temp hack
 	unset($search_phase);
 	list($user_name, $server) = split("@", $qquery[talker]);
-	$user_name=get_user_id(mysql_escape_string($user_name),$xmpp_host);
-	$server=get_server_id(mysql_escape_string($server),$xmpp_host);
+	$db->get_user_id($user_name);
+	$user_name = $db->result->user_id;
+	$db->get_server_id($server);
+	$server = $db->result->server_id;
 	$search_phase=$qquery[query];
 
 }
@@ -121,22 +146,36 @@ while ($entry = mysql_fetch_array($result)) {
 
 		if ($search_phase) {
 
-		$type="4";
+			$type="4";
 
 		}
 
 		if ($user_chat_search) {
 
-			if ($qquery['words']=="t") { $type="5"; } elseif($qquery['words'] == "f") { $type="7"; }
+			if ($qquery['words']=="t") { 
+					
+					$type="5"; 
+
+				} 
+				elseif($qquery['words'] == "f") { 
+				
+					$type="7"; 
+				}
 
 		}
+
 		$a++;
 		$search_result=db_q($user_id,$server,$time_slice,$user_name,$search_phase,$type,$start_from,$xmpp_host);
-		if ($search_result=="f") { header ("Location: search_v2.php");  }
+		if ($search_result=="f") { 
+		
+				header ("Location: search_v2.php");  
+				
+			}
 		
 		$num_rows=mysql_num_rows($search_result);
 		$day_mark=0;
 		if ($num_rows!="0") {
+
 			while ($results = mysql_fetch_array($search_result)) {
 
 
@@ -169,8 +208,7 @@ while ($entry = mysql_fetch_array($result)) {
 				$to_server=$results["peer_server_id"]; 
 				
 				// let's make a link
-				$to_base = "$time_slice@$to_user@$to_server@";
-				$to_base = encode_url($to_base,$user_id,$url_key);
+				$to_base = $enc->crypt_url("tslice=$time_slice&peer_name_id=$to_user&peer_server_id=$to_server");
 
 				// time calc
 				$pass_to_next = $results["ts"];
@@ -185,8 +223,11 @@ while ($entry = mysql_fetch_array($result)) {
 				// end 
 
 				// talker and server names
-				$talk = get_user_name($results["peer_name_id"],$xmpp_host);
-				$sname = get_server_name($results["peer_server_id"],$xmpp_host);
+				$db->get_user_name($results[peer_name_id]);
+				$talk = $db->result->username;
+				print $result[peer_server_id];
+				$db->get_server_name($results[peer_server_id]);
+				$sname = $db->result->server_name;
 
 				// cleaning username
 				$jid = htmlspecialchars($talk);
@@ -261,15 +302,14 @@ while ($entry = mysql_fetch_array($result)) {
 							} // if the same day - we increase offset
 
 					if ($qquery[from] == "t") { $plain_phase=str_replace("@","//",$plain_phase);  } // hack
-					$lnk_n="$entry[at]@$next_r@$internal@$plain_phase@$zz@$tag_count@";
-					debug(DEBUG,"Constructed link $lnk_n");
 					print '<tr class="spacer"><td colspan="4"></td></tr>';
 					print '<tr class="maint" style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold; color: #fff;">';
 					print '<td colspan="2" style="text-align: left;">';
 					print '<a href="search_v2.php?a='.$lnk_p.'"></a></td>'; // fix me
-					$trange = "$time2_start@$time2_end"; // this is needed for time range to pass to next page
+					#$trange = $enc->crypt_url("time_start=$time2_start&time_end=$time2_end");
 					print '<td colspan="2" style="text-align: right;">';
-					print '<a href="search_v2.php?a='.encode_url($lnk_n,TOKEN,$url_key).'&c='.encode_url($trange,TOKEN,$url_key).'">'.$search_next[$lang].'</a></td></tr>';
+					$lnk_n = $enc->crypt_url("tslice=$entry[at]&offset_arch=$next_r&offset_day=$internal&search_phase=$plain_phase&tag_count=$tag_count");
+					print '<a href="search_v2.php?a='.$lnk_n.'&c='.$trange.'">'.$search_next[$lang].'</a></td></tr>';
 					break 2;
 					
 					}
@@ -322,14 +362,15 @@ if ($type!="7") {
 
 
 	//building link:
-	$to_base = "$dat[time_slice]@$dat[peer_name_id]@$dat[peer_server_id]@";
-	$to_base = encode_url($to_base,$user_id,$url_key);
+	$to_base = $enc->crypt_url("tslice=$dat[time_slice]&peer_name_id=$dat[peer_name_id]&peer_server_id=$dat[peer_server_id]");
 
 	// get the name of user that we was talking to
-	$talk = get_user_name($dat["peer_name_id"],$xmpp_host);
+	$db->get_user_name($dat[peer_name_id]);
+	$talk = $db->result->username;
 
 	// get it's server name
-	$sname = get_server_name($dat["peer_server_id"],$xmpp_host);
+	$db->get_server_name($dat[peer_server_id]);
+	$sname = $db->result->server_name;
 
 	// cleanup jid
 	$jid = htmlspecialchars($talk);
@@ -341,26 +382,47 @@ if ($type!="7") {
 	$talk = query_nick_name($ejabberd_roster,$talk,$sname);
 
 	// if user is not in list, advise about that
-	if ($talk=="f") { $talk=$not_in_r[$lang]; }
+	if ($talk=="f") { 
+	
+			$talk=$not_in_r[$lang]; 
+			
+		}
 
 	// now we want to know who was talking to who...
-	if ($dat["direction"] == "to") { $fr=$to_u[$lang]; } else { $fr=$from_u[$lang]; }
+	if ($dat["direction"] == "to") { 
+	
+			$fr=$to_u[$lang]; 
+			
+		} 
+		else { 
+		
+			$fr=$from_u[$lang]; 
+			
+	}
 
 	// ... and what was talking, and format that ...
 	$body_talk = wordwrap(str_replace("\n","<br>",htmlspecialchars(base64_decode($dat["body"]))),107,"<br>",true);
 
 	// advise user if chat is deleted. Extension=1 stands for "Chat temporary deleted" or "Chat awaiting deletion"
 	if ($dat[ext] == 1) {
-		print '<tr bgcolor="b5b5b5"><td colspan="4" style="text-align: center; font-weight: bold;">'.$marked_as_d[$lang].'</td></tr>';
+
+			print '<tr bgcolor="b5b5b5"><td colspan="4" style="text-align: center; font-weight: bold;">'.$marked_as_d[$lang].'</td></tr>';
+	
 	}
 
 	// opening line 
 	if ($dat[ext]!=1) {
-			print '<tr id="pretty" title="'.$jid.'@'.htmlspecialchars($sname).'" style="cursor: pointer;" bgcolor="'.$col.'" onclick="window.location=\''.$view_type.'?a='.$to_base.'\'" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#'.$col.'\';">'."\n";
+			
+			print '<tr id="pretty" title="'.$jid.'@'.htmlspecialchars($sname).'" 
+				style="cursor: pointer;" bgcolor="'.$col.'" onclick="window.location=\''.$view_type.'?a='.$to_base.'\'" 
+				onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#'.$col.'\';">'."\n";
+		
 		}
 		else {
+		
 			print '<tr id="pretty" title="'.$jid.'@'.htmlspecialchars($sname).'" style="cursor: pointer;" bgcolor="b5b5b5" onclick="window.location=\'trash.php\'">'."\n";
-		}
+		
+	}
 
 	// time field:
 	print '<td width="120">'.$dat["ts"].'</td>'."\n";
@@ -385,9 +447,13 @@ if ($type!="7") {
 }
 
 
-if($a==$b) { print '<tr><td colspan="4" style="text-align: center;"><b>'.$no_result[$lang].'</b></td></tr>'; }
-print '</table>'."\n";
+if($a==$b) { 
 
+		print '<tr><td colspan="4" style="text-align: center;"><b>'.$no_result[$lang].'</b></td></tr>'; 
+		
+}
+
+print '</table>'."\n";
 
 }
 

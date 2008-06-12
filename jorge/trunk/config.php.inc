@@ -55,8 +55,8 @@ $xmpp_host = "";
 // do not touch this
 $xmpp_host_dotted=str_replace("_",".",$xmpp_host);
 
-// secret key for scrambling URLs. We use AES encryption for urls so put here some random data
-$url_key = "";
+// secret key for scrambling URLs. Put here some random data (32 chars):
+define("ENC_KEY","PleaseChangeMe");
 
 // number of chat lines in browser (default: 300)
 $num_lines_bro = "300";

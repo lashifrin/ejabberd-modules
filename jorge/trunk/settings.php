@@ -210,8 +210,7 @@ while ($result=mysql_fetch_array($top_ten_personal)) {
 	print '<b>'.$nickname.'</b>';
 	print '&nbsp;<small>('.htmlspecialchars(get_user_name($result[peer_name_id],$xmpp_host)).'@'.htmlspecialchars(get_server_name($result[peer_server_id],$xmpp_host)).')</small>';
 	print '</td><td>';
-	$to_base = "$result[at]@$result[peer_name_id]@$result[peer_server_id]@";
-	$to_base = encode_url($to_base,TOKEN,$url_key);
+	$to_base = $enc->crypt_url("tslice=$result[at]&peer_name_id=$result[peer_name_id]&peer_server_id=$result[peer_server_id]");
 	print '<a id="pretty" title="'.$stats_see[$lang].'" href="'.$view_type.'?a='.$to_base.'"><u>'.$result[at].'</u></a>';
 	print '</td></tr>';
 
