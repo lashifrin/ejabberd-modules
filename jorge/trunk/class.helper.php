@@ -25,12 +25,22 @@ Helper classes for Jorge. Performs various operations.
 
 Class url_crypt Extends parser {
 
-	private $encryption_key = "PleaseChangeMe";
+	private $td;
 
-	public function set_encryption_key($key) {
+	public function __construct($key) {
+		
+		$td = mcrypt_module_open('rijndael-256', '', 'ecb', '');
+		$key = substr($key, 0, mcrypt_enc_get_key_size($td));
+		$iv_size = mcrypt_enc_get_iv_size($td);
+		$iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
+		mcrypt_generic_init($td, $key, $iv);
+		$this->td = $td;
+	}
 
-		$this->encryption_key = $key;
-		return true;
+	public function __destruct() {
+
+		mcrypt_generic_deinit($this->td);
+		mcrypt_module_close($this->td);
 
 	}
 
@@ -49,35 +59,19 @@ Class url_crypt Extends parser {
 
 	private function url_encrypt($url) {
 
-
-    		$key = $this->encryption_key;
-    		$plain_text = $url;
-    		$td = mcrypt_module_open('rijndael-256', '', 'ecb', '');
-    		$key = substr($key, 0, mcrypt_enc_get_key_size($td));
-    		$iv_size = mcrypt_enc_get_iv_size($td);
-    		$iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
-    		mcrypt_generic_init($td, $key, $iv);
-        	$c_t = mcrypt_generic($td, $plain_text);
-        	mcrypt_generic_deinit($td);
-        	mcrypt_generic_init($td, $key, $iv);
-        	$p_t = mdecrypt_generic($td, $c_t);
-        	mcrypt_generic_deinit($td);
-        	mcrypt_module_close($td);
+		$prepared_string = "begin&".$url;
+		$integrity = md5($prepared_string);
+		$url = "integrity=$integrity&".$prepared_string;
+		$td = $this->td;
+        	$c_t = mcrypt_generic($td, $url);
 		return base64_encode($c_t);
 
 	}
 
 	private function url_decrypt($url) {
 
-		$key = $this->encryption_key;
-		$td = mcrypt_module_open('rijndael-256', '', 'ecb', '');
-		$key = substr($key, 0, mcrypt_enc_get_key_size($td));
-		$iv_size = mcrypt_enc_get_iv_size($td);
-		$iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
-		mcrypt_generic_init($td, $key, $iv);
+		$td = $this->td;
 		$p_t = mdecrypt_generic($td, $url);
-		mcrypt_generic_deinit($td);
-		mcrypt_module_close($td);
 		return trim($p_t);
 
 	}
@@ -99,16 +93,28 @@ Class parser {
 	protected function decode_string($url) {
 
 		parse_str($url);
-		if (isset($tslice)) { $this->tslice = $tslice; }
-		if (isset($peer_name_id)) { $this->peer_name_id = $peer_name_id; }
-		if (isset($peer_server_id)) { $this->peer_server_id = $peer_server_id; }
-		if (isset($lnk)) { $this->lnk = $lnk; }
-		if (isset($ismylink)) { $this->ismylink = $ismylink; }
-		if (isset($linktag)) { $this->linktag = $linktag; }
-		if (isset($strt)) { $this->strt = $strt; }
-		if (isset($action)) { $this->action = $action; }
-		return true;
+		$reconstructed = strstr($url,"begin");
+		settype($integrity,"string");
+		if ($integrity === md5($reconstructed)) { 
+				
+				if (isset($tslice)) { $this->tslice = $tslice; }
+				if (isset($peer_name_id)) { $this->peer_name_id = $peer_name_id; }
+				if (isset($peer_server_id)) { $this->peer_server_id = $peer_server_id; }
+				if (isset($lnk)) { $this->lnk = $lnk; }
+				if (isset($ismylink)) { $this->ismylink = $ismylink; }
+				if (isset($linktag)) { $this->linktag = $linktag; }
+				if (isset($strt)) { $this->strt = $strt; }
+				if (isset($action)) { $this->action = $action; }
+				return true;
+				
+			} 
+			else { 
+				
+				return false;
+				
+			}
 
+	return false;
 	}
 
 
