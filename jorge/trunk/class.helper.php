@@ -52,8 +52,7 @@ Class url_crypt Extends parser {
 	public function decrypt_url($url) {
 
 		$url = str_replace("kezyt2s0", "+",$url);
-		$this->decode_string($this->url_decrypt(base64_decode($url)));
-		return true;
+		return $this->decode_string($this->url_decrypt(base64_decode($url)));
 
 	}
 
