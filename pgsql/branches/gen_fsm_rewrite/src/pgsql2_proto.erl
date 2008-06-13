@@ -293,7 +293,7 @@ wait_for_equery_response(#pg_row_description{cols=Cols}, _Listener,St) ->
 	{reply,ok,wait_for_equery_response,St#pgsql2{state_data=EqueryData}};
 
 wait_for_equery_response(X,_Listener,St) ->	
-	io:format("GOT: ~p",[X]),
+	io:format("GOT: ~p while waiting for response",[X]),
 	{reply,ok,wait_for_equery_response,St}.
 
 

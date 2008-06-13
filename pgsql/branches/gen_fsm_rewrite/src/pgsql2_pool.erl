@@ -27,7 +27,7 @@
             tx_timeout}).
 
 
--define(TX_TIMEOUT,5 * 1000). %5 seg
+-define(TX_TIMEOUT,15 * 1000). %15 seg
 
 %% @doc Execute a transaction in some connection of the pool. 
 %% @see pgsql2:apply_in_tx/3

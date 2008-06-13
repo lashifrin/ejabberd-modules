@@ -18,6 +18,7 @@
 %       
 %
 %
+-define(Q_TIMEOUT,10000).
 
 -export([connect/4,
     stop/1,
@@ -79,7 +80,7 @@ stop(Pid) ->
 % @see execute/3
 % @see execute_many/3
 q(Pid,Query) ->
-	gen_fsm:sync_send_event(Pid,{q,Query}).
+	gen_fsm:sync_send_event(Pid,{q,Query},?Q_TIMEOUT).
 
 % @doc Same as q(Pid,Query,Params,[])
 % @see q/4
@@ -102,7 +103,7 @@ q(Pid,Query,Params) ->
 % 	   select-like queries. For insert/updates use execute/3 
 %      or execute_many/3.
 q(Pid,Query,Params,Options) ->
-	gen_fsm:sync_send_event(Pid,{q,Query,Params,Options}).
+	gen_fsm:sync_send_event(Pid,{q,Query,Params,Options},?Q_TIMEOUT).
 
 
 % @spec q(Pid,Query,MultiParams) -> ok | {error,Reason}
@@ -117,7 +118,7 @@ q(Pid,Query,Params,Options) ->
 %      calls to execute/3, as the command has to
 %      be parsed only once.
 execute_many(Pid,Query,Params) ->
-	gen_fsm:sync_send_event(Pid,{execute_batch,Query,Params}).
+	gen_fsm:sync_send_event(Pid,{execute_batch,Query,Params},?Q_TIMEOUT).
 
 
 % @spec q(Pid,Query,Params) -> ok | {error,Reason}
@@ -128,7 +129,7 @@ execute_many(Pid,Query,Params) ->
 %      For select-like queries use any of q/2,q/3,q/4
 %      instead. 
 execute(Pid,Query,Params) ->
-	gen_fsm:sync_send_event(Pid,{execute,Query,Params}).
+	gen_fsm:sync_send_event(Pid,{execute,Query,Params},?Q_TIMEOUT).
 
 
 %% @doc Apply the given function in a transactional context 
@@ -146,13 +147,14 @@ execute(Pid,Query,Params) ->
 %%TODO: See status field in ready_for_query, to be sure
 %% that the transaction is going ok
 apply_in_tx(Pid,Fun,Args) ->
-	ok = gen_fsm:sync_send_event(Pid,{execute,"BEGIN",[]}),
+	ok = gen_fsm:sync_send_event(Pid,{execute,"BEGIN",[]},?Q_TIMEOUT),
 	try 
 		R = apply(Fun,[Pid|Args]),
-		ok = gen_fsm:sync_send_event(Pid,{execute,"COMMIT",[]}),
+		ok = gen_fsm:sync_send_event(Pid,{execute,"COMMIT",[]},?Q_TIMEOUT),
 		R
 	catch
-		Type:Error -> ok=gen_fsm:sync_send_event(Pid,{execute,"ROLLBACK",[]}),
+		Type:Error ->
+        ok=gen_fsm:sync_send_event(Pid,{execute,"ROLLBACK",[]},?Q_TIMEOUT),
 					  throw({tx_error,Type,Error})
 	end.
 		
