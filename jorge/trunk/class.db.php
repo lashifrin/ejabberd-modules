@@ -150,7 +150,7 @@ class db_manager {
 		if ($result === false ) {
 					
 					$this->is_error = true;
-					throw new Exception("Query error in QueryID:".$this->id_query,2);
+					throw new Exception("<br>Query error in QueryID:".$this->id_query,2);
 					return false;
 
 				}
@@ -163,6 +163,11 @@ class db_manager {
 						elseif($this->query_type === "update" OR $this->query_type === "insert") {
 
 								return mysql_affected_rows();
+						}
+						elseif($this->query_type === "delete") {
+
+								return $result;
+
 						}
 		}
 
@@ -195,7 +200,7 @@ class db_manager {
 					}
 				else {
 						$this->is_error = true;
-						throw new Exception("DB Connection failed!",1);
+						throw new Exception("<br>DB Connection failed!",1);
 				}
 		}
 	
@@ -358,6 +363,37 @@ class db_manager {
 		}
 	}
 
+	private function delete($query) {
+
+		$this->query_type = "delete";
+		if (strpos(strtolower($query),"delete") === 0) {
+
+			try{
+				$this->result = $this->db_query($query);
+			}
+			catch(Exception $e) {
+				echo "Exception: ".$e->getMessage();
+				echo ", Code: ".$e->getCode();
+			}
+
+			if ($this->is_error===false) {
+
+					return true;
+
+				}
+				else {
+
+					return false;
+
+				}
+
+		}
+		else {
+
+			return false;
+
+		}
+	}
 
 	public function get_mylinks_count() {
 
@@ -764,6 +800,84 @@ class db_manager {
 
 		$this->select($query,"raw");
 		return $this->commit_select(array("at"));
+
+	}
+
+	public function add_mylink($peer_name_id,$peer_server_id,$link_date,$link,$desc) {
+
+		$this->id_query = "Q030";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$xmpp_host = $this->xmpp_host;
+		$peer_name_id = $this->sql_validate($peer_name_id,"integer");
+		$peer_server_id = $this->sql_validate($peer_server_id,"integer");
+		$datat = $this->sql_validate($link_date,"string");
+		$lnk = $this->sql_validate($link,"string");
+		$desc = $this->sql_validate($desc,"string");
+		$query="INSERT INTO
+				jorge_mylinks (owner_id,peer_name_id,peer_server_id,datat,link,description) 
+			VALUES (
+					'$user_id',
+					'$peer_name_id',
+					'$peer_server_id',
+					'$datat',
+					'$lnk',
+					'$desc'
+				)
+				
+		";
+
+		return $this->insert($query);
+
+	}
+
+	public function del_mylink($link_id) {
+
+		$this->id_query = "Q031";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$link_id = $this->sql_validate($link_id,"integer");
+		$query="DELETE FROM 
+				jorge_mylinks 
+			WHERE 
+				owner_id='$user_id' 
+			AND 
+				id_link='$link_id'
+				
+		";
+
+		return $this->delete($query);
+
+	}
+
+	public function get_mylink() {
+
+		$this->id_query = "Q032";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$query="SELECT
+				id_link,
+				peer_name_id,
+				peer_server_id,
+				datat,
+				link,
+				description,
+				ext
+			FROM 
+				jorge_mylinks 
+			WHERE 
+				owner_id='$user_id' 
+			AND 
+				ext is NULL 
+			ORDER BY 
+				str_to_date(datat,'%Y-%m-%d') 
+			DESC
+			
+		";
+
+		$this->select($query,"raw");
+		return $this->commit_select(array("id_link","peer_name_id","peer_server_id","datat","link","description","ext"));
+
 
 	}
 
