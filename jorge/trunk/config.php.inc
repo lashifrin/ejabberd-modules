@@ -22,6 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 // Print debuging information (true|false). Do NOT set as true on producion servers!
 define("DEBUG", false);
+define("SQL_DEBUG",false); // sql debug
 
 // Default language (currently Polish and English translations are available):
 $lang_def = "eng"; // eng for English, pol for Polish

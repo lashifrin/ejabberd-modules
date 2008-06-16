@@ -22,53 +22,81 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 require_once("headers.php");
 
-$tigger=$_POST['trigger'];
-$aaa=mysql_escape_string($_POST['aaa']);
-$datat=mysql_escape_string(decode_url_simple($_POST['datat'],TOKEN,$url_key));
-$desc=mysql_escape_string($_POST['desc']);
-$peer_user=mysql_escape_string(decode_url_simple($_POST['peer_user'],TOKEN,$url_key));
-$peer_server=mysql_escape_string(decode_url_simple($_POST['peer_server'],TOKEN,$url_key));
-$del=$_GET['del'];
-$link_id=mysql_escape_string($_GET['link_id']);
-
-// some validation
-if (!ctype_digit($user_id)) { print 'Ooops...'; exit; }
-if ($peer_user) { if (!ctype_digit($peer_user)) { print 'Ooops...'; exit; } }
-if ($peer_server) { if (!ctype_digit($peer_server)) { print 'Ooops...'; exit; } }
-if ($link_id) { if (!ctype_digit($link_id)) { print 'Ooops...'; exit; } }
+$tigger = $_POST['trigger'];
+$desc = $_POST['desc'];
+$del = $_GET['del'];
+$link_id = $_GET['link_id'];
 
 require_once("upper.php");
-$variables = decode_url2($_GET[a],TOKEN,$url_key);
+// decode incomming link
+if ($_GET[a]) {
 
-// ...and validation
-$talker=mysql_escape_string($talker);
-$server=mysql_escape_string($server);
-if (validate_date($tslice)=="f") { unset($del); unset($tigger); unset($variables); }
+		if ($enc->decrypt_url($_GET[a]) === true) {
+
+				$variables[tslice] = $enc->tslice;
+				$variables[peer_name_id] = $enc->peer_name_id;
+				$variables[peer_server_id] = $enc->peer_server_id;
+				$variables[lnk] = $enc->lnk;
+				$variables[linktag] = $enc->linktag;
+				$variables[strt] = $enc->strt;
+				$variables[ismylink] = $enc->ismylink;
+
+			}
+			else {
+
+				unset($variables);
+
+			}
+
+}
 
 if ($del=="t") {
-	if (!ctype_digit($link_id)) { print 'Dont play with that...'; exit; }
-	$query="delete from jorge_mylinks where owner_id='$user_id' and id_link='$link_id'";
-	$result=mysql_query($query) or die ("Ooops...Error");
-	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 250pt;">'.$my_links_removed[$lang].'</div></center>';
+
+		if ($db->del_mylink($link_id) === true) {
+		
+				print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 250pt;">'.$my_links_removed[$lang].'</div></center>';
+			}
+
+			else {
+				
+				print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 250pt;">'.$oper_fail[$lang].'</div></center>';
+			
+			}
+
 }
 
 
-if ($tigger==$my_links_commit[$lang]) {
+if ($tigger===$my_links_commit[$lang]) {
 
-	$user_id=get_user_id(TOKEN,$xmpp_host);
-	if ($desc==$my_links_optional[$lang]) { $desc=$my_links_none[$lang]; }
-	$desc=substr($desc,0,120);
-	$query="insert into jorge_mylinks (owner_id,peer_name_id,peer_server_id,datat,link,description) values ('$user_id','$peer_user','$peer_server','$datat','$aaa','$desc')";
-	$result = mysql_query($query) or die ("Ooops...Error.");
-	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 150pt;">'.$my_links_added[$lang];
-	print '<br><a href="'.$view_type.'?a='.$aaa.'" style="color: blue;"><b>'.$my_links_back[$lang].'</b></a></div></center>';
+		if ($enc->decrypt_url($_POST[hidden_field]) === true) {
+			
+				$peer_name_id = $enc->peer_name_id;
+				$peer_server_id = $enc->peer_server_id;
+				$datat = $enc->tslice;
+				$lnk = $enc->lnk;
+	
+		
+				if ($desc===$my_links_optional[$lang]) { 
+	
+						$desc=$my_links_none[$lang]; 
+			
+					}
+		
+				$desc=substr($desc,0,120);
+				$db->add_mylink($peer_name_id,$peer_server_id,$datat,$lnk,$desc);
+				print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 150pt;">'.$my_links_added[$lang];
+				print '<br><a href="'.$view_type.'?a='.$lnk.'" style="color: blue;"><b>'.$my_links_back[$lang].'</b></a></div></center>';
+	
+		}
+
 }
 
+if ($variables[ismylink] === "1") {
 
-if ($variables[ismylink]=="1") {
-
-	$sname = get_server_name($variables[server],$xmpp_host);
-	$uname = get_user_name($variables[talker],$xmpp_host);
+	$db->get_server_name($enc->peer_server_id);
+	$sname = $db->result->server_name;
+	$db->get_user_name($enc->peer_name_id);
+	$uname = $db->result->username;
 	$nickname=query_nick_name($ejabberd_roster,$uname,$sname);
 	$jid=''.$uname.'@'.$sname.'';
 
@@ -76,39 +104,30 @@ if ($variables[ismylink]=="1") {
 	print ''.$my_links_save_d[$lang].'<br />'."\n";
 	print '<table class="ff" border="0" cellspacing="0">'."\n";
 	print '<form action="my_links.php" method="post">'."\n";
-	print '<tr><td colspan="3" align="center">'."\n";
-	print '<input name="lynk" style="text-align: center;" class="ccc" disabled="disabled" value="';
-	print htmlspecialchars($variables[lnk]).'&start='.htmlspecialchars($variables[strt]).'#'.htmlspecialchars($variables[linktag]).'"></td></tr>'."\n";
 	print '<tr><td height="5"></td></tr>'."\n";
 	print '<tr class="main_row_b"><td style="text-align:center;">'.$my_links_chat[$lang].'&nbsp;&nbsp;'."\n";
 	print '<b>'.cut_nick($nickname).'</b> (<i>'.htmlspecialchars($jid).'</i>)</td></tr>'."\n";
 	print '<tr><td height="5"></td></tr>'."\n";
 	print '<tr><td colspan="3" align="center"><textarea class="ccc" name="desc" rows="4">'.$my_links_optional[$lang].'</textarea></td></tr>'."\n";
 	print '<tr><td colspan="3" align="center"><input name="trigger" class="red" type="submit" value="'.$my_links_commit[$lang].'">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
-	print '<input class="red" type="button" value="'.$my_links_cancel[$lang].'" onClick="parent.location=\''.$view_type.'?a='.htmlspecialchars($variables[lnk]).'&start='.htmlspecialchars($variables[strt]).'#'.htmlspecialchars($variables[linktag]).'\'"></td>';
+	print '<input class="red" type="button" value="'.$my_links_cancel[$lang].'" onClick="parent.location=\''.$view_type.'?a='.$enc->lnk.'&start='.htmlspecialchars($enc->strt).'#'.htmlspecialchars($enc->linktag).'\'"></td>';
 	print '</tr>'."\n";
 	print '<tr><td>'."\n";
-	print '<input type="hidden" name="peer_user" value="'.encode_url($variables[talker],TOKEN,$url_key).'">'."\n";
-	print '<input type="hidden" name="peer_server" value="'.encode_url($variables[server],TOKEN,$url_key).'">'."\n";
-	print '<input type="hidden" name="aaa" value="'.htmlspecialchars($variables[lnk]).'&start='.htmlspecialchars($variables[strt]).'#'.$variables[linktag].'">'."\n";
-	print '<input type="hidden" name="datat" value="'.encode_url($variables[tslice],TOKEN,$url_key).'"> </td></tr>'."\n";
+	$hidden_fields = $enc->crypt_url("tslice=$enc->tslice&peer_name_id=$variables[peer_name_id]&peer_server_id=$variables[peer_server_id]&lnk=$variables[lnk]&strt=$variables[strt]&linktag=$variables[linktag]");
+	print '<input type="hidden" name="hidden_field" value="'.$hidden_fields.'">'."\n";
 	print '</form>'."\n";
 	print '</table>'."\n";
 	print '</center>'."\n";
 	print '<br /><br /><br /><br />';
 
-	}
-
-
-$query="select * from jorge_mylinks where owner_id='$user_id' and ext is NULL order by str_to_date(datat,'%Y-%m-%d') desc";
-$result=mysql_query($query);
+}
 
 // head
 print '<h2>'.$my_links_desc_m[$lang].'</h2>';
 print '<small>'.$my_links_desc_e[$lang].'</small>';
 
-
-if (mysql_num_rows($result) == "0") { 
+$db->get_mylinks_count();
+if ($db->result->cnt === "0") { 
 		
 		print '<center><div class="message" style="width: 250px;">'.$my_links_no_links[$lang].'</div></center>'; 
 		
@@ -120,7 +139,9 @@ if (mysql_num_rows($result) == "0") {
 		print '<tr class="header"><td>'.$my_links_link[$lang].'</td><td>'.$my_links_chat[$lang].'</td><td>'.$my_links_desc[$lang].'</td></tr>'."\n";
 		print '<tr class="spacer" height="1px"><td colspan="4"></td></tr>';
 		print '<tbody id="searchfield">';
-		while ($entry = mysql_fetch_array($result)) {
+		$db->get_mylink();
+		$result = $db->result;
+		foreach ($result as $entry) {
 
 			print '<tr style="cursor: pointer;" bgcolor="#e8eef7" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#e8eef7\';">'."\n";
 			print '<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';" style="padding-left: 10px; padding-right: 10px">'.pl_znaczki(verbose_date($entry['datat'],$lang)).'</td>'."\n";

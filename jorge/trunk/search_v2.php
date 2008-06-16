@@ -31,7 +31,7 @@ if ($predefined) {
 
 		if($enc->decrypt_url($predefined) === true) {
 
-				$search_phase = "from:".$enc->peer_name."@".$enc->peer_server;
+				$search_phase = "from:".$enc->jid;
 
 			}
 			else {

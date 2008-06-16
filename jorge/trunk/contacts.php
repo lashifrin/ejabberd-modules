@@ -2,7 +2,7 @@
 /*
 Jorge - frontend for mod_logdb - ejabberd server-side message archive module.
 
-Copyright (C) 2007 Zbigniew Zolkiewski
+Copyright (C) 2008 Zbigniew Zolkiewski
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -115,17 +115,14 @@ if ($roster_con) {
 		$nick = $roster_item[nick];
 		$grp  = $roster_item[group];
 		if ($col=="e0e9f7") { $col="e8eef7"; } else { $col="e0e9f7"; }
-		$predefined="$jid";
-		$predefined=encode_url($predefined,TOKEN,$url_key);
-		$predefined_s="from:$jid";
-		$predefined_s=encode_url($predefined_s,TOKEN,$url_key);
+		$predefined = $enc->crypt_url("jid=$jid");
 		if (in_array($jid,$do_notlog_list) == TRUE ) { $selected="selected"; } else { $selected=""; }
 		if ($selected!="") { $col="b7b7b7"; }
 		print '<tr bgcolor="'.$col.'" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#'.$col.'\';">'."\n";
 		print '<td title="'.$con_title[$lang].'" style="padding-left:7px" onclick="window.location=\'chat_map.php?chat_map='.$predefined.'\';"><b>'.cut_nick(htmlspecialchars($nick)).'</b></td>'."\n";
 		print '<td>(<i>'.htmlspecialchars($jid).'</i>)</td>'."\n";
 		print '<td style="text-align: center;">'.cut_nick(htmlspecialchars($grp)).'</td>'."\n";
-		print '<td style="text-align: center;"><a href="chat_map.php?chat_map='.$predefined.'"><u>'.$show_chat_as_map[$lang].'</u></a>|<a href="search_v2.php?b='.$predefined_s.'"><u>'.$show_chat_stream[$lang].'</u></a></td>';
+		print '<td style="text-align: center;"><a href="chat_map.php?chat_map='.$predefined.'"><u>'.$show_chat_as_map[$lang].'</u></a>|<a href="search_v2.php?b='.$predefined.'"><u>'.$show_chat_stream[$lang].'</u></a></td>';
 		print '<td style="text-align: center;">'."\n";
 		// temporary solution we should put integers here instead of full jids
 		$prepared_jid=str_replace("+", "kezyt2s0", base64_encode($jid)); 

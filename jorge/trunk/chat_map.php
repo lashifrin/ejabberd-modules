@@ -37,7 +37,7 @@ if ($_POST['chat_map']) {
 
 if($con_map === true) {
 
-		$con_map = $enc->peer_name."@".$enc->peer_server;
+		$con_map = $enc->jid;
 	}
 	else{
 
@@ -70,8 +70,7 @@ print '<option value="null">'.$chat_c_list[$lang].'</option>';
 				
 		}
 		
-		list($peer_name,$peer_server) = explode("@",$jid);
-		print '<option '.$selected.' value=\''.$enc->crypt_url("peer_name=$peer_name&peer_server=$peer_server").'\'>'.htmlspecialchars($name).' ('.htmlspecialchars($grp).')</option>'."\n";
+		print '<option '.$selected.' value=\''.$enc->crypt_url("jid=$jid").'\'>'.htmlspecialchars($name).' ('.htmlspecialchars($grp).')</option>'."\n";
 
 	}
 

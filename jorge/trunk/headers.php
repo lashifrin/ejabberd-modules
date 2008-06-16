@@ -72,7 +72,7 @@ $ejabberd_rpc = new rpc_connector("$rpc_host","$rpc_port","$xmpp_host_dotted");
 
 // create db_manager object
 $db = new db_manager(MYSQL_HOST,MYSQL_NAME,MYSQL_USER,MYSQL_PASS,"mysql","$xmpp_host");
-$db->set_debug(false);
+$db->set_debug(SQL_DEBUG);
 
 // create encryption object
 $enc = new url_crypt(ENC_KEY);

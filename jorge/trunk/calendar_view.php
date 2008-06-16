@@ -393,7 +393,7 @@ if ($talker) {
 			
 		}
 	
-	$predefined = $enc->crypt_url("peer_name=$talker_name&peer_server=$server_name");
+	$predefined = $enc->crypt_url("jid=$talker_name@$server_name");
 	print '<table id="maincontent" border="0" cellspacing="0" class="ff">'."\n";
 	// if we come from chat maps put the link back...its the same link as "show all chats" but, it is more self explaining
 	print '<tr><td colspan="4"><div id="fav_result"></div>';
@@ -546,7 +546,7 @@ if ($talker) {
                 $new_s=wordwrap($new_s,107,"<br>",true);
                 $new_s=new_parse_url($new_s);
                 print '<td width="800" colspan="3">'.$new_s.'</td>'."\n";
-		$lnk = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$peer_server_id");
+		$lnk = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$entry[peer_server_id]");
 		$to_base2 = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$entry[peer_server_id]&ismylink=1&linktag=$licz&lnk=$lnk&strt=$start");
                 if ($here=="1") { 
 			
