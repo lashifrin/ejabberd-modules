@@ -29,12 +29,13 @@ Class url_crypt Extends parser {
 
 	public function __construct($key) {
 		
-		$td = mcrypt_module_open('rijndael-256', '', 'ecb', '');
+		$td = mcrypt_module_open('des', '', 'ecb', '');
 		$key = substr($key, 0, mcrypt_enc_get_key_size($td));
 		$iv_size = mcrypt_enc_get_iv_size($td);
 		$iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
 		mcrypt_generic_init($td, $key, $iv);
 		$this->td = $td;
+
 	}
 
 	public function __destruct() {
@@ -85,6 +86,7 @@ Class parser {
 	public $peer_name = null;
 	public $peer_server_id = null;
 	public $peer_server = null;
+	public $jid = null;
 	public $ismylink = null;
 	public $linktag = null;
 	public $strt = null;
@@ -113,6 +115,9 @@ Class parser {
 					}
 				if (isset($peer_server_id)) { 
 						$this->peer_server_id = $peer_server_id; 
+					}
+				if (isset($jid)) {
+						$this->jid = $jid;
 					}
 				if (isset($lnk)) { 
 						$this->lnk = $lnk; 
