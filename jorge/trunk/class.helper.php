@@ -174,4 +174,38 @@ Class parser {
 
 }
 
+Class render_html {
+
+	
+	public function render_alert($message,$class) {
+
+
+		print $this->center().'<div class="'.$class.'">'.$message.'</div>'.$this->center_end();
+
+	}
+
+	public function render_status($message,$class) {
+
+		print $this->center().'<div class="'.$class.'">'.$message.'</div>'.$this->center_end();
+	
+	}
+
+	protected function center() {
+
+
+		return "<center>";
+
+	}
+
+	protected function center_end() {
+
+		return "</center>";
+
+	}
+
+
+
+
+}
+
 ?>
