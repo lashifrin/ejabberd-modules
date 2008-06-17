@@ -21,14 +21,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
 require_once("headers.php");
+require_once("upper.php");
 
 $tigger = $_POST['trigger'];
 $desc = $_POST['desc'];
 $del = $_GET['del'];
 $link_id = $_GET['link_id'];
 
-require_once("upper.php");
-// decode incomming link
 if ($_GET[a]) {
 
 		if ($enc->decrypt_url($_GET[a]) === true) {
@@ -50,7 +49,7 @@ if ($_GET[a]) {
 
 }
 
-if ($del=="t") {
+if ($del === "t") {
 
 		if ($db->del_mylink($link_id) === true) {
 		
@@ -66,7 +65,7 @@ if ($del=="t") {
 }
 
 
-if ($tigger===$my_links_commit[$lang]) {
+if ($tigger === $my_links_commit[$lang]) {
 
 		if ($enc->decrypt_url($_POST[hidden_field]) === true) {
 			
@@ -74,18 +73,19 @@ if ($tigger===$my_links_commit[$lang]) {
 				$peer_server_id = $enc->peer_server_id;
 				$datat = $enc->tslice;
 				$lnk = $enc->lnk;
+				$strt = $enc->strt;
+				$linktag = $enc->linktag;
+				$link = $lnk."&start=$strt#$linktag";
+				if ($desc === $my_links_optional[$lang]) { 
 	
-		
-				if ($desc===$my_links_optional[$lang]) { 
-	
-						$desc=$my_links_none[$lang]; 
+						$desc = $my_links_none[$lang]; 
 			
 					}
 		
-				$desc=substr($desc,0,120);
-				$db->add_mylink($peer_name_id,$peer_server_id,$datat,$lnk,$desc);
+				$desc = substr($desc,0,120);
+				$db->add_mylink($peer_name_id,$peer_server_id,$datat,$link,$desc);
 				print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 150pt;">'.$my_links_added[$lang];
-				print '<br><a href="'.$view_type.'?a='.$lnk.'" style="color: blue;"><b>'.$my_links_back[$lang].'</b></a></div></center>';
+				print '<br><a href="'.$view_type.'?a='.$link.'" style="color: blue;"><b>'.$my_links_back[$lang].'</b></a></div></center>';
 	
 		}
 
@@ -99,6 +99,7 @@ if ($variables[ismylink] === "1") {
 	$uname = $db->result->username;
 	$nickname=query_nick_name($ejabberd_roster,$uname,$sname);
 	$jid=''.$uname.'@'.$sname.'';
+	$hidden_fields = $enc->crypt_url("tslice=$enc->tslice&peer_name_id=$variables[peer_name_id]&peer_server_id=$variables[peer_server_id]&lnk=$variables[lnk]&strt=$variables[strt]&linktag=$variables[linktag]");
 
 	print '<center>'."\n";
 	print ''.$my_links_save_d[$lang].'<br />'."\n";
@@ -113,7 +114,6 @@ if ($variables[ismylink] === "1") {
 	print '<input class="red" type="button" value="'.$my_links_cancel[$lang].'" onClick="parent.location=\''.$view_type.'?a='.$enc->lnk.'&start='.htmlspecialchars($enc->strt).'#'.htmlspecialchars($enc->linktag).'\'"></td>';
 	print '</tr>'."\n";
 	print '<tr><td>'."\n";
-	$hidden_fields = $enc->crypt_url("tslice=$enc->tslice&peer_name_id=$variables[peer_name_id]&peer_server_id=$variables[peer_server_id]&lnk=$variables[lnk]&strt=$variables[strt]&linktag=$variables[linktag]");
 	print '<input type="hidden" name="hidden_field" value="'.$hidden_fields.'">'."\n";
 	print '</form>'."\n";
 	print '</table>'."\n";
@@ -122,7 +122,6 @@ if ($variables[ismylink] === "1") {
 
 }
 
-// head
 print '<h2>'.$my_links_desc_m[$lang].'</h2>';
 print '<small>'.$my_links_desc_e[$lang].'</small>';
 
@@ -143,13 +142,18 @@ if ($db->result->cnt === "0") {
 		$result = $db->result;
 		foreach ($result as $entry) {
 
+			$db->get_user_name($entry[peer_name_id]);
+			$peer_name = $db->result->username;
+			$db->get_server_name($entry[peer_server_id]);
+			$peer_server = $db->result->server_name;
+			$nickname=query_nick_name($ejabberd_roster,$peer_name,$peer_server);
+			$desc = htmlspecialchars($entry[description]);
+			$jid = $peer_name.'@'.$peer_server;
+
 			print '<tr style="cursor: pointer;" bgcolor="#e8eef7" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#e8eef7\';">'."\n";
 			print '<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';" style="padding-left: 10px; padding-right: 10px">'.pl_znaczki(verbose_date($entry['datat'],$lang)).'</td>'."\n";
-			$nickname=query_nick_name($ejabberd_roster,get_user_name($entry[peer_name_id],$xmpp_host), get_server_name($entry[peer_server_id],$xmpp_host));
-			$jid=get_user_name($entry[peer_name_id],$xmpp_host).'@'.get_server_name($entry[peer_server_id],$xmpp_host);
 			print '<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';">&nbsp;<b>'.cut_nick(htmlspecialchars($nickname)).'</b> ('.htmlspecialchars($jid).')&nbsp;</td>'."\n";
-			$opis=htmlspecialchars($entry[description]);
-			print '<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';">&nbsp;'.$opis.'</td>'."\n";
+			print '<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';">&nbsp;'.$desc.'</td>'."\n";
 			print '<td><a href="my_links.php?del=t&link_id='.$entry[id_link].'" onClick="if (!confirm(\''.$del_conf_my_link[$lang].'\')) return false;" >&nbsp;'.$del_my_link[$lang].'&nbsp;</a></td>'."\n";
 			print '</tr>'."\n";
 		}
@@ -158,8 +162,8 @@ if ($db->result->cnt === "0") {
 	print '<tr class="foot"><td colspan="4" height="15"></td></tr>';
 	print '</table>'."\n";
 	print '</center>'."\n";
-	}
 
-
+}
 require_once("footer.php");
+
 ?>
