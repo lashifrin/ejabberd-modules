@@ -77,6 +77,9 @@ $db->set_debug(SQL_DEBUG);
 // create encryption object
 $enc = new url_crypt(ENC_KEY);
 
+// init html helper
+$html = new render_html();
+
 // username (token)
 define(TOKEN,$sess->get('uid_l'));
 

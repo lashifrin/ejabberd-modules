@@ -42,12 +42,12 @@ if ($_POST) {
 	
 	if ($db->update_log_list($do_not_log_list) === true) {
 
-			print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 150pt;">'.$con_saved[$lang].'</div></center><br>';
+			$html->render_status($con_saved[$lang],"message");
 
 		}
 		else {
 
-			print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 350pt;">'.$oper_fail[$lang].'</div></center><br>';
+			$html->render_alert($oper_fail[$lang],"message");
 	}
 
 }

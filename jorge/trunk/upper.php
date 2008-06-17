@@ -41,7 +41,8 @@ $link_sw=mysql_escape_string($_GET['a']);
 $my_links_count=do_sel_quick("select count(id_link) from jorge_mylinks where owner_id='$user_id' and ext is NULL");
 
 // number of items in trash
-$tr_n=do_sel_quick("select count(*) from pending_del where owner_id='$user_id'");
+$db->get_trash_count();
+$tr_n = $db->result->cnt;
 
 // get preferences for saving
 $pref_id=$_GET['set_pref'];

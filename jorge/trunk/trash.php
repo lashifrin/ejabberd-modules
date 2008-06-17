@@ -2,7 +2,7 @@
 /*
 Jorge - frontend for mod_logdb - ejabberd server-side message archive module.
 
-Copyright (C) 2007 Zbigniew Zolkiewski
+Copyright (C) 2008 Zbigniew Zolkiewski
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -25,19 +25,20 @@ require_once("upper.php");
 print '<h2>'.$trash_name[$lang].'</h2>';
 print '<small>'.$trash_desc[$lang].'</small></h2>';
 
-$action=$_GET['a'];
+if ($enc->decrypt_url($_GET[a]) === true) {
 
-// decompose link
-$variables = decode_url2($action,TOKEN,$url_key);
-$tslice = $variables[tslice];
-$talker = $variables[talker];
-$server = $variables[server];
-$action = $variables[action];
-$lnk = $variables[lnk];
-// validation
-$talker=mysql_escape_string($talker);
-$server=mysql_escape_string($server);
-if (validate_date($tslice)=="f") { unset($action); $unset($tslice); }
+		$tslice = $enc->tslice;
+		$talker = $enc->peer_name_id;
+		$server = $enc->peer_server_id;
+		$action = $enc->action;
+		$lnk = $enc->lnk;
+
+	}
+	else {
+
+		$action = null;
+	
+}
 
 if ($action=="undelete") {
 
@@ -82,11 +83,9 @@ if ($action=="delete") {
 
 }
 
-
-$result = mysql_query("select * from pending_del where owner_id = '$user_id' order by str_to_date(date,'%Y-%m-%d') desc");
-
-if (mysql_num_rows($result)==0) {
-	print '<center><div class="message" style="width: 250px;">'.$trash_empty[$lang].'</div></center>';
+if ($tr_n === "0") {
+	
+		$html->render_status($trash_empty[$lang],"message");
 	}
 
 	else
@@ -97,21 +96,23 @@ if (mysql_num_rows($result)==0) {
 		print '<tr class="header"><td style="padding-right: 15px;">'.$my_links_chat[$lang].'</td><td style="padding-right: 15px;">'.$logger_from_day[$lang].'</td><td>'.$del_time[$lang].'</td></tr>';
 		print '<tr class="spacer"><td colspan="5"></td></tr>';
 		print '<tbody id="searchfield">';
-
-		while ($entry=mysql_fetch_array($result)) {
-
-
-			$talker = get_user_name($entry["peer_name_id"],$xmpp_host);
-			$server_name = get_server_name($entry["peer_server_id"],$xmpp_host);
+		$db->get_trashed_items();
+		$result = $db->result;
+		foreach ($result as $entry) {
+			
+			$db->get_user_name($entry[peer_name_id]);
+			$talker = $db->result->username;
+			$db->get_server_name($entry[peer_server_id]);
+			$server_name = $db->result->server_name;
 			$tslice = $entry["date"];
 			$nickname = query_nick_name($ejabberd_roster,$talker,$server_name);
-			print '<tr><td style="padding-left: 10px; padding-right: 10px;"><b>'.$nickname.'</b> (<i>'.htmlspecialchars($talker).'@'.htmlspecialchars($server_name).'</i>)</td><td style="text-align: center;">'.$tslice.'</td>';
-			print '<td style="padding-left: 5px; padding-right: 5px; font-size: x-small;">'.$entry[timeframe].'</td>';	
-			$reconstruct_link = encode_url("$tslice@$entry[peer_name_id]@$entry[peer_server_id]@",TOKEN,$url_key); // try to reconstruct oryginal link
-			$undelete_link = "$tslice@$entry[peer_name_id]@$entry[peer_server_id]@@@$reconstruct_link@undelete@";
-			$undelete_link = encode_url($undelete_link,TOKEN,$url_key);
-			$delete_link = "$tslice@$entry[peer_name_id]@$entry[peer_server_id]@@@$reconstruct_link@delete@";
-			$delete_link = encode_url($delete_link,TOKEN,$url_key);
+			$reconstruct_link = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$entry[peer_server_id]");
+			$undelete_link = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$entry[peer_server_id]&lnk=$reconstruct_link&action=undelete");
+			$delete_link = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$entry[peer_server_id]&lnk=$reconstruct_link&action=delete");
+
+			print '<tr><td style="padding-left: 10px; padding-right: 10px;"><b>'.$nickname.'</b> (<i>'.htmlspecialchars($talker).'@'.htmlspecialchars($server_name).'</i>)</td>
+				<td style="text-align: center;">'.$tslice.'</td>';
+			print '<td style="padding-left: 5px; padding-right: 5px; font-size: x-small;">'.$entry[timeframe].'</td>';
 			print '<td style="padding-left: 10px;"><a href="trash.php?a='.$undelete_link.'">'.$trash_undel[$lang].'</a></td>';
 			print '<td style="padding-left: 10px;"><a href="trash.php?a='.$delete_link.'" onClick="if (!confirm(\''.$del_conf[$lang].'\')) return false;">'.$trash_del[$lang].'</a></td>';
 			print '</tr>';
