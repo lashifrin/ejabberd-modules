@@ -881,6 +881,129 @@ class db_manager {
 
 	}
 
+	public function update_log_list($log_list) {
+
+		$this->id_query = "Q033";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$xmpp_host = $this->xmpp_host;
+		$log_list = $this->sql_validate($log_list,"string");
+		$query="UPDATE 
+				logdb_settings_$xmpp_host 
+			SET 
+				donotlog_list='$log_list' 
+			WHERE 
+				owner_id='$user_id'
+		";
+		return $this->update($query);
+
+	}
+
+	public function logger_get_events($event_id = null,$level_id = null, $offset = null) {
+
+		$this->id_query = "Q034";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$xmpp_host = $this->xmpp_host;
+		$offset = $this->sql_validate($offset,"integer");
+		if ($event_id !== null) {
+				
+				$event_id = $this->sql_validate($event_id,"integer");
+				$sql_1 = "and id_log_detail='$event_id'";
+
+		}
+		if ($level_id !== null) {
+
+				$level_id = $this->sql_validate($level_id,"integer");
+				$sql_2 = "and id_log_level='$level_id'";
+		
+		}
+		$query="SELECT 
+				b.id_event, 
+				b.event AS event,
+				c.level AS level, 
+				c.id_level, 
+				a.log_time,
+				a.extra
+			FROM 
+				jorge_logger a,
+				jorge_logger_dict b,
+				jorge_logger_level_dict c
+			WHERE 
+				a.id_log_detail=b.id_event 
+			AND 
+				c.id_level=a.id_log_level 
+			AND 
+				id_user='$user_id' 
+
+			$sql_1 
+			$sql_2
+
+			ORDER BY 
+				log_time 
+			DESC LIMIT 
+				$offset,300
+		";
+		
+		$this->select($query,"raw");
+		return $this->commit_select(array("id_event","event","level","id_level","log_time","extra"));
+
+	}
+
+	public function get_num_events($event_id = null,$level_id = null) {
+
+		$this->id_query = "Q035";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		if ($event_id !== null) {
+				
+				$event_id = $this->sql_validate($event_id,"integer");
+				$sql_1 = "and id_log_detail='$event_id'";
+		}
+		if ($level_id !== null) {
+
+				$level_id = $this->sql_validate($level_id,"integer");
+				$sql_2 = "and id_log_level='$level_id'";
+		}
+		$query="select 
+				count(id_user) as cnt
+			from 
+				jorge_logger 
+			where 
+				id_user='$user_id' 
+			
+			$sql_1 
+			$sql_2
+		";
+
+		return $this->select($query);
+
+	}
+
+	public function get_trashed_items() {
+
+		$this->id_query = "Q036";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$query="SELECT 
+				peer_name_id,
+				peer_server_id,
+				date,
+				timeframe
+			FROM 
+				pending_del 
+			WHERE 
+				owner_id = '$user_id' 
+			ORDER BY 
+				str_to_date(date,'%Y-%m-%d') 
+			DESC
+		";
+
+		$this->select($query,"raw");
+		return $this->commit_select(array("peer_name_id","peer_server_id","date","timeframe"));
+
+	}
+
 	public function total_messages() {
 	
 		$this->id_query = "Q017";
