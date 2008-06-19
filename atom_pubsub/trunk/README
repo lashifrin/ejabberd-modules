@@ -1,0 +1,55 @@
+# the Atom PubSub tunnel
+# Eric Cestari <eric@ohmforce.com>
+# http://www.cestari.info/
+# 19-06-2008
+
+# Licensed under the same terms as ejabberd (that would be some version of the GPL)
+
+This module provides ejabberd PubSub data via an AtomPub interface.
+
+# Howto
+You need to have the Yaws beams installed and available. It will start in embedded mode, with the `mod_yaws` module (included).
+To build, just type `make` and put the resulting beams in some place where ejabberd will find them.
+
+You'll also need to add the module to your ejabberd.cfg in the `mmodules` section:
+<pre><code class="erlang">
+{mod_yaws,[{logdir, "/tmp/"},
+    {servers, [
+    {"localhost", 5224, "/opt/var/yaws/www", [
+     {dir_listing, true},
+     {appmods, {"/atom",     atom_pubsub}}
+     ]}
+   ]}
+  ]}
+</code></pre>
+
+# What you get
+
+The AtomPub interface passes the Atom Protocol Exerciser (though some warnings remain).
+
+It means that any AtomPub clients will be able to post to a specific node in your PubSub tree.
+
+It also means that your PubSub tree will also be available as an AtomFeed.
+
+Of course, each time an item is posted through AtomPub or PubSub on a node you are subscribed to, you'll get the notification.
+
+Authentication is required ; you need to authentify (http basic) as a user with the publisher role to be able to post via AtomPub
+
+It expects the payload to be an atom entry, but does not enforce it.
+
+However, it has to be well formed XML.
+
+# Can I have it with OpenFire and Epeios ?
+That's not possible. For fetching individual items, there's no way around hitting directly the PubSub mnesia tables.
+
+Code can't be extracted as an XMPP component.
+
+Moreover, it only works with PubSub nodes derived from the default node type. (because of the mnesia tables stuff)
+
+# What's next ?
+
+I did what was minimum to pass the Atom Protocol Exercizer. Still has a few warning.
+
+Adding support for collection and/or binary data would not be hard.
+
+I currently have no plans for actually using the code thus improving it. However, I will review patches you'd send my way for integration.
