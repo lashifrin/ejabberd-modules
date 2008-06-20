@@ -190,6 +190,12 @@ Class render_html {
 	
 	}
 
+	public function render($content) {
+
+		echo $content;
+
+	}
+
 	protected function center() {
 
 

@@ -42,12 +42,11 @@ if ($enc->decrypt_url($_GET[a]) === true) {
 
 if ($action=="undelete") {
 
-        	if (undo_deleted_chat($talker,$server,$user_id,$tslice,$xmpp_host,$lnk)=="t") {
+		if ($db->move_chat_from_trash($talker,$server,$tslice,$lnk) === true) {
 
-			$back_link="$tslice@$talker@$server@";
-			$back_link=encode_url($back_link,TOKEN,$url_key);
-                	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 200pt;">'.$undo_info[$lang].'<br>';
-			print '<a href="'.$view_type.'?a='.$back_link.'" style="color: blue;">'.$trash_vit[$lang].'</a></div></center><br>';
+				$back_link = $enc->crypt_url("tslice=$tslice&peer_name_id=$talker&peer_server_id=$server");
+                		$html->render('<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 200pt;">'.$undo_info[$lang].'<br>
+				 		<a href="'.$view_type.'?a='.$back_link.'" style="color: blue;">'.$trash_vit[$lang].'</a></div></center><br>');
 
         		}
 
@@ -55,9 +54,8 @@ if ($action=="undelete") {
 
         	{
 
-                	unset($talker);
-                	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 200pt;">';
-                	print 'Unusual error accured during processing your request. Please report it (Code:JUF).</div></center>';
+                		unset($talker);
+				$html->render_alert($oper_fail[$lang]);
 
         	}
 

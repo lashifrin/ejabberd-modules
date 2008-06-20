@@ -114,48 +114,38 @@ if ($start) { if ((validate_start($start))!="t") { $start="0";  }  }
 // undo delete
 if ($action=="undelete") {
 
-	if (undo_deleted_chat($talker,$server,$user_id,$tslice,$xmpp_host,$lnk)=="t") {
+		if ($db->move_chat_from_trash($talker,$server,$tslice,$lnk) === true) {
 
-		print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 200pt;">'.$undo_info[$lang].'</div></center>';
+				$html->render_status($undo_info[$lang],"message");
 
-	}
+			}
 
-	else
+			else {
 
-	{
+				unset($talker);
+				$html->render_alert($oper_fail[$lang],"message");
 
-		unset($talker);
-		print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 200pt;">';
-		print 'Unusual error accured during processing your request. Please report it (Code:JUF).</div></center>';
-
-	}
-	
-
-
+		}
 
 }
 
-// chat deletion
-if ($action=="del") {
+if ($action === "delete") {
 
-	$del_result=delete_chat($talker,$server,$xmpp_host,$user_id,$tslice,TOKEN,$enc,$lnk);
-	if ($del_result!="f") {
+		if ($db->move_chat_to_trash($talker,$server,$tslice,$lnk) === true) {
 
-		unset($talker);
-		print '<center><div style="background-color: #fad163; text-align: center; width: 240pt;">'.$del_moved[$lang];
-		print '<a href="'.$view_type.'?a='.$del_result.'"> <span style="color: blue; font-weight: bold;"><u>Undo</u></span></a></div></center>';
+				$undo = $enc->crypt_url("tslice=$tslice&peer_name_id=$talker&peer_server_id=$server&lnk=$lnk&action=undelete");
+				unset($talker);
+				$html->render('<center><div style="background-color: #fad163; text-align: center; width: 240pt;">'.$del_moved[$lang]
+						.'<a href="'.$view_type.'?a='.$undo.'"> <span style="color: blue; font-weight: bold;"><u>Undo</u></span></a></div></center>');
 
-	}
+			}
 
-	else
+			else {
 
-	{
+				$html->render_alert($oper_fail[$lang],"message");
+				unset($talker);
 
-		unset($talker);
-		print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 200pt;">';
-		print 'Unusual error accured during processing your request. Please report it (Code:JDF).</div></center>';
-
-	}
+			}
 		
 }
 
@@ -429,7 +419,7 @@ if ($talker) {
 	}
         print '<tr class="header">'."\n";
         print '<td><b> '.$time_t[$lang].' </b></td><td><b> '.$user_t[$lang].' </b></td><td><b> '.$thread[$lang].'</b></td>'."\n";
-	$action_link = $enc->crypt_url("tslice=$tslice&peer_name_id=$talker&peer_server_id=$server&lnk=$e_string&action=del");
+	$action_link = $enc->crypt_url("tslice=$tslice&peer_name_id=$talker&peer_server_id=$server&lnk=$e_string&action=delete");
         print '<td align="right" style="padding-right: 5px; font-weight: normal;">';
 	print '
 		<form style="margin-bottom: 0;" id="fav_form" action="req_process.php" method="post">
