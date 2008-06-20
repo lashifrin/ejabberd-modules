@@ -169,6 +169,11 @@ class db_manager {
 								return $result;
 
 						}
+						elseif($this->query_type === "transaction") {
+
+								return $result;
+
+						}
 		}
 
 	}
@@ -208,46 +213,29 @@ class db_manager {
 
 	}
 
-
 	public function begin() {
 
 		$this->id_query = "Q001";
+		$this->query_type = "transaction";
+		return $this->db_query("begin");
 
-			if($this->db_query("begin")) {
-					
-					return true;
-				
-				}
-			else{
-
-					return false;
-			
-			}
-			
 	}
 	
 	public function commit() {
 		
 		$this->id_query = "Q002";
-			
-			if($this->db_query("commit")) {
-					return true;
-				}
-			else{
-					return false;
-			}
+		$this->query_type = "transaction";
+		return $this->db_query("commit");
+	
 	}
 
 	public function rollback() {
 
 		$this->id_query = "Q003";
+		$this->query_type = "transaction";
+		$this->is_error = false;
+		return $this->db_query("rollback");
 
-			if($this->db_query("rollback")) {
-					return true;
-				}
-			else {
-					return false;
-			}
 	}
 
 	private function select($query,$return_type = null) {
@@ -1001,6 +989,420 @@ class db_manager {
 
 		$this->select($query,"raw");
 		return $this->commit_select(array("peer_name_id","peer_server_id","date","timeframe"));
+
+	}
+
+	public function move_chat_to_trash($peer_name_id,$peer_server_id,$tslice,$link) {
+
+		$this->id_query = "Q037";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$xmpp_host = $this->xmpp_host;
+		$peer_name_id = $this->sql_validate($peer_name_id,"integer");
+		$peer_server_id = $this->sql_validate($peer_server_id,"integer");
+		$tslice = $this->sql_validate($tslice,"date");
+		$table = $this->construct_table($tslice);
+
+		$this->begin();
+		if ($this->set_undo_table($peer_name_id,$peer_server_id,$tslice) === false) {
+
+				$this->rollback();
+				return false;
+
+		}
+
+		if ($this->remove_user_stats($peer_name_id,$peer_server_id,$tslice) === false) {
+
+				$this->rollback();
+				return false;
+
+		}
+
+		if ($this->move_mylink_to_trash($peer_name_id,$link) === false) {
+
+				$this->rollback();
+				return false;
+
+		}
+
+		if ($this->move_fav_to_trash($peer_name_id,$peer_server_id,$tslice) === false) {
+
+				$this->rollback();
+				return false;
+
+		}
+
+		$query="UPDATE 
+				`$table` 
+			SET 
+				ext = '1' 
+			WHERE 
+				owner_id='$user_id' 
+			AND 
+				peer_name_id='$peer_name_id' 
+			AND 
+				peer_server_id='$peer_server_id'
+				
+		";
+		
+		if ($this->update($query) === false) {
+				
+				$this->rollback();
+				return false;
+
+			}
+			else{
+
+				$this->commit();
+				$this->set_logger("4","1");
+				return true;
+		}
+	}
+
+	private function remove_user_stats($peer_name_id,$peer_server_id,$tslice) {
+
+		$this->id_query = "Q038";
+		$user_id = $this->user_id;
+		$xmpp_host = $this->xmpp_host;
+		$query="DELETE FROM 
+				`logdb_stats_$xmpp_host` 
+			WHERE 
+				owner_id='$user_id' 
+			AND 
+				peer_name_id='$peer_name_id' 
+			AND 
+				peer_server_id='$peer_server_id' 
+			AND 
+				at='$tslice'
+		";
+
+		return $this->delete($query);
+	
+	}
+
+	public function move_mylink_to_trash($peer_name_id,$link) {
+
+		$this->id_query = "Q039";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$peer_name_id = $this->sql_validate($peer_name_id,"integer");
+		$lnk = $this->sql_validate($link,"string");
+		$query="UPDATE 
+				jorge_mylinks 
+			SET 
+				ext='1' 
+			WHERE 
+				owner_id ='$user_id' 
+			AND 
+				peer_name_id='$peer_name_id' 
+			AND 
+				link like '$lnk%'
+		";
+
+		return $this->update($query);
+
+	}
+
+	public function move_fav_to_trash($peer_name_id,$peer_server_id,$tslice) {
+
+		$this->id_query = "Q040";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$peer_name_id = $this->sql_validate($peer_name_id,"integer");
+		$peer_server_id = $this->sql_validate($peer_server_id,"integer");
+		$tslice = $this->sql_validate($tslice,"date");
+		$query="UPDATE 
+				jorge_favorites 
+			SET 
+				ext='1' 
+			WHERE 
+				owner_id='$user_id' 
+			AND 
+				peer_name_id='$peer_name_id' 
+			AND 
+				peer_server_id='$peer_server_id' 
+			AND 
+				tslice='$tslice'
+		";
+	
+		return $this->update($query);
+
+	}
+
+	private function set_undo_table($peer_name_id,$peer_server_id,$tslice,$type = null) {
+
+		$this->id_query = "Q041";
+		$user_id = $this->user_id;
+		$query="INSERT INTO 
+				pending_del(owner_id,peer_name_id,date,peer_server_id) 
+			values (
+				'$user_id', 
+				'$peer_name_id',
+				'$tslice',
+				'$peer_server_id'
+				)
+				
+		";
+
+		return $this->insert($query);
+
+	}
+
+	private function unset_undo_table($peer_name_id,$peer_server_id,$tslice) {
+
+		$this->id_query = "Q042";
+		$user_id = $this->user_id;
+		$query="DELETE FROM 
+				pending_del 
+			WHERE 
+				owner_id='$user_id' 
+			AND 
+				peer_name_id='$peer_name_id' 
+			AND 
+				date='$tslice' 
+			AND 
+				peer_server_id='$peer_server_id'
+		";
+		
+		return $this->delete($query);
+	}
+
+	public function move_chat_from_trash($peer_name_id,$peer_server_id,$tslice,$link) {
+
+		$this->id_query = "Q043";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$xmpp_host = $this->xmpp_host;
+		$peer_name_id = $this->sql_validate($peer_name_id,"integer");
+		$peer_server_id = $this->sql_validate($peer_server_id,"integer");
+		$tslice = $this->sql_validate($tslice,"date");
+		$table = $this->construct_table($tslice);
+
+		// Message tables are not transactional, so this make some trouble for us to control all error conditions :/
+		$query="UPDATE 
+				`$table` 
+			SET 
+				ext = NULL 
+			WHERE 
+				owner_id='$user_id' 
+			AND 
+				peer_name_id='$peer_name_id' 
+			AND 
+				peer_server_id='$peer_server_id'
+		";
+
+		if ($this->update($query) === false) {
+
+				return false; 
+
+		}
+
+		$this->begin();
+		if ($this->unset_undo_table($peer_name_id,$peer_server_id,$tslice) === false) {
+
+				$this->rollback();
+				return false;
+
+		}
+
+		if ($this->recount_messages($peer_name_id,$peer_server_id,$tslice) === true) {
+
+				$stats = $this->result->cnt;
+
+			}
+			else {
+
+				$this->rollback();
+				return false;
+		}
+
+		if ($this->if_chat_exist($peer_name_id,$peer_server_id,$tslice) === true) {
+
+
+					if ($this->result->cnt == 1) {
+
+							if ($this->update_stats($peer_name_id,$peer_server_id,$tslice,$stats) === false) {
+
+									$this->rollback();
+									return false;
+							}
+
+						}
+						else {
+
+							if ($this->insert_stats($peer_name_id,$peer_server_id,$tslice,$stats) === false) {
+
+									$this->rollback();
+									return false;
+
+							}
+						}
+
+			}
+			else{
+
+					$this->rollback();
+					return false;
+		}
+
+		if ($this->move_mylink_from_trash($peer_name_id,$link) === false) {
+
+				$this->rollback();
+				return false;
+
+		}
+
+		if ($this->move_fav_from_trash($peer_name_id,$peer_server_id,$tslice) === false) {
+
+				$this->rollback();
+				return false;
+		}
+
+		$this->commit();
+		return true;
+	
+	
+	}
+
+	private function if_chat_exist($peer_name_id,$peer_server_id,$tslice) {
+
+		$this->id_query = "Q044";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$xmpp_host = $this->xmpp_host;
+		$query="SELECT 
+				1 as cnt
+			FROM 
+				`logdb_stats_$xmpp_host` 
+			WHERE 
+				owner_id = '$user_id' 
+			AND 
+				peer_name_id='$peer_name_id' 
+			AND 
+				peer_server_id='$peer_server_id' 
+			AND 
+				at = '$tslice'
+				
+		";
+
+		return $this->select($query);
+
+	}
+
+	private function insert_stats($peer_name_id,$peer_server_id,$tslice,$stats) {
+	
+		$this->id_query = "Q045";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$xmpp_host = $this->xmpp_host;
+		$query="insert into 
+				`logdb_stats_$xmpp_host` (owner_id,peer_name_id,peer_server_id,at,count) 
+			values 
+				(
+				'$user_id',
+				'$peer_name_id',
+				'$peer_server_id',
+				'$tslice',
+				'$stats
+				')
+				
+		"; 
+		
+		return $this->insert($query);
+	}
+
+	private function update_stats($peer_name_id,$peer_server_id,$tslice,$stats) {
+
+		$this->id_query = "Q046";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$xmpp_host = $this->xmpp_host;
+		$query="UPDATE 
+				`logdb_stats_$xmpp_host` 
+			SET 
+				count='$stats' 
+			WHERE 
+				owner_id='$user_id' 
+			AND 
+				peer_name_id='$peer_name_id' 
+			AND 
+				peer_server_id='$peer_server_id' 
+			AND 
+				at='$tslice'
+				
+		";
+
+		return $this->update($query);
+	}
+
+	private function recount_messages($peer_name_id,$peer_server_id,$tslice) {
+	
+		$this->id_query = "Q047";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$table = $this->construct_table($tslice);
+		$query="SELECT
+				count(timestamp) as cnt 
+			FROM 
+				`$table`
+			WHERE 
+				owner_id='$user_id' 
+			AND 
+				peer_name_id='$peer_name_id' 
+			AND 
+				peer_server_id='$peer_server_id' 
+			AND 
+				ext is NULL
+		";
+		
+		return $this->select($query);
+
+	}
+
+
+
+	private function move_mylink_from_trash($peer_name_id,$link) {
+
+		$this->id_query = "Q048";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$lnk = $this->sql_validate($link,"string");
+		$query="UPDATE 
+				jorge_mylinks 
+			SET 
+				ext = NULL 
+			WHERE 
+				owner_id ='$user_id' 
+			AND 
+				peer_name_id='$peer_name_id' 
+			AND 
+				link like '$link%'
+		";
+
+		return $this->update($query);
+
+	}
+
+	private function move_fav_from_trash($peer_name_id,$peer_server_id,$tslice) {
+
+		$this->id_query = "Q049";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$query="UPDATE 
+				jorge_favorites 
+			SET 
+				ext = NULL
+			WHERE 
+				owner_id='$user_id' 
+			AND 
+				peer_name_id='$peer_name_id' 
+			AND 
+				peer_server_id='$peer_server_id' 
+			AND 
+				tslice='$tslice'
+		";
+	
+		return $this->update($query);
 
 	}
 
