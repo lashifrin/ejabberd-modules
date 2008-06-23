@@ -13,6 +13,7 @@ This module provides ejabberd PubSub data via an AtomPub interface.
 
 # Howto
 Edit Makefile
+Edit the BASEURL macro in atom_pubsub.erl to match the DNS name of your webserver.
 Drop the beam somewhere where it can be be found by ejabberd
 
 # What you get
