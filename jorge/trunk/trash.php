@@ -22,8 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 require_once("headers.php");
 require_once("upper.php");
 
-print '<h2>'.$trash_name[$lang].'</h2>';
-print '<small>'.$trash_desc[$lang].'</small></h2>';
+$html->render_title($trash_name[$lang],$trash_desc[$lang]);
 
 if ($enc->decrypt_url($_GET[a]) === true) {
 
@@ -63,21 +62,16 @@ if ($action=="undelete") {
 
 if ($action=="delete") {
 
-	// this is additional check - if fail, do nothing
-	if (ctype_digit($talker) OR ctype_digit($server)) {
-		if ((mysql_query("delete from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server' and ext = '1'")==TRUE)) {
-			// cleanup, unfortunately we are not operating on transactions :/
-			mysql_query("delete from jorge_mylinks where owner_id='$user_id' and ext='1' and peer_name_id = '$talker' and peer_server_id='$server' and datat = '$tslice'");
-			mysql_query("delete from pending_del where owner_id='$user_id' and peer_name_id = '$talker' and peer_server_id='$server' and date='$tslice'");
-			print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 200pt;">'.$del_info[$lang].'</div></center><br>';
+		if ($db->remove_messages_from_trash($talker,$server,$tslice) === true) {
+
+			$html->render_status($del_info[$lang]);
 		}
 		else {
 
-			print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 200pt;">';
-			print 'Unusual error accured during processing your request. Please report it (Code:JTD).</div></center>';	
+			$html->render_alert($oper_fail[$lang]);
+
 		}
 
-	}
 
 }
 
@@ -89,11 +83,12 @@ if ($tr_n === "0") {
 	else
 
 	{
-		print '<center>';
-		print '<table id="maincontent" class="ff" align="center" border="0"  cellspacing="0">';
-		print '<tr class="header"><td style="padding-right: 15px;">'.$my_links_chat[$lang].'</td><td style="padding-right: 15px;">'.$logger_from_day[$lang].'</td><td>'.$del_time[$lang].'</td></tr>';
-		print '<tr class="spacer"><td colspan="5"></td></tr>';
-		print '<tbody id="searchfield">';
+		$html->render('
+				<center>
+				<table id="maincontent" class="ff" align="center" border="0"  cellspacing="0">
+				<tr class="header"><td style="padding-right: 15px;">'.$my_links_chat[$lang].'</td><td style="padding-right: 15px;">'.$logger_from_day[$lang].'</td><td>'.$del_time[$lang].'</td></tr>
+				<tr class="spacer"><td colspan="5"></td></tr><tbody id="searchfield">
+			');
 		$db->get_trashed_items();
 		$result = $db->result;
 		foreach ($result as $entry) {
@@ -108,19 +103,20 @@ if ($tr_n === "0") {
 			$undelete_link = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$entry[peer_server_id]&lnk=$reconstruct_link&action=undelete");
 			$delete_link = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$entry[peer_server_id]&lnk=$reconstruct_link&action=delete");
 
-			print '<tr><td style="padding-left: 10px; padding-right: 10px;"><b>'.$nickname.'</b> (<i>'.htmlspecialchars($talker).'@'.htmlspecialchars($server_name).'</i>)</td>
-				<td style="text-align: center;">'.$tslice.'</td>';
-			print '<td style="padding-left: 5px; padding-right: 5px; font-size: x-small;">'.$entry[timeframe].'</td>';
-			print '<td style="padding-left: 10px;"><a href="trash.php?a='.$undelete_link.'">'.$trash_undel[$lang].'</a></td>';
-			print '<td style="padding-left: 10px;"><a href="trash.php?a='.$delete_link.'" onClick="if (!confirm(\''.$del_conf[$lang].'\')) return false;">'.$trash_del[$lang].'</a></td>';
-			print '</tr>';
+			$html->render('
+					<tr><td style="padding-left: 10px; padding-right: 10px;"><b>'.$nickname.'</b> (<i>'.htmlspecialchars($talker).'@'.htmlspecialchars($server_name).'</i>)</td>
+					<td style="text-align: center;">'.$tslice.'</td>
+					<td style="padding-left: 5px; padding-right: 5px; font-size: x-small;">'.$entry[timeframe].'</td>
+					<td style="padding-left: 10px;"><a href="trash.php?a='.$undelete_link.'">'.$trash_undel[$lang].'</a></td>
+					<td style="padding-left: 10px;"><a href="trash.php?a='.$delete_link.'" onClick="if (!confirm(\''.$del_conf[$lang].'\')) return false;">'.$trash_del[$lang].'</a></td></tr>
+					
+				');
 
 		}
-		print '</tbody>';
-		print '<tr class="spacer"><td colspan="5"></td></tr>';
-		print '<tr class="foot"><td colspan="5" height="15"></td></tr>';
-		print '</table>';
-		print '</center>';
+		
+		$html->render('
+				</tbody><tr class="spacer"><td colspan="5"></td></tr><tr class="foot"><td colspan="5" height="15"></td></tr></table></center>
+			');
 	}
 
 require_once("footer.php");

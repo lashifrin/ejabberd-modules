@@ -22,8 +22,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 require_once("headers.php");
 require_once("upper.php");
 
-print '<h2>'.$chat_map[$lang].'</h2>';
-print '<small>'.$chat_select[$lang].'</small><br><br>';
+$html->render_title($chat_map[$lang],$chat_select[$lang]);
+
 if ($_POST['chat_map']) {
 		
 		$con_map = $enc->decrypt_url($_POST['chat_map']);
@@ -48,7 +48,7 @@ if($con_map === true) {
 $ejabberd_roster->sort_by_nick("az");
 $roster_chat = $ejabberd_roster->get_roster();
 
-print '<form action="chat_map.php" method="post" name="chat_map_form">'."\n";
+print '<br><br><br><form action="chat_map.php" method="post" name="chat_map_form">'."\n";
 print '<span style="padding-right: 20px">'.$chat_m_select[$lang].'</span>'."\n";
 print '<select id="c_map" style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="chat_map" size="0" onchange="javascript:document.chat_map_form.submit();">'."\n";
 print '<option value="null">'.$chat_c_list[$lang].'</option>';

@@ -53,12 +53,12 @@ if ($del === "t") {
 
 		if ($db->del_mylink($link_id) === true) {
 		
-				print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 250pt;">'.$my_links_removed[$lang].'</div></center>';
+				$html->render_status($my_links_removed[$lang],"message");
 			}
 
 			else {
 				
-				print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 250pt;">'.$oper_fail[$lang].'</div></center>';
+				$html->render_alert($oper_fail[$lang],"message");
 			
 			}
 
@@ -83,9 +83,18 @@ if ($tigger === $my_links_commit[$lang]) {
 					}
 		
 				$desc = substr($desc,0,120);
-				$db->add_mylink($peer_name_id,$peer_server_id,$datat,$link,$desc);
-				print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 150pt;">'.$my_links_added[$lang];
-				print '<br><a href="'.$view_type.'?a='.$link.'" style="color: blue;"><b>'.$my_links_back[$lang].'</b></a></div></center>';
+				if($db->add_mylink($peer_name_id,$peer_server_id,$datat,$link,$desc) === true) {
+
+						$html->render_status($my_links_added[$lang].'
+								<br><a href="'.$view_type.'?a='.$link.'" style="color: blue;"><b>'.$my_links_back[$lang].'</b></a></div></center>
+							',"message");
+
+					}
+					else{
+
+						$html->render_alert($oper_fail[$lang]);
+
+				}
 	
 		}
 
@@ -101,43 +110,40 @@ if ($variables[ismylink] === "1") {
 	$jid=''.$uname.'@'.$sname.'';
 	$hidden_fields = $enc->crypt_url("tslice=$enc->tslice&peer_name_id=$variables[peer_name_id]&peer_server_id=$variables[peer_server_id]&lnk=$variables[lnk]&strt=$variables[strt]&linktag=$variables[linktag]");
 
-	print '<center>'."\n";
-	print ''.$my_links_save_d[$lang].'<br />'."\n";
-	print '<table class="ff" border="0" cellspacing="0">'."\n";
-	print '<form action="my_links.php" method="post">'."\n";
-	print '<tr><td height="5"></td></tr>'."\n";
-	print '<tr class="main_row_b"><td style="text-align:center;">'.$my_links_chat[$lang].'&nbsp;&nbsp;'."\n";
-	print '<b>'.cut_nick($nickname).'</b> (<i>'.htmlspecialchars($jid).'</i>)</td></tr>'."\n";
-	print '<tr><td height="5"></td></tr>'."\n";
-	print '<tr><td colspan="3" align="center"><textarea class="ccc" name="desc" rows="4">'.$my_links_optional[$lang].'</textarea></td></tr>'."\n";
-	print '<tr><td colspan="3" align="center"><input name="trigger" class="red" type="submit" value="'.$my_links_commit[$lang].'">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
-	print '<input class="red" type="button" value="'.$my_links_cancel[$lang].'" onClick="parent.location=\''.$view_type.'?a='.$enc->lnk.'&start='.htmlspecialchars($enc->strt).'#'.htmlspecialchars($enc->linktag).'\'"></td>';
-	print '</tr>'."\n";
-	print '<tr><td>'."\n";
-	print '<input type="hidden" name="hidden_field" value="'.$hidden_fields.'">'."\n";
-	print '</form>'."\n";
-	print '</table>'."\n";
-	print '</center>'."\n";
-	print '<br /><br /><br /><br />';
+	$html->render('
+		<center>
+		'.$my_links_save_d[$lang].'<br />
+		<table class="ff" border="0" cellspacing="0">
+		<form action="my_links.php" method="post">
+		<tr><td height="5"></td></tr>
+		<tr class="main_row_b"><td style="text-align:center;">'.$my_links_chat[$lang].'&nbsp;&nbsp;
+		<b>'.cut_nick($nickname).'</b> (<i>'.htmlspecialchars($jid).'</i>)</td></tr>
+		<tr><td height="5"></td></tr>
+		<tr><td colspan="3" align="center"><textarea class="ccc" name="desc" rows="4">'.$my_links_optional[$lang].'</textarea></td></tr>
+		<tr><td colspan="3" align="center"><input name="trigger" class="red" type="submit" value="'.$my_links_commit[$lang].'">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		<input class="red" type="button" value="'.$my_links_cancel[$lang].'" onClick="parent.location=\''.$view_type.'?a='.$enc->lnk.'&start='.htmlspecialchars($enc->strt).'#'.htmlspecialchars($enc->linktag).'\'"></td>
+		</tr><tr><td><input type="hidden" name="hidden_field" value="'.$hidden_fields.'"></form></table></center>
+		<br><br><br><br>
+		');
 
 }
 
-print '<h2>'.$my_links_desc_m[$lang].'</h2>';
-print '<small>'.$my_links_desc_e[$lang].'</small>';
+$html->render_title($my_links_desc_m[$lang],$my_links_desc_e[$lang]);
 
-$db->get_mylinks_count();
-if ($db->result->cnt === "0") { 
+if ($my_links_count === "0") { 
 		
-		print '<center><div class="message" style="width: 250px;">'.$my_links_no_links[$lang].'</div></center>'; 
+		$html->render_status($my_links_no_links[$lang]);
 		
-		}
+	}
+
 	else {
 
-		print '<center>'."\n";
-		print '<table id="maincontent" class="ff" cellspacing="0">'."\n";
-		print '<tr class="header"><td>'.$my_links_link[$lang].'</td><td>'.$my_links_chat[$lang].'</td><td>'.$my_links_desc[$lang].'</td></tr>'."\n";
-		print '<tr class="spacer" height="1px"><td colspan="4"></td></tr>';
-		print '<tbody id="searchfield">';
+		$html->render('
+				<center><table id="maincontent" class="ff" cellspacing="0">
+				<tr class="header"><td>'.$my_links_link[$lang].'</td><td>'.$my_links_chat[$lang].'</td><td>'.$my_links_desc[$lang].'</td></tr>
+				<tr class="spacer" height="1px"><td colspan="4"></td></tr>
+				<tbody id="searchfield">
+			');
 		$db->get_mylink();
 		$result = $db->result;
 		foreach ($result as $entry) {
@@ -149,19 +155,19 @@ if ($db->result->cnt === "0") {
 			$nickname=query_nick_name($ejabberd_roster,$peer_name,$peer_server);
 			$desc = htmlspecialchars($entry[description]);
 			$jid = $peer_name.'@'.$peer_server;
-
-			print '<tr style="cursor: pointer;" bgcolor="#e8eef7" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#e8eef7\';">'."\n";
-			print '<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';" style="padding-left: 10px; padding-right: 10px">'.pl_znaczki(verbose_date($entry['datat'],$lang)).'</td>'."\n";
-			print '<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';">&nbsp;<b>'.cut_nick(htmlspecialchars($nickname)).'</b> ('.htmlspecialchars($jid).')&nbsp;</td>'."\n";
-			print '<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';">&nbsp;'.$desc.'</td>'."\n";
-			print '<td><a href="my_links.php?del=t&link_id='.$entry[id_link].'" onClick="if (!confirm(\''.$del_conf_my_link[$lang].'\')) return false;" >&nbsp;'.$del_my_link[$lang].'&nbsp;</a></td>'."\n";
-			print '</tr>'."\n";
+			$html->render('
+					<tr style="cursor: pointer;" bgcolor="#e8eef7" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#e8eef7\';">
+					<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';" style="padding-left: 10px; padding-right: 10px">'.pl_znaczki(verbose_date($entry['datat'],$lang)).'</td>
+					<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';">&nbsp;<b>'.cut_nick(htmlspecialchars($nickname)).'</b> ('.htmlspecialchars($jid).')&nbsp;</td>
+					<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';">&nbsp;'.$desc.'</td>
+					<td><a href="my_links.php?del=t&link_id='.$entry[id_link].'" onClick="if (!confirm(\''.$del_conf_my_link[$lang].'\')) return false;" >&nbsp;'.$del_my_link[$lang].'&nbsp;</a></td>
+					</tr>
+				');
 		}
-	print '</tbody>';
-	print '<tr class="spacer"><td colspan="4"></td></tr>';
-	print '<tr class="foot"><td colspan="4" height="15"></td></tr>';
-	print '</table>'."\n";
-	print '</center>'."\n";
+
+		$html->render('
+				</tbody><tr class="spacer"><td colspan="4"></td></tr><tr class="foot"><td colspan="4" height="15"></td></tr></table></center>
+			');
 
 }
 require_once("footer.php");

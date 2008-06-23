@@ -38,7 +38,8 @@ if ($sess->get('enabled') == "f") { header ("Location: not_enabled.php"); }
 $link_sw=mysql_escape_string($_GET['a']);
 
 // number of my links saved...
-$my_links_count=do_sel_quick("select count(id_link) from jorge_mylinks where owner_id='$user_id' and ext is NULL");
+$db->get_mylinks_count();
+$my_links_count = $db->result->cnt;
 
 // number of items in trash
 $db->get_trash_count();

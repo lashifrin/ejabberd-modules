@@ -177,17 +177,28 @@ Class parser {
 Class render_html {
 
 	
-	public function render_alert($message,$class) {
+	public function render_alert($message, $class = "message") {
 
 
 		print $this->center().'<div class="'.$class.'">'.$message.'</div>'.$this->center_end();
 
 	}
 
-	public function render_status($message,$class) {
+	public function render_status($message, $class = "message") {
 
 		print $this->center().'<div class="'.$class.'">'.$message.'</div>'.$this->center_end();
 	
+	}
+
+	public function render_title($title,$description = null) {
+
+		echo '<h2>'.$title.'</h2>';
+		if($description !== null) {
+		
+			echo '<small>'.$description.'</small>';
+		
+		}
+
 	}
 
 	public function render($content) {

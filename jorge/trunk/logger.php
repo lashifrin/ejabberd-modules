@@ -23,7 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 require_once("headers.php");
 require_once("upper.php");
 
-print '<h2>'.$logger_overview[$lang].'</h2>';
+$html->render_title($logger_overview[$lang]);
 
 if ($_GET[a]) {
 
