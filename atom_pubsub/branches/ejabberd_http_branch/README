@@ -4,7 +4,8 @@
 # 20-06-2008
 
 NOTE : This code works with ejabberd_http, not yaws. 
-However you need to apply the patch from https://support.process-one.net/browse/EJAB-662 (unless it has been integrated !)
+You need to apply the patch from https://support.process-one.net/browse/EJAB-662 if you are running ejabberd 2.0.x.
+Patch is added in 2.1.
 
 # Licensed under the same terms as ejabberd (that would be some version of the GPL)
 
