@@ -82,6 +82,9 @@ class db_manager {
 	private $query_type;
 	private $is_debug = false;
 	private $user_id = null;
+	private $peer_name_id = null;
+	private $peer_server_id = null;
+	private $tslice = null;
 	private $time_start = null;
 	private $time_result = null;
 	public $result;
@@ -419,25 +422,21 @@ class db_manager {
 		
 	}
 
-	public function get_num_lines($tslice,$talker_id,$server_id) {
+	public function get_num_lines($tslice,$peer_name_id,$peer_server_id) {
 		
 		$this->id_query = "Q015";
-		$this->vital_check();
-		$user_id = $this->user_id;
-		$talker_id = $this->sql_validate($talker_id,"integer");
-		$server_id = $this->sql_validate($server_id,"integer");
-		$table = $this->construct_table($tslice);
-
+		$this->prepare($peer_name_id,$peer_server_id,$tslice);
+		$table = $this->construct_table($this->tslice);
 		$query="SELECT 
 				count(timestamp) as cnt
 			FROM 
 				`$table` 
 			WHERE 
-				owner_id = '$user_id' 
+				owner_id = '".$this->user_id."' 
 			AND 
-				peer_name_id='$talker_id' 
+				peer_name_id='".$this->peer_name_id."' 
 			AND 
-				peer_server_id='$server_id'
+				peer_server_id='".$this->peer_server_id."'
 				
 		";
 		
@@ -946,18 +945,18 @@ class db_manager {
 		if ($event_id !== null) {
 				
 				$event_id = $this->sql_validate($event_id,"integer");
-				$sql_1 = "and id_log_detail='$event_id'";
+				$sql_1 = "AND id_log_detail='$event_id'";
 		}
 		if ($level_id !== null) {
 
 				$level_id = $this->sql_validate($level_id,"integer");
-				$sql_2 = "and id_log_level='$level_id'";
+				$sql_2 = "AND id_log_level='$level_id'";
 		}
-		$query="select 
-				count(id_user) as cnt
-			from 
+		$query="SELECT 
+				count(id_user) AS cnt
+			FROM 
 				jorge_logger 
-			where 
+			WHERE 
 				id_user='$user_id' 
 			
 			$sql_1 
@@ -1135,7 +1134,7 @@ class db_manager {
 		$user_id = $this->user_id;
 		$query="INSERT INTO 
 				pending_del(owner_id,peer_name_id,date,peer_server_id) 
-			values (
+			VALUES (
 				'$user_id', 
 				'$peer_name_id',
 				'$tslice',
@@ -1295,9 +1294,9 @@ class db_manager {
 		$this->vital_check();
 		$user_id = $this->user_id;
 		$xmpp_host = $this->xmpp_host;
-		$query="insert into 
+		$query="INSERT INTO
 				`logdb_stats_$xmpp_host` (owner_id,peer_name_id,peer_server_id,at,count) 
-			values 
+			VALUES 
 				(
 				'$user_id',
 				'$peer_name_id',
@@ -1403,6 +1402,91 @@ class db_manager {
 		";
 	
 		return $this->update($query);
+
+	}
+
+	public function delete_messages($peer_name_id,$peer_server_id,$tslice) {
+
+		$this->id_query = "Q050";
+		$this->prepare($peer_name_id,$peer_server_id,$tslice);
+		$table = $this->construct_table($this->tslice,"date");
+		$query="DELETE FROM 
+				`$table`
+			WHERE 
+				owner_id='".$this->user_id."' 
+			AND 
+				peer_name_id='".$this->peer_name_id."' 
+			AND 
+				peer_server_id='".$this->peer_server_id."' 
+			AND 
+				ext = '1'
+				
+		";
+
+		return $this->delete($query);
+
+	}
+
+	public function delete_mylinks($peer_name_id,$peer_server_id,$tslice) {
+	
+		$this->id_query = "Q051";
+		$this->prepare($peer_name_id,$peer_server_id,$tslice);
+		$query="DELETE FROM
+				jorge_mylinks 
+			WHERE 
+				owner_id='".$this->user_id."' 
+			AND 
+				ext='1' 
+			AND 
+				peer_name_id = '".$this->peer_name_id."' 
+			AND 
+				peer_server_id='".$this->peer_server_id."' 
+			AND 
+				datat = '".$this->tslice."'
+				
+		";
+
+		return $this->delete($query);
+
+	}
+
+	public function delete_favorites($peer_name_id,$peer_server_id,$tslice) {
+
+		$this->id_query = "Q052";
+		$this->prepare($peer_name_id,$peer_server_id,$tslice);
+		$query="DELETE FROM 
+				jorge_favorites 
+			WHERE 
+				owner_id='".$this->user_id."' 
+			AND 
+				peer_name_id='".$this->peer_name_id."' 
+			AND 
+				peer_server_id='".$this->peer_server_id."' 
+			AND 
+				tslice='".$this->tslice."'
+		";
+
+		return $this->delete($query);
+
+	}
+
+	public function remove_messages_from_trash($peer_name_id,$peer_server_id,$tslice) {
+
+		if ($this->delete_messages($peer_name_id,$peer_server_id,$tslice) === true) {
+
+				$this->unset_undo_table($peer_name_id,$peer_server_id,$tslice);
+				$this->delete_mylinks($peer_name_id,$peer_server_id,$tslice);
+				$this->delete_favorites($peer_name_id,$peer_server_id,$tslice);
+
+			}
+
+			else{
+
+				return false;
+
+		}
+
+		return true;
 
 	}
 
@@ -1724,6 +1808,31 @@ class db_manager {
 
 		return $this->result = $items;
 		
+	}
+
+	private function prepare($peer_name_id = null,$peer_server_id = null, $tslice = null) {
+
+		if ($peer_name_id !== null) {
+
+				$this->peer_name_id = $this->sql_validate($peer_name_id,"integer");
+
+		}
+
+		if ($peer_server_id !== null) {
+
+				$this->peer_server_id = $this->sql_validate($peer_server_id,"integer");
+
+		}
+
+		if ($tslice !== null) {
+
+				$this->tslice = $this->sql_validate($tslice,"date");
+
+		}
+
+		$this->vital_check();
+		return;
+
 	}
 
 	private function construct_table($tslice) {
