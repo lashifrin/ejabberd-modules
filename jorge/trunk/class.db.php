@@ -216,31 +216,6 @@ class db_manager {
 
 	}
 
-	public function begin() {
-
-		$this->id_query = "Q001";
-		$this->query_type = "transaction";
-		return $this->db_query("begin");
-
-	}
-	
-	public function commit() {
-		
-		$this->id_query = "Q002";
-		$this->query_type = "transaction";
-		return $this->db_query("commit");
-	
-	}
-
-	public function rollback() {
-
-		$this->id_query = "Q003";
-		$this->query_type = "transaction";
-		$this->is_error = false;
-		return $this->db_query("rollback");
-
-	}
-
 	private function select($query,$return_type = null) {
 
 		$this->query_type="select";
@@ -386,6 +361,31 @@ class db_manager {
 		}
 	}
 
+	public function begin() {
+
+		$this->id_query = "Q001";
+		$this->query_type = "transaction";
+		return $this->db_query("begin");
+
+	}
+	
+	public function commit() {
+		
+		$this->id_query = "Q002";
+		$this->query_type = "transaction";
+		return $this->db_query("commit");
+	
+	}
+
+	public function rollback() {
+
+		$this->id_query = "Q003";
+		$this->query_type = "transaction";
+		$this->is_error = false;
+		return $this->db_query("rollback");
+
+	}
+
 	public function get_mylinks_count() {
 
 		$this->id_query = "Q004";
@@ -420,6 +420,161 @@ class db_manager {
 
 		return $this->select($query);
 		
+	}
+
+	private function row_count($query) {
+
+		$this->id_query = "Q006";
+		$result = mysql_num_rows($this->db_query($query));
+		if ($result === false) {
+
+				return false;
+			
+				}
+			else{
+
+				$this->result = $result;
+				return true;
+		
+			}
+		
+	}
+
+	public function get_user_id($user) {
+		
+		$this->id_query = "Q007";	
+		$user = $this->sql_validate($user,"string");
+		$table_name = "`logdb_users_".$this->xmpp_host."`";
+		$query="SELECT
+				user_id 
+			FROM 
+				$table_name 
+			WHERE 
+				username = '$user'
+				
+			";
+		
+		return $this->select($query);
+
+	}
+
+	public function get_user_name($user_id) {
+
+		$this->id_query = "Q008";
+		$user_id = $this->sql_validate($user_id,"integer");
+		if ($user_id === false) { 
+				
+				return false; 
+				
+			}
+		$table_name = "`logdb_users_".$this->xmpp_host."`";
+		$query="SELECT
+				username
+			FROM 
+				$table_name 
+			WHERE 
+				user_id = '$user_id'
+				
+			";
+		
+		return $this->select($query);
+
+	}
+
+	public function get_server_id($server) {
+
+		$this->id_query = "Q009";
+		$server = $this->sql_validate($server,"string");
+		$table_name = "`logdb_servers_".$this->xmpp_host."`";
+		$query="SELECT
+				server_id 
+			FROM 
+				$table_name 
+			WHERE 
+				server = '$server'
+				
+			";
+		
+		return $this->select($query);
+
+	}
+
+	public function get_server_name($server_id) {
+
+		$this->id_query = "Q010";
+		$server_id = $this->sql_validate($server_id,"integer");
+		$table_name = "`logdb_servers_".$this->xmpp_host."`";
+		$query="SELECT
+				server as server_name
+			FROM 
+				$table_name 
+			WHERE 
+				server_id = '$server_id'
+				
+			";
+		
+		return $this->select($query);
+
+	}
+
+	public function get_resource_name($resource_id) {
+
+		$this->id_query = "Q012";
+		$resource_id = $this->sql_validate($resource_id,"integer");
+		$table_name = "`logdb_resources_".$this->xmpp_host."`";
+		$query="SELECT
+				resource as resource_name
+			FROM 
+				$table_name 
+			WHERE 
+				resource_id = '$resource_id'
+				
+			";
+		
+		return $this->select($query);
+	}
+
+	public function get_resource_id($resource) {
+	
+		$this->id_query = "Q013";
+		$resource = $this->sql_validate($resource,"string");
+		$table_name = "`logdb_resources_".$this->xmpp_host."`";
+		$query="SELECT
+				resource_id
+			FROM 
+				$table_name 
+			WHERE 
+				resource = '$resource'
+				
+			";
+		
+		return $this->select($query);
+
+	}
+
+	public function get_user_talker_stats($peer_name_id,$peer_server_id){
+
+		$this->id_query = "Q014";
+		$this->prepare($peer_name_id,$peer_server_id,$tslice);
+		$table = "`logdb_stats_".$this->xmpp_host."`";
+		$query="SELECT
+				at 
+			FROM 
+				$table
+			WHERE 
+				owner_id='".$this->user_id."' 
+			AND 
+				peer_name_id='".$this->peer_name_id."' 
+			AND 
+				peer_server_id='".$this->peer_server_id."' 
+			ORDER BY
+				str_to_date(at,'%Y-%m-%d') 
+			ASC
+			
+			";
+		
+		$this->select($query,"raw");
+		return $this->commit_select(array("at"));
 	}
 
 	public function get_num_lines($tslice,$peer_name_id,$peer_server_id) {
@@ -459,6 +614,53 @@ class db_manager {
 		";
 
 		return $this->select($query);
+
+	}
+
+	public function total_messages() {
+	
+		$this->id_query = "Q017";
+		$xmpp_host = $this->xmpp_host;
+		$query="SELECT 
+				sum(count) as total_messages
+			FROM 
+				`logdb_stats_$xmpp_host`
+		";
+		return $this->select($query);
+
+	}
+
+	public function total_chats() {
+
+		$this->id_query = "Q018";
+		$xmpp_host = $this->xmpp_host;
+		$query="SELECT 
+				count(owner_id) as total_chats
+			FROM 
+				`logdb_stats_$xmpp_host
+		";
+		return $this->select($query);
+
+	}
+
+	public function get_log_list() {
+
+		$this->id_query = "Q019";
+		$this->vital_check();
+		$user_id = $this->user_id;
+		$xmpp_host = $this->xmpp_host;
+		$query="SELECT 
+				donotlog_list as donotlog
+			FROM 
+				logdb_settings_$xmpp_host 
+			WHERE 
+				owner_id = '$user_id'
+		";
+
+		$this->select($query);
+		$split = explode("\n",$this->result->donotlog);
+		$this->result = $split;
+		return true;
 
 	}
 
@@ -603,14 +805,10 @@ class db_manager {
 
 	}
 
-	public function get_user_chat($tslice,$talker_id,$server_id,$resource_id = null,$start = null,$num_lines = null) {
+	public function get_user_chat($tslice,$peer_name_id,$peer_server_id,$resource_id = null,$start = null,$num_lines = null) {
 	
 		$this->id_query = "Q025";
-		$this->vital_check();
-		$user_id = $this->user_id;
-		$tslice = $this->sql_validate($tslice,"string");
-		$talker_id = $this->sql_validate($talker_id,"integer");
-		$server_id = $this->sql_validate($server_id,"integer");
+		$this->prepare($peer_name_id,$peer_server_id,$tslice);
 		if ($resource_id !== null) { 
 		
 				$resource_id = $this->sql_validate($resource_id,"integer");
@@ -632,7 +830,7 @@ class db_manager {
 		$offset_end = $start + $num_lines;
 		$offset_start = $this->sql_validate($offset_start,"integer");
 		$offset_end = $this->sql_validate($offset_end,"integer");
-		$tslice_table = $this->construct_table($tslice);
+		$tslice_table = $this->construct_table($this->tslice);
 		$query="SELECT 
 				from_unixtime(timestamp+0) as ts,
 				direction, 
@@ -643,11 +841,11 @@ class db_manager {
 			FROM 
 				`$tslice_table` 
 			WHERE 
-				owner_id = '$user_id' 
+				owner_id = '".$this->user_id."' 
 			AND 
-				peer_name_id='$talker_id' 
+				peer_name_id='".$this->peer_name_id."' 
 			AND 
-				peer_server_id='$server_id' 
+				peer_server_id='".$this->peer_server_id."' 
 				$sql 
 			AND 
 				ext is NULL 
@@ -700,27 +898,23 @@ class db_manager {
 	public function check_thread($tslice,$peer_name_id,$peer_server_id,$begin_hour,$end_hour) {
 
 		$this->id_query = "Q027";
-		$this->vital_check();
-		$user_id = $this->user_id;
+		$this->prepare($peer_name_id,$peer_server_id,$tslice);
 		$xmpp_host = $this->xmpp_host;
-		$peer_name_id = $this->sql_validate($peer_name_id,"integer");
-		$peer_server_id = $this->sql_validate($peer_server_id,"integer");
-		$tslice = $this->sql_validate($tslice,"date");
-		$tslice_table = $this->construct_table($tslice);
+		$tslice_table = $this->construct_table($this->tslice);
         	$query="SELECT 
 				1 
                 	FROM 
                         	`$tslice_table`
                 	WHERE 
-                        	owner_id='$user_id' 
+                        	owner_id='".$this->user_id."' 
                 	AND 
-                        	peer_name_id='$peer_name_id' 
+                        	peer_name_id='".$this->peer_name_id."' 
                 	AND 
-                        	peer_server_id='$peer_server_id' 
+                        	peer_server_id='".$this->peer_server_id."' 
                 	AND 
-                        	from_unixtime(timestamp) >= str_to_date('$tslice $begin_hour','%Y-%m-%d %H:%i:%s') 
+                        	from_unixtime(timestamp) >= str_to_date('".$this->tslice." $begin_hour','%Y-%m-%d %H:%i:%s') 
                 	AND 
-                        	from_unixtime(timestamp) <= str_to_date('$tslice $end_hour','%Y-%m-%d %H:%i:%s')
+                        	from_unixtime(timestamp) <= str_to_date('".$this->tslice." $end_hour','%Y-%m-%d %H:%i:%s')
                 	ORDER BY 
                         	from_unixtime(timestamp)
 
@@ -733,21 +927,18 @@ class db_manager {
 	public function get_chat_map($peer_name_id,$peer_server_id) {
 
 		$this->id_query = "Q028";
-		$this->vital_check();
-		$user_id = $this->user_id;
+		$this->prepare($peer_name_id,$peer_server_id,$tslice);
 		$xmpp_host = $this->xmpp_host;
-		$peer_name_id = $this->sql_validate($peer_name_id,"integer");
-		$peer_server_id = $this->sql_validate($peer_server_id,"integer");
 		$query="SELECT 
 				substring(at,1,7) as at 
 			FROM 
 				`logdb_stats_$xmpp_host` 
 			WHERE 
-				owner_id='$user_id' 
+				owner_id='".$this->user_id."' 
 			AND 
-				peer_name_id='$peer_name_id' 
+				peer_name_id='".$this->peer_name_id."' 
 			AND 
-				peer_server_id='$peer_server_id' 
+				peer_server_id='".$this->peer_server_id."' 
 			GROUP BY 
 				substring(at,1,7) 
 			ORDER BY 
@@ -764,22 +955,19 @@ class db_manager {
 	public function get_chat_map_specyfic($peer_name_id,$peer_server_id,$month) {
 
 		$this->id_query = "Q029";
-		$this->vital_check();
-		$user_id = $this->user_id;
+		$this->prepare($peer_name_id,$peer_server_id,$tslice);
 		$xmpp_host = $this->xmpp_host;
-		$peer_name_id = $this->sql_validate($peer_name_id,"integer");
-		$peer_server_id = $this->sql_validate($peer_server_id,"integer");
 		$mo = $this->sql_validate($month,"string");
 		$query="SELECT 
 				at 
 			FROM 
 				`logdb_stats_$xmpp_host` 
 			WHERE 
-				owner_id='$user_id' 
+				owner_id='".$this->user_id."' 
 			AND 
-				peer_name_id='$peer_name_id' 
+				peer_name_id='".$this->peer_name_id."' 
 			AND 
-				peer_server_id='$peer_server_id' 
+				peer_server_id='".$this->peer_server_id."' 
 			AND 
 				at like '$mo%'
 				
@@ -793,20 +981,17 @@ class db_manager {
 	public function add_mylink($peer_name_id,$peer_server_id,$link_date,$link,$desc) {
 
 		$this->id_query = "Q030";
-		$this->vital_check();
-		$user_id = $this->user_id;
+		$this->prepare($peer_name_id,$peer_server_id,$tslice);
 		$xmpp_host = $this->xmpp_host;
-		$peer_name_id = $this->sql_validate($peer_name_id,"integer");
-		$peer_server_id = $this->sql_validate($peer_server_id,"integer");
 		$datat = $this->sql_validate($link_date,"string");
 		$lnk = $this->sql_validate($link,"string");
 		$desc = $this->sql_validate($desc,"string");
 		$query="INSERT INTO
 				jorge_mylinks (owner_id,peer_name_id,peer_server_id,datat,link,description) 
 			VALUES (
-					'$user_id',
-					'$peer_name_id',
-					'$peer_server_id',
+					'".$this->user_id."',
+					'".$this->peer_name_id."',
+					'".$this->peer_server_id."',
 					'$datat',
 					'$lnk',
 					'$desc'
@@ -994,23 +1179,19 @@ class db_manager {
 	public function move_chat_to_trash($peer_name_id,$peer_server_id,$tslice,$link) {
 
 		$this->id_query = "Q037";
-		$this->vital_check();
-		$user_id = $this->user_id;
+		$this->prepare($peer_name_id,$peer_server_id,$tslice);
 		$xmpp_host = $this->xmpp_host;
-		$peer_name_id = $this->sql_validate($peer_name_id,"integer");
-		$peer_server_id = $this->sql_validate($peer_server_id,"integer");
-		$tslice = $this->sql_validate($tslice,"date");
-		$table = $this->construct_table($tslice);
+		$table = $this->construct_table($this->tslice);
 
 		$this->begin();
-		if ($this->set_undo_table($peer_name_id,$peer_server_id,$tslice) === false) {
+		if ($this->set_undo_table($this->peer_name_id,$this->peer_server_id,$this->tslice) === false) {
 
 				$this->rollback();
 				return false;
 
 		}
 
-		if ($this->remove_user_stats($peer_name_id,$peer_server_id,$tslice) === false) {
+		if ($this->remove_user_stats($this->peer_name_id,$this->peer_server_id,$this->tslice) === false) {
 
 				$this->rollback();
 				return false;
@@ -1036,11 +1217,11 @@ class db_manager {
 			SET 
 				ext = '1' 
 			WHERE 
-				owner_id='$user_id' 
+				owner_id='".$this->user_id."' 
 			AND 
-				peer_name_id='$peer_name_id' 
+				peer_name_id='".$this->peer_name_id."' 
 			AND 
-				peer_server_id='$peer_server_id'
+				peer_server_id='".$this->peer_server_id."'
 				
 		";
 		
@@ -1061,12 +1242,11 @@ class db_manager {
 	private function remove_user_stats($peer_name_id,$peer_server_id,$tslice) {
 
 		$this->id_query = "Q038";
-		$user_id = $this->user_id;
 		$xmpp_host = $this->xmpp_host;
 		$query="DELETE FROM 
 				`logdb_stats_$xmpp_host` 
 			WHERE 
-				owner_id='$user_id' 
+				owner_id='".$this->user_id."' 
 			AND 
 				peer_name_id='$peer_name_id' 
 			AND 
@@ -1083,7 +1263,6 @@ class db_manager {
 
 		$this->id_query = "Q039";
 		$this->vital_check();
-		$user_id = $this->user_id;
 		$peer_name_id = $this->sql_validate($peer_name_id,"integer");
 		$lnk = $this->sql_validate($link,"string");
 		$query="UPDATE 
@@ -1091,7 +1270,7 @@ class db_manager {
 			SET 
 				ext='1' 
 			WHERE 
-				owner_id ='$user_id' 
+				owner_id ='".$this->user_id."' 
 			AND 
 				peer_name_id='$peer_name_id' 
 			AND 
@@ -1105,23 +1284,19 @@ class db_manager {
 	public function move_fav_to_trash($peer_name_id,$peer_server_id,$tslice) {
 
 		$this->id_query = "Q040";
-		$this->vital_check();
-		$user_id = $this->user_id;
-		$peer_name_id = $this->sql_validate($peer_name_id,"integer");
-		$peer_server_id = $this->sql_validate($peer_server_id,"integer");
-		$tslice = $this->sql_validate($tslice,"date");
+		$this->prepare($peer_name_id,$peer_server_id,$tslice);
 		$query="UPDATE 
 				jorge_favorites 
 			SET 
 				ext='1' 
 			WHERE 
-				owner_id='$user_id' 
+				owner_id='".$this->user_id."' 
 			AND 
-				peer_name_id='$peer_name_id' 
+				peer_name_id='".$this->peer_name_id."' 
 			AND 
-				peer_server_id='$peer_server_id' 
+				peer_server_id='".$this->peer_server_id."' 
 			AND 
-				tslice='$tslice'
+				tslice='".$this->tslice."'
 		";
 	
 		return $this->update($query);
@@ -1131,11 +1306,10 @@ class db_manager {
 	private function set_undo_table($peer_name_id,$peer_server_id,$tslice,$type = null) {
 
 		$this->id_query = "Q041";
-		$user_id = $this->user_id;
 		$query="INSERT INTO 
 				pending_del(owner_id,peer_name_id,date,peer_server_id) 
 			VALUES (
-				'$user_id', 
+				'".$this->user_id."', 
 				'$peer_name_id',
 				'$tslice',
 				'$peer_server_id'
@@ -1150,11 +1324,10 @@ class db_manager {
 	private function unset_undo_table($peer_name_id,$peer_server_id,$tslice) {
 
 		$this->id_query = "Q042";
-		$user_id = $this->user_id;
 		$query="DELETE FROM 
 				pending_del 
 			WHERE 
-				owner_id='$user_id' 
+				owner_id='".$this->user_id."' 
 			AND 
 				peer_name_id='$peer_name_id' 
 			AND 
@@ -1169,13 +1342,9 @@ class db_manager {
 	public function move_chat_from_trash($peer_name_id,$peer_server_id,$tslice,$link) {
 
 		$this->id_query = "Q043";
-		$this->vital_check();
-		$user_id = $this->user_id;
+		$this->prepare($peer_name_id,$peer_server_id,$tslice);
 		$xmpp_host = $this->xmpp_host;
-		$peer_name_id = $this->sql_validate($peer_name_id,"integer");
-		$peer_server_id = $this->sql_validate($peer_server_id,"integer");
-		$tslice = $this->sql_validate($tslice,"date");
-		$table = $this->construct_table($tslice);
+		$table = $this->construct_table($this->tslice);
 
 		// Message tables are not transactional, so this make some trouble for us to control all error conditions :/
 		$query="UPDATE 
@@ -1183,11 +1352,11 @@ class db_manager {
 			SET 
 				ext = NULL 
 			WHERE 
-				owner_id='$user_id' 
+				owner_id='".$this->user_id."' 
 			AND 
-				peer_name_id='$peer_name_id' 
+				peer_name_id='".$this->peer_name_id."' 
 			AND 
-				peer_server_id='$peer_server_id'
+				peer_server_id='".$this->peer_server_id."'
 		";
 
 		if ($this->update($query) === false) {
@@ -1197,14 +1366,14 @@ class db_manager {
 		}
 
 		$this->begin();
-		if ($this->unset_undo_table($peer_name_id,$peer_server_id,$tslice) === false) {
+		if ($this->unset_undo_table($this->peer_name_id,$this->peer_server_id,$this->tslice) === false) {
 
 				$this->rollback();
 				return false;
 
 		}
 
-		if ($this->recount_messages($peer_name_id,$peer_server_id,$tslice) === true) {
+		if ($this->recount_messages($this->peer_name_id,$this->peer_server_id,$this->tslice) === true) {
 
 				$stats = $this->result->cnt;
 
@@ -1215,12 +1384,12 @@ class db_manager {
 				return false;
 		}
 
-		if ($this->if_chat_exist($peer_name_id,$peer_server_id,$tslice) === true) {
+		if ($this->if_chat_exist($this->peer_name_id,$this->peer_server_id,$this->tslice) === true) {
 
 
 					if ($this->result->cnt == 1) {
 
-							if ($this->update_stats($peer_name_id,$peer_server_id,$tslice,$stats) === false) {
+							if ($this->update_stats($this->peer_name_id,$this->peer_server_id,$this->tslice,$stats) === false) {
 
 									$this->rollback();
 									return false;
@@ -1229,7 +1398,7 @@ class db_manager {
 						}
 						else {
 
-							if ($this->insert_stats($peer_name_id,$peer_server_id,$tslice,$stats) === false) {
+							if ($this->insert_stats($this->peer_name_id,$this->peer_server_id,$this->tslice,$stats) === false) {
 
 									$this->rollback();
 									return false;
@@ -1266,15 +1435,12 @@ class db_manager {
 	private function if_chat_exist($peer_name_id,$peer_server_id,$tslice) {
 
 		$this->id_query = "Q044";
-		$this->vital_check();
-		$user_id = $this->user_id;
-		$xmpp_host = $this->xmpp_host;
 		$query="SELECT 
 				1 as cnt
 			FROM 
-				`logdb_stats_$xmpp_host` 
+				`logdb_stats_".$this->xmpp_host."` 
 			WHERE 
-				owner_id = '$user_id' 
+				owner_id = '".$this->user_id."' 
 			AND 
 				peer_name_id='$peer_name_id' 
 			AND 
@@ -1291,14 +1457,11 @@ class db_manager {
 	private function insert_stats($peer_name_id,$peer_server_id,$tslice,$stats) {
 	
 		$this->id_query = "Q045";
-		$this->vital_check();
-		$user_id = $this->user_id;
-		$xmpp_host = $this->xmpp_host;
 		$query="INSERT INTO
-				`logdb_stats_$xmpp_host` (owner_id,peer_name_id,peer_server_id,at,count) 
+				`logdb_stats_".$this->xmpp_host."` (owner_id,peer_name_id,peer_server_id,at,count) 
 			VALUES 
 				(
-				'$user_id',
+				'".$this->user_id."',
 				'$peer_name_id',
 				'$peer_server_id',
 				'$tslice',
@@ -1313,15 +1476,12 @@ class db_manager {
 	private function update_stats($peer_name_id,$peer_server_id,$tslice,$stats) {
 
 		$this->id_query = "Q046";
-		$this->vital_check();
-		$user_id = $this->user_id;
-		$xmpp_host = $this->xmpp_host;
 		$query="UPDATE 
-				`logdb_stats_$xmpp_host` 
+				`logdb_stats_".$this->xmpp_host."` 
 			SET 
 				count='$stats' 
 			WHERE 
-				owner_id='$user_id' 
+				owner_id='".$this->user_id."' 
 			AND 
 				peer_name_id='$peer_name_id' 
 			AND 
@@ -1337,15 +1497,13 @@ class db_manager {
 	private function recount_messages($peer_name_id,$peer_server_id,$tslice) {
 	
 		$this->id_query = "Q047";
-		$this->vital_check();
-		$user_id = $this->user_id;
 		$table = $this->construct_table($tslice);
 		$query="SELECT
 				count(timestamp) as cnt 
 			FROM 
 				`$table`
 			WHERE 
-				owner_id='$user_id' 
+				owner_id='".$this->user_id."' 
 			AND 
 				peer_name_id='$peer_name_id' 
 			AND 
@@ -1358,20 +1516,16 @@ class db_manager {
 
 	}
 
-
-
 	private function move_mylink_from_trash($peer_name_id,$link) {
 
 		$this->id_query = "Q048";
-		$this->vital_check();
-		$user_id = $this->user_id;
 		$lnk = $this->sql_validate($link,"string");
 		$query="UPDATE 
 				jorge_mylinks 
 			SET 
 				ext = NULL 
 			WHERE 
-				owner_id ='$user_id' 
+				owner_id ='".$this->user_id."' 
 			AND 
 				peer_name_id='$peer_name_id' 
 			AND 
@@ -1385,14 +1539,12 @@ class db_manager {
 	private function move_fav_from_trash($peer_name_id,$peer_server_id,$tslice) {
 
 		$this->id_query = "Q049";
-		$this->vital_check();
-		$user_id = $this->user_id;
 		$query="UPDATE 
 				jorge_favorites 
 			SET 
 				ext = NULL
 			WHERE 
-				owner_id='$user_id' 
+				owner_id='".$this->user_id."' 
 			AND 
 				peer_name_id='$peer_name_id' 
 			AND 
@@ -1488,214 +1640,6 @@ class db_manager {
 
 		return true;
 
-	}
-
-	public function total_messages() {
-	
-		$this->id_query = "Q017";
-		$xmpp_host = $this->xmpp_host;
-		$query="SELECT 
-				sum(count) as total_messages
-			FROM 
-				`logdb_stats_$xmpp_host`
-		";
-		return $this->select($query);
-
-	}
-
-	public function total_chats() {
-
-		$this->id_query = "Q018";
-		$xmpp_host = $this->xmpp_host;
-		$query="SELECT 
-				count(owner_id) as total_chats
-			FROM 
-				`logdb_stats_$xmpp_host
-		";
-		return $this->select($query);
-
-	}
-
-	public function get_log_list() {
-
-		$this->id_query = "Q019";
-		$this->vital_check();
-		$user_id = $this->user_id;
-		$xmpp_host = $this->xmpp_host;
-		$query="SELECT 
-				donotlog_list as donotlog
-			FROM 
-				logdb_settings_$xmpp_host 
-			WHERE 
-				owner_id = '$user_id'
-		";
-
-		$this->select($query);
-		$split = explode("\n",$this->result->donotlog);
-		$this->result = $split;
-		return true;
-
-	}
-
-
-	protected function row_count($query) {
-
-		$this->id_query = "Q006";
-		$result = mysql_num_rows($this->db_query($query));
-		if ($result === false) {
-
-				return false;
-			
-				}
-			else{
-
-				$this->result = $result;
-				return true;
-		
-			}
-		
-	}
-
-	public function get_user_id($user) {
-		
-		$this->id_query = "Q007";	
-		$user = $this->sql_validate($user,"string");
-		$table_name = "`logdb_users_".$this->xmpp_host."`";
-		$query="SELECT
-				user_id 
-			FROM 
-				$table_name 
-			WHERE 
-				username = '$user'
-				
-			";
-		
-		return $this->select($query);
-
-	}
-
-	public function get_user_name($user_id) {
-
-		$this->id_query = "Q008";
-		$user_id = $this->sql_validate($user_id,"integer");
-		if ($user_id === false) { 
-				
-				return false; 
-				
-			}
-		$table_name = "`logdb_users_".$this->xmpp_host."`";
-		$query="SELECT
-				username
-			FROM 
-				$table_name 
-			WHERE 
-				user_id = '$user_id'
-				
-			";
-		
-		return $this->select($query);
-
-	}
-
-	public function get_server_id($server) {
-
-		$this->id_query = "Q009";
-		$server = $this->sql_validate($server,"string");
-		$table_name = "`logdb_servers_".$this->xmpp_host."`";
-		$query="SELECT
-				server_id 
-			FROM 
-				$table_name 
-			WHERE 
-				server = '$server'
-				
-			";
-		
-		return $this->select($query);
-
-	}
-
-	public function get_server_name($server_id) {
-
-		$this->id_query = "Q010";
-		$server_id = $this->sql_validate($server_id,"integer");
-		$table_name = "`logdb_servers_".$this->xmpp_host."`";
-		$query="SELECT
-				server as server_name
-			FROM 
-				$table_name 
-			WHERE 
-				server_id = '$server_id'
-				
-			";
-		
-		return $this->select($query);
-
-	}
-
-
-	public function get_resource_name($resource_id) {
-
-		$this->id_query = "Q012";
-		$resource_id = $this->sql_validate($resource_id,"integer");
-		$table_name = "`logdb_resources_".$this->xmpp_host."`";
-		$query="SELECT
-				resource as resource_name
-			FROM 
-				$table_name 
-			WHERE 
-				resource_id = '$resource_id'
-				
-			";
-		
-		return $this->select($query);
-	}
-
-	public function get_resource_id($resource) {
-	
-		$this->id_query = "Q013";
-		$resource = $this->sql_validate($resource,"string");
-		$table_name = "`logdb_resources_".$this->xmpp_host."`";
-		$query="SELECT
-				resource_id
-			FROM 
-				$table_name 
-			WHERE 
-				resource = '$resource'
-				
-			";
-		
-		return $this->select($query);
-
-	}
-
-	public function get_user_talker_stats($talker_id,$talker_server_id){
-
-		$this->id_query = "Q014";
-		$this->vital_check();
-		$user_id = $this->user_id;
-		$talker = $this->sql_validate($talker_id,"integer");
-		$talker_server = $this->sql_validate($talker_server_id,"string");
-
-		$table_name = "`logdb_stats_".$this->xmpp_host."`";
-		$query="SELECT
-				at 
-			FROM 
-				$table_name
-			WHERE 
-				owner_id='$user_id' 
-			AND 
-				peer_name_id='$talker' 
-			AND 
-				peer_server_id='$talker_server' 
-			ORDER BY
-				str_to_date(at,'%Y-%m-%d') 
-			ASC
-			
-			";
-		
-		$this->select($query,"raw");
-		return $this->commit_select(array("at"));
 	}
 
 	public function db_error() {
