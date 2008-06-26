@@ -20,51 +20,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 EXPERIMENTAL VERSION: DO NOT USE! IT IS NOT FINISHED AND NOT INCLUDE MANY METHODS YET!
 
-This class is for mod_logdb and project jorge. It holds all logic needed for managing messages.
-All methods always return TRUE or FALSE. Results are always in:
-
-Query type:					Return type:		Example:
-single query (one result)			Object			$db->result->cnt;
-single query (multiple results)			Array(multidim)			$db->result;
-update						num rows affected	$db->result;
-insert						num rows affected	$db->result;
-delete						num rows affected	$db->result;
-
-Methods list:
-
-method:			description:									result:
-
-$db->set_debug(bool); // Enable/Disable debug | 							true
-$db->set_user_id(integer); // Sets user ID for instance							true|flase
-$db->get_user_id(string); // Get user ID								$db->result->user_id;
-$db->get_user_name(integer); // Get user name								$db->result->username;
-$db->get_server_id(string); // Get server ID								$db->result->server_id;
-$db->get_server_name(integer); // Get server name							$db->result->server_name;
-$db->get_resource_name(integer); // Get resource name							$db->result->resource_name;
-$db->get_resource_id(string); // Get resource ID							$db->result->resource_id;
-$db->get_user_talker_stats(user_id integer, server_id integer); // Get array of chats with user		$db->result;
-$db->get_mylinks_count(); // Get number of mylinks saved						$db->result->cnt;
-$db->get_trash_count(); // Get number of elements in trash						$db->result->cnt; 
-$db->get_num_lines(date string, user_id integer, server_id integer); // get number of chat lines	$db->result->cnt;
-$db->$is_log_enabled(); // Check if message logging is enabled						$db->result->is_enabled;
-$db->total_messages(); // Total messages archivized by server 						$db->result->total_messages;
-$db->total_chats(); // Total conversations 								$db->result->total_chats;
-$db->get_log_list(); // Get list of users with user dont log messages					$db->result;
-$db->set_log(bool); // Enable/Disable message archiving							$db->result (num affected)
-$db->db_error(); // If instance is affected by error							true|false
-$db->get_user_stats_calendar(YYYY-M string, ignore_id integer) // User chat stats 			$db->result;
-$db->get_user_stats_drop_down() ; // User chat stats needed for jorge calendar				$db->result;
-$db->get_user_chats(YYYY-M-D string); // Get chat list from day 					$db->result;
-$db->get_user_chat(YYYY-M-D,peer_name_id,peer_server_id,peer_resource_id = null, start = null,lines = null); // Get user chat $db->result;
-$db->set_logger(event_id,event_level); 									$db->result;
-$db->get_uniq_chat_dates($limit_start integer,$limit_end integer);					$db->result;
-$db->check_thread;											$db->result; 
-
-See documentation for details.
+See API.txt for details.
 
 NOTICE: in case of any error (query error, validation error etc.) instance is marked as faulty, all queries are aborted and exception is thrown
 remember to handle errors gracefully!
-
 
 */
 
@@ -87,6 +46,7 @@ class db_manager {
 	private $tslice = null;
 	private $time_start = null;
 	private $time_result = null;
+	private $user_query = null;
 	public $result;
 
 	public function __construct($db_host,$db_name,$db_user,$db_password,$db_driver,$xmpp_host = null) {
@@ -1620,6 +1580,116 @@ class db_manager {
 
 		return $this->delete($query);
 
+	}
+
+	public function search_query($tslice) {
+
+		$this->id_query = "Q053";
+		$this->vital_check();
+		if ($this->user_query === null) {
+
+				return false;
+
+			}
+		$table = $this->construct_table($this->sql_validate($tslice,"date"));
+		$query="SELECT
+				timestamp AS ts, 
+				peer_name_id, 
+				peer_server_id, 
+				direction, 
+				ext, 
+				body, 
+				MATCH(body) AGAINST('".$this->user_query."' IN BOOLEAN MODE) AS score 
+			FROM 
+				`$table`
+			WHERE 
+				MATCH(body) AGAINST('".$this->user_query."' IN BOOLEAN MODE) 
+			AND 
+				owner_id='".$this->user_id."' 
+			LIMIT 
+				0,10000
+		";
+
+		$this->select($query,"raw");
+		return $this->commit_select(array("ts","peer_name_id","peer_server_id","direction","ext","body","score"));
+
+	}
+
+	public function search_query_chat_stream($peer_name_id,$peer_server_id,$tslice,$start_tag) {
+		
+		#type 7
+		$this->id_query = "Q054";
+		$this->prepare($peer_name_id,$peer_server_id,$tslice);
+		$table = $this->construct_table($this->sql_validate($this->tslice,"date"));
+		$start_tag = $this->sql_validate($start_tag,"integer");
+		$query="SELECT 
+				from_unixtime(timestamp+0) AS ts, 
+				peer_name_id, 
+				peer_server_id, 
+				direction, 
+				ext, 
+				body 
+			FROM 
+				`$table` 
+			WHERE 
+				owner_id='".$this->user_id."' 
+			AND 
+				peer_name_id='".$this->peer_name_id."' 
+			AND 
+				peer_server_id='".$this->peer_server_id."' 
+			LIMIT 
+				$start_tag,10000
+		";
+
+		$this->select($query,"raw");
+		return $this->commit_select(array("ts","peer_name_id","peer_server_id","direction","ext","body"));
+	
+	}
+
+	public function search_query_in_user_chat($peer_name_id,$peer_server_id,$tslice,$start_tag) {
+		
+		#type5
+		$this->id_query = "Q055";
+		if ($this->user_query === null) {
+
+				return false;
+
+			}
+		$this->prepare($peer_name_id,$peer_server_id,$tslice);
+		$table = $this->construct_table($this->sql_validate($this->tslice,"date"));
+		$start_tag = $this->sql_validate($start_tag,"integer");
+		$query="SELECT
+				timestamp AS ts, 
+				peer_name_id, 
+				peer_server_id, 
+				direction, 
+				ext, 
+				body ,
+				MATCH(body) AGAINST('".$this->user_query."' IN BOOLEAN MODE) AS score 
+			FROM
+				`$table` 
+			WHERE 
+				match(body) against('".$this->user_query."' IN BOOLEAN MODE) 
+			AND 
+				owner_id='".$this->user_id."' 
+			AND 
+				peer_name_id='".$this->peer_name_id."' 
+			AND
+				peer_server_id='".$this->peer_server_id."' 
+			LIMIT 
+				$start_tag,10000
+		";
+
+		$this->select($query,"raw");
+		return $this->commit_select(array("ts","peer_name_id","peer_server_id","direction","ext","body","score"));
+
+	}
+
+	public function set_user_query($user_query) {
+
+		$this->user_query = $this->sql_validate($user_query,"string");
+		return true;
+		
 	}
 
 	public function remove_messages_from_trash($peer_name_id,$peer_server_id,$tslice) {
