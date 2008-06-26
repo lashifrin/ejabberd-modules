@@ -57,14 +57,7 @@ process([], #request{method = 'GET',
          [{xmlcdata, "An implementation of "},
           {xmlelement, "a", [{"href", "http://www.xmpp.org/extensions/xep-0206.html"}],
            [{xmlcdata, "XMPP over BOSH (XEP-0206)"}]}]},
-        {xmlelement, "p", [],
-         [{xmlcdata, integer_to_list(mnesia:table_info(http_bind, size)) ++ " sessions found."}]},
-        {xmlelement, "p", [],
-         [{xmlcdata, "Sponsored by "},
-          {xmlelement, "a", [{"href", "http://mabber.com"}],
-           [{xmlcdata, "mabber"}]},
-          {xmlcdata, "."}]}
-          ]}]};
+       ]}]};
 process(_Path, _Request) ->
     ?DEBUG("Bad Request: ~p", [_Request]),
     {400, [], {xmlelement, "h1", [],
