@@ -800,6 +800,8 @@ class db_manager {
 				body 
 			FROM 
 				`$tslice_table` 
+			FORCE INDEX
+				(search_i)
 			WHERE 
 				owner_id = '".$this->user_id."' 
 			AND 
@@ -893,6 +895,8 @@ class db_manager {
 				substring(at,1,7) as at 
 			FROM 
 				`logdb_stats_$xmpp_host` 
+			FORCE INDEX 
+				(global_idx)
 			WHERE 
 				owner_id='".$this->user_id."' 
 			AND 
@@ -922,6 +926,8 @@ class db_manager {
 				at 
 			FROM 
 				`logdb_stats_$xmpp_host` 
+			FORCE INDEX
+				(global_idx)
 			WHERE 
 				owner_id='".$this->user_id."' 
 			AND 
@@ -1599,7 +1605,9 @@ class db_manager {
 				direction, 
 				ext, 
 				body, 
-				MATCH(body) AGAINST('".$this->user_query."' IN BOOLEAN MODE) AS score 
+				MATCH(body) AGAINST('".$this->user_query."' IN BOOLEAN MODE) AS score
+			FORCE INDEX
+				(owner_id)
 			FROM 
 				`$table`
 			WHERE 
@@ -1629,6 +1637,8 @@ class db_manager {
 				direction, 
 				ext, 
 				body 
+			FORCE INDEX
+				(search_i)
 			FROM 
 				`$table` 
 			WHERE 
@@ -1666,6 +1676,8 @@ class db_manager {
 				ext, 
 				body ,
 				MATCH(body) AGAINST('".$this->user_query."' IN BOOLEAN MODE) AS score 
+			FORCE INDEX
+				(search_i)
 			FROM
 				`$table` 
 			WHERE 
