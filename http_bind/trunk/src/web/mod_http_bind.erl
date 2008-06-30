@@ -53,10 +53,10 @@ process([], #request{method = 'GET',
        [{xmlelement, "title", [], [{xmlcdata, Heading}]}]},
       {xmlelement, "body", [],
        [{xmlelement, "h1", [], [{xmlcdata, Heading}]},
-        {xmlelement, "p", [], 
+        {xmlelement, "p", [],
          [{xmlcdata, "An implementation of "},
           {xmlelement, "a", [{"href", "http://www.xmpp.org/extensions/xep-0206.html"}],
-           [{xmlcdata, "XMPP over BOSH (XEP-0206)"}]}]},
+           [{xmlcdata, "XMPP over BOSH (XEP-0206)"}]}]}
        ]}]};
 process(_Path, _Request) ->
     ?DEBUG("Bad Request: ~p", [_Request]),
