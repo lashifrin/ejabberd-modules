@@ -119,7 +119,7 @@ class db_manager {
 				}
 			else {
 
-					if ($this->query_type === "select") {
+					if ($this->query_type === "select" OR $this->query_type="create_table") {
 
 								return $result;
 							}
@@ -138,6 +138,8 @@ class db_manager {
 
 						}
 		}
+
+		return false;
 
 	}
 
@@ -1697,6 +1699,73 @@ class db_manager {
 
 	}
 
+	public function create_search_results_table() {
+
+		$this->id_query = "Q055";
+		$this->query_type = "create_table";
+		$query="CREATE TEMPORARY TABLE 
+				jorge_results_table 
+				(
+					ts VARCHAR(30),
+					time_slice VARCHAR(10),
+					peer_name_id MEDIUMINT,
+					peer_server_id SMALLINT,
+					direction ENUM('to','from'),
+					body TEXT,
+					score FLOAT,
+					ext TINYINT
+				)
+		";
+		
+		return $this->db_query($query);
+	}
+
+	public function insert_data_to_result_table($ts,$time_slice,$peer_name_id,$peer_server_id,$direction,$body,$score,$ext){
+
+		$this->id_query = "Q056";
+		$query="INSERT INTO jorge_results_table 
+				(ts,time_slice,peer_name_id,peer_server_id,direction,body,score,ext) 
+			VALUES (
+                                        '$ts',
+                                        '$time_slice',
+                                        '$peer_name_id',
+                                        '$peer_server_id',
+                                        '$direction',
+                                        '$body',
+                                        '$score',
+                                        '$ext'
+				)
+		";
+
+		return $this->insert($query);
+
+	}
+
+	public function get_search_results() {
+
+		$this->id_query = "Q057";
+		$query="SELECT 
+				FROM_UNIXTIME(ts+0) AS ts, 
+				time_slice, 
+				peer_name_id, 
+				peer_server_id, 
+				direction, 
+				body, 
+				score, 
+				ext 
+			FROM
+				jorge_results_table 
+			ORDER BY 
+				score 
+			DESC LIMIT 100
+			
+		";
+
+		$this->select($query,"raw");
+		return $this->commit_select(array("ts","time_slice","peer_name_id","peer_server_id","direction","body","score","ext"));
+
+	}
+	
 	public function set_user_query($user_query) {
 
 		$this->user_query = $this->sql_validate($user_query,"string");
