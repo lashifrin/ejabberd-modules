@@ -42,9 +42,10 @@ process([], #request{method = 'POST',
     {400, [], {xmlelement, "h1", [],
 	       [{xmlcdata, "400 Bad Request"}]}};
 process([], #request{method = 'POST',
-                     data = Data}) ->
+                     data = Data,
+                     ip = IP}) ->
     ?DEBUG("Incoming data: ~s", [Data]),
-    ejabberd_http_bind:process_request(Data);
+    ejabberd_http_bind:process_request(Data, IP);
 process([], #request{method = 'GET',
                      data = []}) ->
     Heading = "Ejabberd " ++ atom_to_list(?MODULE) ++ " v" ++ ?MOD_HTTP_BIND_VERSION,
