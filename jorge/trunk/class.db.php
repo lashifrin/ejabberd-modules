@@ -824,7 +824,7 @@ class db_manager {
 
 	}
 
-	public function get_uniq_chat_dates($limit_start = null, $limit_end = null) {
+	public function get_uniq_chat_dates($limit_start = null, $limit_end = null, $limited = false, $start = null, $peer_name_id = null, $peer_server_id = null) {
 
 		$this->id_query = "Q026";
 		$this->vital_check();
@@ -832,14 +832,45 @@ class db_manager {
 		$xmpp_host = $this->xmpp_host;
 		if ($limit_start !== null AND $limit_end !== null) {
 	
-				$this->sql_validate($limit_start,"string");
-				$this->sql_validate($limit_end,"string");
-				$sql=" and str_to_date(at,'%Y-%m-%d') >= str_to_date('$limit_start','%Y-%m-%d') and str_to_date(at,'%Y-%m-%d') <= str_to_date('$limit_end','%Y-%m-%d')";
+				$limit_start = $this->sql_validate($limit_start,"date");
+				$limit_end = $this->sql_validate($limit_end,"date");
+				$sql=" AND str_to_date(at,'%Y-%m-%d') >= str_to_date('$limit_start','%Y-%m-%d') AND str_to_date(at,'%Y-%m-%d') <= str_to_date('$limit_end','%Y-%m-%d')";
 				
 			}
 			else{
 
 				settype($sql,"null");
+
+		}
+
+		if ($limited === true) {
+
+				if ($start == "" OR $start === null) { 
+				
+					$start = "0"; 
+					
+				}
+
+				$start = $this->sql_validate($start,"integer");
+				$sql2=" limit $start,10000";
+
+			}
+			else{
+
+				settype($sql2,"null");
+		
+		}
+
+		if ($peer_name_id !== null AND $peer_server_id !== null) {
+
+				$peer_name_id = $this->sql_validate($peer_name_id,"integer");
+				$peer_server_id = $this->sql_validate($peer_server_id,"integer");
+				$sql3 = "AND peer_name_id = '$peer_name_id' AND peer_server_id = '$peer_server_id'";
+
+			}
+			else{
+
+				settype($sql3,"null");
 
 		}
 		
@@ -848,10 +879,11 @@ class db_manager {
 			FROM 
 				`logdb_stats_$xmpp_host` 
 			WHERE 
-				owner_id='$user_id' $sql 
+				owner_id='$user_id' $sql3 $sql
 			ORDER BY 
 				str_to_date(at,'%Y-%m-%d') 
 			ASC
+				$sql2
 		";
 
 		$this->select($query,"raw");
@@ -1608,10 +1640,10 @@ class db_manager {
 				ext, 
 				body, 
 				MATCH(body) AGAINST('".$this->user_query."' IN BOOLEAN MODE) AS score
-			FORCE INDEX
-				(owner_id)
 			FROM 
 				`$table`
+			FORCE INDEX
+				(search_i)
 			WHERE 
 				MATCH(body) AGAINST('".$this->user_query."' IN BOOLEAN MODE) 
 			AND 
@@ -1625,13 +1657,17 @@ class db_manager {
 
 	}
 
-	public function search_query_chat_stream($peer_name_id,$peer_server_id,$tslice,$start_tag) {
+	public function search_query_chat_stream($peer_name_id,$peer_server_id,$tslice,$start_tag = null) {
 		
-		#type 7
 		$this->id_query = "Q054";
 		$this->prepare($peer_name_id,$peer_server_id,$tslice);
 		$table = $this->construct_table($this->sql_validate($this->tslice,"date"));
+		if ($start_tag === null) {
+
+				$start_tag="0";
+		}
 		$start_tag = $this->sql_validate($start_tag,"integer");
+
 		$query="SELECT 
 				from_unixtime(timestamp+0) AS ts, 
 				peer_name_id, 
@@ -1639,10 +1675,10 @@ class db_manager {
 				direction, 
 				ext, 
 				body 
-			FORCE INDEX
-				(search_i)
 			FROM 
 				`$table` 
+			FORCE INDEX
+				(search_i)
 			WHERE 
 				owner_id='".$this->user_id."' 
 			AND 
@@ -1660,7 +1696,6 @@ class db_manager {
 
 	public function search_query_in_user_chat($peer_name_id,$peer_server_id,$tslice,$start_tag) {
 		
-		#type5
 		$this->id_query = "Q055";
 		if ($this->user_query === null) {
 
@@ -1669,6 +1704,10 @@ class db_manager {
 			}
 		$this->prepare($peer_name_id,$peer_server_id,$tslice);
 		$table = $this->construct_table($this->sql_validate($this->tslice,"date"));
+		if ($start_tag === null) {
+
+				$start_tag="0";
+		}
 		$start_tag = $this->sql_validate($start_tag,"integer");
 		$query="SELECT
 				timestamp AS ts, 
@@ -1678,10 +1717,10 @@ class db_manager {
 				ext, 
 				body ,
 				MATCH(body) AGAINST('".$this->user_query."' IN BOOLEAN MODE) AS score 
-			FORCE INDEX
-				(search_i)
 			FROM
 				`$table` 
+			FORCE INDEX
+				(search_i)
 			WHERE 
 				match(body) against('".$this->user_query."' IN BOOLEAN MODE) 
 			AND 
