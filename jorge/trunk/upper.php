@@ -262,25 +262,30 @@ print '<input id="t_search" type="text" name="query" class="cc" value="'.$search
 if ($search_loc==1) {
 
 	if (isset($_GET[c])) {
-		$trange_from_get = $_GET[c];
-		$time2s = decode_trange($trange_from_get,TOKEN,$url_key);
-		$time2_start=$time2s[0];
-		$time2_end=$time2s[1];
-	}
-	else
-	{
-
-	$time2_start=$_POST[time2_start];
-	$time2_end=$_POST[time2_end];
+		
+		$enc->decrypt_url($_GET['c']);
+		$time2_start = $enc->time_start;
+		$time2_end = $enc->time_end;
 	
 	}
-	if ($time2_start OR $time2_end) {
+
+	else{
+
+		$time2_start=$_POST[time2_start];
+		$time2_end=$_POST[time2_end];
+		if (validate_date($time2_start=="f")) { unset($time2_start); }
+		if (validate_date($time2_start=="f")) { unset($time2_end); }
+	
+	}
 		
-			if (validate_date($time2_start=="f")) { unset($time2_start); }
-			if (validate_date($time2_start=="f")) { unset($time2_end); }
-			if ($time2_start AND $time2_end) { if (strtotime("$time2_start") > strtotime("$time2_end")) { $alert = $time_range_w[$lang]; unset ($search_phase); } }
-		
-		}
+	if ($time2_start AND $time2_end) { 
+	
+			if (strtotime("$time2_start") > strtotime("$time2_end")) { 
+			
+					$alert = $time_range_w[$lang]; unset ($search_phase); 
+					
+			} 
+	}
 
 	$db->get_uniq_chat_dates();
 	$result = $db->result;
