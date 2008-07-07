@@ -176,12 +176,23 @@ Class parser {
 
 Class render_html {
 
+	protected $html_head = array();
+	protected $html_menu = array();
 	protected $html_main = array();
 	protected $html_body = array();
 
         public function headers($html) {
 
-                $this->html_main = array_merge($this->html_main,array("headers"=>$html));
+		$z = count($this->html_head);
+		if ($z===0) {
+				$this->html_head = array("0"=>$html);
+
+			}
+			else{
+
+				$z=$z+1;
+                		$this->html_head = array_merge($this->html_head,array("$z"=>$html));
+		}
                 return;
 
         }
@@ -209,7 +220,17 @@ Class render_html {
 
 	public function menu($html) {
 
-		$this->html_main = array_merge($this->html_main,array("menu"=>$html));
+		$z = count($this->html_menu);
+		if ($z===0) {
+
+				$this->html_menu = array("0"=>$html);
+			}
+			else {
+
+				$z=$z+1;
+				$this->html_menu = array_merge($this->html_menu,array("$z"=>$html));
+
+		}
 		return;
 	
 	}
@@ -220,7 +241,7 @@ Class render_html {
                 $z = count($this->html_body);
                 if ($z === 0) {
 
-                                $this->html_body = array("1"=>$html);
+                                $this->html_body = array("0"=>$html);
 
                         }
                         else{
@@ -240,16 +261,28 @@ Class render_html {
         }
 
         public function commit_render() {
-
+		
+		$html_head = $this->html_head;
+		$html_menu = $this->html_menu;
                 $html_main = $this->html_main;
                 $html_body = $this->html_body;
-                $out  = $html_main[headers];
-                $out .= $html_main[sys_message];
-		$out .= $html_main[menu];
+		$num_headers = count($html_head);
+		for ($z=0;$z<$num_headers;$z++) {
+			
+                	$out  .= $html_head[$z];
+
+		}
+		$out .= $html_main[sys_message];
+		$num_menu = count($html_menu);
+		for ($z=0;$z<$num_menu;$z++) {
+
+			$out .= $html_menu[$z];
+		
+		}
 		$out .= $html_main[alert_message];
 		$out .= $html_main[status_message];
-                $num  = count($html_body);
-                for ($z=0;$z<$num;$z++) {
+                $num_body  = count($html_body);
+                for ($z=0;$z<$num_body;$z++) {
 
                         $out .= $html_body[$z];
 
