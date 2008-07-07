@@ -1804,7 +1804,30 @@ class db_manager {
 		return $this->commit_select(array("ts","time_slice","peer_name_id","peer_server_id","direction","body","score","ext"));
 
 	}
-	
+
+	public function get_folder_content($at) {
+
+		$this->id_query = "Q058";
+		$this->vital_check();
+		$at = $this->sql_validate($at,"string");
+		$query="SELECT 
+				distinct(at) AS at 
+			FROM 
+				`logdb_stats_".$this->xmpp_host."` 
+			WHERE 
+				owner_id = '".$this->user_id."' 
+			AND 
+				substring(at,1,7) = '$at' 
+			ORDER BY 
+				str_to_date(at,'%Y-%m-%d') 
+			DESC
+		";
+
+		$this->select($query,"raw");
+		return $this->commit_select(array("at"));
+
+	}
+
 	public function set_user_query($user_query) {
 
 		$this->user_query = $this->sql_validate($user_query,"string");
