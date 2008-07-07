@@ -89,7 +89,11 @@ debug(DEBUG,"User session:".TOKEN);
 // authentication checks. Ensure if session data is not altered... (only when we are inside Jorge)
 if (!preg_match("/index.php/i",$location)) {
 
-	if (check_registered_user($sess,$ejabberd_rpc,$xmpp_host) !== true) { header("Location: index.php?act=logout"); exit; }
+	if (check_registered_user($sess,$ejabberd_rpc,$xmpp_host) !== true) { 
+	
+			header("Location: index.php?act=logout"); 
+			exit; 
+	}
 
 	// we need user_id but only if we are not in not_enabled mode:
 	if(!preg_match("/not_enabled.php/i",$_SERVER['PHP_SELF'])) {
@@ -110,69 +114,78 @@ if (TOKEN===ADMIN_NAME) {
 }
 
 $sw_lang_t=$_GET[sw_lang];
-if ($sw_lang_t=="t") 
-	{ 
-	if ($sess->get('language') == "pol") { $sess->set('language', 'eng'); } elseif($sess->get('language') == "eng") { $sess->set('language','pol'); } }
+if ($sw_lang_t=="t") {
+
+	if ($sess->get('language') == "pol") { 
+	
+			$sess->set('language', 'eng'); 
+		} 
+		elseif($sess->get('language') == "eng") { 
+		
+			$sess->set('language','pol'); 
+	} 
+}
 
 $lang=$sess->get('language');
 
+$html->headers('
+		<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+		<html>
+		<head>
+			<meta http-equiv="cache-control" content="no-cache" />
+			<meta http-equiv="pragma" content="no-cache" />
+			<meta name="Author" content="Zbyszek Zolkiewski at jabster.pl" />
+			<meta name="Keywords" content="jorge message archiving ejabberd mod_logdb erlang" />
+			<meta name="Description" content="Jorge" />
+			<link rel="shortcut icon" href="favicon.ico" /> 
+			<link rel="stylesheet" href="style.css" type="text/css" />
+			<link rel="stylesheet" href="jquery.autocomplete.css" type="text/css" />
+	');
 
-?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
-<head>
-	<meta http-equiv="cache-control" content="no-cache" />
-	<meta http-equiv="pragma" content="no-cache" />
-	<meta name="Author" content="Zbyszek Zolkiewski at jabster.pl" />
-	<meta name="Keywords" content="jorge message archiving ejabberd mod_logdb erlang" />
-	<meta name="Description" content="Jorge" />
-	<link rel="shortcut icon" href="favicon.ico" /> 
-	<link rel="stylesheet" href="style.css" type="text/css" />
-	<link rel="stylesheet" href="jquery.autocomplete.css" type="text/css" />
-<?
-// do not load libs if not nessesary
 if (preg_match("/main.php/i",$location)) {
-?>
-	<link rel="stylesheet" href="simpletree.css" type="text/css" />
-	<script type="text/javascript" src="lib/simpletreemenu.js">
-		/***********************************************
-		* Simple Tree Menu - Dynamic Drive DHTML code library (www.dynamicdrive.com)
-		* This notice MUST stay intact for legal use
-		* Visit Dynamic Drive at http://www.dynamicdrive.com/ for full source code
-		***********************************************/	
-	</script>
-<?
+
+	$html->headers('
+			<link rel="stylesheet" href="simpletree.css" type="text/css" />
+			<script type="text/javascript" src="lib/simpletreemenu.js">
+				/***********************************************
+				* Simple Tree Menu - Dynamic Drive DHTML code library (www.dynamicdrive.com)
+				* This notice MUST stay intact for legal use
+				* Visit Dynamic Drive at http://www.dynamicdrive.com/ for full source code
+				***********************************************/	
+			</script>
+	');
 }
-?>
-        <script type="text/javascript" src="lib/jquery-1.2.1.pack.js"></script>
-	<script type="text/javascript" src="lib/jquery.bgiframe.min.js"></script>
-	<script type="text/javascript" src="lib/jquery.form.pack.js"></script>
-	<script type='text/javascript' src="lib/dimensions.js"></script>
-	<script type="text/javascript" src="lib/jquery.tooltip.js"></script>
-	<script type="text/javascript" src="lib/jquery.quicksearch.js"></script>
-	<script type="text/javascript" src="lib/jquery.autocomplete.pack.js"></script>
-<?
+$html->headers('
+        		<script type="text/javascript" src="lib/jquery-1.2.1.pack.js"></script>
+			<script type="text/javascript" src="lib/jquery.bgiframe.min.js"></script>
+			<script type="text/javascript" src="lib/jquery.form.pack.js"></script>
+			<script type="text/javascript" src="lib/dimensions.js"></script>
+			<script type="text/javascript" src="lib/jquery.tooltip.js"></script>
+			<script type="text/javascript" src="lib/jquery.quicksearch.js"></script>
+			<script type="text/javascript" src="lib/jquery.autocomplete.pack.js"></script>
+	
+	');
+
 // prevent loading includes as long as user is not admin.
 if (TOKEN==ADMIN_NAME) {
-?>
-	<script language="javascript" type="text/javascript" src="lib/jquery.flot.pack.js"></script>
-<?
+
+	$html->headers('<script language="javascript" type="text/javascript" src="lib/jquery.flot.pack.js"></script>');
 }
-?>
-	<title><? print $xmpp_host_dotted; ?> :: Jorge Beta</title>
+$html->headers('
+	<title>'.$xmpp_host_dotted.':: Jorge Beta</title>
         <script type="text/javascript">
             $(function() {
-		$('table#maincontent tbody#searchfield tr').quicksearch({
-			stripeRowClass: ['odd', 'even'],
-			position: 'before',
-			attached: '#maincontent',
-			labelText: 'QuickFilter:',
+		$(\'table#maincontent tbody#searchfield tr\').quicksearch({
+			stripeRowClass: [\'odd\', \'even\'],
+			position: \'before\',
+			attached: \'#maincontent\',
+			labelText: \'QuickFilter:\',
 			delay: 30
 		});
 
-		$('img').Tooltip();
+		$(\'img\').Tooltip();
 
-		$('a, tr, td').Tooltip({
+		$(\'a, tr, td\').Tooltip({
 			extraClass: "fancy",
 			showBody: ";",
 			showURL: false,
@@ -183,24 +196,26 @@ if (TOKEN==ADMIN_NAME) {
 
             });
 	</script>
-</head>
-<body style="background-image: url(img/bak2b.png); background-repeat:repeat-x; background-color: #edf5fa;">
+	</head>
+	<body style="background-image: url(img/bak2b.png); background-repeat:repeat-x; background-color: #edf5fa;">
 
-<noscript>
-	<? 
-	print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 500pt;">'.$no_script[$lang].'</div></center><br>';
-	?>
-</noscript>
+	<noscript>
+ 
+		<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 500pt;">'.$no_script[$lang].'</div></center><br>
 
-<script language="JavaScript1.2">
+	</noscript>
 
-function smackzk()  {
+	<script language="JavaScript1.2">
 
-	window.open('https://gps.autocom.pl/ZKJab/','',
-		'location=no,toolbar=no,menubar=no,scrollbars=no,resizable, height=375,width=715');
+	function smackzk()  {
+
+		window.open(\'https://gps.autocom.pl/ZKJab/\',\'\',
+			\'location=no,toolbar=no,menubar=no,scrollbars=no,resizable, height=375,width=715\');
 
 		}
-</script>
+	</script>
 
+	');
 
-<?
+?>
+

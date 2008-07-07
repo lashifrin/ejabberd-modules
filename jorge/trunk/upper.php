@@ -29,13 +29,20 @@ if (__FILE__==$_SERVER['SCRIPT_FILENAME']) {
 
 
 // well if we dont know in what language to talk, we cant show anything, so bye bye...
-if ($lang!="pol" && $lang!="eng") { header("Location: index.php?act=logout"); exit; }
+if ($lang!="pol" && $lang!="eng") { 
+
+	header("Location: index.php?act=logout"); 
+	exit; 
+}
 
 // control check - if global archivization is enabled...
-if ($sess->get('enabled') == "f") { header ("Location: not_enabled.php"); }
+if ($sess->get('enabled') == "f") { 
 
-// escape
-$link_sw=mysql_escape_string($_GET['a']);
+	header ("Location: not_enabled.php"); 
+	
+}
+
+$link_sw = $_GET['a'];
 
 // number of my links saved...
 $db->get_mylinks_count();
@@ -76,7 +83,15 @@ if ($_GET['set_pref']) {
 
 // get preferences, if not set, fallback to standard view.
 $view_type=$sess->get('view_type');
-if ($view_type=="1") { $view_type="main.php"; } elseif($view_type=="2") { $view_type="calendar_view.php"; }
+if ($view_type=="1") { 
+
+		$view_type="main.php"; 
+	} 
+	elseif($view_type=="2") { 
+	
+		$view_type="calendar_view.php"; 
+		
+}
 
 // this is menu. not nice but works ;)
 if (preg_match("/search_v2.php/i",$location)) 
@@ -240,24 +255,34 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
 		if (TOKEN==ADMIN_NAME) { $menu_stats=' | <a class="mmenu" href="stats.php"> Stats</a>'; }
 	}
+
 // check if archivization is currently enabled...
 if ($sess->get('log_status') == "0") { 
-		print '<center><div class="message">'.$status_msg1[$lang].'</div></center>';
-	}
-if ($start) { $cur_loc="&start=$start"; }
 
-print '<a name="top"></a>'."\n";
-print '<table border="0" cellspacing="0" class="ff" width="100%">'."\n";
-print '<tr>'."\n";
-print '<td colspan="2" height="29" style="text-align: right;">'."\n";
-print '<b>'.TOKEN.'@'.$xmpp_host_dotted.'</b>&nbsp; | &nbsp;';
-print '<a href="settings.php">'.$menu_item_panel[$lang].'</a>&nbsp; | &nbsp;';
-print '<a href="#" onClick="smackzk();">'.$sel_client[$lang].'</a>&nbsp; | &nbsp;';
-print '<a href="help.php" target="_blank">'.$help_but[$lang].'</a>&nbsp; | &nbsp;<a href="index.php?act=logout">'.$log_out_b[$lang].'</a><hr size="1" noshade="" color="#c9d7f1"/></td>';
-print '</tr>'."\n";
-print '<tr><td height="57"><a href="'.$view_type.'"><img src="img/'.$brand_logo.'" alt="logo" border="0" /></a></td></tr>';
-print '<tr><td valign="top" height="35"><form action="search_v2.php" method="post">'."\n";
-print '<input id="t_search" type="text" name="query" class="cc" value="'.$search_phase.'">'."\n";
+		$html->system_message('<center><div class="message">'.$status_msg1[$lang].'</div></center>');
+	
+}
+
+if ($start) { 
+
+	$cur_loc="&start=$start"; 
+
+}
+
+$html->menu('
+	<a name="top"></a>
+	<table border="0" cellspacing="0" class="ff" width="100%">
+	<tr>
+		<td colspan="2" height="29" style="text-align: right;">
+		<b>'.TOKEN.'@'.$xmpp_host_dotted.'</b>&nbsp; | &nbsp;
+		<a href="settings.php">'.$menu_item_panel[$lang].'</a>&nbsp; | &nbsp;
+		<a href="#" onClick="smackzk();">'.$sel_client[$lang].'</a>&nbsp; | &nbsp;
+		<a href="help.php" target="_blank">'.$help_but[$lang].'</a>&nbsp; | &nbsp;<a href="index.php?act=logout">'.$log_out_b[$lang].'</a><hr size="1" noshade="" color="#c9d7f1"/></td>
+	</tr>
+	<tr><td height="57"><a href="'.$view_type.'"><img src="img/'.$brand_logo.'" alt="logo" border="0" /></a></td></tr>
+	<tr><td valign="top" height="35"><form action="search_v2.php" method="post">
+	<input id="t_search" type="text" name="query" class="cc" value="'.$search_phase.'">
+	');
 
 if ($search_loc==1) {
 
@@ -296,58 +321,74 @@ if ($search_loc==1) {
 
 	}
 
-	print '<select class="cc" name="time2_start" style="text-align: center;">'."\n";
-	print '<option value="">'.$time_range_from[$lang].'</option>'."\n";
+	$html->menu('<select class="cc" name="time2_start" style="text-align: center;"><option value="">'.$time_range_from[$lang].'</option>');
+
 	for ($t=1;$t<=$r;$t++) {
 
-		print '<option value="'.$to_tble[$t].'"';
-			if ($time2_start==$to_tble[$t]) {
-				print 'selected="selected"'; 
-			}
-		print '>'.$to_tble[$t].'</option>'."\n";
+		$html->menu('<option value="'.$to_tble[$t].'"');
+
+		if ($time2_start==$to_tble[$t]) {
+
+			$html->menu('selected="selected"');
+			
+		}
+
+		$html->menu('>'.$to_tble[$t].'</option>');
 	
 	}
 
-	print '</select>'."\n";
-	print '&nbsp;';
 	$pass_t=$t;
-	print '<select class="cc" name="time2_end" style="text-align: center;">'."\n";
-	print '<option value="">'.$time_range_to[$lang].'</option>'."\n";
+	
+	$html->menu('</select>&nbsp;<select class="cc" name="time2_end" style="text-align: center;"><option value="">'.$time_range_to[$lang].'</option>');
 
 	for ($t=$r;$t>=1;$t--) {
 
-		print '<option value="'.$to_tble[$t].'"';
-			if ($time2_end==$to_tble[$t]) {
-				print 'selected="selected"'; 
-			}
-		print '>'.$to_tble[$t].'</option>'."\n";
+		$html->menu('<option value="'.$to_tble[$t].'"');
+
+		if ($time2_end==$to_tble[$t]) {
+
+			$html->menu('selected="selected"');
+		
+		}
+		
+		$html->menu('>'.$to_tble[$t].'</option>');
 	
 	}
 
-	print '</select>'."\n";
+	$html->menu('</select>');
 
-	if ($time2_start AND !$time2_end) { $time2_end = $to_tble[$pass_t-1]; }
-	if (!$time2_start AND $time2_end) { $time2_start = $to_tble[($t+1)-$t]; }
+	if ($time2_start AND !$time2_end) { 
+		
+		$time2_end = $to_tble[$pass_t-1]; 
+	
+	}
+	
+	if (!$time2_start AND $time2_end) { 
+	
+		$time2_start = $to_tble[($t+1)-$t]; 
+		
+	}
 
 }
 
-print '<input class="red" type="submit" value="'.$search_box[$lang].'">'."\n";
-print '</form></td>'."\n";
-print '</tr>'."\n";
-print '<tr style="background-image: url(img/bell-bak.png); height: 24;">';
-print '<td colspan="11" width="100%" style="text-align: left; padding-left: 30px; color: white;">'
-	.$menu_main.' | '
-	.$menu_map.' | '
-	.$menu_favorites.' | '
-	.$menu_mylinks.' | '
-	.$menu_search.' | '
-	.$menu_contacts.' | '
-	.$menu_logger.$menu_stats.' | ' 
-	.$menu_trash. 
-	' | <a class="mmenu" href="" onClick="window.location.reload()">'.$refresh[$lang].'</td>'."\n";
-print '</tr>'."\n";
-print '</table>'."\n";
-print '<p align="center"><b>'.$alert.'</b></p>';
+$html->menu('<input class="red" type="submit" value="'.$search_box[$lang].'">
+		</form></td>
+		</tr>
+		<tr style="background-image: url(img/bell-bak.png); height: 24;">
+		<td colspan="11" width="100%" style="text-align: left; padding-left: 30px; color: white;">
+			'.$menu_main.' | '
+			.$menu_map.' | '
+			.$menu_favorites.' | '
+			.$menu_mylinks.' | '
+			.$menu_search.' | '
+			.$menu_contacts.' | '
+			.$menu_logger.$menu_stats.' | ' 
+			.$menu_trash. 
+			' | <a class="mmenu" href="" onClick="window.location.reload()">'.$refresh[$lang].'</td>
+		</tr>
+		</table>
+		<p align="center"><b>'.$alert.'</b></p>
+	');
 
 // Get user roster.
 $rpc_roster = $ejabberd_rpc->get_roster();
@@ -358,7 +399,9 @@ $ejabberd_roster = new roster();
 foreach ($rpc_roster as $roster_record) {
 
 	if ($roster_record[group]=="") { 
+
 		$roster_record[group] = $con_no_g[$lang]; 
+	
 	}
 
 	// avoid contacts without nick
@@ -368,5 +411,9 @@ foreach ($rpc_roster as $roster_record) {
 	
 	}
 }
+
+### TESTING ###
+$html->commit_render();
+
 
 ?>
