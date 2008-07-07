@@ -176,7 +176,97 @@ Class parser {
 
 Class render_html {
 
+	protected $html_main = array();
+	protected $html_body = array();
+
+        public function headers($html) {
+
+                $this->html_main = array_merge($this->html_main,array("headers"=>$html));
+                return;
+
+        }
+
+        public function system_message($html) {
+
+                $this->html_main = array_merge($this->html_main,array("sys_message"=>$html));
+                return;
+
+        }
+
+	public function status_message($html) {
+
+		$this->html_main = array_merge($this->html_main,array("status_message"=>$html));
+		return;
 	
+	}
+
+	public function alert_message($html) {
+
+		$this->html_main = array_merge($this->html_main,array("alert_message"=>$html));
+		return;
+	
+	}
+
+	public function menu($html) {
+
+		$this->html_main = array_merge($this->html_main,array("menu"=>$html));
+		return;
+	
+	}
+
+
+        public function set_body($html) {
+
+                $z = count($this->html_body);
+                if ($z === 0) {
+
+                                $this->html_body = array("1"=>$html);
+
+                        }
+                        else{
+
+                                $z=$z+1;
+                                $this->html_body = array_merge($this->html_body,array("$z"=>$html));
+                }
+                return;
+
+        }
+
+        public function footer($html) {
+
+                $this->html_main = array_merge($this->html_main,array("footer"=>$html));
+                return;
+
+        }
+
+        public function commit_render() {
+
+                $html_main = $this->html_main;
+                $html_body = $this->html_body;
+                $out  = $html_main[headers];
+                $out .= $html_main[sys_message];
+		$out .= $html_main[menu];
+		$out .= $html_main[alert_message];
+		$out .= $html_main[status_message];
+                $num  = count($html_body);
+                for ($z=0;$z<$num;$z++) {
+
+                        $out .= $html_body[$z];
+
+                }
+                $out .= $html_main[footer];
+                echo $out;
+		return;
+
+        }
+
+	public function destroy_content() {
+
+		$this->html_body = array();
+		return;
+
+	}
+
 	public function render_alert($message, $class = "message") {
 
 
