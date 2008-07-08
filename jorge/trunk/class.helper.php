@@ -180,18 +180,26 @@ Class render_html {
 	protected $html_menu = array();
 	protected $html_main = array();
 	protected $html_body = array();
+	protected $html_foot = array();
+	private $head_items = integer;
+	private $menu_items = integer;
+	private $main_items = integer;
+	private $body_items = integer;
+	private $foot_itesm = integer;
 
         public function headers($html) {
 
-		$z = count($this->html_head);
-		if ($z===0) {
+		if ($this->head_items === 0) {
+
 				$this->html_head = array("0"=>$html);
+				$this->head_items = 1;
 
 			}
 			else{
 
-				$z=$z+1;
-                		$this->html_head = array_merge($this->html_head,array("$z"=>$html));
+				$this->head_items = $this->head_items + 1;
+				$this->html_head = $this->html_head += array($this->head_items=>$html);
+
 		}
                 return;
 
@@ -199,63 +207,71 @@ Class render_html {
 
         public function system_message($html) {
 
-                $this->html_main = array_merge($this->html_main,array("sys_message"=>$html));
+                $this->html_main = array_merge($this->html_main,array("sys_message"=>$this->render_status($html)));
                 return;
 
         }
 
 	public function status_message($html) {
 
-		$this->html_main = array_merge($this->html_main,array("status_message"=>$html));
+		$this->html_main = array_merge($this->html_main,array("status_message"=>$this->render_status($html)));
 		return;
 	
 	}
 
 	public function alert_message($html) {
 
-		$this->html_main = array_merge($this->html_main,array("alert_message"=>$html));
+		$this->html_main = array_merge($this->html_main,array("alert_message"=>$this->render_alert($html)));
 		return;
 	
 	}
 
-	public function menu($html) {
+        public function menu($html) {
 
-		$z = count($this->html_menu);
-		if ($z===0) {
+                if ($this->menu_items === 0) {
 
-				$this->html_menu = array("0"=>$html);
-			}
-			else {
-
-				$z=$z+1;
-				$this->html_menu = array_merge($this->html_menu,array("$z"=>$html));
-
-		}
-		return;
-	
-	}
-
-
-        public function set_body($html) {
-
-                $z = count($this->html_body);
-                if ($z === 0) {
-
-                                $this->html_body = array("0"=>$html);
+                                $this->html_menu = array("0"=>$html);
+				$this->menu_items = 1;
 
                         }
                         else{
 
-                                $z=$z+1;
-                                $this->html_body = array_merge($this->html_body,array("$z"=>$html));
+				$this->menu_items = $this->menu_items + 1;
+				$this->html_menu = $this->html_menu += array($this->menu_items=>$html);
                 }
                 return;
 
         }
 
-        public function footer($html) {
+        public function set_body($html) {
 
-                $this->html_main = array_merge($this->html_main,array("footer"=>$html));
+                if ($this->body_items === 0) {
+
+                                $this->html_body = array("0"=>$html);
+				$this->body_items = 1;
+
+                        }
+                        else{
+
+				$this->body_items = $this->body_items + 1;
+				$this->html_body = $this->html_body += array($this->body_items=>$html);
+                }
+                return;
+
+        }
+
+        public function foot($html) {
+
+		if ($this->foot_items === 0) {
+				
+				$this->html_foot = array("0"=>$html);
+				$this->foot_items = 1;
+			}
+			else{
+
+				$this->foot_items = $this->foot_items + 1;
+				$this->html_foot = $this->html_foot += array($this->foot_items=>$html);
+		}
                 return;
 
         }
@@ -266,28 +282,31 @@ Class render_html {
 		$html_menu = $this->html_menu;
                 $html_main = $this->html_main;
                 $html_body = $this->html_body;
-		$num_headers = count($html_head);
-		for ($z=0;$z<$num_headers;$z++) {
+		$html_foot = $this->html_foot;
+
+		for ($z=0;$z<=$this->head_items;$z++) {
 			
                 	$out  .= $html_head[$z];
 
 		}
 		$out .= $html_main[sys_message];
-		$num_menu = count($html_menu);
-		for ($z=0;$z<$num_menu;$z++) {
+		for ($z=0;$z<=$this->menu_items;$z++) {
 
 			$out .= $html_menu[$z];
 		
 		}
 		$out .= $html_main[alert_message];
 		$out .= $html_main[status_message];
-                $num_body  = count($html_body);
-                for ($z=0;$z<$num_body;$z++) {
+                for ($z=0;$z<=$this->body_items;$z++) {
 
                         $out .= $html_body[$z];
 
                 }
-                $out .= $html_main[footer];
+		for ($z=0;$z<=$this->foot_items;$z++) {
+
+                	$out .= $html_foot[$z];
+
+		}
                 echo $out;
 		return;
 
@@ -303,13 +322,13 @@ Class render_html {
 	public function render_alert($message, $class = "message") {
 
 
-		print $this->center().'<div class="'.$class.'">'.$message.'</div>'.$this->center_end();
+		return $this->center().'<div class="'.$class.'">'.$message.'</div>'.$this->center_end();
 
 	}
 
 	public function render_status($message, $class = "message") {
 
-		print $this->center().'<div class="'.$class.'">'.$message.'</div>'.$this->center_end();
+		return $this->center().'<div class="'.$class.'">'.$message.'</div>'.$this->center_end();
 	
 	}
 
