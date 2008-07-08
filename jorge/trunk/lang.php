@@ -36,8 +36,11 @@ $no_script[eng] = "Your browser dont support Javascript. Jorge require to have J
 $act_su[pol] = pl_znaczki("Zapisywanie rozmów na serwerze zosta³o w³±czone!");
 $act_su[eng] = "Message archiving activated succesfuly!";
 
-$wrong_data[pol] = pl_znaczki("Wprowadzono b³êdne dane. Spróbuj jeszcze raz...");
-$wrong_data[eng] = "Invalid data provided. Please try again...";
+$wrong_data[pol] = pl_znaczki("Wprowadzono b³êdne dane, spróbuj jeszcze raz");
+$wrong_data[eng] = "Invalid data provided, please try again";
+
+$wrong_data2[pol] = pl_znaczki("Nieprawid³owe s³owo z obrazka, spróbuj jeszcze raz");
+$wrong_data2[eng] = "You have entered wrong word from picture, try again";
 
 $act_su2[pol] = pl_znaczki("Aby przegl±daæ archiwa musisz zalogowaæ siê ponownie do systemu");
 $act_su2[eng] = "You must relogin to system";
@@ -126,7 +129,7 @@ $search_tip[eng] = "Displaying";
 $search_why[pol] = pl_znaczki(" wyników (<i>nie wiêcej ni¿ 100</i>). <a href=\"help.php#22\" target=\"_blank\"><u>Dowiedz siê dlaczego</u></a>");
 $search_why[eng] = " search results (<i>not more then 100</i>). <a href=\"help.php#22\" target=\"_blank\"><u>Find out why</u></a>";
 
-$search_warn[pol] = pl_znaczki("Uwaga: Wyszukuje tylko w podanym przedziale czasu");
+$search_warn[pol] = pl_znaczki("Uwaga: Wyszukuje tylko w wybranym przedziale czasu");
 $search_warn[eng] = "Warning: Showing results only from selected time range";
 
 $all_for_u[pol] = pl_znaczki("Poka¿ wszystkie rozmowy u¿ywaj±c: ");
