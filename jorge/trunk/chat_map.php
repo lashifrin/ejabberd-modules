@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 require_once("headers.php");
 require_once("upper.php");
 
-$html->render_title($chat_map[$lang],$chat_select[$lang]);
+$html->set_body($chat_map[$lang],$chat_select[$lang]);
 
 if ($_POST['chat_map']) {
 		
@@ -48,10 +48,11 @@ if($con_map === true) {
 $ejabberd_roster->sort_by_nick("az");
 $roster_chat = $ejabberd_roster->get_roster();
 
-print '<br><br><br><form action="chat_map.php" method="post" name="chat_map_form">'."\n";
-print '<span style="padding-right: 20px">'.$chat_m_select[$lang].'</span>'."\n";
-print '<select id="c_map" style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="chat_map" size="0" onchange="javascript:document.chat_map_form.submit();">'."\n";
-print '<option value="null">'.$chat_c_list[$lang].'</option>';
+$html->set_body('<br><br><br><form action="chat_map.php" method="post" name="chat_map_form">
+		<span style="padding-right: 20px">'.$chat_m_select[$lang].'</span>
+		<select id="c_map" style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="chat_map" size="0" onchange="javascript:document.chat_map_form.submit();">
+		<option value="null">'.$chat_c_list[$lang].'</option>
+	');
 
 	while (array_keys($roster_chat)) {
 		
@@ -70,16 +71,15 @@ print '<option value="null">'.$chat_c_list[$lang].'</option>';
 				
 		}
 		
-		print '<option '.$selected.' value=\''.$enc->crypt_url("jid=$jid").'\'>'.htmlspecialchars($name).' ('.htmlspecialchars($grp).')</option>'."\n";
+		$html->set_body('<option '.$selected.' value=\''.$enc->crypt_url("jid=$jid").'\'>'.htmlspecialchars($name).' ('.htmlspecialchars($grp).')</option>');
 
 	}
 
-print '</select>';
-print '</form>'."\n";
+$html->set_body('</select></form>');
 
 if ($con_map AND $_POST['chat_map'] != "null") {
 
-	print "<h2>".$cal_head[$lang].":</h2>";
+	$html->set_body('<h2>'.$cal_head[$lang].':</h2>');
 
 	// split username and server name
 	list($name_peer,$server_peer) = split("@",$con_map);
@@ -116,10 +116,10 @@ if ($con_map AND $_POST['chat_map'] != "null") {
 
 			if (count($days)>=1) {
 				
-					print '<div style="float: left;">';
-					echo pl_znaczki(calendar($user_id,$xmpp_host,$y,$m,$days,TOKEN,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,2,$peer_name_id,$peer_server_id,$cal_days,$enc));
+					$html->set_body('<div style="float: left;">');
+					$html->set_body(pl_znaczki(calendar($user_id,$xmpp_host,$y,$m,$days,TOKEN,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,2,$peer_name_id,$peer_server_id,$cal_days,$enc)));
+					$html->set_body('</div>');
 					unset($days);
-					print '</div>';
 				
 				}
 			else {
@@ -139,7 +139,11 @@ if ($con_map AND $_POST['chat_map'] != "null") {
 	}
 
 
-if ($score==$cc_cmp) { print '<span style="text-align: center;"><h2>'.$chat_no_chats[$lang].'</h2></span>'; }
+	if ($score==$cc_cmp) { 
+
+		$html->set_body('<span style="text-align: center;"><h2>'.$chat_no_chats[$lang].'</h2></span>');
+	
+	}
 
 }
 

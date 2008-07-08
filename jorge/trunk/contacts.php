@@ -22,8 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 require_once("headers.php");
 require_once("upper.php");
 
-print '<h2>'.$con_head[$lang].'</h2>';
-print '<small>'.$con_notice[$lang].'</small>';
+$html->set_body('<h2>'.$con_head[$lang].'</h2><small>'.$con_notice[$lang].'</small>');
 
 if ($_POST) {
 
@@ -42,12 +41,12 @@ if ($_POST) {
 	
 	if ($db->update_log_list($do_not_log_list) === true) {
 
-			$html->render_status($con_saved[$lang],"message");
+			$html->status_message($con_saved[$lang]);
 
 		}
 		else {
 
-			$html->render_alert($oper_fail[$lang],"message");
+			$html->alert_message($oper_fail[$lang]);
 	}
 
 }
@@ -104,22 +103,24 @@ if ($roster_con) {
 	$db->get_log_list();
 	$do_notlog_list = $db->result;
 
-	print '<center>';
-	print '<form action="contacts.php" method="post">'."\n";
-	print '<table id="maincontent" border="0" class="ff" cellspacing="0">'."\n";
+	$html->set_body('<center><form action="contacts.php" method="post"><table id="maincontent" border="0" class="ff" cellspacing="0">');
+
 	if ($get_sort) {
 			
-			print '<tr><td colspan="5" style="text-align: right; font-size: x-small;"><a href="contacts.php">'.$reset_sort[$lang].'</a></td></tr>';
+			$html->set_body('<tr><td colspan="5" style="text-align: right; font-size: x-small;"><a href="contacts.php">'.$reset_sort[$lang].'</a></td></tr>');
+
 		}
-	print '<tr class="header">
+
+	$html->set_body('<tr class="header">
 		<td><a href="?sort=2&o='.$get_dir.'"><span style="color: white;">'.$con_tab2[$lang].'&nbsp;&#8593;&#8595;</span></a></td>
 		<td><a href="?sort=1&o='.$get_dir.'"><span style="color: white;">'.$con_tab3[$lang].'&nbsp;&#8593;&#8595;</span></a></td>
 		<td style="text-align: center;"><a href="?sort=3&o='.$get_dir.'"><span style="color: white;">'.$con_tab6[$lang].'&nbsp;&#8593;&#8595;</span></a></td>
 		<td>'.$show_chats[$lang].':</td>
 		<td style="padding-left: 10px;">'.$con_tab4[$lang].'</td>
-		</tr>'."\n";
-	print '<tr class="spacer"><td colspan="5"></td></tr>';
-	print '<tbody id="searchfield">';
+		</tr>
+		<tr class="spacer"><td colspan="5"></td></tr>
+		<tbody id="searchfield">
+		');
 
 	while (array_keys($roster_con)) {
 
@@ -154,37 +155,35 @@ if ($roster_con) {
 					$col="b7b7b7"; 
 					
 				}
-			print '<tr bgcolor="'.$col.'" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#'.$col.'\';">'."\n";
-			print '<td title="'.$con_title[$lang].'" style="padding-left:7px" onclick="window.location=\'chat_map.php?chat_map='.$predefined.'\';"><b>'.cut_nick(htmlspecialchars($nick)).'</b></td>'."\n";
-			print '<td>(<i>'.htmlspecialchars($jid).'</i>)</td>'."\n";
-			print '<td style="text-align: center;">'.cut_nick(htmlspecialchars($grp)).'</td>'."\n";
-			print '<td style="text-align: center;"><a href="chat_map.php?chat_map='.$predefined.'"><u>'.$show_chat_as_map[$lang].'</u></a>|
-				<a href="search_v2.php?b='.$predefined.'"><u>'.$show_chat_stream[$lang].'</u></a></td>';
-			print '<td style="text-align: center;">'."\n";
-			print '<select class="cc2" name="'.$prepared_jid.'">'."\n";
-			print '<option value="y">'.$con_tab_act_y[$lang].'</option>'."\n";
-			print '<option value="n" '.$selected.' >'.$con_tab_act_n[$lang].'</option>'."\n";
-			print '</select>'."\n";
-			print '</td>'."\n";
-			print '</tr>'."\n";
+
+			$html->set_body('
+				<tr bgcolor="'.$col.'" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#'.$col.'\';">
+				<td title="'.$con_title[$lang].'" style="padding-left:7px" onclick="window.location=\'chat_map.php?chat_map='.$predefined.'\';"><b>'.cut_nick(htmlspecialchars($nick)).'</b></td>
+				<td>(<i>'.htmlspecialchars($jid).'</i>)</td>
+				<td style="text-align: center;">'.cut_nick(htmlspecialchars($grp)).'</td>
+				<td style="text-align: center;"><a href="chat_map.php?chat_map='.$predefined.'"><u>'.$show_chat_as_map[$lang].'</u></a>|
+				<a href="search_v2.php?b='.$predefined.'"><u>'.$show_chat_stream[$lang].'</u></a></td>
+				<td style="text-align: center;">
+				<select class="cc2" name="'.$prepared_jid.'">
+				<option value="y">'.$con_tab_act_y[$lang].'</option>
+				<option value="n" '.$selected.' >'.$con_tab_act_n[$lang].'</option>
+				</select></td></tr>
+				');
 
 		}
 
-	print '<tr class="spacer"><td colspan="5"></td></tr>'."\n";
-	print '</tbody>'."\n";
-	print '<tr class="foot"><td colspan="5" style="text-align: center;">'."\n";
-	print '<input class="submit" type="submit" value="'.$con_tab_submit[$lang].'"></td></tr>'."\n";
-	print '</table>'."\n";
-	print '</form>'."\n";
-	print '</center>'."\n";
+		$html->set_body('<tr class="spacer"><td colspan="5"></td></tr>
+			</tbody>
+			<tr class="foot"><td colspan="5" style="text-align: center;">
+			<input class="submit" type="submit" value="'.$con_tab_submit[$lang].'"></td></tr>
+			</table></form></center>
+		');
 
 	}
 
-	else
+	else {
 
-	{
-
-		print '<p align="center"><b>'.$no_contacts[$lang].'</b></p>';
+		$html->set_body('<p align="center"><b>'.$no_contacts[$lang].'</b></p>');
 
 }
 require_once("footer.php");

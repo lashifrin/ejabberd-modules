@@ -412,8 +412,4 @@ foreach ($rpc_roster as $roster_record) {
 	}
 }
 
-### TESTING ###
-$html->commit_render();
-
-
 ?>

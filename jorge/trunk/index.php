@@ -39,11 +39,11 @@ if ($sess->get('uid_l')) {
 }
 
 // get post data
-$inpLogin=$_POST[inpLogin];
-$inpPass=$_POST[inpPass];
-$wo_sess=$_POST[word];
-$lng_sw=$_GET['lng_sw'];
-$inpLogin=strtolower(pg_escape_string($inpLogin));
+$inpLogin = $_POST[inpLogin];
+$inpPass = $_POST[inpPass];
+$wo_sess = $_POST[word];
+$lng_sw = $_GET['lng_sw'];
+$inpLogin = strtolower($inpLogin);
 
 // language selection
 if ($lng_sw=="pol") {
@@ -59,13 +59,15 @@ if ($lng_sw=="pol") {
 if (!$sess->get('language')) { $sess->set('language',$lang_def); }
 $lang=$sess->get('language');
 
-if ($wo_sess || $$inpLogin || $inpPass) {
+if ($wo_sess || $inpLogin || $inpPass) {
 
-	if ($wo_sess!=$sess->get('image_w')) { 
+	if ($wo_sess != $sess->get('image_w')) { 
 
 			unset($inpPass);
+			unset($inpLogin);
+			$html->alert_message($wrong_data2[$lang]);
 		
-		}
+	}
 
 
 }
@@ -162,75 +164,91 @@ if ($_GET['act']=='logout') {
 					$sess->set('image_w','');
 					header("Location: not_enabled.php"); }
 
-		}
+			}
 
-	$error_m='<div style="background-color: #fad163; text-align: center; font-weight: bold; width: 300pt;">'.$wrong_data[$lang].'</div>';
-	$ui_fail=get_user_id($inpLogin,$xmpp_host);
-	$query = "select count(id_user) as log_number from jorge_logger where id_user = '$ui_fail' and log_time > date_sub(now(),interval 1 minute)";
-	$result = mysql_query($query);
-	$row=mysql_fetch_row($result);
+		$html->alert_message($wrong_data[$lang]);
+		$db->get_user_id($inpLogin);
+		$ui_fail = $db->result->user_id;
+		$query = "select count(id_user) as log_number from jorge_logger where id_user = '$ui_fail' and log_time > date_sub(now(),interval 1 minute)";
+		$result = mysql_query($query);
+		$row=mysql_fetch_row($result);
 
-	// bump log_level if more then 3 log attempts in one minute
-	if ($row[0]>"3") { 
-			$log_level="3"; 
+		// bump log_level if more then 3 log attempts in one minute
+		if ($row[0]>"3") { 
+
+				$log_level="3"; 
+		
 		} 
 		else { 
+
 			$log_level="2";
+		
 		} 
 
-	$db->set_user_id($ui_fail);
-	$db->set_logger($ui_fail,"3",$log_level);
+		if ($ejabberd_rpc->check_account() === true) {
+
+			$db->set_user_id($ui_fail);
+			$db->set_logger("3",$log_level,$rem_adre);
+		
+		}
 
 	}
  
 }
 
 
-?>
+$html->set_body('
 
-<script language="javascript">
-<!--
-function new_freecap()
-{
-	if(document.getElementById)
-	{
-		thesrc = document.getElementById("freecap").src;
-		thesrc = thesrc.substring(0,thesrc.lastIndexOf(".")+4);
-		document.getElementById("freecap").src = thesrc+"?"+Math.round(Math.random()*10000);
-	} else {
-		alert("Ups...");
-	}
+		<script language="javascript">
+		<!--
+		function new_freecap()
+			{
+			if(document.getElementById)
+				{
+				thesrc = document.getElementById("freecap").src;
+				thesrc = thesrc.substring(0,thesrc.lastIndexOf(".")+4);
+				document.getElementById("freecap").src = thesrc+"?"+Math.round(Math.random()*10000);
+				} else {
+				alert("Ups...");
+				}
+			}
+		//-->
+		</script>
+	');
+
+if ($lang=="eng") { 
+
+		$lang_o="pol"; 
+	} 
+	elseif($lang=="pol") { 
+	
+		$lang_o="eng"; 
+		
 }
-//-->
-</script>
-<?
 
-if ($lang=="eng") { $lang_o="pol"; } elseif($lang=="pol") { $lang_o="eng"; }
-print '<br><div align="center" style="height: 110;"><br><a href="index.php"><img border="0" alt="Branding logo" src="img/'.$brand_logo.'"></a></div>'."\n";
-print '<table class="ff" cellspacing="0" width="100%">'."\n";
-print '<tr style="background-image: url(img/bell-bak.png); height: 24;">';
-print '<td style="text-align: left; padding-left: 10px; color: white;">'.$welcome_1[$lang].'</td><td style="text-align: right;">';
-print '<a class="mmenu" href="index.php?lng_sw='.$lang_o.'">'.$ch_lan2[$lang].$lang_sw[$lang].'</a></td>';
-print '</tr></table>'."\n";
-    echo '<center>'."\n";
-    echo '<form action="index.php" method="post">'."\n";
-    echo '<br><br><table class="ff" border="0" cellspacing="0" cellpadding="0">'."\n";
-    echo '<tr><td align="right">'.$login_w[$lang].'&nbsp;</td><td><input name="inpLogin" value="'.$_POST[inpLogin].'" class="log" ></td><td>@'.$xmpp_host_dotted.'</td></tr>'."\n";
-    echo '<tr height="3" ><td></td></tr>'."\n";
-    echo '<tr><td align="right">'.$passwd_w[$lang].'&nbsp;</td><td><input name="inpPass" type="password" class="log"></td></tr>'."\n";
-    echo '<tr height="10"><td></td></tr>'."\n";
-	echo '<tr><td></td><td colspan="2"><img src="freecap.php" id="freecap" name="pic"></td></tr>'."\n";
-	echo '<tr height="3" ><td></td></tr>'."\n";
-	echo '<tr><td></td><td colspan="2" style="text-align: center;"><a href="#" onClick="new_freecap();return false;"><small>'.$cap_cant[$lang].'</small></a></td></tr>'."\n";
-	echo '<tr height="3" ><td></td></tr>'."\n";
-	echo '<tr><td align="right">'.$cap_w[$lang].'&nbsp;</td><td><input name="word" type="text" class="log" ></td>'."\n";
-	echo '<tr height="15" ><td></td></tr>'."\n";
-    echo '<tr><td colspan="2" align="right"><input class="red" type="submit" name="sublogin" value="'.$login_act[$lang].'"></td></tr>'."\n";
-    echo '</table>'."\n";
-    echo '</form>'."\n";
-    print $error_m;
-    echo '</center>'."\n";
+$html->set_body('
+		<br><div align="center" style="height: 110;"><br><a href="index.php"><img border="0" alt="Branding logo" src="img/'.$brand_logo.'"></a></div>
+		<table class="ff" cellspacing="0" width="100%">
+		<tr style="background-image: url(img/bell-bak.png); height: 24;">
+		<td style="text-align: left; padding-left: 10px; color: white;">'.$welcome_1[$lang].'</td><td style="text-align: right;">
+		<a class="mmenu" href="index.php?lng_sw='.$lang_o.'">'.$ch_lan2[$lang].$lang_sw[$lang].'</a></td>
+		</tr></table>
+		<center>
+		<form action="index.php" method="post">
+		<br><br><table class="ff" border="0" cellspacing="0" cellpadding="0">
+		<tr><td align="right">'.$login_w[$lang].'&nbsp;</td><td><input name="inpLogin" value="'.$_POST[inpLogin].'" class="log" ></td><td>@'.$xmpp_host_dotted.'</td></tr>
+		<tr height="3" ><td></td></tr>
+		<tr><td align="right">'.$passwd_w[$lang].'&nbsp;</td><td><input name="inpPass" type="password" class="log"></td></tr>
+		<tr height="10"><td></td></tr>
+		<tr><td></td><td colspan="2"><img src="freecap.php" id="freecap" name="pic"></td></tr>
+		<tr height="3" ><td></td></tr>
+		<tr><td></td><td colspan="2" style="text-align: center;"><a href="#" onClick="new_freecap();return false;"><small>'.$cap_cant[$lang].'</small></a></td></tr>
+		<tr height="3" ><td></td></tr>
+		<tr><td align="right">'.$cap_w[$lang].'&nbsp;</td><td><input name="word" type="text" class="log" ></td>
+		<tr height="15" ><td></td></tr>
+		<tr><td colspan="2" align="right"><input class="red" type="submit" name="sublogin" value="'.$login_act[$lang].'"></td></tr>
+		</table></form></center>	
+	');
 
 require_once("footer.php");
-
 ?>
