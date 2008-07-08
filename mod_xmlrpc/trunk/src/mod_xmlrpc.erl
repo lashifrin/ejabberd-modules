@@ -304,6 +304,14 @@ handler(_State, {call, muc_room_set_affiliation, [{struct, AttrL}]}) ->
 	end,
     {false, {response, [R]}};
 
+%% send_message  struct[{from, String}, {to, String}, {subject, String}, {body, String}]  Integer
+handler(_State, {call, send_message, [{struct, AttrL}]}) ->
+    [FromJIDString, ToJIDString, Subject, Body] = get_attrs([from, to, subject, body], AttrL),
+    FromJID = jlib:string_to_jid(FromJIDString),
+    ToJID = jlib:string_to_jid(ToJIDString),
+    send_message(FromJID, ToJID, Subject, Body),
+    {false, {response, [0]}};
+
 %% If no other guard matches
 handler(_State, Payload) ->
     FaultString = lists:flatten(io_lib:format("Unknown call: ~p", [Payload])),
@@ -419,6 +427,54 @@ make_roster_xmlrpc(Roster) ->
       end,
       [],
       Roster).
+
+
+%% -----------------------------
+%% Sending messages to the user
+%% -----------------------------
+
+%% @doc Send a message to a Jabber account.
+%% If a resource was specified in the JID,
+%% the message is sent only to that specific resource.
+%% If no resource was specified in the JID, 
+%% and the user is remote or local but offline,
+%% the message is sent to the bare JID.
+%% If the user is local and is online in several resources,
+%% the message is sent to all its resources.
+send_message(FromJID, ToJID, Subject, Body) ->
+    ToUser = ToJID#jid.user,
+    ToServer = ToJID#jid.server,
+    case ToJID#jid.resource of
+	"" ->
+	    send_message(FromJID, ToUser, ToServer, Subject, Body);
+	Resource -> 
+	    send_message(FromJID, ToUser, ToServer, Resource, Subject, Body)
+    end.
+
+send_message(FromJID, ToUser, ToServer, Subject, Body) ->
+    case ejabberd_sm:get_user_resources(ToUser, ToServer) of
+	[] ->
+	    send_message(FromJID, ToUser, ToServer, "", Subject, Body);
+	ToResources ->
+	    lists:foreach(
+	      fun(ToResource) ->
+		      send_message(FromJID, ToUser, ToServer, ToResource, Subject, Body)
+	      end,
+	      ToResources)
+    end.
+
+send_message(FromJID, ToU, ToS, ToR, Subject, Body) ->
+    MPacket = build_send_message(Subject, Body),
+    ToJID = jlib:make_jid(ToU, ToS, ToR),
+    ejabberd_router:route(FromJID, ToJID, MPacket).
+
+build_send_message(Subject, Body) ->
+    {xmlelement, "message",
+     [{"type", "headline"}],
+     [{xmlelement, "subject", [], [{xmlcdata, Subject}]},
+      {xmlelement, "body", [], [{xmlcdata, Body}]}
+     ]
+    }.
 
 
 %% -----------------------------

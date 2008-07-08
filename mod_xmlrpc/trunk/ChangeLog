@@ -1,7 +1,7 @@
 2008-07-08  Badlop  <badlop@process-one.net>
 
-	* src/mod_xmlrpc.erl (get_roster): Detect if mod_roster or
-	mod_roster_odbc is enabled (thanks to Darren Ferguson)
+	* src/mod_xmlrpc.erl: Detect if mod_roster or mod_roster_odbc is
+	enabled. New call send_message (thanks to Darren Ferguson)
 	* README.txt: Likewise
 
 2008-05-20  Badlop  <badlop@process-one.net>

@@ -109,6 +109,8 @@ delete_rosteritem  struct[{localuser, String}, {localserver, String},
                           {user, String}, {server, String}]                  String
 get_roster  struct[{user, String}, {server, String}]
                       array[struct[{jid, String}, {nick, String}, {Group, String}]]
+send_message  struct[{from, String}, {to, String}, {subject, String}, 
+                      {body, String}]                                       Integer
 
  -- MUC administration
 create_muc_room struct[{name, String}, {service, String}, {server, String}] Integer
