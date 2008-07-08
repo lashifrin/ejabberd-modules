@@ -31,14 +31,17 @@ class roster {
 
         public function add_item($jid,$nick,$group) {
 
-                $get_items = $this->roster;
                 $new_item[$jid] = array("nick"=>$nick,"group"=>$group);
                 if ($this->roster) {
-                                $this->roster = array_merge($get_items,$new_item);
-                        }
+
+				$this->roster = $this->roster += $new_item;
+                        
+			}
                         else {
+
                                 $this->roster = $new_item;
-                        }
+                        
+			}
 
         }
 
