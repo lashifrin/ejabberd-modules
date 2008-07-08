@@ -244,7 +244,6 @@ handler(_State, {call, delete_rosteritem, [{struct, AttrL}]}) ->
 
 %% get_roster  struct[{user, String}, {server, String}]
 %%                       array[struct[{jid, String}, {nick, String}, {Group, String}]]
-%% Currently works only with mod_roster_odbc
 handler(_State, {call, get_roster, [{struct, AttrL}]}) ->
     [User, Server] = get_attrs([user, server], AttrL),
     Node = node(),
@@ -388,9 +387,19 @@ build_iq_roster_push(Item) ->
 %% Get Roster
 %% -----------------------------
 
-%% TODO: support also mod_roster, and detect at runtime which storage to use
 get_roster(User, Server) ->
-    Roster = mod_roster_odbc:get_user_roster([], {User, Server}),
+    Modules = gen_mod:loaded_modules(Server),
+    Roster = case lists:member(mod_roster, Modules) of
+		 true ->
+		     mod_roster:get_user_roster([], {User, Server});
+		 false ->
+		     case list:member(mod_roster_odbc, Modules) of
+			 true ->
+			     mod_roster_odbc:get_user_roster([], {User, Server});
+			 false ->
+			     {error, "Neither mod_roster or mod_roster_odbc are enabled"}
+		     end
+    end,
     {ok, Roster}.
 
 %% Note: if a contact is in several groups, the contact is returned 
