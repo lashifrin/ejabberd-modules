@@ -37,12 +37,12 @@ if ($tgle) {
 
 						$sess->set('log_status','1');
 						$db->set_logger("7","1");
-						print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 400pt;">'.$status_msg2[$lang].'</div></center>';
+						$html->status_message($status_msg2[$lang]);
 					
 					}
 					else{
 						
-						print $oper_fail[$lang];
+						$html->alert_message($oper_fail[$lang]);
 					
 					}
 
@@ -53,12 +53,12 @@ if ($tgle) {
 
 						$sess->set('log_status','0');
 						$db->set_logger("6","1");
-						print '<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 400pt;">'.$status_msg3[$lang].'</div></center>';
+						$html->status_message($status_msg3[$lang]);
 					
 					}
 					else{
 
-						print $oper_fail[$lang];
+						$html->alert_message($oper_fail[$lang]);
 
 					}
 
@@ -71,19 +71,18 @@ if ($del_a) {
 	$result=remove_messages($user_id,$xmpp_host);
 	if ($result=="t") {
 
-		print '<center><div class="message" style="width: 250pt;">'.$deleted_all[$lang].'</div></center>';
-		//log event
+		$html->status_message($deleted_all[$lang]);
 		$db->set_logger("9","2");
 
 	}
 	elseif($result=="0"){
 
-		print '<center><div class="message" style="width: 250pt;">'.$delete_nothing[$lang].'</div></center>';
+		$html->status_message($delete_nothing[$lang]);
 
 	}
 	elseif($result=="f"){
 	
-		print '<center><div class="message" style="width: 250pt;">'.$delete_error[$lang].'</div></center>';
+		$html->alert_message($delete_error[$lang]);
 
 	}
 
@@ -95,7 +94,7 @@ if ($close === $close_commit[$lang])	{
 	$close_now=rpc_close_account($user_id,$xmpp_host,$ejabberd_rpc);
 	if ($close_now === false) { 
 
-			print '<center><p class="message">'.$close_failed[$lang].'</p></center>'; 
+			$html->alert_message($close_failed[$lang]);
 		
 		}
 
@@ -115,7 +114,7 @@ if ($close === $close_commit[$lang])	{
 
         			} catch (Zend_Gdata_App_HttpException $e) {
                 		
-					print "<center><b>Removal of Google Apps account failed. Please report it to admin!</b></center>";
+					$html->alert_message('Removal of Google Apps account failed. Please report it to admin!');
 					exit;
 
         			}
@@ -139,92 +138,123 @@ if ($close === $close_commit[$lang])	{
 }
 
 // this is horrible! must be fixed:
-print '<h2>'.$settings_desc[$lang].'</h2>';
-print '<center>'."\n";
-print '<table>';
-print '<form action="settings.php" method="post">';
-print '<tr style="font-size: x-small;"><td>'.$setting_d1[$lang].'</td><td><input class="btn_set" type="submit" name="toggle" value="';
+$html->set_body('<h2>'.$settings_desc[$lang].'</h2><center><table><form action="settings.php" method="post">
+		<tr style="font-size: x-small;"><td>'.$setting_d1[$lang].'</td><td><input class="btn_set" type="submit" name="toggle" value="
+	');
 $db->is_log_enabled();
 if ($db->result->is_enabled === "0") { 
 		
-		print $arch_on[$lang]; 
+		$html->set_body($arch_on[$lang]);
 		
 	} 
 	else { 
 		
-		print $arch_off[$lang]; 
+		$html->set_body($arch_off[$lang]);
 		
 	}
-print '"></td></tr></form>'."\n";
-print '<form action="settings.php" method="post">';
-print '<tr style="font-size: x-small;"><td>'.$setting_d2[$lang].'</td>';
-print '<td><input class="btn_set" type="submit" name="del_all" value="'.$settings_del[$lang].'" onClick="if (!confirm(\''.$del_all_conf[$lang].'\')) return false;"></form></td></tr>'."\n";
-print '<form action="settings.php" method="get" name="save_pref">';
-print '<tr style="font-size: x-small;"><td>'.$select_view[$lang].'</td>';
-print '<td><select style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="v" size="0" onchange="javascript:document.save_pref.submit();">'."\n";
-if ($sess->get('view_type') == "1") { $std="selected"; } else { $cal="selected"; }
-print '<option '.$std.' value="1">'.$view_standard[$lang].'</option>'."\n";
-print '<option '.$cal.' value="2">'.$view_calendar[$lang].'</optin>'."\n";
-print '</select>';
-print '<input name="set_pref" type="hidden" value="1">';
-print '</td></tr>';
-print '</form>';
-print '<form action="settings.php" method="get" name="save_pref_lang">';
-print '<tr style="font-size: x-small;"><td>'.$sel_language[$lang].'</td>';
-print '<td><select style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="v" size="0" onchange="javascript:document.save_pref_lang.submit();">'."\n";
-if ($sess->get('language') == "pol") { $pol_sel="selected"; } else { $eng_sel="selected"; }
-print '<option '.$pol_sel.' value="1">'.$lang_sw[eng].'</option>'."\n";
-print '<option '.$eng_sel.' value="2">'.$lang_sw[pol].'</optin>'."\n";
-print '</select>';
-print '<input name="set_pref" type="hidden" value="2">';
-print '<input name="sw_lang" type="hidden" value="t">';
-print '</td></tr></form>';
-print '<form action="settings.php" method="post" name="close_account">';
-print '<tr><td colspan="2" height="40"><hr size="1"/></td></tr>';
-print '<tr>';
-print '<td style="font-size: x-small;">'.$close_account[$lang].'</td>';
-print '<td><input name="close_acc" class="btn_set" type="submit" value="'.$close_commit[$lang].'" onClick="if (!confirm(\''.$close_warn[$lang].'\')) return false;"></td>';
-print '</tr></form>';
+
+$html->set_body('
+	"></td></tr></form>
+	<form action="settings.php" method="post">
+	<tr style="font-size: x-small;"><td>'.$setting_d2[$lang].'</td>
+	<td><input class="btn_set" type="submit" name="del_all" value="'.$settings_del[$lang].'" onClick="if (!confirm(\''.$del_all_conf[$lang].'\')) return false;"></form></td></tr>
+	<form action="settings.php" method="get" name="save_pref">
+	<tr style="font-size: x-small;"><td>'.$select_view[$lang].'</td>
+	<td><select style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="v" size="0" onchange="javascript:document.save_pref.submit();">
+');
+
+if ($sess->get('view_type') == "1") { 
+
+		$std="selected"; 
+		
+	} 
+	else { 
+	
+		$cal="selected"; 
+		
+}
+$html->set_body('
+	<option '.$std.' value="1">'.$view_standard[$lang].'</option>
+	<option '.$cal.' value="2">'.$view_calendar[$lang].'</optin>
+	</select>
+	<input name="set_pref" type="hidden" value="1">
+	</td></tr>
+	</form>
+	<form action="settings.php" method="get" name="save_pref_lang">
+	<tr style="font-size: x-small;"><td>'.$sel_language[$lang].'</td>
+	<td><select style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="v" size="0" onchange="javascript:document.save_pref_lang.submit();">
+');
+
+if ($sess->get('language') == "pol") { 
+
+		$pol_sel="selected"; 
+	
+	} 
+	else { 
+	
+		$eng_sel="selected"; 
+		
+}
+
+$html->set_body('
+	<option '.$pol_sel.' value="1">'.$lang_sw[eng].'</option>
+	<option '.$eng_sel.' value="2">'.$lang_sw[pol].'</optin>
+	</select>
+	<input name="set_pref" type="hidden" value="2">
+	<input name="sw_lang" type="hidden" value="t">
+	</td></tr></form>
+	<form action="settings.php" method="post" name="close_account">
+	<tr><td colspan="2" height="40"><hr size="1"/></td></tr>
+	<tr>
+	<td style="font-size: x-small;">'.$close_account[$lang].'</td>
+	<td><input name="close_acc" class="btn_set" type="submit" value="'.$close_commit[$lang].'" onClick="if (!confirm(\''.$close_warn[$lang].'\')) return false;"></td>
+	</tr></form>
+');
 
 if (GAPPS === true) {
-		print '<tr><td colspan="2" style="color: red; font-size: xx-small; text-align: center;">'.$close_info[$lang].'</small></td></tr>';
+
+		$html->set_body('<tr><td colspan="2" style="color: red; font-size: xx-small; text-align: center;">'.$close_info[$lang].'</small></td></tr>');
+	
 	}
 
-print '</table>';
-print '<hr size="1" noshade="" color="#c9d7f1"/>';
-// personal stats
-print '<br><small><b>'.$stats_personal_d[$lang].'</b></small>';
+$html->set_body('</table><hr size="1" noshade="" color="#c9d7f1"/><br><small><b>'.$stats_personal_d[$lang].'</b></small>');
 $total_messages=number_format($total_messages=do_sel_quick("select sum(count) from `logdb_stats_$xmpp_host` where owner_id='$user_id'"));
-if ($total_messages=="f") { $total_messages="0"; }
-print '<p style="font-size: x-small;">'.$stats_personal[$lang].'<b> '.$total_messages.'</b></p>';
+if ($total_messages=="f") { 
+
+	$total_messages="0"; 
+	
+}
+$html->set_body('<p style="font-size: x-small;">'.$stats_personal[$lang].'<b> '.$total_messages.'</b></p><small><b>'.$stats_personal_top[$lang].'</b></small><br><br>');
+
 $top_ten_personal=do_sel("select peer_name_id,peer_server_id,at,count from `logdb_stats_$xmpp_host` where owner_id='$user_id' and peer_name_id!='$ignore_id' and ext is NULL order by count desc limit 10");
-print '<small><b>'.$stats_personal_top[$lang].'</b></small><br><br>';
 if (mysql_num_rows($top_ten_personal)!=0) {
-print '<table bgcolor="#ffffff" class="ff" cellspacing="0" cellpadding="3"><tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; color: #fff; font-weight: bold;"><td>'.$stats_personal_count[$lang].'</td><td style="text-align: center;">'.$stats_peer[$lang].'</td><td>'.$stats_when[$lang].'</td></tr>';
-while ($result=mysql_fetch_array($top_ten_personal)) {
 
-	print '<tr><td style="text-align: center; font-weight: bold;">';
-	print $result[count];
-	print '</td><td>';
-	$nickname=query_nick_name($ejabberd_roster,get_user_name($result[peer_name_id],$xmpp_host), get_server_name($result[peer_server_id],$xmpp_host));
-	print '<b>'.$nickname.'</b>';
-	print '&nbsp;<small>('.htmlspecialchars(get_user_name($result[peer_name_id],$xmpp_host)).'@'.htmlspecialchars(get_server_name($result[peer_server_id],$xmpp_host)).')</small>';
-	print '</td><td>';
-	$to_base = $enc->crypt_url("tslice=$result[at]&peer_name_id=$result[peer_name_id]&peer_server_id=$result[peer_server_id]");
-	print '<a id="pretty" title="'.$stats_see[$lang].'" href="'.$view_type.'?a='.$to_base.'"><u>'.$result[at].'</u></a>';
-	print '</td></tr>';
+		$html->set_body('<table bgcolor="#ffffff" class="ff" cellspacing="0" cellpadding="3">
+				<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; color: #fff; font-weight: bold;">
+				<td>'.$stats_personal_count[$lang].'</td><td style="text-align: center;">'.$stats_peer[$lang].'</td><td>'.$stats_when[$lang].'</td></tr>
+			');
+
+		while ($result=mysql_fetch_array($top_ten_personal)) {
+
+			$nickname=query_nick_name($ejabberd_roster,get_user_name($result[peer_name_id],$xmpp_host), get_server_name($result[peer_server_id],$xmpp_host));
+			$to_base = $enc->crypt_url("tslice=$result[at]&peer_name_id=$result[peer_name_id]&peer_server_id=$result[peer_server_id]");
+			$html->set_body('
+				<tr><td style="text-align: center; font-weight: bold;">'.$result[count].'</td><td><b>'.$nickname.'</b>&nbsp;
+				<small>('.htmlspecialchars(get_user_name($result[peer_name_id],$xmpp_host)).'@'.htmlspecialchars(get_server_name($result[peer_server_id],$xmpp_host)).')</small>
+				</td><td><a id="pretty" title="'.$stats_see[$lang].'" href="'.$view_type.'?a='.$to_base.'"><u>'.$result[at].'</u></a></td></tr>
+			');
+
+		}
+
+		$html->set_body('<tr height="15" style="background-image: url(img/bar_new.png); background-repeat:repeat-x; color: #fff;"><td colspan="3"></td></tr></table>');
+
+	}
+	else {
+
+		$html->set_body('<div class="message">'.$no_archives[$lang].'</div>');
 
 }
-print '<tr height="15" style="background-image: url(img/bar_new.png); background-repeat:repeat-x; color: #fff;"><td colspan="3"></td></tr>';
-print '</table>';
 
-}
-else {
-
-	print '<div class="message">'.$no_archives[$lang].'</div>';
-
-}
-print '</center>'."\n";
-print '<br /><br /><br />';
+$html->set_body('</center>');
 require_once("footer.php");
 ?>

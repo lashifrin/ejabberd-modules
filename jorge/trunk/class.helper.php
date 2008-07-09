@@ -187,7 +187,28 @@ Class render_html {
 	private $body_items = integer;
 	private $foot_itesm = integer;
 
-        public function headers($html) {
+        public function system_message($html) {
+
+                $this->html_main = array("sys_message"=>$this->render_system($html));
+                return;
+
+        }
+
+	public function status_message($html) {
+
+		$this->html_main = array("status_message"=>$this->render_status($html));
+		return;
+	
+	}
+
+	public function alert_message($html) {
+
+		$this->html_main = array("alert_message"=>$this->render_alert($html));
+		return;
+	
+	}
+
+	public function headers($html) {
 
 		if ($this->head_items === 0) {
 
@@ -204,27 +225,6 @@ Class render_html {
                 return;
 
         }
-
-        public function system_message($html) {
-
-                $this->html_main = array_merge($this->html_main,array("sys_message"=>$this->render_status($html)));
-                return;
-
-        }
-
-	public function status_message($html) {
-
-		$this->html_main = array_merge($this->html_main,array("status_message"=>$this->render_status($html)));
-		return;
-	
-	}
-
-	public function alert_message($html) {
-
-		$this->html_main = array_merge($this->html_main,array("alert_message"=>$this->render_alert($html)));
-		return;
-	
-	}
 
         public function menu($html) {
 
@@ -319,50 +319,24 @@ Class render_html {
 
 	}
 
-	public function render_alert($message, $class = "message") {
+	protected function render_alert($message, $class = "message") {
 
 
-		return $this->center().'<div class="'.$class.'">'.$message.'</div>'.$this->center_end();
+		return '<center><div class="'.$class.'">'.$message.'</div></center>';
 
 	}
 
-	public function render_status($message, $class = "message") {
+	protected function render_status($message, $class = "message") {
 
-		return $this->center().'<div class="'.$class.'">'.$message.'</div>'.$this->center_end();
+		return '<center><div class="'.$class.'">'.$message.'</div></center>';
 	
 	}
 
-	public function render_title($title,$description = null) {
+	protected function render_system($message, $class = null) {
 
-		echo '<h2>'.$title.'</h2>';
-		if($description !== null) {
-		
-			echo '<small>'.$description.'</small>';
-		
-		}
+		return '<center><div class="system">'.$message.'</div></center>';
 
 	}
-
-	public function render($content) {
-
-		echo $content;
-
-	}
-
-	protected function center() {
-
-
-		return "<center>";
-
-	}
-
-	protected function center_end() {
-
-		return "</center>";
-
-	}
-
-
 
 
 }

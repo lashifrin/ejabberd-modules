@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 require_once("headers.php");
 require_once("upper.php");
 
-$html->render_title($trash_name[$lang],$trash_desc[$lang]);
+$html->set_body('<h2>'.$trash_name[$lang].'</h2><small>'.$trash_desc[$lang].'</small>');
 
 if ($enc->decrypt_url($_GET[a]) === true) {
 
@@ -44,8 +44,8 @@ if ($action=="undelete") {
 		if ($db->move_chat_from_trash($talker,$server,$tslice,$lnk) === true) {
 
 				$back_link = $enc->crypt_url("tslice=$tslice&peer_name_id=$talker&peer_server_id=$server");
-                		$html->render('<center><div style="background-color: #fad163; text-align: center; font-weight: bold; width: 200pt;">'.$undo_info[$lang].'<br>
-				 		<a href="'.$view_type.'?a='.$back_link.'" style="color: blue;">'.$trash_vit[$lang].'</a></div></center><br>');
+                		$html->system_message($undo_info[$lang].'<br><a href="'.$view_type.'?a='.$back_link.'" style="color: blue;">'.$trash_vit[$lang].'</a>');
+				$tr_n = $tr_n - 1;
 
         		}
 
@@ -54,7 +54,7 @@ if ($action=="undelete") {
         	{
 
                 		unset($talker);
-				$html->render_alert($oper_fail[$lang]);
+				$html->alert_message($oper_fail[$lang]);
 
         	}
 
@@ -64,26 +64,26 @@ if ($action=="delete") {
 
 		if ($db->remove_messages_from_trash($talker,$server,$tslice) === true) {
 
-			$html->render_status($del_info[$lang]);
+			$html->status_message($del_info[$lang]);
 		}
 		else {
 
-			$html->render_alert($oper_fail[$lang]);
+			$html->alert_message($oper_fail[$lang]);
 
 		}
 
 
 }
 
-if ($tr_n === "0") {
+if ($tr_n < 1) {
 	
-		$html->render_status($trash_empty[$lang],"message");
+		$html->status_message($trash_empty[$lang]);
 	}
 
 	else
 
 	{
-		$html->render('
+		$html->set_body('
 				<center>
 				<table id="maincontent" class="ff" align="center" border="0"  cellspacing="0">
 				<tr class="header"><td style="padding-right: 15px;">'.$my_links_chat[$lang].'</td><td style="padding-right: 15px;">'.$logger_from_day[$lang].'</td><td>'.$del_time[$lang].'</td></tr>
@@ -103,7 +103,7 @@ if ($tr_n === "0") {
 			$undelete_link = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$entry[peer_server_id]&lnk=$reconstruct_link&action=undelete");
 			$delete_link = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$entry[peer_server_id]&lnk=$reconstruct_link&action=delete");
 
-			$html->render('
+			$html->set_body('
 					<tr><td style="padding-left: 10px; padding-right: 10px;"><b>'.$nickname.'</b> (<i>'.htmlspecialchars($talker).'@'.htmlspecialchars($server_name).'</i>)</td>
 					<td style="text-align: center;">'.$tslice.'</td>
 					<td style="padding-left: 5px; padding-right: 5px; font-size: x-small;">'.$entry[timeframe].'</td>
@@ -114,7 +114,7 @@ if ($tr_n === "0") {
 
 		}
 		
-		$html->render('
+		$html->set_body('
 				</tbody><tr class="spacer"><td colspan="5"></td></tr><tr class="foot"><td colspan="5" height="15"></td></tr></table></center>
 			');
 	}

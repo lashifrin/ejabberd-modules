@@ -65,7 +65,7 @@ if ($wo_sess || $inpLogin || $inpPass) {
 
 			unset($inpPass);
 			unset($inpLogin);
-			$html->alert_message($wrong_data2[$lang]);
+			$html->system_message($wrong_data2[$lang]);
 		
 	}
 
@@ -166,7 +166,7 @@ if ($_GET['act']=='logout') {
 
 			}
 
-		$html->alert_message($wrong_data[$lang]);
+		$html->system_message($wrong_data[$lang]);
 		$db->get_user_id($inpLogin);
 		$ui_fail = $db->result->user_id;
 		$query = "select count(id_user) as log_number from jorge_logger where id_user = '$ui_fail' and log_time > date_sub(now(),interval 1 minute)";

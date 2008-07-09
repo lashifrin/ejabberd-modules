@@ -23,7 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 require_once("headers.php");
 require_once("upper.php");
 
-$html->render_title($logger_overview[$lang]);
+$html->set_body($logger_overview[$lang]);
 
 if ($_GET[a]) {
 
@@ -57,36 +57,95 @@ if (!ctype_digit($event_id) AND !ctype_digit($level_id)) {
 		
 }
 
-print '<div align="center">';
-print '<form method="post" action="logger.php">';
-print '<select name="e" class="cc3">';
-print '<option value="none">--- select event ---';
-print '<option value="1"'; if ($event_id=="1") { print ' "selected"'; } print ' >Login';
-print '<option value="2"'; if ($event_id=="2") { print ' "selected"'; } print ' >Logout';
-print '<option value="3"'; if ($event_id=="3") { print ' "selected"'; } print ' >Login failed';
-print '<option value="4"'; if ($event_id=="4") { print ' "selected"'; } print ' >Chat deletion';
-print '<option value="5"'; if ($event_id=="5") { print ' "selected"'; } print ' >Entire archive deletion';
-print '<option value="6"'; if ($event_id=="6") { print ' "selected"'; } print ' >Turn off archivization';
-print '<option value="7"'; if ($event_id=="7") { print ' "selected"'; } print ' >Turn on archivization';
-print '<option value="8"'; if ($event_id=="8") { print ' "selected"'; } print ' >Chat exports';
-print '</select>&nbsp;';
-print '<select name="l" class="cc3">';
-print '<option value="none">--- select level ---';
-print '<option value="1"'; if ($level_id=="1") { print ' "selected"'; } print '>normal';
-print '<option value="2"'; if ($level_id=="2") { print ' "selected"'; } print '>warning';
-print '<option value="3"'; if ($level_id=="3") { print ' "selected"'; } print '>alert';
-print '</select>';
-print '<input type="submit" name="filter_commit" value="Filter">';
-print '</form>';
-print '</div>';
-print '<center>';
-print '<table id="maincontent" class="ff" align="center" border="0" colspan="0" cellspacing="0" >'."\n";
-print '<tr class="header"><td style="padding-left: 5px; padding-right: 0px;">'.$logger_f1[$lang].'</td>
-	<td style="padding-left: 0px; padding-right: 10px;">'.$logger_f2[$lang].'</td>
-	<td style="padding-left: 0px; padding-right: 10px;">'.$logger_f3[$lang].'</td>
-	<td style="padding-left: 0px; padding-right: 10px;">'.$logger_f4[$lang].'</td></tr>'."\n";
-print '<tr class="spacer"><td colspan="4"></td></tr>'."\n";
-print '<tbody id="searchfield">';
+$html->set_body('<div align="center">
+		<form method="post" action="logger.php">
+		<select name="e" class="cc3">
+		<option value="none">--- select event ---
+	');
+$html->set_body('<option value="1"');
+if ($event_id=="1") { 
+
+	$html->set_body(' "selected"');
+} 
+
+$html->set_body(' >Login<option value="2"');
+
+if ($event_id=="2") { 
+
+	$html->set_body('"selected"');
+
+} 
+$html->set_body(' >Logout<option value="3"');
+if ($event_id=="3") { 
+
+	$html->set_body('"selected"');
+
+} 
+$html->set_body(' >Login failed<option value="4"');
+if ($event_id=="4") { 
+	
+	$html->set_body('"selected"');
+} 
+$html->set_body(' >Chat deletion<option value="5"');
+if ($event_id=="5") { 
+
+	$html->set_body('"selected"');
+} 
+$html->set_body('>Entire archive deletion<option value="6"');
+if ($event_id=="6") { 
+
+	$html->set_body('"selected"');
+
+} 
+$html->set_body( ' >Turn off archivization<option value="7"');
+if ($event_id=="7") { 
+
+	$html->set_body('"selected"');
+	
+} 
+$html->set_body( ' >Turn on archivization<option value="8"');
+if ($event_id=="8") { 
+
+	$html->set_body('"selected"');
+	
+} 
+
+$html->set_body(' >Chat exports
+		</select>&nbsp;
+		<select name="l" class="cc3">
+		<option value="none">--- select level ---
+	');
+$html->set_body('<option value="1"');
+if ($level_id=="1") { 
+
+	$html->set_body('"selected"');
+
+} 
+$html->set_body('>normal<option value="2"');
+if ($level_id=="2") { 
+
+	$html->set_body('"selected"');
+
+} 
+$html->set_body('>warning<option value="3"');
+if ($level_id=="3") { 
+
+	$html->set_body('"selected"');
+	
+} 
+$html->set_body('>alert</select>
+		<input type="submit" name="filter_commit" value="Filter">
+		</form>
+		</div>
+		<center>
+		<table id="maincontent" class="ff" align="center" border="0" colspan="0" cellspacing="0" >
+		<tr class="header"><td style="padding-left: 5px; padding-right: 0px;">'.$logger_f1[$lang].'</td>
+		<td style="padding-left: 0px; padding-right: 10px;">'.$logger_f2[$lang].'</td>
+		<td style="padding-left: 0px; padding-right: 10px;">'.$logger_f3[$lang].'</td>
+		<td style="padding-left: 0px; padding-right: 10px;">'.$logger_f4[$lang].'</td></tr>
+		<tr class="spacer"><td colspan="4"></td></tr>
+		<tbody id="searchfield">
+	');
 
 if (!$offset_start) { 
 		
@@ -141,18 +200,19 @@ foreach ($result as $results) {
 			$f_color=""; 
 			
 	}
-	print '<tr class="'.$col.'" '.$f_color.'><td style="padding-left: 0px; padding-right: 10px;">'.$results[event].'</td>'."\n";
-	print '<td>'.$results[log_time].'</td>'."\n";
-	print '<td style="text-align: center;">'.$results[level].'</td>'."\n";
-	print '<td style="padding-left: 5px;">'.htmlspecialchars($ip_desc.$results[extra]).'</td></tr>'."\n";
+	$html->set_body('<tr class="'.$col.'" '.$f_color.'><td style="padding-left: 0px; padding-right: 10px;">'.$results[event].'</td>
+			<td>'.$results[log_time].'</td>
+			<td style="text-align: center;">'.$results[level].'</td>
+			<td style="padding-left: 5px;">'.htmlspecialchars($ip_desc.$results[extra]).'</td></tr>
+		');
 
 }
 
-print '</tbody>';
+$html->set_body('</tbody>');
 
 // pagination
-print '<tr class="spacer" height="1px"><td colspan="4"></td></tr>';
-print '<tr class="foot"><td style="text-align: center;" colspan="4">';
+$html->set_body('<tr class="spacer" height="1px"><td colspan="4"></td></tr><tr class="foot"><td style="text-align: center;" colspan="4">');
+
 for($i=0;$i < $nume;$i=$i+300){
 
 	if ($i!=$offset_start) {
@@ -166,18 +226,17 @@ for($i=0;$i < $nume;$i=$i+300){
 					$l="&l=$level_id";
 				}
 		
-			print '<a href="?a='.$i.$e.$l.'"> <b>['.$i.']</b> </font></a>';
+			$html->set_body('<a href="?a='.$i.$e.$l.'"> <b>['.$i.']</b> </font></a>');
 	
 		}
 	    
 	    	else { 
 
-	    		print ' -'.$i.'- '; 
+	    		$html->set_body(' -'.$i.'- ');
 	}
 	
 }
 
-print '</td></tr></table></center>';
+$html->set_body('</td></tr></table></center>');
 require_once("footer.php");
-
 ?>

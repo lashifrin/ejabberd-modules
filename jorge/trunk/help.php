@@ -2,7 +2,7 @@
 /*
 Jorge - frontend for mod_logdb - ejabberd server-side message archive module.
 
-Copyright (C) 2007 Zbigniew Zolkiewski
+Copyright (C) 2008 Zbigniew Zolkiewski
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -23,14 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 require_once("headers.php");
 require_once("upper.php");
 
-print '<h2>'.$help_but[$lang].'</h2>';
-print '<small>'.$help_notice[$lang].'</small>';
-
-print $help_search_tips[$lang];
-print $help_my_links_note[$lang];
-print $help_advanced_tips[$lang];
-
-
+$html->set_body('<h2>'.$help_but[$lang].'</h2><small>'.$help_notice[$lang].'</small>'.$help_search_tips[$lang].$help_my_links_note[$lang].$help_advanced_tips[$lang]);
 
 require_once("footer.php");
 ?>

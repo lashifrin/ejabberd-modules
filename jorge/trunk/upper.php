@@ -259,7 +259,7 @@ if (preg_match("/search_v2.php/i",$location))
 // check if archivization is currently enabled...
 if ($sess->get('log_status') == "0") { 
 
-		$html->system_message('<center><div class="message">'.$status_msg1[$lang].'</div></center>');
+		$html->system_message($status_msg1[$lang]);
 	
 }
 

@@ -103,7 +103,7 @@ if ($search_phase!="") {
 
 			if ($db->create_search_results_table() === false) {
 
-						$html->render_alert($oper_fail[$lang]);
+						$html->alert_message($oper_fail[$lang]);
 				}
 
 				else {
@@ -117,7 +117,7 @@ if ($search_phase!="") {
 	//main table
 	if ($time2_start AND $time2_end) {
 
-			$html->render_status($search_warn[$lang].': '.$time2_start.' - '.$time2_end);
+			$html->status_message($search_warn[$lang].': '.$time2_start.' - '.$time2_end);
 	
 		}
 		else {
@@ -126,7 +126,7 @@ if ($search_phase!="") {
 			$time2_end = null;
 	}
 
-	$html->render('<h2>'.$search_res[$lang].'</h2><table align="center" border="0" cellspacing="0" class="ff">
+	$html->set_body('<h2>'.$search_res[$lang].'</h2><table align="center" border="0" cellspacing="0" class="ff">
 			<tr class="header"><td>'.$time_t[$lang].'</td><td>'.$talks[$lang].'</td><td>'.$thread[$lang].'</td><td>'.$score.'</td></tr>
 			<tr class="spacer"><td colspan="4"></td></tr>'
 			);
@@ -249,7 +249,7 @@ if ($search_phase!="") {
 								) === false ) {
 
 						
-									$html->render_alert($oper_fail[$lang]);
+									$html->alert_message($oper_fail[$lang]);
 
 							}
 
@@ -288,7 +288,7 @@ if ($search_phase!="") {
 							if ($time_diff>$split_line AND $day_mark>1 AND $type!="4") { 
 					
 								$in_minutes = round(($time_diff/60),0);
-								$html->render('<tr class="splitl">
+								$html->set_body('<tr class="splitl">
 									<td colspan="5" style="font-size: 10px;">'.verbose_split_line($in_minutes,$lang,$verb_h,$in_min).'<hr size="1" noshade="" color="#cccccc"/></td></tr>');
 							}
 
@@ -300,13 +300,13 @@ if ($search_phase!="") {
 							// cleaning username
 							$jid = htmlspecialchars($talk);
 				
-							$html->render('<tr id="pretty" title="'.$jid.'@'.htmlspecialchars($sname).'" 
+							$html->set_body('<tr id="pretty" title="'.$jid.'@'.htmlspecialchars($sname).'" 
 									style="cursor: pointer;" bgcolor="'.$col.'" 
 									onclick="window.open(\''.$view_type.'?a='.$to_base.'\');" 
 									onMouseOver="this.bgColor=\'c3d9ff\';" 
-									onMouseOut="this.bgColor=\'#'.$col.'\';">');
-
-							$html->render('<td width="120">'.$results["ts"].'</td>');
+									onMouseOut="this.bgColor=\'#'.$col.'\';">
+									<td width="120">'.$results["ts"].'</td>
+									');
 
 							// username from user roster
 							$talk = query_nick_name($ejabberd_roster,$talk,$sname);
@@ -334,12 +334,12 @@ if ($search_phase!="") {
 
 							if ($aa<2 AND $tt<2) { 
 
-									$html->render('<td style="text-align: left;">&nbsp;'.$out.'&nbsp;&nbsp;</td>');
+									$html->set_body('<td style="text-align: left;">&nbsp;'.$out.'&nbsp;&nbsp;</td>');
 
 								}
 								else {
 							
-									$html->render('<td style="text-align: right;"> -</td>');
+									$html->set_body('<td style="text-align: right;"> -</td>');
 
 							}
 
@@ -347,7 +347,7 @@ if ($search_phase!="") {
 
 							// message body
 							$body_message=wordwrap(str_replace("\n","<br>",htmlspecialchars($results["body"])),107,"<br>",true);
-							$html->render('<td width="700">'.$body_message.'</td>');
+							$html->set_body('<td width="700">'.$body_message.'</td>');
 
 							// run pagination code only if search contains from: clausule
 							/*
@@ -393,7 +393,7 @@ if ($search_phase!="") {
 									$trange = $enc->crypt_url("time_start=$time2_start&time_end=$time2_end");
 									$lnk_n = $enc->crypt_url("tslice=$entry[at]&offset_arch=$next_r&offset_day=$internal&search_phase=$plain_phase&tag_count=$tag_count");
 
-									$html->render('<tr class="spacer"><td colspan="4"></td></tr>
+									$html->set_body('<tr class="spacer"><td colspan="4"></td></tr>
 											<tr class="maint" style="background-image: url(img/bar_new.png); background-repeat:repeat-x; font-weight: bold; color: #fff;">
 											<td colspan="2" style="text-align: left;">
 											<a href="search_v2.php?a='.$lnk_p.'"></a></td>
@@ -426,12 +426,12 @@ if ($search_phase!="") {
 
 			if ($arch_table == $external) {
 					
-					$html->render('<tr height="6" class="spacerb"><td colspan="3" style="text-align: center;"><small>'.$no_more[$lang].'</small></td></tr>');
+					$html->set_body('<tr height="6" class="spacerb"><td colspan="3" style="text-align: center;"><small>'.$no_more[$lang].'</small></td></tr>');
 				}
 
 			elseif($type=="7") {
 
-					$html->render('<tr height="6" class="spacer"><td colspan="3" style="text-align: center;"><small>'.$nx_dy[$lang].'</small></td></tr>');
+					$html->set_body('<tr height="6" class="spacer"><td colspan="3" style="text-align: center;"><small>'.$nx_dy[$lang].'</small></td></tr>');
 
 					// initialize thread
 					$aa="0";
@@ -448,7 +448,7 @@ if ($search_phase!="") {
 		$db->get_search_results();
 		$result = $db->result;
 		$num_results = count($result);
-		$html->render('<tr class="maint"><td colspan="4" style="text-align: center; font-weight: normal;">'.$search_tip[$lang].' <b>'.$num_results.'</b>'.$search_why[$lang].'</td></tr>
+		$html->set_body('<tr class="maint"><td colspan="4" style="text-align: center; font-weight: normal;">'.$search_tip[$lang].' <b>'.$num_results.'</b>'.$search_why[$lang].'</td></tr>
 				<tr class="spacerb"><td colspan="5"></td></tr>');
 	
 		foreach ($result as $dat) {
@@ -507,26 +507,26 @@ if ($search_phase!="") {
 			// advise user if chat is deleted. Extension=1 stands for "Chat temporary deleted" or "Chat awaiting deletion"
 			if ($dat[ext] == 1) {
 
-				$html->render('<tr bgcolor="b5b5b5"><td colspan="4" style="text-align: center; font-weight: bold;">'.$marked_as_d[$lang].'</td></tr>');
+				$html->set_body('<tr bgcolor="b5b5b5"><td colspan="4" style="text-align: center; font-weight: bold;">'.$marked_as_d[$lang].'</td></tr>');
 	
 			}
 
 			// opening line 
 			if ($dat[ext]!=1) {
 			
-					$html->render('<tr id="pretty" title="'.$jid.'@'.htmlspecialchars($sname).'" 
+					$html->set_body('<tr id="pretty" title="'.$jid.'@'.htmlspecialchars($sname).'" 
 						style="cursor: pointer;" bgcolor="'.$col.'" onclick="window.location=\''.$view_type.'?a='.$to_base.'\'" 
 						onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#'.$col.'\';">');
 		
 				}
 				else {
 		
-					$html->render('<tr id="pretty" title="'.$jid.'@'.htmlspecialchars($sname).'" style="cursor: pointer;" bgcolor="b5b5b5" onclick="window.location=\'trash.php\'">');
+					$html->set_body('<tr id="pretty" title="'.$jid.'@'.htmlspecialchars($sname).'" style="cursor: pointer;" bgcolor="b5b5b5" onclick="window.location=\'trash.php\'">');
 		
 			}
 
 			// content
-			$html->render('<td width="120">'.$dat["ts"].'</td>
+			$html->set_body('<td width="120">'.$dat["ts"].'</td>
 					<td style="text-align: left;">'.$fr.'&nbsp;&nbsp;'.cut_nick($talk).'&nbsp;&nbsp;</td>
 					<td width="700">'.$body_talk.'</td>
 					<td style="text-align: center;">'.round($dat[score],2).'</td>
@@ -535,24 +535,24 @@ if ($search_phase!="") {
 
 		}
 
-		$html->render('<tr class="spacer" height="1px"><td colspan="5"></td></tr><tr class="foot" height="15px"><td colspan="5"></td></tr>');
+		$html->set_body('<tr class="spacer" height="1px"><td colspan="5"></td></tr><tr class="foot" height="15px"><td colspan="5"></td></tr>');
 
 	}
 
 	if($a==$b) { 
 
-		$html->render('<tr><td colspan="4" style="text-align: center;"><b>'.$no_result[$lang].'</b></td></tr>');
+		$html->set_body('<tr><td colspan="4" style="text-align: center;"><b>'.$no_result[$lang].'</b></td></tr>');
 		
 	}
 
-	$html->render('</table>');
+	$html->set_body('</table>');
 
 	}
 
 	else {
 
 		// if user input is empty:
-		$html->render('<br><br><center><b>'.$search1[$lang].'</b></center><br><br><br><br>"');
+		$html->set_body('<br><br><center><b>'.$search1[$lang].'</b></center><br><br><br><br>"');
 
 }
 

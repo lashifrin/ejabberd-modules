@@ -53,12 +53,12 @@ if ($del === "t") {
 
 		if ($db->del_mylink($link_id) === true) {
 		
-				$html->render_status($my_links_removed[$lang],"message");
+				$html->status_message($my_links_removed[$lang]);
 			}
 
 			else {
 				
-				$html->render_alert($oper_fail[$lang],"message");
+				$html->alert_message($oper_fail[$lang]);
 			
 			}
 
@@ -85,14 +85,13 @@ if ($tigger === $my_links_commit[$lang]) {
 				$desc = substr($desc,0,120);
 				if($db->add_mylink($peer_name_id,$peer_server_id,$datat,$link,$desc) === true) {
 
-						$html->render_status($my_links_added[$lang].'
-								<br><a href="'.$view_type.'?a='.$link.'" style="color: blue;"><b>'.$my_links_back[$lang].'</b></a></div></center>
-							',"message");
+						$html->status_message($my_links_added[$lang].'
+									<br><a href="'.$view_type.'?a='.$link.'" style="color: blue;"><b>'.$my_links_back[$lang].'</b></a></div></center>');
 
 					}
 					else{
 
-						$html->render_alert($oper_fail[$lang]);
+						$html->alert_message($oper_fail[$lang]);
 
 				}
 	
@@ -110,7 +109,7 @@ if ($variables[ismylink] === "1") {
 	$jid=''.$uname.'@'.$sname.'';
 	$hidden_fields = $enc->crypt_url("tslice=$enc->tslice&peer_name_id=$variables[peer_name_id]&peer_server_id=$variables[peer_server_id]&lnk=$variables[lnk]&strt=$variables[strt]&linktag=$variables[linktag]");
 
-	$html->render('
+	$html->set_body('
 		<center>
 		'.$my_links_save_d[$lang].'<br />
 		<table class="ff" border="0" cellspacing="0">
@@ -128,17 +127,17 @@ if ($variables[ismylink] === "1") {
 
 }
 
-$html->render_title($my_links_desc_m[$lang],$my_links_desc_e[$lang]);
+$html->set_body('<h2>'.$my_links_desc_m[$lang].'</h2><small>'.$my_links_desc_e[$lang].'</small>');
 
 if ($my_links_count === "0") { 
 		
-		$html->render_status($my_links_no_links[$lang]);
+		$html->status_message($my_links_no_links[$lang]);
 		
 	}
 
 	else {
 
-		$html->render('
+		$html->set_body('
 				<center><table id="maincontent" class="ff" cellspacing="0">
 				<tr class="header"><td>'.$my_links_link[$lang].'</td><td>'.$my_links_chat[$lang].'</td><td>'.$my_links_desc[$lang].'</td></tr>
 				<tr class="spacer" height="1px"><td colspan="4"></td></tr>
@@ -155,7 +154,7 @@ if ($my_links_count === "0") {
 			$nickname=query_nick_name($ejabberd_roster,$peer_name,$peer_server);
 			$desc = htmlspecialchars($entry[description]);
 			$jid = $peer_name.'@'.$peer_server;
-			$html->render('
+			$html->set_body('
 					<tr style="cursor: pointer;" bgcolor="#e8eef7" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#e8eef7\';">
 					<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';" style="padding-left: 10px; padding-right: 10px">'.pl_znaczki(verbose_date($entry['datat'],$lang)).'</td>
 					<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';">&nbsp;<b>'.cut_nick(htmlspecialchars($nickname)).'</b> ('.htmlspecialchars($jid).')&nbsp;</td>
@@ -165,7 +164,7 @@ if ($my_links_count === "0") {
 				');
 		}
 
-		$html->render('
+		$html->set_body('
 				</tbody><tr class="spacer"><td colspan="4"></td></tr><tr class="foot"><td colspan="4" height="15"></td></tr></table></center>
 			');
 

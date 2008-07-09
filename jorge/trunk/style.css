@@ -97,6 +97,17 @@ div.message {
 	width: 350px;
 }
 
+div.system {
+	background-color: #ffffff;
+	font-weight: bold;
+	text-align: center;
+	text-size: x-small;
+	width: 350px;
+	border-width: 1px;
+	border-color: #0000ff;
+	border-style: solid;
+}
+
 p.message {
 	background-color: #fad163; 
 	font-weight: bold;

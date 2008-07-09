@@ -37,34 +37,38 @@ if ($location=="footer.php") {
 
 if (!preg_match("/index.php/i",$location)) {
 
-print '<div align="right" style="clear: left;"><a href="mailto:zbyszek@jabster.pl">'.$quest1[$lang].'</a></div>';
+	$html->foot('<div align="right" style="clear: left;"><a href="mailto:zbyszek@jabster.pl">'.$quest1[$lang].'</a></div>');
 
 }
 
-?>
-<br>
-<div style="background-image: url(img/bell-down.png); height: 3px;"></div>
-<div align="center"><? print $links; ?></div><br>
-<div align="center" style="color: gray;"><? print $copy; ?></div>
-<p style="font-size: xx-small; text-align: right;">v1.4.0</p><br>
-<?
+$html->foot('
+	<br><div style="background-image: url(img/bell-down.png); height: 3px;"></div>
+	<div align="center">'.$links.'</div><br>
+	<div align="center" style="color: gray;">'.$copy.'></div>
+	<p style="font-size: xx-small; text-align: right;">v1.5.0</p><br>
+	');
 
 // footer for admins...
 $time_end = getmicrotime();
 $time = substr($time_end - $time_start, 0, 10);
-if (TOKEN==ADMIN_NAME) {print '<small>'.$admin_site_gen[$lang].$time.'s.</small>'; };
+if (TOKEN==ADMIN_NAME) { 
+
+	$html->foot('<small>'.$admin_site_gen[$lang].$time.'s.</small>');
+	
+};
 
 // execude following code only when user is logged in
 if (!preg_match("/index.php/i",$location)) {
 
-?>
+	$html->foot('
 
-<script type="text/javascript">
-	$(document).ready(function() {
-	$("#t_search").autocomplete(
-		[
+	<script type="text/javascript">
+		$(document).ready(function() {
+		$("#t_search").autocomplete(
+			[
 
-	<?
+	');
+
 	// this is for local autocomplete, TODO: make it dynamic via AJAX
 	$ejabberd_roster->sort_by_jid("az");
 	$roster_auto = $ejabberd_roster->get_roster();
@@ -72,13 +76,12 @@ if (!preg_match("/index.php/i",$location)) {
 
 		$jid = htmlspecialchars(key($roster_auto));
 		array_shift($roster_auto);
-		print '"from:'.$jid.'",';
+		$html->foot('"from:'.$jid.'",');
 
 	}
 
-	print "\" \"";
+	$html->foot('"\" \""
 
-	?>
 		],
 		{
 		minChars: 0,
@@ -89,19 +92,20 @@ if (!preg_match("/index.php/i",$location)) {
 		matchContains: true
 		}
 
-	);
-});
+			);
+	
+		});
 
-</script>
+	</script>
 
-<?
+	');
 
 }
 
-?>
+$html->foot('</body></html>');
 
-</body>
-</html>
-<?
-	ob_end_flush();
+// render html output
+$html->commit_render();
+
+ob_end_flush();
 ?>
