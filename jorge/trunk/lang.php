@@ -72,7 +72,7 @@ $cap_cant[eng] = "Can't read? click here...";
 $login_act[pol] = pl_znaczki("Zaloguj");
 $login_act[eng] = "Login";
 
-$devel_info[pol] = pl_znaczki("Wersja developerska");
+$devel_info[pol] = pl_znaczki("Wersja BETA");
 $devel_info[eng] = "Development version";
 
 $activate_m[pol] = pl_znaczki("AKTYWUJ");

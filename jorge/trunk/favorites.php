@@ -19,7 +19,6 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 */
-
 require_once("headers.php");
 require_once("upper.php");
 
@@ -105,7 +104,7 @@ if (mysql_num_rows($result)>0) {
 
 	else {
 
-		$html->set_bod('<center><div class="message" style="width: 450px;">'.$fav_empty[$lang].'</div></center>');
+		$html->set_body('<center><div class="message" style="width: 450px;">'.$fav_empty[$lang].'</div></center>');
 	
 }
 

@@ -72,11 +72,19 @@ if ($wo_sess || $inpLogin || $inpPass) {
 
 }
 
-if ($_GET['act']=='logout') {
+if ($_GET[act]==="logout") {
 
-		$ui = get_user_id($sess->get('uid_l'),$xmpp_host);
-		$db->set_user_id($ui);
-		$db->set_logger("2","1",$rem_adre);
+		if ($db->get_user_id($sess->get('uid_l')) === true) {
+		
+			if($db->result->user_id) {
+			
+				$db->set_user_id($db->result->user_id);
+				$db->set_logger("2","1",$rem_adre);
+			
+			}
+		
+		}
+
 		$sess->finish();
 		header("Location: index.php");
 	

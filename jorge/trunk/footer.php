@@ -58,7 +58,7 @@ if (TOKEN==ADMIN_NAME) {
 };
 
 // execude following code only when user is logged in
-if (!preg_match("/index.php/i",$location)) {
+if (!preg_match("/index.php/i",$location) AND !preg_match("/not_enabled.php/i",$location)) {
 
 	$html->foot('
 
