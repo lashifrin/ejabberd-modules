@@ -174,8 +174,8 @@ datacoldescs(_N, _, Descs) ->
     lists:reverse(Descs).
 
 decode_descs(OidMap, Cols) ->
-    decode_descs(Cols, []).
-decode_descs(OidMap, [], Descs) ->
+    decode_descs(OidMap, Cols, []).
+decode_descs(_OidMap, [], Descs) ->
     {ok, lists:reverse(Descs)};
 decode_descs(OidMap, [Col|ColTail], Descs) ->
     {Name, Format, ColNumber, Oid, _, _, _} = Col,
