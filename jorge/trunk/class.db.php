@@ -667,9 +667,9 @@ class db_manager {
 		$id_log_level = $this->sql_validate($event_level,"integer");
 		$extra = $this->sql_validate($extra,"string");
 		$user_id = $this->user_id;
-		$query="insert into 
+		$query="INSERT INTO 
 				jorge_logger (id_user,id_log_detail,id_log_level,log_time,extra) 
-			values 
+			VALUES 
 				('$user_id','$id_log_detail','$id_log_level',NOW(),'$extra')
 				
 		";
@@ -1825,6 +1825,33 @@ class db_manager {
 
 		$this->select($query,"raw");
 		return $this->commit_select(array("at"));
+
+	}
+
+	public function insert_user_id($user_name) {
+
+		$this->id_query = "Q059";
+		$user_name = $this->sql_validate($user_name,"string");
+		$query="INSERT INTO 
+				`logdb_users_".$this->xmpp_host."` 
+			SET 
+				username='$user_name'
+		";
+		return $this->insert($query);
+
+	}
+
+	public function insert_new_settings($user_name) {
+
+		$this->id_query = "Q060";
+		$user_name = $this->sql_validate($user_name,"string");
+		$query="INSERT INTO 
+				`logdb_settings_".$this->xmpp_host."` (owner_id,dolog_default) 
+			VALUES 
+				((SELECT user_id FROM `logdb_users_".$this->xmpp_host."` WHERE username='$user_name'), '1')
+				
+		";
+		return $this->insert($query);
 
 	}
 
