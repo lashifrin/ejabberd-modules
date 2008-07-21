@@ -1,3 +1,7 @@
+2008-07-21  Badlop  <badlop@process-one.net>
+
+	* src/mod_webpresence.erl: Allow image request with uri image.gif
+
 2008-01-29  Badlop  <badlop@process-one.net>
 
 	* src/mod_webpresence.erl: Support 'cb' parameter in js requests,

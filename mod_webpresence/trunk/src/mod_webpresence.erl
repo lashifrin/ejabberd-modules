@@ -861,6 +861,8 @@ serve_web_presence(TypeURL, User, Server, Tail, #request{lang = Lang1, q = Q}) -
 		   {image, WP, LUser, LServer};
 	       ["image.php"] -> 
 		   {image, WP, LUser, LServer};
+	       ["image.gif"] -> 
+		   {image, WP, LUser, LServer};
 	       ["image", Theme] -> 
 		   {image, WP, LUser, LServer, Theme};
 	       ["image", "res", Resource] -> 
