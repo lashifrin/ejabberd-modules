@@ -401,7 +401,7 @@ get_roster(User, Server) ->
 		 true ->
 		     mod_roster:get_user_roster([], {User, Server});
 		 false ->
-		     case list:member(mod_roster_odbc, Modules) of
+		     case lists:member(mod_roster_odbc, Modules) of
 			 true ->
 			     mod_roster_odbc:get_user_roster([], {User, Server});
 			 false ->

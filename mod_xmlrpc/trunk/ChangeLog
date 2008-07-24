@@ -1,3 +1,7 @@
+2008-07-24  Badlop  <badlop@process-one.net>
+
+	* src/mod_xmlrpc.erl: Fixed typo in get_roster
+
 2008-07-08  Badlop  <badlop@process-one.net>
 
 	* src/mod_xmlrpc.erl: Detect if mod_roster or mod_roster_odbc is
