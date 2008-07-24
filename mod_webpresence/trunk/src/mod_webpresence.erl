@@ -247,8 +247,8 @@ do_route1_iq(_, _, _, _, _, _) ->
 
 iq_disco_info(Lang) ->
     [{xmlelement, "identity",
-      [{"category", "presence"},
-       {"type", "text"},
+      [{"category", "component"},
+       {"type", "presence"},
        {"name", ?T("Web Presence")}], []},
      {xmlelement, "feature", [{"var", ?NS_REGISTER}], []},
      {xmlelement, "feature", [{"var", ?NS_VCARD}], []}].
@@ -373,6 +373,7 @@ send_message_registered(WP, To, Host, BaseURL, Lang) ->
     Oavatar = case WP#webpresence.avatar of
 		  false -> "";
 		  true -> "  avatar\n"
+			 "  avatar/my.png\n"
 	      end,
     Ojs = case WP#webpresence.js of
 	      false -> "";
@@ -387,10 +388,11 @@ send_message_registered(WP, To, Host, BaseURL, Lang) ->
 		 "---" -> "";
 		 I when is_list(I) -> 
 		     "  image\n"
-			 "  image.php\n"
+			 "  image/example.php\n"
+			 "  image/mypresence.png\n"
 			 "  image/res/<"++?T("Resource")++">\n"
-			 "  image/<"++?T("Icon Theme")++">\n"
-			 "  image/<"++?T("Icon Theme")++">/res/<"++?T("Resource")++">\n"
+			 "  image/theme/<"++?T("Icon Theme")++">\n"
+			 "  image/theme/<"++?T("Icon Theme")++">/res/<"++?T("Resource")++">\n"
 	     end,
     Oxml = case WP#webpresence.xml of
 	       false -> "";
@@ -467,7 +469,7 @@ process_iq_register_set2(From, Els, Host, BaseURL, Lang) ->
 	    {result, []};
 	{?NS_XDATA, "submit"} ->
 	    XData = jlib:parse_xdata_submit(XEl),
-	    invalid =/= XData,
+	    false = (invalid == XData),
 	    JidUrl = get_attr("jidurl", XData, "false"),
 	    RidUrl = get_attr("ridurl", XData, "false"),
 	    XML = get_attr("xml", XData, "false"),
@@ -491,7 +493,7 @@ iq_get_vcard() ->
     [{xmlelement, "FN", [],
       [{xmlcdata, "ejabberd/mod_webpresence"}]},
      {xmlelement, "URL", [],
-      [{xmlcdata, "http://ejabberd.jabber.ru/mod_webpresence"}]},
+      [{xmlcdata, "http://www.ejabberd.im/mod_webpresence"}]},
      {xmlelement, "DESC", [],
       [{xmlcdata, "ejabberd web presence module\nCopyright (c) 2006-2007 Igor Goryachev, 2007 Badlop"}]}].
 
@@ -709,23 +711,23 @@ show_presence({image_no_check, Theme, Pr}) ->
 
 show_presence({image, WP, LUser, LServer}) ->
     Icon = WP#webpresence.icon,
-    "---" =/= Icon,
+    false = ("---" == Icon),
     Pr = get_presences({show, LUser, LServer}),
     show_presence({image_no_check, Icon, Pr});
 
 show_presence({image, WP, LUser, LServer, Theme}) ->
-    "---" =/= WP#webpresence.icon,
+    false = ("---" == WP#webpresence.icon),
     Pr = get_presences({show, LUser, LServer}),
     show_presence({image_no_check, Theme, Pr});
 
 show_presence({image_res, WP, LUser, LServer, LResource}) ->
     Icon = WP#webpresence.icon,
-    "---" =/= Icon,
+    false = ("---" == Icon),
     Pr = get_presences({show, LUser, LServer, LResource}),
     show_presence({image_no_check, Icon, Pr});
 
 show_presence({image_res, WP, LUser, LServer, Theme, LResource}) ->
-    "---" =/= WP#webpresence.icon,
+    false = ("---" == WP#webpresence.icon),
     Pr = get_presences({show, LUser, LServer, LResource}),
     show_presence({image_no_check, Theme, Pr});
 
@@ -857,18 +859,14 @@ serve_web_presence(TypeURL, User, Server, Tail, #request{lang = Lang1, q = Q}) -
     Lang = parse_lang(Lang1),
     io:format("tail: ~p~n", [Tail]),
     Args = case Tail of
-	       ["image"] -> 
-		   {image, WP, LUser, LServer};
-	       ["image.php"] -> 
-		   {image, WP, LUser, LServer};
-	       ["image.gif"] -> 
-		   {image, WP, LUser, LServer};
-	       ["image", Theme] -> 
-		   {image, WP, LUser, LServer, Theme};
-	       ["image", "res", Resource] -> 
-		   {image_res, WP, LUser, LServer, Resource};
-	       ["image", Theme, "res", Resource] -> 
+	       ["image", "theme", Theme, "res", Resource | _] -> 
 		   {image_res, WP, LUser, LServer, Theme, Resource};
+	       ["image", "theme", Theme | _] -> 
+		   {image, WP, LUser, LServer, Theme};
+	       ["image", "res", Resource | _] -> 
+		   {image_res, WP, LUser, LServer, Resource};
+	       ["image" | _] -> 
+		   {image, WP, LUser, LServer};
 	       ["xml"] -> 
 		   {xml, WP, LUser, LServer, Show_us};
 	       ["js"] -> 
@@ -877,7 +875,7 @@ serve_web_presence(TypeURL, User, Server, Tail, #request{lang = Lang1, q = Q}) -
 		   {text, WP, LUser, LServer};
 	       ["text", "res", Resource] -> 
 		   {text, WP, LUser, LServer, Resource};
-	       ["avatar"] -> 
+	       ["avatar" | _] -> 
 		   {avatar, WP, LUser, LServer}
 	   end,
     show_presence(Args).

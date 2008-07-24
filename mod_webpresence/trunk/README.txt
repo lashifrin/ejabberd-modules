@@ -3,7 +3,7 @@
 
 	Author: Badlop
 	Requires: ejabberd SVN (not possible with 1.1.x)
-	http://ejabberd.jabber.ru/mod_webpresence
+	http://www.ejabberd.im/mod_webpresence
 
 
 	DESCRIPTION
@@ -185,7 +185,7 @@ on a web browser open the corresponding URI:
  * for image output:
 	http://example.org:5280/presence/jid/<user>/<server>/image/
  * for image output with theme:
-	http://example.org:5280/presence/jid/<user>/<server>/image/<theme>/
+	http://example.org:5280/presence/jid/<user>/<server>/image/theme/<theme>/
  * for avatar output:
 	http://example.org:5280/presence/jid/<user>/<server>/avatar/ 
 
@@ -193,7 +193,12 @@ If you want to show the image or text outputs of a specific resource, add /res/<
 to the URI:
   http://example.org:5280/presence/jid/<user>/<server>/text/res/<resource>
   http://example.org:5280/presence/jid/<user>/<server>/image/res/<resource>
-  http://example.org:5280/presence/jid/<user>/<server>/image/<theme>/res/<resource>
+  http://example.org:5280/presence/jid/<user>/<server>/image/theme/<theme>/res/<resource>
+
+For output types image and avatar, you can append any string to a valid URI.
+For example, you can use this URI:
+  http://example.org:5280/presence/jid/<user>/<server>/image/theme/<theme>/myimage.jpeg
+The response is exactly the same than the regular image/theme/<theme>/
 
 If you don't want to reveal your Jabber ID, you can enable Random ID URI.
 After the registration the user gets a message with his a pseudo-random ID.
