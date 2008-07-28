@@ -1,3 +1,7 @@
+2008-07-28  Badlop  <badlop@process-one.net>
+
+	* doc/mod_http_fileserver.tex: Update LaTeX code for section title
+
 2008-05-16  Badlop  <badlop@process-one.net>
 
 	* src/web/mod_http_fileserver.erl: Use httpd_util:to_lower when

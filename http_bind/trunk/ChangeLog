@@ -1,3 +1,7 @@
+2008-07-28  Badlop  <badlop@process-one.net>
+
+	* doc/mod_http_bind.tex: Update LaTeX code for section title
+
 2008-03-12  Badlop  <badlop@process-one.net>
 
 	* src/web/mod_http_bind.erl (start): Provide explanation in error
