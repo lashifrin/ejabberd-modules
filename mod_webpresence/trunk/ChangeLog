@@ -1,3 +1,8 @@
+2008-07-29  Badlop  <badlop@process-one.net>
+
+	* src/mod_webpresence.erl: Fix calls to supervisor:terminate_child
+	and ejabberd_hooks:delete
+
 2008-07-25  Badlop  <badlop@process-one.net>
 
 	* src/mod_webpresence.erl: Changed the syntax of image request

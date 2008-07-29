@@ -39,8 +39,8 @@ start(Host, Opts) ->
 
 stop(Host) ->
     ejabberd_ctl:unregister_commands(Host, command_list(), ?MODULE, ctl_process),
-    ejabberd_hooks:remove(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
-    ejabberd_hooks:remove(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
+    ejabberd_hooks:delete(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
+    ejabberd_hooks:delete(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
     %% Delete tasks of this host
     [delete_task(Task) || Task <- get_tasks(Host)].
 

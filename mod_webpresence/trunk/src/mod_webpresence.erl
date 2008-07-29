@@ -73,7 +73,8 @@ start(Host, Opts) ->
 stop(Host) ->
     Proc = gen_mod:get_module_proc(Host, ?PROCNAME),
     gen_server:call(Proc, stop),
-    supervisor:stop_child(ejabberd_sup, Proc).
+    supervisor:terminate_child(ejabberd_sup, Proc),
+    supervisor:delete_child(ejabberd_sup, Proc).
 
 %%====================================================================
 %% gen_server callbacks
@@ -164,9 +165,9 @@ handle_info(_Info, State) ->
 %%--------------------------------------------------------------------
 terminate(_Reason, #state{host = Host}) ->
     ejabberd_router:unregister_route(Host),
-    ejabberd_hooks:remove(remove_user, Host, ?MODULE, remove_user, 50),
-    ejabberd_hooks:remove(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
-    ejabberd_hooks:remove(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
+    ejabberd_hooks:delete(remove_user, Host, ?MODULE, remove_user, 50),
+    ejabberd_hooks:delete(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
+    ejabberd_hooks:delete(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
     ok.
 
 %%--------------------------------------------------------------------
@@ -857,7 +858,6 @@ serve_web_presence(TypeURL, User, Server, Tail, #request{lang = Lang1, q = Q}) -
     end,
     Show_us = (TypeURL == jid),
     Lang = parse_lang(Lang1),
-    io:format("tail: ~p~n", [Tail]),
     Args = case Tail of
 	       ["image", "theme", Theme, "res", Resource | _] -> 
 		   {image_res, WP, LUser, LServer, Theme, Resource};
