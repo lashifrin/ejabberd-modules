@@ -5,7 +5,7 @@
 %%% Created :  8 Jan 2008 by Badlop <badlop@process-one.net>
 %%%
 %%%
-%%% ejabberd, Copyright (C) 2008   Process-one
+%%% ejabberd, Copyright (C) 2008   ProcessOne
 %%%
 %%% This program is free software; you can redistribute it and/or
 %%% modify it under the terms of the GNU General Public License as

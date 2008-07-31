@@ -4,7 +4,7 @@
 %%% Description : Wrapper to config option access
 %%%
 %%% Created : 12 May 2006 by Mickael Remond <mremond@process-one.net>
-%%% Copyright 2006, Process-one
+%%% Copyright 2006, ProcessOne
 %%%-------------------------------------------------------------------
 -module(epeios_config).
 -author('mickael.remond@process-one.net').

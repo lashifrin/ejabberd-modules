@@ -3,7 +3,7 @@
 %%% Description : Wrapper to access the container configuration
 %%%               instead of ejabberd configuration
 %%% Created : 11 May 2006 by Mickael Remond <mremond@process-one.net>
-%%% Copyright 2006, Process-one
+%%% Copyright 2006, ProcessOne
 
 -module(ejabberd_config).
 
