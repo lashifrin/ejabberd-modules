@@ -1,8 +1,3 @@
-2008-08-01  Badlop  <badlop@process-one.net>
-
-	* src/mod_muc_admin.erl: New commands muc-participants-number and
-	muc-participants-list
-
 2008-05-16  Badlop  <badlop@process-one.net>
 
 	* src/mod_muc_admin.erl: New exported function

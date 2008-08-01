@@ -95,8 +95,6 @@ stop(Host) ->
 
 commands_global() ->
     [
-     {"muc-participants-number room service", "get number of participants in a room"},
-     {"muc-participants-list room service", "get list of participants in a room"},
      {"muc-unregister-nick nick", "unregister the nick in the muc service"},
      {"muc-create-file file", "create the rooms indicated in file"},
      {"muc-destroy-file file", "destroy the rooms whose JID is indicated in file"},
@@ -111,26 +109,6 @@ commands_host() ->
      {"muc-unused-destroy days", "destroy rooms without activity last days"},
      {"muc-online-rooms", "list existing rooms"}
     ].
-
-ctl_process(_Val, ["muc-participants-number", Room, Service]) ->
-    case get_participants_number(Room, Service) of
-	Num when is_integer(Num) ->
-	    io:format("~p~n", [Num]),
-	    ?STATUS_SUCCESS;
-	{error, Error} ->
-	    io:format("Error getting participants of ~p: ~p~n", [Room, Error]),
-	    ?STATUS_ERROR
-    end;
-
-ctl_process(_Val, ["muc-participants-list", Room, Service]) ->
-    case get_participants_list(Room, Service) of
-	PartList when is_list(PartList) ->
-	    [io:format("~s@~s/~s~n", [U, S, R]) || {U, S, R} <- PartList],
-	    ?STATUS_SUCCESS;
-	{error, Error} ->
-	    io:format("Error getting participants of ~p: ~p~n", [Room, Error]),
-	    ?STATUS_ERROR
-    end;
 
 ctl_process(_Val, ["muc-unregister-nick", Nick]) ->
     case muc_unregister_nick(Nick) of
@@ -357,20 +335,6 @@ prepare_room_info(Room_info) ->
      atom_to_list(Logging),
      atom_to_list(Just_created),
      Title].
-
-
-%%----------------------------
-%% Get Numer of Participants
-%%----------------------------
-
-get_participants_list(Room, Service) ->
-    Pid = get_room_pid(Room, Service),
-    S = get_room_state(Pid),
-    dict:fetch_keys(S#state.users).
-
-get_participants_number(Room, Service) ->
-    List = get_participants_list(Room, Service),
-    length(List).
 
 
 %%----------------------------
