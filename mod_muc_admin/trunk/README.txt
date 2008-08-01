@@ -5,7 +5,7 @@
 	Homepage: http://www.ejabberd.im/mod_muc_admin
 	Author: Badlop
 	This module requires ejabberd 1.1.x for the basic functionality
-	and ejabberd 2.0.0 or newer to get all the functionality
+	and ejabberd 2.0.0 or 2.0.1 or newer to get all the functionality
 
 
 	CONFIGURATION
