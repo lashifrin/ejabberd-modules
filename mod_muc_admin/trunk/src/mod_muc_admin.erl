@@ -21,8 +21,6 @@
 	 ctl_process/2, ctl_process/3 % ejabberdctl API
 	]).
 
--compile(export_all). %+++
-
 -include("ejabberd.hrl").
 -include("ejabberd_ctl.hrl").
 -include("jlib.hrl").
