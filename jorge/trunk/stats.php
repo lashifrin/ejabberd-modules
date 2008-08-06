@@ -2,7 +2,7 @@
 /*
 Jorge - frontend for mod_logdb - ejabberd server-side message archive module.
 
-Copyright (C) 2007 Zbigniew Zolkiewski
+Copyright (C) 2008 Zbigniew Zolkiewski
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,7 +22,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 require_once("headers.php");
 require_once("upper.php");
 
-if (ADMIN_NAME!==TOKEN) { print 'no access'; exit; }
+if (ADMIN_NAME!==TOKEN) { 
+
+	print 'no access'; 
+	exit; 
+
+}
 
 // get dates
 $today = date("Y-n-j");
@@ -68,94 +73,104 @@ while ($entry=mysql_fetch_array($result)) {
 mysql_free_result();
 
 
-print "<h2><u>Stats for: ".$xmpp_host_dotted."</u></h2>";
-print "<p style=\"padding-left: 10px;\">Total <b>".number_format(total_messages($xmpp_host))."</b> messages logged by the server in <b>".number_format(total_chats($xmpp_host))."</b> conversations. Current database size is: <b>".db_size()."</b> MB</p>";
-print '<hr size="1" noshade="" color="#cccccc"/>'."\n";
-print '<table class="ff">'."\n";
-print '<tr><td style="padding-left: 10px">'."\n";
-if ($mark1=="1") { print '<h1>Not enough data collected for graphs</h1><h2>minimum required: 30 days</h2>';}
-print '<div id="no_users" style="width:1000px;height:250px;"></div>'."\n";
-print "<br>";
-print '<div id="no_messages" style="width:1000px;height:250px;"></div>'."\n";
-print "<br>";
-print '<div id="hourly_yesterday" style="width:1000px;height:250px;"></div>'."\n";
-print "<br>";
-print '<div id="hourly_week" style="width:1000px;height:250px;"></div>'."\n";
-print '</td>';
-print '<td style="padding-left: 30px; vertical-align: top;">'."\n";
-print '<div><b>Top 10 talkers today:</b><br><br>'."\n";
+$html->set_body('<h2><u>Stats for: '.$xmpp_host_dotted.'</u></h2><p style="padding-left: 10px;">
+		Total <b>'.number_format(total_messages($xmpp_host)).'</b> messages logged by the server in <b>'.number_format(total_chats($xmpp_host)).'</b> conversations. Current database size is: <b>'.db_size().'</b> MB</p>
+		<hr size="1" noshade="" color="#cccccc"/><table class="ff">
+		<tr><td style="padding-left: 10px"><div id="no_users" style="width:1000px;height:250px;"></div><br>
+		<div id="no_messages" style="width:1000px;height:250px;"></div><br>
+		<div id="hourly_yesterday" style="width:1000px;height:250px;"></div><br>
+		<div id="hourly_week" style="width:1000px;height:250px;"></div></td>
+		<td style="padding-left: 30px; vertical-align: top;">
+		<div><b>Top 10 talkers today:</b><br><br>
+		');
+
+if ($mark1=="1") { 
+
+	$html->render_alert('Not enough data collected for graphs</h1><h2>minimum required: 30 days');
+	
+}
+
+
 $result=mysql_query($top_ten_talkers_today);
 $i=0;
 while ($entry=mysql_fetch_array($result)) {
 	
 	$i++;
-	print "<b>".$i.".</b> ".htmlspecialchars(get_user_name($entry[owner_id],$xmpp_host))."@".$xmpp_host_dotted."<b> --> </b>".htmlspecialchars(get_user_name($entry[peer_name_id],$xmpp_host))."@".htmlspecialchars(get_server_name($entry[peer_server_id],$xmpp_host))." (<i><b>$entry[count]</b></i>)<br>"."\n";
+	$html->set_body('<b>'.$i.'.</b> '.htmlspecialchars(get_user_name($entry[owner_id],$xmpp_host)).'@'.$xmpp_host_dotted.'<b> --> </b>'.htmlspecialchars(get_user_name($entry[peer_name_id],$xmpp_host)).'@'.htmlspecialchars(get_server_name($entry[peer_server_id],$xmpp_host)).' (<i><b>'.$entry[count].'</b></i>)<br>');
 
 }
-print '</div>'."\n";
-print '<br><hr size="1" noshade="" color="#cccccc"/><br>'."\n";
+$html->set_body('</div><br><hr size="1" noshade="" color="#cccccc"/><br>');
+
 $i=0;
-print '<div><b>Top 10 talkers yesterday:</b><br><br>'."\n";
+$html->set_body('<div><b>Top 10 talkers yesterday:</b><br><br>');
+
 $result=mysql_query($top_ten_talkers_yesterday);
 while ($entry=mysql_fetch_array($result)) {
 
 	$i++;
-	print "<b>".$i.".</b> ".htmlspecialchars(get_user_name($entry[owner_id],$xmpp_host))."@".$xmpp_host_dotted."<b> --> </b>".htmlspecialchars(get_user_name($entry[peer_name_id],$xmpp_host))."@".htmlspecialchars(get_server_name($entry[peer_server_id],$xmpp_host))." (<i><b>$entry[count]</b></i>)<br>"."\n";
+	$html->set_body('<b>'.$i.'.</b> '.htmlspecialchars(get_user_name($entry[owner_id],$xmpp_host)).'@'.$xmpp_host_dotted.'<b> --> </b>'.htmlspecialchars(get_user_name($entry[peer_name_id],$xmpp_host)).'@'.htmlspecialchars(get_server_name($entry[peer_server_id],$xmpp_host)).' (<i><b>'.$entry[count].'</b></i>)<br>');
 	
 }
 
-print '</td>'."\n";
-print '</tr></table>'."\n";
+$html->set_body('</td></tr></table>');
 
 if ($mark1=="0") { 
 
-?>
+$html->set_body('
 
 <script id="source" language="javascript" type="text/javascript">
 $(function () {
 
     var d1 = [
-<?
+
+');
+
 	$cn=31;
 	for ($z=1;$z<31;$z++) {
 		$cn--;
-		print "[$f[$cn],$e[$cn]],";
+		$html->set_body("[$f[$cn],$e[$cn]],");
 	}
-?>
+
+$html->set_body('
 
 
 	];
 
     var d2 = [
 
-<?
+');
 	$cn=31;
 	for ($z=1; $z<31; $z++) {
 		$cn--;
-		print "[$f[$cn],$d[$cn]],";
+		$html->set_body("[$f[$cn],$d[$cn]],");
 	}
-?>
+
+$html->set_body('
 
 
 	];
 
      var d3 = [
-<?
+
+');
 	for ($z=0;$z<24;$z++) {
-		print "[$z,$hs[$z]],";
+		$html->set_body("[$z,$hs[$z]],");
 	}
-?>
+
+$html->set_body('
 
 	];
 
      var d4 = [
-<?
+');
+
 	$idx=0;
 	for ($z=0;$z<168;$z++) {
 		$idx++;
-		print "[$z,$hy[$idx]],";
+		$html->set_body("[$z,$hy[$idx]],");
 	}
-?>
+
+$html->set_body('
 
 	];
     
@@ -182,7 +197,7 @@ $(function () {
 
 		{
 		color: "#ff0000",
-		label: "Hourly Statistics - Yesterday (<? print $yesterday; ?>)", shadowSize: 10, data: d3,
+		label: "Hourly Statistics - Yesterday ('.$yesterday.')", shadowSize: 10, data: d3,
 		bars: { show: true }
 		}
 
@@ -193,7 +208,7 @@ $(function () {
 
 		{
 		color: "#3480ff",
-		label: "Hourly Statistics - Weekly Raport (<? print $last_week." - ".$yesterday; ?>)", shadowSize: 10, data: d4,
+		label: "Hourly Statistics - Weekly Raport ('.$last_week.' - '.$yesterday.')", shadowSize: 10, data: d4,
 		bars: { show: true }
 		}
 	]);
@@ -202,8 +217,7 @@ $(function () {
 
 </script>
 
-
-<?
+');
 
 }
 
