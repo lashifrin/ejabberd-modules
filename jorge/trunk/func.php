@@ -793,23 +793,6 @@ $verb_date = "$year-$m-1";
     return($calendar);
 }
 
-function save_pref($user_id, $pref_id,$pref_value) {
-	if (mysql_num_rows(mysql_query("select pref_id from jorge_pref where owner_id='$user_id' and pref_id='$pref_id'"))!="0" ) {
-		mysql_query("update jorge_pref set pref_value='$pref_value' where owner_id='$user_id' and pref_id='$pref_id'") or die;
-		return "t";
-
-	}
-
-	else {
-		mysql_query("insert into jorge_pref(owner_id,pref_id,pref_value) values ('$user_id','$pref_id','$pref_value')") or die;
-		return "t";
-
-	}
-
-return "f";
-
-}
-
 function delete_chat($talker,$server,$xmpp_host,$user_id,$tslice,$token,$enc,$lnk) {
 
         if (!ctype_digit($talker) OR !ctype_digit($server)) { return "f"; }

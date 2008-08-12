@@ -37,14 +37,22 @@ if ($action === $activate_m[$lang]) {
 				if ($db->insert_new_settings($user_name) === true) {
 
 						$html->set_body('<center><b>'.$act_su[$lang].'</b><br><small>'.$act_su2[$lang].'</small><hr>
-								<form action="calendar_view.php" method="get"><input class="red" type="submit" name="logout" value="'.$log_out_b[$lang].'"></form></center>
+								<form action="calendar_view.php" method="get"><input class="red" type="submit" name="logout" value="'.$go_to_jorge[$lang].'"></form></center>
 							');
 				
 						if ($db->get_user_id($user_name) === true) {
 
 								$user_id = $db->result->user_id;
 								$db->set_user_id($user_id);
+								// non critical error
+								if ($db->set_jorge_pref("1","2") === false OR $db->set_jorge_pref("2","1") === false) {
+
+									$html->alert_message('Ooops something goes wrong...its still beta...please contact system admin with this message');
+
+								}
 								$sess->set('enabled','t');
+								$sess->set('view_type','2');
+								$sess->set('language',$lang_def);
 								$db->set_logger("7","1",$rem_adre);
 						
 							}

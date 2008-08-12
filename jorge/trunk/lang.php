@@ -767,4 +767,7 @@ $close_failed[eng] = "Close account failed. Please try again later";
 $oper_fail[pol] = pl_znaczki("<center><b>Operacja nie zosta³a wykonana! Proszê spróbowaæ pó¼niej lub skontaktowaæ siê z administratorem!</b></center>");
 $oper_fail[eng] = "<center><b>Operation failed! Please try again later or contact administrator!</b></center>";
 
+$go_to_jorge[pol] = pl_znaczki("Idz do strony glownej");
+$go_to_jorge[eng] = "Go to Jorge main page";
+
 ?>

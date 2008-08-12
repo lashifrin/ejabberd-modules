@@ -68,14 +68,30 @@ if ($_GET['set_pref']) {
 		{ 
 			if($pref_value==="1" OR $pref_value==="2") 
 				{ 
-					save_pref($user_id,$pref_id,$pref_value);
+					if ($db->set_jorge_pref($pref_id,$pref_value) === false) {
+
+						$html->alert_message($oper_fail[$lang],"message");
+						
+					}
 					if ($pref_id==="1") {
-						$sess->set('view_type',$pref_value);
-						}
+
+							$sess->set('view_type',$pref_value);
+					
+					}
 					if ($pref_id==="2") {
-						if ($pref_value=="1") { $s_lang="pol"; } else { $s_lang="eng"; }
-						$sess->set('language',$s_lang);
+
+						if ($pref_value=="1") { 
+						
+								$s_lang="pol"; 
+							} 
+							else { 
+							
+								$s_lang="eng"; 
 						}
+
+						$sess->set('language',$s_lang);
+					
+					}
 				} 
 		}
 
@@ -281,7 +297,7 @@ $html->menu('
 	</tr>
 	<tr><td height="57"><a href="'.$view_type.'"><img src="img/'.$brand_logo.'" alt="logo" border="0" /></a></td></tr>
 	<tr><td valign="top" height="35"><form action="search_v2.php" method="post">
-	<input id="t_search" type="text" name="query" class="cc" value="'.$search_phase.'">
+	<input id="t_search" type="text" name="query" class="cc" value="'.htmlspecialchars(stripslashes($search_phase)).'">
 	');
 
 if ($search_loc==1) {

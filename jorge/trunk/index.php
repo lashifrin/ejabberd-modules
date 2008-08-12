@@ -111,21 +111,22 @@ if ($_GET[act]==="logout") {
 					$db->set_user_id("$ui");
 					$db->set_logger("1","1",$rem_adre);
 					// get preferences, if not set, fallback to standard view.
-					$get_pref_menu="select pref_id, pref_value from jorge_pref where owner_id='$ui'";
-					$q_pref=mysql_query($get_pref_menu);
-
-					while ($res_pref=mysql_fetch_array($q_pref)) {
+					$db->get_jorge_pref();
+					$pref_res = $db->result;
+					foreach ($pref_res as $res_pref) {
 
 							if ($res_pref[pref_id]=="1") {
 
 									if ($res_pref[pref_value] == "2") {
 
-											$view_type="2"; $tmp_v="calendar_view.php"; 
+											$view_type = "2"; 
+											$tmp_v = "calendar_view.php"; 
 									
 									}
 										elseif($res_pref[pref_value] == "1") {
 
-											$view_type="1"; $tmp_v="main.php"; 
+											$view_type = "1"; 
+											$tmp_v = "main.php"; 
 								
 									}
 								
@@ -144,11 +145,12 @@ if ($_GET[act]==="logout") {
 									$s_lang="eng";
 							
 								}
+
 							$sess->set('language',$s_lang);
 						}
 					}
 
-					// if pref not set fall to defaults
+					// fall back to defaults
 					if ($s_lang=="") { 
 							
 							$sess->set('language',$lang); 
