@@ -392,7 +392,7 @@ class db_manager {
 
 				return false;
 			
-				}
+			}
 			else{
 
 				$this->result = $result;
@@ -1852,6 +1852,62 @@ class db_manager {
 				
 		";
 		return $this->insert($query);
+
+	}
+
+	public function get_jorge_pref() {
+
+		$this->id_query = "Q061";
+		$query="SELECT 
+				pref_id, 
+				pref_value 
+			FROM 
+				jorge_pref 
+			WHERE 
+				owner_id='".$this->user_id."'
+		";
+		$this->select($query,"raw");
+		return $this->commit_select(array("pref_id","pref_value"));
+
+	}
+
+	public function set_jorge_pref($pref_id,$pref_value) {
+
+		$this->id_query = "Q062";
+		$this->vital_check();
+		$pref_id = $this->sql_validate($pref_id,"integer");
+		$pref_value = $this->sql_validate($pref_value,"integer");
+		if ($this->row_count("SELECT pref_id FROM jorge_pref WHERE owner_id='".$this->user_id."' AND pref_id='$pref_id'") === false) {
+
+			return false;
+
+		}
+		if ($this->result > 0) {
+
+				$query="UPDATE
+						jorge_pref 
+					SET 
+						pref_value='$pref_value' 
+					WHERE 
+						owner_id='".$this->user_id."' 
+					AND 
+						pref_id='$pref_id'
+				";
+				return $this->update($query);
+
+			}
+			else{
+
+				$query="INSERT INTO 
+						jorge_pref(owner_id,pref_id,pref_value) 
+					VALUES 
+						('".$this->user_id."','$pref_id','$pref_value')
+				";
+				return $this->insert($query);
+				
+		}
+
+		return false;
 
 	}
 
