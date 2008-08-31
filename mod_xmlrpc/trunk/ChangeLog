@@ -1,3 +1,7 @@
+2008-08-31  Badlop  <badlop@process-one.net>
+
+	* README.txt: Fixed the PHP example (thanks to Calder)
+
 2008-07-24  Badlop  <badlop@process-one.net>
 
 	* src/mod_xmlrpc.erl: Fixed typo in get_roster

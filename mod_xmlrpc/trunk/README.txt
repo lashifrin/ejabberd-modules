@@ -219,21 +219,26 @@ puts result
 	EXAMPLE IN PHP
 	--------------
 
-This is an example XML-RPC client in PHP, thanks to Zbyszek Żółkiewski:
+This is an XML-RPC client in PHP, thanks to Zbyszek Żółkiewski and Calder.
+It requires "allow_url_fopen = On" in your php.ini.
+
 -------
 <?
-$parm=array("user"=>"test_user","host"=>"example.com","password"=>"some_password");
-$request = xmlrpc_encode_request("check_password",$parm);
+$param=array("user"=>"test_user","host"=>"example.com","password"=>"some_password");
+$request = xmlrpc_encode_request('check_password', $param, (array('encoding' => 'utf-8')));
 
 $context = stream_context_create(array('http' => array(
     'method' => "POST",
-    'header' => "Content-Type: text/xml; charset=utf-8\r\n" .
-                "User-Agent: XMLRPC::Client mod_xmlrpc",
+    'header' => "User-Agent: XMLRPC::Client mod_xmlrpc\r\n" .
+                "Content-Type: text/xml\r\n" .
+                "Content-Length: ".strlen($request),
     'content' => $request
 )));
 
-$file = file_get_contents("http://127.0.0.1:4666", false, $context);
+$file = file_get_contents("http://127.0.0.1:4560/RPC2", false, $context);
+
 $response = xmlrpc_decode($file);
+
 if (xmlrpc_is_fault($response)) {
     trigger_error("xmlrpc: $response[faultString] ($response[faultCode])");
 } else {
