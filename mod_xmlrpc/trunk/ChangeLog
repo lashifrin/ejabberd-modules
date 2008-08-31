@@ -1,6 +1,7 @@
 2008-08-31  Badlop  <badlop@process-one.net>
 
-	* README.txt: Fixed the PHP example (thanks to Calder)
+	* README.txt: Added Java example client and fixed the PHP
+	example (thanks to Calder)
 
 2008-07-24  Badlop  <badlop@process-one.net>
 

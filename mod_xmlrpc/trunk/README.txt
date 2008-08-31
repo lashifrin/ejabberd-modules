@@ -215,7 +215,6 @@ puts result
 -------
 
 
-
 	EXAMPLE IN PHP
 	--------------
 
@@ -246,4 +245,48 @@ if (xmlrpc_is_fault($response)) {
 }
 
 ?>
+-------
+
+
+	EXAMPLE IN JAVA
+	---------------
+
+This is an XML-RPC client in Java, thanks to Calder.
+It requires Apache XML-RPC available at http://ws.apache.org/xmlrpc/
+
+-------
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.xmlrpc.client.XmlRpcClient;
+import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
+
+public class Test {
+
+	public static void main(String[] args) {
+		try {
+		    XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();
+		    config.setServerURL(new URL("http://127.0.0.1:4560/RPC2"));
+		    XmlRpcClient client = new XmlRpcClient();
+		    client.setConfig(config);
+
+		    /* Command string */
+		    String command = "check_password";
+
+		    /* Parameters as struct */
+		    Map struct = new HashMap();
+		    struct.put("user", "test1");
+		    struct.put("host", "localhost");
+		    struct.put("password", "test");
+
+		    Object[] params = new Object[]{struct};
+		    Integer result = (Integer) client.execute(command, params);
+		    System.out.println(result);
+		} catch (Exception e) {
+			System.out.println(e);
+		}
+	}
+
+}
 -------
