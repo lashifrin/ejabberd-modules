@@ -129,7 +129,9 @@ start_link(Host, Port, User, Password, Database, LogFun) when is_list(Host), is_
 
 %% part of start/6 or start_link/6:
 post_start(Pid, _LogFun) ->
-    Timeout = get_option(timeout, Options, ?DEFAULT_STANDALONE_TIMEOUT),
+    %%Timeout = get_option(timeout, Options, ?DEFAULT_STANDALONE_TIMEOUT),
+    %%TODO find a way to get configured Options here
+    Timeout= ?DEFAULT_STANDALONE_TIMEOUT,
     receive
 	{mysql_conn, Pid, ok} ->
 	    {ok, Pid};
