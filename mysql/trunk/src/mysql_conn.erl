@@ -129,6 +129,7 @@ start_link(Host, Port, User, Password, Database, LogFun) when is_list(Host), is_
 
 %% part of start/6 or start_link/6:
 post_start(Pid, _LogFun) ->
+    Timeout = get_option(timeout, Options, ?DEFAULT_STANDALONE_TIMEOUT),
     receive
 	{mysql_conn, Pid, ok} ->
 	    {ok, Pid};
@@ -138,7 +139,7 @@ post_start(Pid, _LogFun) ->
 %	    mysql:log(_LogFun, error, "mysql_conn: Received unknown signal, exiting"),
 %	    mysql:log(_LogFun, debug, "mysql_conn: Unknown signal : ~p", [Unknown]),
 %	    {error, "unknown signal received"}
-    after 5000 ->
+    after Timeout ->
 	    {error, "timed out"}
     end.
 
