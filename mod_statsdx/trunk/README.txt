@@ -1,25 +1,40 @@
 
 	mod_statsdx - Calculates and gathers statistics actively
 
-        Homepage: http://ejabberd.jabber.ru/mod_statsdx
+        Homepage: http://www.ejabberd.im/mod_statsdx
         Author: Badlop
-        Module for ejabberd SVN
+        Requirements: ejabberd 2.0.x
+
+
+	mod_statsdx
+	==============
+
+Measures several statistics, and provides a new section in ejabberd
+Web Admin to view them.
 
 
 	CONFIGURE
 	---------
 
-Add to ejabberd.cfg, 'modules' section the basic configuration:
-  {mod_statsdx,     []},
+Enable the module in ejabberd.cfg for example with a basic configuration:
+{modules, [
+  ...
+  {mod_statsdx, []}
+ ]}.
 
 Configurable options:
-  hooks: Set to 'false' to remove hooks and related statistics if you don't need them (default: true)
+  hooks: Set to 'true' to enable hooks and related statistics.
+         This option by default 'false' because it is expected to
+	 consume many resources in very populated servers.
 
 
 	EXAMPLE CONFIGURATION
 	---------------------
 
-{mod_statsdx, [{hooks, false}]},
+{modules, [
+  ...
+  {mod_statsdx, [{hooks, true}]}
+ ]}.
 
 
 	FEATURE REQUESTS
@@ -31,27 +46,6 @@ Configurable options:
  - traffic: send presence per second, received mps
  - Number of SASL c2s connections
  - improve to work in distributed server
-
-
-
-	ejabberd_web_admin
-	==================
-
-	Adds additional statistics provided by mod_statsdx to the Web Interface
-	
-This patched version of the Web Interface
-does not work with ejabberd 1.1.3 or older.
-
-
-	CONFIGURE
-	---------
-
-This patch requires mod_statsdx. 
-Several new statistics are available on the web interface.
-No specific configuration is required.
-
-Screenshots: http://ejabberd.jabber.ru/mod_statsdx
-
 
 
 
@@ -70,13 +64,16 @@ text file with descriptions and raw text file (for MRTG, RRDTool...).
 
 This module requires mod_statsdx. 
 
-Add to ejabberd.cfg, 'modules' section the basic configuration:
-  {mod_stats2file,     []},
+Enable the module in ejabberd.cfg for example with a basic configuration:
+{modules, [
+  ...
+  {mod_stats2file, []}
+ ]}.
 
 Configurable options:
   interval: Time between updates, in minutes (default: 5)
   type: Type of output. Allowed values: html, txt, dat (default: html)
-  basefilename: Base filename, including absolute path (default: "/tmp/ejasta")
+  basefilename: Base filename including absolute path (default: "/tmp/ejasta")
   split: If split the statistics in several files (default: false)
   hosts: List of virtual hosts that will be checked. By default all
 
@@ -84,6 +81,14 @@ Configurable options:
 	EXAMPLE CONFIGURATION
 	---------------------
 
-{mod_stats2file, [{interval, 60}, {type, txt}, {split, true},
-  {basefilename, "/var/www/stats"}, {hosts, ["localhost", "server3.com"]}
-]},
+{modules, [
+  ...
+  {mod_stats2file, [{interval, 60},
+                    {type, txt},
+                    {split, true},
+                    {basefilename, "/var/www/stats"},
+                    {hosts, ["localhost", "server3.com"]}
+                   ]}
+ ]}.
+
+

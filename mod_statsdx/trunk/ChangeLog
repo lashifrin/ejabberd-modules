@@ -1,3 +1,14 @@
+2008-09-03  Badlop  <badlop@process-one.net>
+
+	* src/mod_statsdx.erl: If client answers with unexpected response,
+	forget stanza instead of crashing.
+
+	* src/mod_statsdx.erl: The option 'hooks' in mod_statsdx is
+	disabled by default.
+	* README.txt: Likewise
+
+	* README.txt: Several cosmetic changes.
+
 2007-12-26  Badlop  <badlop@process-one.net>
 
 	* src/mod_statsdx.erl: Translate menu items of webadmin hooks in
@@ -5,7 +16,8 @@
 
 2007-08-31  Badlop  <badlop@ono.com>
 
-	* src/mod_statsdx.erl: Added pages to Web Admin. Apply Emacs-mode indentation.
+	* src/mod_statsdx.erl: Added pages to Web Admin. Apply Emacs-mode
+	indentation.
 	* src/ejabberd_web_admin.erl: No need to patch core web admin file.
 	* Emakefile: Idem.
 

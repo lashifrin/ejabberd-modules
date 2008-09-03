@@ -31,7 +31,7 @@
 %% -------------------
 
 start(Host, Opts) ->
-    Hooks = gen_mod:get_opt(hooks, Opts, true),
+    Hooks = gen_mod:get_opt(hooks, Opts, false),
     %% Default value for the counters
     CD = case Hooks of
 	     true -> 0;
@@ -611,7 +611,12 @@ request_iqversion(User, Host, Resource) ->
 
 %% cuando el virtualJID recibe una respuesta iqversion, 
 %% almacenar su JID/USR + client + OS en una tabla
-received_response(From, _To, {xmlelement, "iq", Attrs, Elc}) ->
+received_response(From, _To, El) ->
+    try received_response(From, El)
+    catch
+    	_:_ -> ok
+    end.
+received_response(From, {xmlelement, "iq", Attrs, Elc}) ->
     User = From#jid.luser,
     Host = From#jid.lserver,
     Resource = From#jid.lresource,
