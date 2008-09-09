@@ -1911,6 +1911,34 @@ class db_manager {
 
 	}
 
+	public function sphinx_get_single($peer_name_id, $peer_server_id, $peer_resource_id, $timestamp, $tslice) {
+
+		$this->id_query = "Q063";
+		$this->vital_check();
+		$this->prepare($peer_name_id,$peer_server_id,$tslice);
+		$peer_resource_id = $this->sql_validate($peer_resource_id,"integer");
+		$timestamp = $this->sql_validate($timestamp,"string");
+		$query = "SELECT
+				body
+			FROM
+				`".$this->construct_table($this->tslice)."`
+			WHERE
+				owner_id = '".$this->user_id."'
+			AND
+				peer_name_id = '".$this->peer_name_id."'
+			AND
+				peer_server_id = '".$this->peer_server_id."'
+			AND
+				peer_resource_id = '".$peer_resource_id."'
+			AND
+				timestamp like '".$timestamp."%'
+				
+		";
+
+		return $this->select($query);
+		
+	}
+
 	public function set_user_query($user_query) {
 
 		$this->user_query = $this->sql_validate($user_query,"string");
