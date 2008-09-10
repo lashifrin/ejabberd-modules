@@ -539,21 +539,24 @@ get_status_weight(Show) ->
 
 get_presences({bare, LUser, LServer}) ->
     Resources = ejabberd_sm:get_user_resources(LUser, LServer),
-    lists:map(
-      fun(Resource) ->
-              [Session] = mnesia:dirty_index_read(session,
-                                                  {LUser, LServer, Resource},
-                                                  #session.usr),
-              Pid = element(2, Session#session.sid),
-              {_User, _Resource, Show, Status} =
-                  rpc:call(node(Pid), ejabberd_c2s, get_presence, [Pid]),
-              Priority = Session#session.priority,
-              #presence{resource = Resource,
-                        show = Show,
-                        priority = Priority,
-                        status = Status}
-      end,
-      Resources);
+    Presences =
+	lists:map(
+	  fun(Resource) ->
+		  [Session] = mnesia:dirty_index_read(session,
+						      {LUser,LServer,Resource},
+						      #session.usr),
+		  Pid = element(2, Session#session.sid),
+		  {_User, _Resource, Show, Status} =
+		      rpc:call(node(Pid), ejabberd_c2s, get_presence, [Pid]),
+		  Priority = Session#session.priority,
+		  #presence{resource = Resource,
+			    show = Show,
+			    priority = Priority,
+			    status = Status}
+	  end,
+	  Resources),
+    %% Return only sessions that have presence set
+    [Presence || Presence <- Presences, Presence#presence.priority/=undefined];
 get_presences({sorted, LUser, LServer}) ->
     lists:sort(
       fun(A, B) ->
