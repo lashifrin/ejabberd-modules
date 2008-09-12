@@ -1,55 +1,57 @@
 # the Atom PubSub tunnel
 # Eric Cestari <eric@ohmforce.com>
 # http://www.cestari.info/
-# 19-06-2008
+# 12-09-2008
 
 # Licensed under the same terms as ejabberd (that would be some version of the GPL)
 
-This module provides ejabberd PubSub data via an AtomPub interface.
+# About
+This module provides access to the urn:xmpp:microblog PEP node via an AtomPub interface.
+urn:xmpp:microblog is not a XEP yet, but its latest incarnation can be found here :
 
-# Howto
-You need to have the Yaws beams installed and available. It will start in embedded mode, with the `mod_yaws` module (included).
-To build, just type `make` and put the resulting beams in some place where ejabberd will find them.
+http://www.xmpp.org/extensions/inbox/microblogging.html
 
-You'll also need to add the module to your ejabberd.cfg in the `mmodules` section:
-<pre><code class="erlang">
-{mod_yaws,[{logdir, "/tmp/"},
-    {servers, [
-    {"localhost", 5224, "/opt/var/yaws/www", [
-     {dir_listing, true},
-     {appmods, {"/atom",     atom_pubsub}}
-     ]}
-   ]}
-  ]}
-</code></pre>
+AtomPub RFC : http://bitworking.org/projects/atom/rfc5023.html
+
+URL for the service document for a given user@domain is :
+http://<server>:5280/t/<domain>/<user>
+
+# Install 
+You need to run ejabberd trunk revision > 1561 or ejabberd 2.0.3 or later.
+Compile using `make`
+Copy beam file in your ejabberd installation.
+Add the following request handler (around line 150 in ejabberd.cfg)
+.
+.
+{8080, ejabberd_http, [
+			 http_poll, 
+			 web_admin,
+			 {request_handlers, [{["t"], atom_microblog}]} %Make sure it's "t", or change it in the source code
+			]}
+.
+.
+Restart ejabberd.
 
 # What you get
 
-The AtomPub interface passes the Atom Protocol Exerciser (though some warnings remain).
+Full caching support with Etag, Conditional Get, etc.
 
-It means that any AtomPub clients will be able to post to a specific node in your PubSub tree.
+Authentication is required for writing, updating via Atom. Use your full JID as username for authentication.
 
-It also means that your PubSub tree will also be available as an AtomFeed.
-
-Of course, each time an item is posted through AtomPub or PubSub on a node you are subscribed to, you'll get the notification.
-
-Authentication is required ; you need to authentify (http basic) as a user with the publisher role to be able to post via AtomPub
-
-It expects the payload to be an atom entry, but does not enforce it.
+It expects the payload to be an atom entry, but does not enforce it. (yet)
 
 However, it has to be well formed XML.
 
 # Can I have it with OpenFire and Epeios ?
-That's not possible. For fetching individual items, there's no way around hitting directly the PubSub mnesia tables.
-
-Code can't be extracted as an XMPP component.
-
-Moreover, it only works with PubSub nodes derived from the default node type. (because of the mnesia tables stuff)
+That's not possible. atom_microblog needs direct access to the pubsub structures.
 
 # What's next ?
 
-I did what was minimum to pass the Atom Protocol Exercizer. Still has a few warning.
+- Better understanding of Atom entries. have better links, implement reply-to 
 
-Adding support for collection and/or binary data would not be hard.
+- Adding a local friend collection for personal use
 
-I currently have no plans for actually using the code thus improving it. However, I will review patches you'd send my way for integration.
+- But that may be implemented in mod_pubsub/node_microblog.erl (it will arrive soon)
+
+
+

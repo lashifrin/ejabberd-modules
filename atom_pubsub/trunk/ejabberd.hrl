@@ -19,13 +19,30 @@
 %%%
 %%%----------------------------------------------------------------------
 
-%-define(ejabberd_debug, true).
-%-define(DBGFSM, true).
+%% This macro returns a string of the ejabberd version running, e.g. "2.3.4"
+%% If the ejabberd application description isn't loaded, returns atom: undefined
+-define(VERSION, element(2, application:get_key(ejabberd,vsn))).
 
--define(VERSION, "2.1.0-alpha").
+-define(MYHOSTS, ejabberd_config:get_global_option(hosts)).
+-define(MYNAME, hd(ejabberd_config:get_global_option(hosts))).
+-define(MYLANG, ejabberd_config:get_global_option(language)).
+
+-define(MSGS_DIR, "msgs").
+-define(CONFIG_PATH, "ejabberd.cfg").
+-define(LOG_PATH, "ejabberd.log").
+
+-define(EJABBERD_URI, "http://www.process-one.net/en/ejabberd/").
+
+-define(S2STIMEOUT, 600000).
+
+%%-define(DBGFSM, true).
 
 %% ---------------------------------
 %% Logging mechanism
+
+%% Print in standard output
+-define(PRINT(Format, Args),
+    io:format(Format, Args)).
 
 -define(DEBUG(Format, Args),
     ejabberd_logger:debug_msg(?MODULE,?LINE,Format, Args)).
@@ -42,15 +59,3 @@
 -define(CRITICAL_MSG(Format, Args),
     ejabberd_logger:critical_msg(?MODULE,?LINE,Format, Args)).
 
--define(MYHOSTS, ejabberd_config:get_global_option(hosts)).
--define(MYNAME, hd(ejabberd_config:get_global_option(hosts))).
--define(S2STIMEOUT, 600000).
--define(MYLANG, ejabberd_config:get_global_option(language)).
-
--define(MSGS_DIR, "msgs").
--define(CONFIG_PATH, "ejabberd.cfg").
--define(LOG_PATH, "ejabberd.log").
-
--define(PRIVACY_SUPPORT, true).
-
--define(EJABBERD_URI, "http://www.process-one.net/en/ejabberd/").
