@@ -7,7 +7,6 @@ It is still under strong development so use it at your own risk.
 Licensing.
  Jorge is distributed by GPL License provided in COPYING file as well in parts in all source files.
 Jorge uses jQuery library and some plugins, please read license info at http://docs.jquery.com/Licensing
-Jorge is using freeCap PHP CAPTCHA distributed on GPL License (http://www.puremango.co.uk/cm_php_captcha_script_113.php)
 
 Bug reporting:
 If you found any bug or have any improvement idea you can contact me at (email/xmpp): zbyszek@jabster.pl

@@ -47,6 +47,10 @@ define("GAPPS_ACCOUNT","");
 define("GAPPS_PASSWORD","");
 define("GAPPS_DOMAIN","");
 
+// Since version 1.5 Jorge is using reCAPTCHA code. Before running Jorge please go to: http://recaptcha.net/ and setup your account and get private key and public key:
+define("CAPTCHA_PRIVATE","");
+define("CAPTCHA_PUBLIC","");
+
 // admin name (only name - without domain name):
 define("ADMIN_NAME","");
 

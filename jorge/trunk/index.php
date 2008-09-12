@@ -22,6 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 // all we need is header.php file - be sure to include it in all Jorge files! as it containg authentication futures.
 require_once("headers.php");
+require_once("lib/recaptchalib.php");
 
 // if already logged in (session active), move to main screen according to user preferences
 if ($sess->get('uid_l')) { 
@@ -41,7 +42,6 @@ if ($sess->get('uid_l')) {
 // get post data
 $inpLogin = $_POST[inpLogin];
 $inpPass = $_POST[inpPass];
-$wo_sess = $_POST[word];
 $lng_sw = $_GET['lng_sw'];
 $inpLogin = strtolower($inpLogin);
 
@@ -61,14 +61,19 @@ $lang=$sess->get('language');
 
 if ($wo_sess || $inpLogin || $inpPass) {
 
-	if ($wo_sess != $sess->get('image_w')) { 
+        $resp = recaptcha_check_answer(CAPTCHA_PRIVATE,
+                                  $_SERVER["REMOTE_ADDR"],
+                                  $_POST["recaptcha_challenge_field"],
+                                  $_POST["recaptcha_response_field"]);
+
+
+	if (!$resp->is_valid) { 
 
 			unset($inpPass);
 			unset($inpLogin);
 			$html->system_message($wrong_data2[$lang]);
 		
 	}
-
 
 }
 
@@ -209,21 +214,12 @@ if ($_GET[act]==="logout") {
 
 $html->set_body('
 
-		<script language="javascript">
-		<!--
-		function new_freecap()
-			{
-			if(document.getElementById)
-				{
-				thesrc = document.getElementById("freecap").src;
-				thesrc = thesrc.substring(0,thesrc.lastIndexOf(".")+4);
-				document.getElementById("freecap").src = thesrc+"?"+Math.round(Math.random()*10000);
-				} else {
-				alert("Ups...");
-				}
-			}
-		//-->
-		</script>
+        	<script>
+         		var RecaptchaOptions = {
+             			theme : \'clean\'
+              		};
+        	</script>
+
 	');
 
 if ($lang=="eng") { 
@@ -245,16 +241,13 @@ $html->set_body('
 		</tr></table>
 		<center>
 		<form action="index.php" method="post">
-		<br><br><table class="ff" border="0" cellspacing="0" cellpadding="0">
-		<tr><td align="right">'.$login_w[$lang].'&nbsp;</td><td><input name="inpLogin" value="'.$_POST[inpLogin].'" class="log" ></td><td>@'.$xmpp_host_dotted.'</td></tr>
+		<br><br>
+		<table class="ff" border="0" cellspacing="0" cellpadding="0">
+		<tr><td align="right">'.$login_w[$lang].'&nbsp;</td><td><input name="inpLogin" value="'.$_POST[inpLogin].'" class="log" >@'.$xmpp_host_dotted.'</td></tr>
 		<tr height="3" ><td></td></tr>
 		<tr><td align="right">'.$passwd_w[$lang].'&nbsp;</td><td><input name="inpPass" type="password" class="log"></td></tr>
 		<tr height="10"><td></td></tr>
-		<tr><td></td><td colspan="2"><img src="freecap.php" id="freecap" name="pic"></td></tr>
-		<tr height="3" ><td></td></tr>
-		<tr><td></td><td colspan="2" style="text-align: center;"><a href="#" onClick="new_freecap();return false;"><small>'.$cap_cant[$lang].'</small></a></td></tr>
-		<tr height="3" ><td></td></tr>
-		<tr><td align="right">'.$cap_w[$lang].'&nbsp;</td><td><input name="word" type="text" class="log" ></td>
+		<tr><td colspan="2">'.recaptcha_get_html(CAPTCHA_PUBLIC,$error = null, $use_ssl = true).'</td></tr>
 		<tr height="15" ><td></td></tr>
 		<tr><td colspan="2" align="right"><input class="red" type="submit" name="sublogin" value="'.$login_act[$lang].'"></td></tr>
 		</table></form></center>	
