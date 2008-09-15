@@ -9,8 +9,6 @@
 -include("jlib.hrl").
 -include("pubsub.hrl").
 -include("ejabberd_http.hrl").
--define(MICROBLOG, "urn:xmpp:microblog").
--define(STREAM, "stream").
 -export([process/2]).
  
 process([Domain,User|_]=LocalPath,  #request{auth = Auth} = Request)->
@@ -26,17 +24,27 @@ process([Domain,User|_]=LocalPath,  #request{auth = Auth} = Request)->
 process(_LocalPath, _Request)->
 	 error(404).
 
-get_host([Domain,User|_Rest])->
-	{User, Domain, []}.
-get_collection(_Uri)->
-	?MICROBLOG.
-get_member([_Domain,_User, ?STREAM, Member]=Uri)->
+get_host([Domain,User|_Rest])-> {User, Domain, []}.
+
+get_collection([_Domain,_User, Node|R])->
+	case lists:member(Node, ["mood", "geoloc", "tune"]) of 
+		true -> "http://jabber.org/protocol/"++Node;
+		false -> Node
+	end;
+get_collection(_)->error.
+
+get_member([_Domain,_User, _Node, Member]=Uri)->
 	[get_host(Uri), get_collection(Uri), Member].
 	
 base_uri(#request{host=Host, port=Port}, Domain, User)->
-	"http://"++Host++":"++i2l(Port)++"/t/"++Domain++"/"++ User ++ "/"++?STREAM.
-entry_uri(R, Domain, User, Id)->
-		base_uri(R, Domain, User)++"/"++Id.
+	"http://"++Host++":"++i2l(Port)++"/pep/"++Domain++"/"++ User.
+
+collection_uri(R, Domain, User, Node)->
+	 Clean=lists:last(string:tokens(Node, "/")),
+	 base_uri(R, Domain, User)++"/"++Clean.
+
+entry_uri(R, Domain, User, Node, Id)->
+	collection_uri(R, Domain, User, Node)++"/"++Id.
 
 generate_etag(#pubsub_item{modification={_JID, {_, D2, D3}}})->integer_to_list(D3+D2).
 
@@ -46,13 +54,19 @@ out(_Args, 'DELETE', [_,_, _], undefined) ->error(401);
 
 
 %% Service document
-out(Args, 'GET', [Domain, UserNode], _User) ->
-	{200, [{"Content-Type", "application/atomsvc+xml"}], "<?xml version=\"1.0\" encoding=\"utf-8\"?>" 
-				++	xml:element_to_string(service(Args,Domain, UserNode, [?STREAM]))};
+out(Args, 'GET', [Domain, UserNode]=Uri, _User) ->
+	%%Collections = mnesia:dirty_match_object(#pubsub_node{nodeid={get_host(Uri), '_'},_ = '_'}),
+	case mod_pubsub:tree_action(get_host(Uri), get_nodes, [get_host(Uri)]) of
+		[] -> error(404);
+		Collections ->
+			?DEBUG("PEP nodes : ~p~n",[Collections]),
+			{200, [{"Content-Type", "application/atomsvc+xml"}], "<?xml version=\"1.0\" encoding=\"utf-8\"?>" 
+				++	xml:element_to_string(service(Args,Domain, UserNode, Collections))}
+	end;
 
 %% Collection
 
-out(Args, 'GET', [Domain, User, ?STREAM]=Uri, _User) -> 
+out(Args, 'GET', [Domain, User, Node]=Uri, _User) -> 
 	Items = lists:sort(fun(X,Y)->
 			{_,DateX} = X#pubsub_item.modification,
 			{_,DateY} = Y#pubsub_item.modification,
@@ -60,26 +74,29 @@ out(Args, 'GET', [Domain, User, ?STREAM]=Uri, _User) ->
 		end, mod_pubsub:get_items(
 				get_host(Uri),
 				get_collection(Uri))),
-	#pubsub_item{modification = {_JID,LastDate}} = LastItem = hd(Items),
-	Etag =generate_etag(LastItem),
-	IfNoneMatch=proplists:get_value('If-None-Match', Args#request.headers),
-	if IfNoneMatch==Etag
-		-> 
-			success(304);
-		true ->
-			XMLEntries= [item_to_entry(Args,Entry)||Entry <-  Items], 
-			{200, [{"Content-Type", "application/atom+xml"},{"Etag", Etag}], 
-			"<?xml version=\"1.0\" encoding=\"utf-8\"?>" 
-			++	xml:element_to_string(
-			collection(get_collection(Uri), base_uri(Args,Domain,User),
-				calendar:now_to_universal_time(LastDate), User, "", XMLEntries))}
+	case Items of
+		[] -> error(404);
+		_ ->
+			#pubsub_item{modification = {_JID,LastDate}} = LastItem = hd(Items),
+			Etag =generate_etag(LastItem),
+			IfNoneMatch=proplists:get_value('If-None-Match', Args#request.headers),
+			if IfNoneMatch==Etag
+				-> 
+					success(304);
+				true ->
+					XMLEntries= [item_to_entry(Args,Node,Entry)||Entry <-  Items], 
+					{200, [{"Content-Type", "application/atom+xml"},{"Etag", Etag}], 
+					"<?xml version=\"1.0\" encoding=\"utf-8\"?>" 
+					++	xml:element_to_string(
+					collection(get_collection(Uri), collection_uri(Args,Domain,User,Node),
+						calendar:now_to_universal_time(LastDate), User, "", XMLEntries))}
+		end
 	end;
 
 %% Add new collection
-%curl -X POST -u 20@boulette.local:ENCORE -d '<node name="martin" type="default"/>' http://localhost:8080/pubsub/boulette.local/20
 out(_Args, 'POST', [_Domain, _User], _User)-> error(403);
 
-out(Args, 'POST', [Domain,User, ?STREAM]=Uri, User) -> 
+out(Args, 'POST', [Domain,User, Node]=Uri, User) -> 
 	%%FIXME Slug
 	Slug = case lists:keysearch("Slug",3,Args#request.headers) of 
 		false -> uniqid(false) ; 
@@ -93,8 +110,8 @@ out(Args, 'POST', [Domain,User, ?STREAM]=Uri, User) ->
 								 Slug, 
 								 [Payload]) of
 		{result, []} ->
-				?DEBUG("Publishing to ~p~n",[entry_uri(Args, Domain,User, Slug)]),
-			{201, [{"location", entry_uri(Args, Domain,User,Slug)}], Payload};
+				?DEBUG("Publishing to ~p~n",[entry_uri(Args, Domain,User, Node,Slug)]),
+			{201, [{"location", entry_uri(Args, Domain,User,Node,Slug)}], Payload};
 		{error, Error} ->
 			error(400, Error)
 		end;
@@ -102,7 +119,7 @@ out(_Args, 'POST', [_, _, _], _) ->
 	{status, 403};
 			
 %% Atom doc
-out(Args, 'GET', URI, _User) -> 
+out(Args, 'GET', [Domain,User, Node, Member]=URI, _User) -> 
 	Failure = fun(_Error)->error(404)end,
 	Success = fun(Item)->
 		Etag =generate_etag(Item),
@@ -112,14 +129,14 @@ out(Args, 'GET', URI, _User) ->
 				success(304);
 			true ->
 		{200, [{"Content-Type",  "application/atom+xml"},{"Etag", Etag}], "<?xml version=\"1.0\" encoding=\"utf-8\"?>" 
-				++ xml:element_to_string(item_to_entry(Args, Item))}
+				++ xml:element_to_string(item_to_entry(Args, Node, Item))}
 		end
 	end,
 	get_item(URI, Failure, Success);
 		
 
 %% Update doc
-out(Args, 'PUT', [Domain,User, ?STREAM, Member]=Uri, User) -> 
+out(Args, 'PUT', [Domain,User, Node, Member]=Uri, User) -> 
 	Payload = xml_stream:parse_element(Args#request.data),
 	Failure = fun(_Error)->error(404)end,
 	Success = fun(Item)->
@@ -150,7 +167,7 @@ out(Args, 'PUT', [Domain,User, ?STREAM, Member]=Uri, User) ->
 out(_Args, 'PUT',_Url, _User) ->
 	error(401);
 
-out(_Args, 'DELETE', [Domain,User, ?STREAM, _Member]=Uri, User) ->
+out(_Args, 'DELETE', [Domain,User, Node, _Member]=Uri, User) ->
 	case mod_pubsub:delete_item(get_host(Uri), 
 								get_collection(Uri),
 								jlib:make_jid(User,Domain, ""),
@@ -183,28 +200,32 @@ get_item(Uri, Failure, Success)->
 
 	
 
-item_to_entry(Args,#pubsub_item{itemid={Id,_}, payload=[Entry]}=Item)->
-	item_to_entry(Args, Id, Entry, Item).
-item_to_entry(Args,  Id, Entry, #pubsub_item{modification={_, Secs}, itemid={Id, {{User, Domain, []},_}}}) ->
-	Entry2 = case Entry of
-		Entry when is_list(Entry) ->
-			[R | _]=xml:remove_cdata(Entry),
-			R;
-		{xmlelement, "entry", _, _} ->
-			Entry
-		end,
-	{xmlelement, "entry", Attrs, SubEl}=Entry2,
-		
+item_to_entry(Args,Node,#pubsub_item{itemid={Id,_}, payload=Entry}=Item)->
+	[R | _]=xml:remove_cdata(Entry),
+	item_to_entry(Args, Node, Id, R, Item).
+
+item_to_entry(Args,Node,  Id,{xmlelement, "entry", Attrs, SubEl}, 
+		#pubsub_item{modification={_, Secs}, itemid={Id, {{User, Domain, []},_}}}) ->	
 	Date = calendar:now_to_local_time(Secs),
 	SubEl2=[{xmlelement, "app:edited", [], [{xmlcdata, w3cdtf(Date)}]},
 			{xmlelement, "link",[{"rel", "edit"}, 
-			{"href", entry_uri(Args,Domain,User,  Id)}],[] }, 
+			{"href", entry_uri(Args,Domain,User, Node, Id)}],[] }, 
 			{xmlelement, "id", [],[{xmlcdata, Id}]}
 			| SubEl],
-	{xmlelement, "entry", [{"xmlns:app","http://www.w3.org/2007/app"}|Attrs], SubEl2}.
+	{xmlelement, "entry", [{"xmlns:app","http://www.w3.org/2007/app"}|Attrs], SubEl2};
+	
+%% Don't do anything except adding xmlns
+item_to_entry(Args,Node,  Id, {xmlelement, Name, Attrs, Subels}=Element, Item)->
+	case proplists:is_defined("xmlns",Attrs) of
+		true -> Element;
+		false -> {xmlelement, Name, [{"xmlns", Node}|Attrs], Subels}
+	end.
+	
+	
 
 collection(Title, Link, Updated, Author, _Id, Entries)->
-	{xmlelement, "feed", [{"xmlns", "http://www.w3.org/2005/Atom"}, {"xmlns:app", "http://www.w3.org/2007/app"}], [
+	{xmlelement, "feed", [{"xmlns", "http://www.w3.org/2005/Atom"}, 
+						 {"xmlns:app", "http://www.w3.org/2007/app"}], [
 		{xmlelement, "title", [],[{xmlcdata, Title}]},
 		{xmlelement, "updated", [],[{xmlcdata, w3cdtf(Updated)}]},
 		{xmlelement, "link", [{"href", Link}], []},
@@ -221,9 +242,9 @@ service(Args, Domain, User, Collections)->
 							{"xmlns:app", "http://www.w3.org/2007/app"}],[
 		{xmlelement, "workspace", [],[
 			{xmlelement, "atom:title", [],[{xmlcdata,"Feed for "++User++"@"++Domain}]} | 
-			lists:map(fun(Collection)->
-				{xmlelement, "collection", [{"href", base_uri(Args,Domain,User)}], [
-					{xmlelement, "atom:title", [], [{xmlcdata, Collection}]}
+			lists:map(fun(#pubsub_node{nodeid={_Server, Id}, type=Type})->
+				{xmlelement, "collection", [{"href", collection_uri(Args,Domain,User, Id)}], [
+					{xmlelement, "atom:title", [], [{xmlcdata, Id}]}
 				]}
 				end, Collections)
 		]}
