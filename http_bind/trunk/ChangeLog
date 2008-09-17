@@ -1,3 +1,8 @@
+2008-09-17  Mickael Remond  <mickael.remond@process-one.net>
+
+	* src/web/ejabberd_http_bind.erl: Implement packets reordering
+	to avoid race conditions (EJAB-724).
+
 2008-07-28  Badlop  <badlop@process-one.net>
 
 	* doc/mod_http_bind.tex: Update LaTeX code for section title
