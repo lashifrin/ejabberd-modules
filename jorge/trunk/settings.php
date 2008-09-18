@@ -217,7 +217,7 @@ if (GAPPS === true) {
 	
 	}
 
-$html->set_body('</table><hr size="1" noshade="" color="#c9d7f1"/><br><small><b>'.$stats_personal_d[$lang].'</b></small>');
+$html->set_body('</table><hr size="1" noshade="noshade" style="color: #c9d7f1;"><br><small><b>'.$stats_personal_d[$lang].'</b></small>');
 $total_messages=number_format($total_messages=do_sel_quick("select sum(count) from `logdb_stats_$xmpp_host` where owner_id='$user_id'"));
 if ($total_messages=="f") { 
 

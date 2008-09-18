@@ -75,7 +75,7 @@ mysql_free_result();
 
 $html->set_body('<h2><u>Stats for: '.$xmpp_host_dotted.'</u></h2><p style="padding-left: 10px;">
 		Total <b>'.number_format(total_messages($xmpp_host)).'</b> messages logged by the server in <b>'.number_format(total_chats($xmpp_host)).'</b> conversations. Current database size is: <b>'.db_size().'</b> MB</p>
-		<hr size="1" noshade="" color="#cccccc"/><table class="ff">
+		<hr size="1" noshade="noshade" style="color: #cccccc;"><table class="ff">
 		<tr><td style="padding-left: 10px"><div id="no_users" style="width:1000px;height:250px;"></div><br>
 		<div id="no_messages" style="width:1000px;height:250px;"></div><br>
 		<div id="hourly_yesterday" style="width:1000px;height:250px;"></div><br>
@@ -99,7 +99,7 @@ while ($entry=mysql_fetch_array($result)) {
 	$html->set_body('<b>'.$i.'.</b> '.htmlspecialchars(get_user_name($entry[owner_id],$xmpp_host)).'@'.$xmpp_host_dotted.'<b> --> </b>'.htmlspecialchars(get_user_name($entry[peer_name_id],$xmpp_host)).'@'.htmlspecialchars(get_server_name($entry[peer_server_id],$xmpp_host)).' (<i><b>'.$entry[count].'</b></i>)<br>');
 
 }
-$html->set_body('</div><br><hr size="1" noshade="" color="#cccccc"/><br>');
+$html->set_body('</div><br><hr size="1" noshade="noshade" style="color: #cccccc;"><br>');
 
 $i=0;
 $html->set_body('<div><b>Top 10 talkers yesterday:</b><br><br>');

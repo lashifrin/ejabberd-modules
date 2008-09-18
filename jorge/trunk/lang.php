@@ -572,8 +572,8 @@ $months_name_eng = array("January","February","March","April","May","June","July
 $jump_to_l[pol] = "Przejdź do miesiąca";
 $jump_to_l[eng] = "Jump to month";
 
-$chat_list_l[pol] = "Lista rozmów w wybranym dniu:";
-$chat_list_l[eng] = "Chat list for selected day:";
+$chat_list_l[pol] = "Lista rozmów:";
+$chat_list_l[eng] = "Chat list:";
 
 $select_view[pol] = "Wybierz rodzaj widoku przeglądarki:";
 $select_view[eng] = "Select prefered view for browser:";

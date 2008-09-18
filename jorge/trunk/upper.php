@@ -293,9 +293,9 @@ $html->menu('
 		<b>'.TOKEN.'@'.$xmpp_host_dotted.'</b>&nbsp; | &nbsp;
 		<a href="settings.php">'.$menu_item_panel[$lang].'</a>&nbsp; | &nbsp;
 		<a href="#" onClick="smackzk();">'.$sel_client[$lang].'</a>&nbsp; | &nbsp;
-		<a href="help.php" target="_blank">'.$help_but[$lang].'</a>&nbsp; | &nbsp;<a href="index.php?act=logout">'.$log_out_b[$lang].'</a><hr size="1" noshade="" color="#c9d7f1"/></td>
+		<a href="help.php" target="_blank">'.$help_but[$lang].'</a>&nbsp; | &nbsp;<a href="index.php?act=logout">'.$log_out_b[$lang].'</a><hr size="1" noshade="noshade" style="color: #c9d7f1;"></td>
 	</tr>
-	<tr><td height="57"><a href="'.$view_type.'"><img src="img/'.$brand_logo.'" alt="logo" border="0" /></a></td></tr>
+	<tr><td height="57"><a href="'.$view_type.'"><img src="img/'.$brand_logo.'" alt="logo" border="0"></a></td></tr>
 	<tr><td valign="top" height="35"><form action="search_v2.php" method="post">
 	<input id="t_search" type="text" name="query" class="cc" value="'.htmlspecialchars(stripslashes($search_phase)).'">
 	');
@@ -400,7 +400,7 @@ $html->menu('<input class="red" type="submit" value="'.$search_box[$lang].'">
 			.$menu_contacts.' | '
 			.$menu_logger.$menu_stats.' | ' 
 			.$menu_trash. 
-			' | <a class="mmenu" href="" onClick="window.location.reload()">'.$refresh[$lang].'</td>
+			' | <a class="mmenu" href="#" onClick="window.location.reload()">'.$refresh[$lang].'</a></td>
 		</tr>
 		</table>
 		<p align="center"><b>'.$alert.'</b></p>

@@ -132,14 +132,14 @@ $html->headers('
 		<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 		<html>
 		<head>
-			<meta http-equiv="cache-control" content="no-cache" />
-			<meta http-equiv="pragma" content="no-cache" />
-			<meta name="Author" content="Zbyszek Zolkiewski at jabster.pl" />
-			<meta name="Keywords" content="jorge message archiving ejabberd mod_logdb erlang" />
-			<meta name="Description" content="Jorge" />
-			<link rel="shortcut icon" href="favicon.ico" /> 
-			<link rel="stylesheet" href="style.css" type="text/css" />
-			<link rel="stylesheet" href="jquery.autocomplete.css" type="text/css" />
+			<meta http-equiv="cache-control" content="no-cache">
+			<meta http-equiv="pragma" content="no-cache">
+			<meta name="Author" content="Zbyszek Zolkiewski at jabster.pl">
+			<meta name="Keywords" content="jorge message archiving ejabberd mod_logdb erlang">
+			<meta name="Description" content="Jorge">
+			<link rel="shortcut icon" href="favicon.ico"> 
+			<link rel="stylesheet" href="style.css" type="text/css">
+			<link rel="stylesheet" href="jquery.autocomplete.css" type="text/css">
 	');
 
 if (preg_match("/main.php/i",$location)) {
@@ -205,7 +205,7 @@ $html->headers('
 
 	</noscript>
 
-	<script language="JavaScript1.2">
+	<script language="JavaScript1.2" type="text/javascript">
 
 	function smackzk()  {
 

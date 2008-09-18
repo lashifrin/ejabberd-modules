@@ -632,12 +632,12 @@ if ($c_type=="1") {
     $calendar .='
 	<table width="200"  border="0" cellpadding="0" cellspacing="0" class="calbck">
       	<tr>
-        <td><img src="img/cal_corn_11.png" width="15" height="7"></td>
+        <td><img src="img/cal_corn_11.png" width="15" height="7" alt="cal_img"></td>
         <td background="img/cal_bck_top.gif"></td>
-        <td><img src="img/cal_corn_12.png" width="14" height="7"></td>
+        <td><img src="img/cal_corn_12.png" width="14" height="7" alt="cal_img"></td>
       	</tr>
       	<tr>
-        <td width="15" valign="top" class="calbckleft"><img src="img/cal_bck_left.png" width="15" height="116">
+        <td width="15" valign="top" class="calbckleft"><img src="img/cal_bck_left.png" width="15" height="116" alt="cal_img">
       	</td>
         <td width="100%" valign="top">
         <table width="100%"  border="0" cellspacing="0" cellpadding="0">
@@ -730,7 +730,7 @@ $verb_date = "$year-$m-1";
 		elseif($c_type=="2") {
 
 			$to_base = $enc->crypt_url("tslice=$year-$m-$n&peer_name_id=$name_peer&peer_server_id=$server_peer");
-			$loc_orign="&loc=2";
+			$loc_orign="&amp;loc=2";
 
 		}
 
@@ -751,12 +751,12 @@ $verb_date = "$year-$m-1";
 
 	</table>
         </td>
-        <td width="14" valign="top" class="calbckright"><img src="img/cal_bck_right.png" width="14" height="116"></td>
+        <td width="14" valign="top" class="calbckright"><img src="img/cal_bck_right.png" width="14" height="116" alt="cal_img"></td>
       	</tr>
       	<tr>
-        <td><img src="img/cal_corn_21.png" width="15" height="16"></td>
+        <td><img src="img/cal_corn_21.png" width="15" height="16" alt="cal_img"></td>
         <td background="img/cal_bck_bot.png"></td>
-        <td><img src="img/cal_corn_22.png" width="14" height="16"></td>
+        <td><img src="img/cal_corn_22.png" width="14" height="16" alt="cal_img"></td>
       	</tr>
     	</table>
         

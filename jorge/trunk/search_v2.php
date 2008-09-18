@@ -289,7 +289,7 @@ if ($search_phase!="") {
 					
 								$in_minutes = round(($time_diff/60),0);
 								$html->set_body('<tr class="splitl">
-									<td colspan="5" style="font-size: 10px;">'.verbose_split_line($in_minutes,$lang,$verb_h,$in_min).'<hr size="1" noshade="" color="#cccccc"/></td></tr>');
+									<td colspan="5" style="font-size: 10px;">'.verbose_split_line($in_minutes,$lang,$verb_h,$in_min).'<hr size="1" noshade="noshade" style="color: #cccccc;"></td></tr>');
 							}
 
 							// talker and server names
