@@ -106,14 +106,24 @@ if ($_GET[act]==="logout") {
 		  		$sess->set('uid_l',$inpLogin);
 		  		$sess->set('uid_p',$inpPass);
 		  		$sess->set('host',$xmpp_host);
-		  		$ret_v=is_log_enabled(get_user_id($sess->get('uid_l'),$xmpp_host),$xmpp_host);
-		  		if (($ret_v[0]) == "t") {
 
-		  			$sess->set('enabled','t');
-		  			$sess->set('log_status',$ret_v[1]);
-		  			$sess->set('image_w','');
-		  			$ui = get_user_id($sess->get('uid_l'),$xmpp_host);
-					$db->set_user_id("$ui");
+				// Get user_id if it is possible
+				if ($db->get_user_id($sess->get('uid_l')) === true) {
+
+						$ui = $db->result->user_id;
+						$db->set_user_id($ui);
+						$db->is_log_enabled();
+						$ret_v = $db->result->is_enabled;
+
+					}
+					else {
+						
+						$ret_val = null;
+				}
+
+		  		if ($ret_v === true OR $ret_v === false) {
+
+					$sess->set('log_status',$ret_v);
 					$db->set_logger("1","1",$rem_adre);
 					// get preferences, if not set, fallback to standard view.
 					$db->get_jorge_pref();
@@ -173,11 +183,11 @@ if ($_GET[act]==="logout") {
 				}
 		  		
 				else {
-				
-					$sess->set('enabled','f');
-					$sess->set('log_status',$ret_v[1]);
-					$sess->set('image_w','');
-					header("Location: not_enabled.php"); }
+
+					$sess->set('log_status',null);
+					header("Location: not_enabled.php"); 
+					exit;
+				}
 
 			}
 

@@ -137,7 +137,7 @@ if (count($result) !=0) {
 
 		foreach ($result as $entry) {
 
-			$cl_entry = pl_znaczki(verbose_mo($entry[at],$lang));
+			$cl_entry = verbose_mo($entry[at],$lang);
 			if ($entry[at_send]==substr($tslice,0,7)) { 
 		
 					$rel="open"; $bop="<b>"; $bcl="</b>"; 
@@ -169,7 +169,7 @@ if (count($result) !=0) {
 					
 				}
 			
-				$html->set_body('<li><a href="?a='.$to_base.'">'.$bold_b.pl_znaczki(verbose_date($ent["at"],$lang,"m")).$bold_e.'</a></li>');
+				$html->set_body('<li><a href="?a='.$to_base.'">'.$bold_b.verbose_date($ent["at"],$lang,"m").$bold_e.'</a></li>');
 
 			}
 

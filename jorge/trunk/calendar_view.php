@@ -220,7 +220,7 @@ foreach($ch_mo as $result) {
 			$sel_box=""; 
 			
 		}
-	$html->set_body('<option value="'.$sym.'" '.$sel_box.'>'.pl_znaczki(verbose_mo($result[at],$lang)).'</option>');
+	$html->set_body('<option value="'.$sym.'" '.$sel_box.'>'.verbose_mo($result[at],$lang).'</option>');
 
 }
 
@@ -240,7 +240,7 @@ foreach($result_for_days as $result) {
 }
 
 list($y,$m) = split("-", $mo);
-$html->set_body(pl_znaczki(calendar($user_id,$xmpp_host,$y,$m,$days,TOKEN,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,1,$null_a=0,$null_b=0,$cal_days,$enc)));
+$html->set_body(calendar($user_id,$xmpp_host,$y,$m,$days,TOKEN,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,1,$null_a=0,$null_b=0,$cal_days,$enc));
 unset($days);
 
 // if we got day, lets display chats from that day...

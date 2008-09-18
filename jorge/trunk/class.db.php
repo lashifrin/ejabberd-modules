@@ -574,9 +574,34 @@ class db_manager {
 			WHERE 
 				owner_id='$user_id'
 		";
+		
+		if ($this->select($query) === true) {
 
-		return $this->select($query);
+				if ($this->result->is_enabled === "0") {
 
+						$this->result->is_enabled = false;
+						return true;
+					
+					}
+					elseif($this->result->is_enabled === "1") {
+
+						$this->result->is_enabled = true;
+						return true;
+			
+					}
+					else{
+
+						 $this->result->is_enabled = null;
+						 return true;
+
+				}
+
+
+
+		}
+
+		return false;
+	
 	}
 
 	public function total_messages() {

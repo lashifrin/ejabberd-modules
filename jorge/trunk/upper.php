@@ -35,8 +35,8 @@ if ($lang!="pol" && $lang!="eng") {
 	exit; 
 }
 
-// control check - if global archivization is enabled...
-if ($sess->get('enabled') == "f") { 
+// If user have profile
+if ($sess->get('log_status') === null) { 
 
 	header ("Location: not_enabled.php"); 
 	
@@ -273,7 +273,7 @@ if (preg_match("/search_v2.php/i",$location))
 	}
 
 // check if archivization is currently enabled...
-if ($sess->get('log_status') == "0") { 
+if ($sess->get('log_status') === false) { 
 
 		$html->system_message($status_msg1[$lang]);
 	

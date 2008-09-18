@@ -383,25 +383,6 @@ function update_set_log_tgle($user_id,$xmpp_host) {
 	return "f";
 }
 
-function is_log_enabled($user_id,$xmpp_host) {
-
-	$result=mysql_query("select dolog_default from `logdb_settings_$xmpp_host` where owner_id='$user_id'");
-	$row=mysql_fetch_row($result);
-	$is_enabled=$row[0];
-
-	if ($is_enabled == "1" || $is_enabled == "0") 
-			{ 
-				if ($is_enabled=="1") { $log_status="1"; } else { $log_status="0"; }
-				$ret_v[0] = "t";
-				$ret_v[1] = $log_status;
-				return $ret_v;
-			} 
-
-			else 
-				{ return "f";}
-
-}
-
 
 function turn_red($haystack,$needle)
 {
@@ -450,7 +431,7 @@ function verbose_date($dd,$lang="",$t="") {
 		else {
 		$dd=strftime("%e.%m.%Y, %A", strtotime("$dd")); }
 	$ee = array("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday");
-	$ee_pol = array("Pon","Wto","¦ro","Czw","Pi±","Sob","Nie");
+	$ee_pol = array("Pon","Wto","Åšro","Czw","PiÄ…","Sob","Nie");
 	$ee_eng = array("Mon","Tue","Wed","Thu","Fri","Sat","Sun");
 	$ss_eng = array("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec");
 	$ss = array("January","February", "March", "April", "May","June","July","August","September","October", "November","December");
@@ -467,20 +448,11 @@ function verbose_mo($dd,$lang) {
 	 $dd=strftime("%b %Y",strtotime($dd));
 	 $ss_eng = array("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"); // replace patern
 	 $ss = array("January","February", "March", "April", "May","June","July","August","September","October", "November","December"); // to verb eng
-	 $ss_pol=array("Styczeñ","Luty","Marzec","Kwiecieñ","Maj","Czerwiec","Lipiec","Sierpieñ","Wrzesieñ","Pa¼dziernik","Listopad","Grudzieñ"); // to verb pol
+	 $ss_pol=array("StyczeÅ„","Luty","Marzec","KwiecieÅ„","Maj","Czerwiec","Lipiec","SierpieÅ„","WrzesieÅ„","PaÅºdziernik","Listopad","GrudzieÅ„"); // to verb pol
 	 if ($lang=="pol") { $repl1=$ss_pol; } elseif($lang=="eng") { $repl1=$ss; } elseif($lang=="") { $repl1=$ss; }
 	 $g=str_replace($ss_eng,$repl1,$dd);
 	 return $g;
 }
-
-
-
-function pl_znaczki($string) {
-	$string=mb_convert_encoding($string,"UTF-8","ISO-8859-2");
-	return $string;
-}
-
-
 
 
 function validate_start($start) {

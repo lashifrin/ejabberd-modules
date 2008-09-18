@@ -117,7 +117,7 @@ if ($con_map AND $_POST['chat_map'] != "null") {
 			if (count($days)>=1) {
 				
 					$html->set_body('<div style="float: left;">');
-					$html->set_body(pl_znaczki(calendar($user_id,$xmpp_host,$y,$m,$days,TOKEN,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,2,$peer_name_id,$peer_server_id,$cal_days,$enc)));
+					$html->set_body(calendar($user_id,$xmpp_host,$y,$m,$days,TOKEN,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,2,$peer_name_id,$peer_server_id,$cal_days,$enc));
 					$html->set_body('</div>');
 					unset($days);
 				

@@ -20,6 +20,14 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 */
 require_once("headers.php");
+
+// Redirect user if alredy setup
+if ($sess->get('log_status')!== null) {
+
+	header("Location: index.php");
+	
+}
+
 $action = $_POST[activate];
 $user_name = $sess->get('uid_l');
 
@@ -50,7 +58,8 @@ if ($action === $activate_m[$lang]) {
 									$html->alert_message('Ooops something goes wrong...its still beta...please contact system admin with this message');
 
 								}
-								$sess->set('enabled','t');
+
+								$sess->set('log_status',true);
 								$sess->set('view_type','2');
 								$sess->set('language',$lang_def);
 								$db->set_logger("7","1",$rem_adre);
@@ -82,7 +91,7 @@ if ($action === $activate_m[$lang]) {
 					<form action="not_enabled.php" method="post">
 						<input class="red" type="submit" name="activate" value="'.$activate_m[$lang].'">
 					</form>
-				<br><br><b>'.$warning2[$lang].'</b> '.$warning1[$lang].'<br><u>'.$devel_info[$lang].'</u></center><br><br>
+				<br><br>'.$warning1[$lang].'<br><u>'.$devel_info[$lang].'</u></center><br><br>
 				<center>
 					<form action="index.php" method="get">
 						<input type="hidden" name="act" value="logout">

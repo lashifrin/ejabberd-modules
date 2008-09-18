@@ -35,7 +35,7 @@ if ($tgle) {
 				
 				if($db->set_log(true) === true) {
 
-						$sess->set('log_status','1');
+						$sess->set('log_status',true);
 						$db->set_logger("7","1");
 						$html->status_message($status_msg2[$lang]);
 					
@@ -51,7 +51,7 @@ if ($tgle) {
 				
 				if($db->set_log(false) === true) {
 
-						$sess->set('log_status','0');
+						$sess->set('log_status',false);
 						$db->set_logger("6","1");
 						$html->status_message($status_msg3[$lang]);
 					
@@ -142,7 +142,7 @@ $html->set_body('<h2>'.$settings_desc[$lang].'</h2><center><table><form action="
 		<tr style="font-size: x-small;"><td>'.$setting_d1[$lang].'</td><td><input class="btn_set" type="submit" name="toggle" value="
 	');
 $db->is_log_enabled();
-if ($db->result->is_enabled === "0") { 
+if ($db->result->is_enabled === false) { 
 		
 		$html->set_body($arch_on[$lang]);
 		

@@ -44,8 +44,8 @@ if (!preg_match("/index.php/i",$location)) {
 $html->foot('
 	<br><div style="background-image: url(img/bell-down.png); height: 3px;"></div>
 	<div align="center">'.$links.'</div><br>
-	<div align="center" style="color: gray;">'.$copy.'></div>
-	<p style="font-size: xx-small; text-align: right;">v1.5.0</p><br>
+	<div align="center" style="color: gray;">'.$copy.'</div>
+	<p style="font-size: xx-small; text-align: right;">v1.5svn</p><br>
 	');
 
 // footer for admins...
