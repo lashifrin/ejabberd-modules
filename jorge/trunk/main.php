@@ -301,6 +301,11 @@ if ($talker) {
                                 $back_link="favorites.php";
                         
 			}
+			elseif($loc_id=="4") {
+
+				$back_link_message=$myl_back[$lang];
+				$back_link="my_links.php";
+			}
 
                 $html->set_body('<tr><td colspan="2" class="message"><a href="'.$back_link.'">'.$back_link_message.'</a></td><td></td></tr>');
 	}
@@ -318,9 +323,9 @@ if ($talker) {
 	$html->set_body('<tr style="background-image: url(img/bar_bg.png); background-repeat:repeat-x;">
 			<td><b> '.$time_t[$lang].' </b></td><td><b> '.$user_t[$lang].' </b></td><td><b> '.$thread[$lang].'</b></td>
 			<td align="right" style="padding-right: 5px; font-weight: normal;">
-			<form style="margin-bottom: 0;" id="fav_form" action="req_process.php" method="post">
+			<form style="margin-bottom: 0;" action="favorites.php" method="post">
 			<input type="hidden" name="a" value="'.$_GET[a].'" />
-			<input type="hidden" name="req" value="1">
+			<input type="hidden" name="init" value="1">
 			<input class="fav_main" type="submit" value="'.$fav_add[$lang].'" />
 			</form>
 			<a id="pretty" title="'.$tip_export[$lang].'" class="foot" href="export.php?a='.$e_string.'">'.$export_link[$lang].'</a>&nbsp; | &nbsp;

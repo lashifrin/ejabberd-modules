@@ -22,28 +22,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 require_once("headers.php");
 require_once("upper.php");
 
-$html->set_body('
-
-	<script language="javascript" type="text/javascript">
-
-	// prepare the form when the DOM is ready 
-	$(document).ready(function() { 
-    		// bind form using ajaxForm 
-    		$(\'#fav_form\').ajaxForm({ 
-        	// target identifies the element(s) to update with the server response 
-        	target: \'#fav_result\', 
- 
-        	// success identifies the function to invoke when the server response 
-        	// has been received; here we apply a fade-in effect to the new content 
-        	success: function() { 
-            		$(\'#fav_result\').fadeIn(\'slow\'); 
-        	} 
-    		}); 
-	});
-	</script>
-
-');
-
 $html->set_body('<h2>'.$cal_head[$lang].'</h2><small>'.$cal_notice[$lang].'. <a href="main.php?set_pref=1&v=1"><u>'.$change_view[$lang].'</u></a></small><br><br>');
 
 if (isset($_GET['left'])) { 
@@ -413,6 +391,12 @@ if ($talker) {
 				$back_link="favorites.php";
 			
 			}
+			elseif($loc_id=="4") {
+
+				$back_link_message=$myl_back[$lang];
+				$back_link="my_links.php";
+			
+			}
 		$html->set_body('<tr><td colspan="2" class="message"><a href="'.$back_link.'">'.$back_link_message.'</a></td><td></td></tr>');
 	
 	}
@@ -431,12 +415,34 @@ if ($talker) {
         		<tr class="header">
         		<td><b> '.$time_t[$lang].' </b></td><td><b> '.$user_t[$lang].' </b></td><td><b> '.$thread[$lang].'</b></td>
         		<td align="right" style="padding-right: 5px; font-weight: normal;">
-			<form style="margin-bottom: 0;" id="fav_form" action="req_process.php" method="post">
-			<input type="hidden" name="a" value="'.$_GET[a].'" />
-			<input type="hidden" name="req" value="1">
-			<input class="fav" type="submit" value="'.$fav_add[$lang].'" />
-			</form>
-			<a id="pretty" title="'.$tip_export[$lang].'" class="menu_chat" href="export.php?a='.$e_string.'">'.$export_link[$lang].'</a>&nbsp; | &nbsp;'.$all_for_u[$lang].'
+			');
+
+	// check favorite
+	$db->check_favorite($talker,$server,$tslice);
+	if ($db->result->cnt < 1) {
+
+			$html->set_body('
+					<form style="margin-bottom: 0;" action="favorites.php" method="post">
+					<input type="hidden" name="a" value="'.$_GET[a].'">
+					<input type="hidden" name="init" value="1">
+					<input class="fav" type="submit" value="'.$fav_add[$lang].'">
+					</form>
+					');
+		}
+		else {
+
+			$html->set_body('
+					<form style="margin-bottom: 0;" action="favorites.php" method="post">
+					<input type="hidden" name="a" value="'.$_GET[a].'">
+					<input type="hidden" name="init" value="1">
+					<i>'.$fav_favorited[$lang].'</i>
+					</form>
+					');
+	
+		
+		}
+	
+	$html->set_body('<a id="pretty" title="'.$tip_export[$lang].'" class="menu_chat" href="export.php?a='.$e_string.'">'.$export_link[$lang].'</a>&nbsp; | &nbsp;'.$all_for_u[$lang].'
         		<a id="pretty" title="'.$all_for_u_m2_d[$lang].'" class="menu_chat" href="chat_map.php?chat_map='.$predefined.'"><u>'.$all_for_u_m2[$lang].'</u></a>
 			&nbsp;<small>|</small>&nbsp;
 			<a id="pretty" title="'.$all_for_u_m_d[$lang].'" class="menu_chat" href="search_v2.php?b='.$predefined.'"><u>'.$all_for_u_m[$lang].'</u></a>

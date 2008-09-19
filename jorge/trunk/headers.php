@@ -158,7 +158,6 @@ if (preg_match("/main.php/i",$location)) {
 $html->headers('
         		<script type="text/javascript" src="lib/jquery-1.2.1.pack.js"></script>
 			<script type="text/javascript" src="lib/jquery.bgiframe.min.js"></script>
-			<script type="text/javascript" src="lib/jquery.form.pack.js"></script>
 			<script type="text/javascript" src="lib/dimensions.js"></script>
 			<script type="text/javascript" src="lib/jquery.tooltip.js"></script>
 			<script type="text/javascript" src="lib/jquery.quicksearch.js"></script>

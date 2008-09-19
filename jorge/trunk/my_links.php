@@ -156,9 +156,9 @@ if ($my_links_count === "0") {
 			$jid = $peer_name.'@'.$peer_server;
 			$html->set_body('
 					<tr style="cursor: pointer;" bgcolor="#e8eef7" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#e8eef7\';">
-					<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';" style="padding-left: 10px; padding-right: 10px">'.verbose_date($entry['datat'],$lang).'</td>
-					<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';">&nbsp;<b>'.cut_nick(htmlspecialchars($nickname)).'</b> ('.htmlspecialchars($jid).')&nbsp;</td>
-					<td onclick="window.location=\''.$view_type.'?a='.$entry['link'].'\';">&nbsp;'.$desc.'</td>
+					<td onclick="window.location=\''.$view_type.'?loc=4&a='.$entry['link'].'\';" style="padding-left: 10px; padding-right: 10px">'.verbose_date($entry['datat'],$lang).'</td>
+					<td onclick="window.location=\''.$view_type.'?loc=4&a='.$entry['link'].'\';">&nbsp;<b>'.cut_nick(htmlspecialchars($nickname)).'</b> ('.htmlspecialchars($jid).')&nbsp;</td>
+					<td onclick="window.location=\''.$view_type.'?loc=4&a='.$entry['link'].'\';">&nbsp;'.$desc.'</td>
 					<td><a href="my_links.php?del=t&link_id='.$entry[id_link].'" onClick="if (!confirm(\''.$del_conf_my_link[$lang].'\')) return false;" >&nbsp;'.$del_my_link[$lang].'&nbsp;</a></td>
 					</tr>
 				');

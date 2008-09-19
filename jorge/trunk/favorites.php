@@ -21,84 +21,128 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 require_once("headers.php");
 require_once("upper.php");
+$init = $_POST[init];
 
-$html->set_body('<h2>'.$fav_main[$lang].'</h2><small>'.$fav_desc[$lang].'</small>
+// header
+$html->set_body('<h2>'.$fav_main[$lang].'</h2><small>'.$fav_desc[$lang].'</small>');
 
-		<script language="javascript" type="text/javascript">
-			// prepare the form when the DOM is ready 
-			$(document).ready(function() { 
-    				// bind form using ajaxForm 
-    				$(\'#fav_form\').ajaxForm({ 
-        				// target identifies the element(s) to update with the server response 
-        				target: \'#fav_result\', 
- 
- 				       	// success identifies the function to invoke when the server response 
-        				// has been received; here we apply a fade-in effect to the new content 
-        				success: function() { 
-            					$(\'#fav_result\').fadeIn(\'slow\'); 
-        				} 
-    				}); 
-			});
-		</script>
+// add to favorites
+if ($init == "1") {
 
-		<script type="text/javascript">
-		function toggle(box,theId) {
-			if(document.getElementById) {
-				var cell = document.getElementById(theId);
-				if(box.checked) {
-					cell.className = "on";
-				}
-				else {
-					cell.className = "off";
-				}
-			}
-		}
-		</script>
+	if ($enc->decrypt_url($_POST[a]) === true) {
 
-		<style type="text/css">
-			.on {background-color: #84c1df;}
-			.off {background-color: #e8eef7;}
-		</style>
-
-	');
-
-// fetch results
-$result=do_sel("select * from jorge_favorites where owner_id='$user_id' and ext is NULL order by tslice desc");
-
-if (mysql_num_rows($result)>0) {
-
-		$html->set_body('<center>
-			<span id="fav_result"></span>
-			<form style="margin-bottom: 0;" id="fav_form" action="req_process.php" method="post">
-			<input type="hidden" name="req" value="2">
-			<table id="maincontent" bgcolor="#e8eef7" class="ff" cellspacing="0" cellpadding="3">
-			<tr class="header"><td>'.$fav_contact[$lang].'</td><td>'.$fav_when[$lang].'</td>
-			<td><input class="submit" type="Submit" value="'.$fav_remove[$lang].'"></td></tr>
-			<tr class="spacer" height="1px"><td colspan="3"></td></tr>
-			<tbody id="searchfield">
-		');
-		$i=0;
-		while($row=mysql_fetch_array($result)) {
-
-			$i++;
-			$username=get_user_name($row[peer_name_id],$xmpp_host);
-			$server=get_server_name($row[peer_server_id],$xmpp_host);
-			$nickname=query_nick_name($ejabberd_roster,$username,$server);
-			$to_base = $enc->crypt_url("tslice=$row[tslice]&peer_name_id=$row[peer_name_id]&peer_server_id=$row[peer_server_id]");
-			$html->set_body('
-				<tr id="'.$i.'"><td class="rowspace"> <a href="'.$view_type.'?a='.$to_base.'&loc=3"><u><b>'.$nickname.'</b> (<i>'.htmlspecialchars($username).'@'.htmlspecialchars($server).'</i>)</u></a></td>
-				<td class="rowspace">'.$row[tslice].'</td>
-				<td style="text-align: center;">
-				<input name="'.$i.'" type="checkbox" value="'.$to_base.'" onclick="toggle(this,\''.$i.'\')" />
+		$tslice = $enc->tslice;
+		$peer_name_id = $enc->peer_name_id;
+		$peer_server_id = $enc->peer_server_id;
+		$db->get_user_name($peer_name_id);
+		$user_name = $db->result->username;
+		$db->get_server_name($peer_server_id);
+		$server_name = $db->result->server_name;
+		$nick_name =  query_nick_name($ejabberd_roster,$user_name, $server_name);
+		$html->set_body('
+				<center>'.$fav_add[$lang].':<br>
+				<table class="ff" border="0" cellspacing="0">
+				<tr class="main_row_b"><td>'.$fav_chat[$lang].'<b>'.cut_nick($nick_name).'</b> (<i>'.$user_name.'@'.$server_name.'</i>)</td></tr>
+				<form style="margin-bottom: 0;" action="favorites.php" method="post">
+				<tr><td colspan="3" align="center">
+					<textarea class="ccc" name="desc" rows="4">'.$my_links_optional[$lang].'</textarea>
 				</td></tr>
+				<tr><td colspan="3" align="center">
+						<input type="hidden" name="favorite" value="'.$_POST[a].'">
+						<input name="trigger" class="red" type="submit" value="'.$my_links_commit[$lang].'">
+						<input class="red" type="button" value="'.$my_links_cancel[$lang].'" onClick="parent.location=\''.$view_type.'?a='.$_POST[a].'\'">
+					</td></tr>
+				</form></table>
+				<hr size="1" noshade="noshade">
+				</center>');
+	
+	}
+
+}
+
+// process request
+if ($_POST[favorite]) {
+
+	if ($enc->decrypt_url($_POST[favorite]) === true) {
+
+
+		if ($db->set_favorites($enc->peer_name_id,$enc->peer_server_id,$peer_resource_id,$enc->tslice,$_POST[desc]) === true) {
+
+				$html->status_message($fav_success[$lang]);
+
+			}
+			else{
+
+				$html->alert_message($fav_error[$lang]);
+			
+			}
+
+	}
+
+}
+
+// delete favorites
+if ($_GET[del] == "t") {
+
+	if ($db->delete_favorites_id($_GET[link_id]) === true) {
+
+
+			$html->status_message($fav_removed[$lang]);
+
+		}
+		else{
+
+			$html->alert_message($oper_fail[$lang]);
+			
+	}
+
+}
+
+// get favorites
+$db->get_favorites();
+
+if (count($db->result)>0) {
+
+		$html->set_body('
+                                <center><table id="maincontent" class="ff" cellspacing="0">
+                                <tr class="header"><td>'.$fav_contact[$lang].'</td><td>'.$fav_when[$lang].'</td><td>'.$fav_comment[$lang].'</td></tr>
+                                <tr class="spacer" height="1px"><td colspan="4"></td></tr>
+                                <tbody id="searchfield">	
+		');
+		$fav_list = $db->result;
+		foreach ($fav_list as $row) {
+
+			$db->get_user_name($row[peer_name_id]);
+			$user_name = $db->result->username;
+			$db->get_server_name($row[peer_server_id]);
+			$server_name = $db->result->server_name;
+			$nickname = query_nick_name($ejabberd_roster,$user_name,$server_name);
+			$to_base = $enc->crypt_url("tslice=$row[tslice]&peer_name_id=$row[peer_name_id]&peer_server_id=$row[peer_server_id]");
+			if (!$row[comment] OR $row[comment] == $my_links_optional[$lang]) {
+
+					$comment = $fav_nocomm[$lang];
+					
+				}
+				else{
+
+					$comment = htmlspecialchars($row[comment]);
+					$comment = str_replace("\n","<br>",$comment);
+					$comment = wordwrap($comment,30,"<br>",true);
+			
+			}
+			$html->set_body('
+				<tr style="cursor: pointer;" bgcolor="#e8eef7" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#e8eef7\';">
+				<td onclick="window.location=\''.$view_type.'?a='.$to_base.'&loc=3\';" style="padding-left: 10px; padding-right: 10px">
+					<b>'.htmlspecialchars(cut_nick($nickname)).'</b> (<i>'.htmlspecialchars($user_name).'@'.htmlspecialchars($server_name).'</i>)
+				</td>
+				<td onclick="window.location=\''.$view_type.'?a='.$to_base.'&loc=3\';" style="padding-left: 10px; padding-right: 10px">'.verbose_date($row[tslice],$lang).'</td>
+				<td style="padding-left: 10px; padding-right: 10px;">'.$comment.'</td>
+				<td style="text-align: center;"><a href="favorites.php?del=t&link_id='.$row[link_id].'" onClick="if (!confirm(\''.$del_conf_my_link[$lang].'\')) return false;">&nbsp;'.$fav_remove[$lang].'&nbsp;</td>
+				</tr>
 			');
 
 		}
-		$html->set_body('</tbody>
-			<tr class="foot"><td colspan="2"></td><td height="14px" style="text-align: right;">
-			<input class="submit" type="Submit" value="'.$fav_remove[$lang].'"></td></tr>
-			</table></center></form>
-		');
+		$html->set_body('</tbody><tr class="spacer"><td colspan="4"></td></tr><tr class="foot"><td colspan="4" height="15"></td></tr></table></center>');
 
 	}
 

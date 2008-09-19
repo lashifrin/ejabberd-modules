@@ -16,7 +16,7 @@ Requirements:
 - working ejabberd server with current mod_logdb (compatibile version is bundled with Jorge)
 - mod_xmlrpc - for XML-RPC
 - mysql5 server
-- any http server supporting php5 with gd, mcrypt, mb_string and xmlrpc support
+- any http server supporting PHP (5.2.x or higher) with gd, mcrypt and xmlrpc support
 
 Client Requirements:
 - Jorge is tested and compatibile with: Firefox 2+ and Opera. (IE support is added from verion of 7, NOTE: IE6 is not supported and not tested - may work anyway)

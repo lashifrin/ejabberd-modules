@@ -605,11 +605,14 @@ $chat_c_list[eng] = "Contacts list";
 $chat_no_chats[pol] = "Brak rozmów z wybranym kontaktem";
 $chat_no_chats[eng] = "There are no chats with selected contact";
 
-$chat_map_back[pol] = "<<< Wróć do MapyRozmów";
+$chat_map_back[pol] = "<<< Wróć do Mapy Rozmów";
 $chat_map_back[eng] = "<<< Back to ChatMap";
 
 $fav_back[pol] = "<<< Wróć do Ulubionych";
 $fav_back[eng] = "<<< Back to Favorites";
+
+$myl_back[pol] = "<<< Wróć do MyLinks";
+$myl_back[eng] = "<<< Back to MyLinks";
 
 $sel_language[pol] = "Wybierz preferowany język";
 $sel_language[eng] = "Select prefered language";
@@ -699,6 +702,9 @@ $fav_desc[eng] = "List of chats marked as favorites";
 $fav_add[pol] = "Dodaj tę rozmowę do ulubionych";
 $fav_add[eng] = "Add this chat to favorites";
 
+$fav_chat[pol] = "Rozmowa z: ";
+$fav_chat[eng] = "Chat with: ";
+
 $fav_success[pol] = "Rozmowa została dodana do Twoich <i>Ulubionych</i> !";
 $fav_success[eng] = "This chat had been succesfully added to your <i>Favorites</i> !";
 
@@ -708,29 +714,35 @@ $fav_discard[eng] = "Discard this message";
 $fav_exist[pol] = "Ooops...Ta rozmowa juz znajduje się w Twoich <i>Ulubionych</i>";
 $fav_exist[eng] = "Ooops...This chat is already in your <i>Favorites</i>";
 
-$fav_contact[pol] = "Kontakt";
-$faf_contact[eng] = "Contact";
+$fav_favorited[pol] = "Ta rozmowa jest dodana do ulubionych";
+$fav_favorited[eng] = "This chat is added to favorites";
 
-$fav_when[pol] = "Kiedy";
-$fav_when[eng] = "When";
+$fav_contact[pol] = "Rozmowa z:";
+$faf_contact[eng] = "Chat with:";
 
-$fav_comment[pol] = "Komentarz";
-$fav_comment[eng] = "Comment";
+$fav_when[pol] = "Kiedy:";
+$fav_when[eng] = "When:";
+
+$fav_comment[pol] = "Komentarz:";
+$fav_comment[eng] = "Comment:";
+
+$fav_nocomm[pol] = "Brak komentarza";
+$fav_nocomm[eng] = "No comment";
 
 $fav_add_comment[pol] = "Dodaj komentarz";
 $fav_add_comment[eng] = "Add comment";
 
-$fav_remove[pol] = "Usuń zaznaczone";
-$fav_remove[eng] = "Remove selected";
+$fav_remove[pol] = "usuń";
+$fav_remove[eng] = "delete";
 
-$fav_removed[pol] = "Zaznaczone rozmowy zostały usunięte z <i>Ulubionych</i>";
-$fav_removed[eng] = "Selected chats were removed from <i>Favorites</i>";
+$fav_removed[pol] = "Rozmowa została usnięta z <i>Ulubionych</i>";
+$fav_removed[eng] = "Chat has been deleted from <i>Favorites</i>";
 
 $fav_empty[pol] = "Nie masz aktualnie zapisanych żadnych <i>Ulubionych</i> rozmów";
 $fav_empty[eng] = "You dont have any <i>Favorites</i> chats saved";
 
-$ajax_error[pol] = "Oooups...There was a problem during processing your request";
-$ajax_error[eng] = "Oooups...There was a problem during processing your request";
+$fav_error[pol] = "Oooups...Wystąpił błąd podczas dodawania rozmowy";
+$fav_error[eng] = "Oooups...There was a problem during processing your request";
 
 $reset_sort[pol] = "resetuj sortowanie";
 $reset_sort[eng] = "reset sorting";
