@@ -1186,7 +1186,8 @@ class db_manager {
 				peer_name_id,
 				peer_server_id,
 				date,
-				timeframe
+				timeframe,
+				type
 			FROM 
 				pending_del 
 			WHERE 
@@ -1197,7 +1198,7 @@ class db_manager {
 		";
 
 		$this->select($query,"raw");
-		return $this->commit_select(array("peer_name_id","peer_server_id","date","timeframe"));
+		return $this->commit_select(array("peer_name_id","peer_server_id","date","timeframe","type"));
 
 	}
 
@@ -1209,7 +1210,7 @@ class db_manager {
 		$table = $this->construct_table($this->tslice);
 
 		$this->begin();
-		if ($this->set_undo_table($this->peer_name_id,$this->peer_server_id,$this->tslice) === false) {
+		if ($this->set_undo_table($this->peer_name_id,$this->peer_server_id,$this->tslice,"chat") === false) {
 
 				$this->rollback();
 				return false;
@@ -1332,12 +1333,13 @@ class db_manager {
 
 		$this->id_query = "Q041";
 		$query="INSERT INTO 
-				pending_del(owner_id,peer_name_id,date,peer_server_id) 
+				pending_del(owner_id,peer_name_id,date,peer_server_id,type) 
 			VALUES (
 				'".$this->user_id."', 
 				'$peer_name_id',
 				'$tslice',
-				'$peer_server_id'
+				'$peer_server_id',
+				'$type'
 				)
 				
 		";
@@ -1346,7 +1348,7 @@ class db_manager {
 
 	}
 
-	private function unset_undo_table($peer_name_id,$peer_server_id,$tslice) {
+	private function unset_undo_table($peer_name_id,$peer_server_id,$tslice,$type = null) {
 
 		$this->id_query = "Q042";
 		$query="DELETE FROM 
@@ -1943,7 +1945,7 @@ class db_manager {
 		$this->prepare($peer_name_id,$peer_server_id,$tslice);
 		$peer_resource_id = $this->sql_validate($peer_resource_id,"integer");
 		$timestamp = $this->sql_validate($timestamp,"string");
-		$query = "SELECT
+		$query="SELECT
 				body
 			FROM
 				`".$this->construct_table($this->tslice)."`
@@ -1962,6 +1964,91 @@ class db_manager {
 
 		return $this->select($query);
 		
+	}
+
+	public function get_favorites() {
+
+		$this->id_query = "Q064";
+		$this->vital_check();
+		$query="SELECT * 
+			FROM 
+				jorge_favorites 
+			WHERE 
+				owner_id='".$this->user_id."' 
+			AND 
+				ext is NULL 
+			ORDER BY 
+				tslice 
+			DESC
+		";
+
+		$this->select($query,"raw");
+		return $this->commit_select(array("link_id","peer_name_id","peer_server_id","resource_id","tslice","comment"));
+	
+	}
+
+	public function set_favorites($peer_name_id,$peer_server_id,$peer_resource_id = null, $tslice,$comment) {
+
+		$this->id_query = "Q065";
+		$this->vital_check();
+		$this->prepare($peer_name_id,$peer_server_id,$tslice);
+		#$peer_resource_id = $this->sql_validate($peer_resource_id,"integer");
+		$comment = $this->sql_validate($comment,"string");
+		$query="INSERT INTO 
+				jorge_favorites(owner_id,peer_name_id,peer_server_id,tslice,comment) 
+			VALUES(
+				'".$this->user_id."',
+				'".$this->peer_name_id."',
+				'".$this->peer_server_id."',
+				'".$this->tslice."',
+				'$comment'
+				)
+			";
+		
+		return $this->insert($query);
+
+	}
+
+	public function delete_favorites_id($link_id) {
+
+		$this->id_query = "Q066";
+		$this->vital_check();
+		$link_id = $this->sql_validate($link_id,"string");
+		$query="DELETE FROM
+				jorge_favorites
+			WHERE
+				owner_id = ".$this->user_id."
+			AND
+				link_id = '$link_id';
+		";
+		
+		return $this->delete($query);
+
+	}
+
+	public function check_favorite($peer_name_id,$peer_server_id,$tslice) {
+
+		$this->id_query = "Q067";
+		$this->vital_check();
+		$this->prepare($peer_name_id,$peer_server_id,$tslice);
+		$query="SELECT 
+				count(*) as cnt
+			FROM 
+				jorge_favorites 
+			WHERE 
+				owner_id='".$this->user_id."' 
+			AND 
+				tslice='".$this->tslice."' 
+			AND 
+				peer_name_id='".$this->peer_name_id."' 
+			AND 
+				peer_server_id='".$this->peer_server_id."'
+			AND
+				ext is null
+		";
+
+		return $this->select($query);
+
 	}
 
 	public function set_user_query($user_query) {
