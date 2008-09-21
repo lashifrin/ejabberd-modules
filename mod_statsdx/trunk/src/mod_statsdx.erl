@@ -11,12 +11,12 @@
 
 -behaviour(gen_mod).
 
--export([start/2, loop/0, stop/1, get_statistic/2, 
+-export([start/2, loop/1, stop/1, get_statistic/2,
 	 web_menu_main/2, web_page_main/2,
 	 web_menu_node/3, web_page_node/5,
 	 web_menu_host/3, web_page_host/3,
 	 remove_user/2, user_send_packet/3, user_receive_packet/4,
-	 user_login/1, user_logout/4]).
+	 user_login/1, user_logout/4, user_logout_sm/3]).
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
@@ -25,6 +25,13 @@
 -include("ejabberd_web_admin.hrl").
 
 -define(PROCNAME, ejabberd_mod_statsdx).
+
+%% Copied from ejabberd_s2s.erl Used in function get_s2sconnections/1
+-record(s2s, {fromto, pid, key}).
+
+%% TODO: It's implemented (but commented) the code to measure traffic stats,
+%% because it isn't yet implemented the code in web admin to view this data.
+
 
 %% -------------------
 %% Module control
@@ -37,108 +44,169 @@ start(Host, Opts) ->
 	     true -> 0;
 	     false -> "disabled"
 	 end,
+
+    %% If the process that handles statistics for the server is not started yet,
+    %% start it now
     case whereis(?PROCNAME) of
 	undefined ->
 	    application:start(os_mon),
-	    ets:new(stats, [named_table, public]),
-	    ets:insert(stats, {{user_login, server}, CD}),
-	    ets:insert(stats, {{user_logout, server}, CD}),
-	    ets:insert(stats, {{remove_user, server}, CD}),
-	    lists:foreach(
-	      fun(E) -> ets:insert(stats, {{client, server, E}, CD}) end,
-	      list_elem(clients, id)
-	     ),
-	    lists:foreach(
-	      fun(E) -> ets:insert(stats, {{os, server, E}, CD}) end,
-	      list_elem(oss, id)
-	     ),
-	    register(?PROCNAME, spawn(?MODULE, loop, []));
+	    initialize_stats_server();
 	_ ->
 	    ok
     end,
-    ets:insert(stats, {{user_login, Host}, CD}),
-    ets:insert(stats, {{user_logout, Host}, CD}),
-    ets:insert(stats, {{remove_user, Host}, CD}),
-    ets:insert(stats, {{send, Host, iq, in}, CD}),
-    ets:insert(stats, {{send, Host, iq, out}, CD}),
-    ets:insert(stats, {{send, Host, message, in}, CD}),
-    ets:insert(stats, {{send, Host, message, out}, CD}),
-    ets:insert(stats, {{send, Host, presence, in}, CD}),
-    ets:insert(stats, {{send, Host, presence, out}, CD}),
-    ets:insert(stats, {{recv, Host, iq, in}, CD}),
-    ets:insert(stats, {{recv, Host, iq, out}, CD}),
-    ets:insert(stats, {{recv, Host, message, in}, CD}),
-    ets:insert(stats, {{recv, Host, message, out}, CD}),
-    ets:insert(stats, {{recv, Host, presence, in}, CD}),
-    ets:insert(stats, {{recv, Host, presence, out}, CD}),
+    ?PROCNAME ! {initialize_stats, Host, Hooks, CD}.
+
+stop(Host) ->
+    finish_stats(Host),
+    case whereis(?PROCNAME) of
+	undefined -> ok;
+	_ -> ?PROCNAME ! {stop, Host}
+    end.
+
+
+%% -------------------
+%% Stats Server
+%% -------------------
+
+table_name(server) -> gen_mod:get_module_proc("server", mod_statsdx);
+table_name(Host) -> gen_mod:get_module_proc(Host, mod_statsdx).
+
+initialize_stats_server() ->
+    register(?PROCNAME, spawn(?MODULE, loop, [[]])).
+
+loop(Hosts) ->
+    receive
+	{initialize_stats, Host, Hooks, CD} ->
+	    case Hosts of
+		[] -> prepare_stats_server(CD);
+		_ -> ok
+	    end,
+	    prepare_stats_host(Host, Hooks, CD),
+	    loop([Host | Hosts]);
+	{stop, Host} ->
+	    case Hosts -- [Host] of
+		[] ->
+                    finish_stats();
+		RemainingHosts ->
+		    loop(RemainingHosts)
+	    end
+    end.
+
+%% Si no existe una tabla de stats del server, crearla.
+%% Deberia ser creada por un proceso que solo muera cuando se detenga el ultimo mod_statsdx del servidor
+prepare_stats_server(CD) ->
+    Table = table_name("server"),
+    ets:new(Table, [named_table, public]),
+    ets:insert(Table, {{user_login, server}, CD}),
+    ets:insert(Table, {{user_logout, server}, CD}),
+    ets:insert(Table, {{remove_user, server}, CD}),
     lists:foreach(
-      fun(E) -> ets:insert(stats, {{client, Host, E}, CD}) end,
+      fun(E) -> ets:insert(Table, {{client, server, E}, CD}) end,
       list_elem(clients, id)
      ),
     lists:foreach(
-      fun(E) -> ets:insert(stats, {{os, Host, E}, CD}) end,
+      fun(E) -> ets:insert(Table, {{conntype, server, E}, CD}) end,
+      list_elem(conntypes, id)
+     ),
+    lists:foreach(
+      fun(E) -> ets:insert(Table, {{os, server, E}, CD}) end,
       list_elem(oss, id)
      ),
     ejabberd_hooks:add(webadmin_menu_main, ?MODULE, web_menu_main, 50),
     ejabberd_hooks:add(webadmin_menu_node, ?MODULE, web_menu_node, 50),
-    ejabberd_hooks:add(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
     ejabberd_hooks:add(webadmin_page_main, ?MODULE, web_page_main, 50),
-    ejabberd_hooks:add(webadmin_page_node, ?MODULE, web_page_node, 50),
-    ejabberd_hooks:add(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
-    ejabberd_hooks:add(webadmin_user, Host, ?MODULE, web_user, 50),
+    ejabberd_hooks:add(webadmin_page_node, ?MODULE, web_page_node, 50).
+
+prepare_stats_host(Host, Hooks, CD) ->
+    Table = table_name(Host),
+    ets:new(Table, [named_table, public]),
+    ets:insert(Table, {{user_login, Host}, CD}),
+    ets:insert(Table, {{user_logout, Host}, CD}),
+    ets:insert(Table, {{remove_user, Host}, CD}),
+    ets:insert(Table, {{send, Host, iq, in}, CD}),
+    ets:insert(Table, {{send, Host, iq, out}, CD}),
+    ets:insert(Table, {{send, Host, message, in}, CD}),
+    ets:insert(Table, {{send, Host, message, out}, CD}),
+    ets:insert(Table, {{send, Host, presence, in}, CD}),
+    ets:insert(Table, {{send, Host, presence, out}, CD}),
+    ets:insert(Table, {{recv, Host, iq, in}, CD}),
+    ets:insert(Table, {{recv, Host, iq, out}, CD}),
+    ets:insert(Table, {{recv, Host, message, in}, CD}),
+    ets:insert(Table, {{recv, Host, message, out}, CD}),
+    ets:insert(Table, {{recv, Host, presence, in}, CD}),
+    ets:insert(Table, {{recv, Host, presence, out}, CD}),
+    lists:foreach(
+      fun(E) -> ets:insert(Table, {{client, Host, E}, CD}) end,
+      list_elem(clients, id)
+     ),
+    lists:foreach(
+      fun(E) -> ets:insert(Table, {{conntype, Host, E}, CD}) end,
+      list_elem(conntypes, id)
+     ),
+    lists:foreach(
+      fun(E) -> ets:insert(Table, {{os, Host, E}, CD}) end,
+      list_elem(oss, id)
+     ),
     case Hooks of
 	true ->
-	    ejabberd_hooks:add(user_send_packet, Host, ?MODULE, user_send_packet, 90),
-	    ejabberd_hooks:add(user_receive_packet, Host, ?MODULE, user_receive_packet, 90),
 	    ejabberd_hooks:add(remove_user, Host, ?MODULE, remove_user, 90),
 	    ejabberd_hooks:add(user_available_hook, Host, ?MODULE, user_login, 90),
-	    ejabberd_hooks:add(unset_presence_hook, Host, ?MODULE, user_logout, 90);
+	    %%ejabberd_hooks:add(unset_presence_hook, Host, ?MODULE, user_logout, 90),
+	    ejabberd_hooks:add(sm_remove_connection_hook, Host, ?MODULE, user_logout_sm, 90),
+	    %%ejabberd_hooks:add(user_receive_packet, Host, ?MODULE, user_receive_packet, 90), %% Only required for traffic stats
+	    ejabberd_hooks:add(user_send_packet, Host, ?MODULE, user_send_packet, 90);
 	false ->
 	    ok
-    end.
+    end,
+    ejabberd_hooks:add(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
+    ejabberd_hooks:add(webadmin_page_host, Host, ?MODULE, web_page_host, 50).
 
-loop() ->
-    receive
-	stop -> ok
-    end.
-
-stop(Host) ->
-    ejabberd_hooks:delete(user_send_packet, Host, ?MODULE, user_send_packet, 60),
-    ejabberd_hooks:delete(user_receive_packet, Host, ?MODULE, user_receive_packet, 60),
-    ejabberd_hooks:delete(remove_user, Host, ?MODULE, remove_user, 60),
+finish_stats() ->
     ejabberd_hooks:delete(webadmin_menu_main, ?MODULE, web_menu_main, 50),
     ejabberd_hooks:delete(webadmin_menu_node, ?MODULE, web_menu_node, 50),
-    ejabberd_hooks:delete(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
     ejabberd_hooks:delete(webadmin_page_main, ?MODULE, web_page_main, 50),
     ejabberd_hooks:delete(webadmin_page_node, ?MODULE, web_page_node, 50),
-    ejabberd_hooks:delete(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
-    ejabberd_hooks:delete(webadmin_user, Host, ?MODULE, web_user, 50),
-    ets:delete(stats),
-    case whereis(?PROCNAME) of
-	undefined -> ok;
-	_ -> 
-	    ?PROCNAME ! stop
-    end.
+    Table = table_name("server"),
+    catch ets:delete(Table).
 
+finish_stats(Host) ->
+    ejabberd_hooks:delete(user_available_hook, Host, ?MODULE, user_login, 90),
+    %%ejabberd_hooks:delete(unset_presence_hook, Host, ?MODULE, user_logout, 90),
+    ejabberd_hooks:delete(sm_remove_connection_hook, Host, ?MODULE, user_logout_sm, 90),
+    ejabberd_hooks:delete(user_send_packet, Host, ?MODULE, user_send_packet, 90),
+    ejabberd_hooks:delete(user_receive_packet, Host, ?MODULE, user_receive_packet, 90),
+    ejabberd_hooks:delete(remove_user, Host, ?MODULE, remove_user, 90),
+    ejabberd_hooks:delete(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
+    ejabberd_hooks:delete(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
+    Table = table_name(Host),
+    catch ets:delete(Table).
+
+
+%% -------------------
+%% Hooks Handlers
+%% -------------------
 
 remove_user(_User, Server) ->
-    ets:update_counter(stats, {remove_user, Server}, 1),
-    ets:update_counter(stats, {remove_user, server}, 1).
+    Table = table_name(Server),
+    ets:update_counter(Table, {remove_user, Server}, 1),
+    ets:update_counter(Table, {remove_user, server}, 1).
 
 user_send_packet(FromJID, ToJID, NewEl) ->
-    Host = FromJID#jid.lserver,
-    HostTo = ToJID#jid.lserver,
-    {xmlelement, Type, _, _} = NewEl,
-    Type2 = case Type of
-		"iq" -> iq;
-		"message" -> message;
-		"presence" -> presence
-	    end,
-    Dest = case is_host(HostTo, Host) of
-	       true -> in;
-	       false -> out
-	   end,
-    ets:update_counter(stats, {send, Host, Type2, Dest}, 1),
+    %% Only required for traffic stats
+    %%Host = FromJID#jid.lserver,
+    %%HostTo = ToJID#jid.lserver,
+    %%{xmlelement, Type, _, _} = NewEl,
+    %%Type2 = case Type of
+    %%		"iq" -> iq;
+    %%		"message" -> message;
+    %%		"presence" -> presence
+    %%	    end,
+    %%Dest = case is_host(HostTo, Host) of
+    %%	       true -> in;
+    %%	       false -> out
+    %%	   end,
+    %%Table = table_name(Server),
+    %%ets:update_counter(Table, {send, Host, Type2, Dest}, 1),
 
     %% Registrarse para tramitar Host/mod_stats2file
     case list_to_atom(ToJID#jid.lresource) of
@@ -146,6 +214,7 @@ user_send_packet(FromJID, ToJID, NewEl) ->
 	_ -> ok
     end.
 
+%% Only required for traffic stats
 user_receive_packet(_JID, From, To, FixedPacket) ->
     HostFrom = From#jid.lserver,
     Host = To#jid.lserver,
@@ -159,7 +228,8 @@ user_receive_packet(_JID, From, To, FixedPacket) ->
 	       true -> in;
 	       false -> out
 	   end,
-    ets:update_counter(stats, {recv, Host, Type2, Dest}, 1).
+    Table = table_name(Host),
+    ets:update_counter(Table, {recv, Host, Type2, Dest}, 1).
 
 
 %% -------------------
@@ -172,9 +242,11 @@ getl(Args, Host) -> get(node(), [Args, Host]).
 
 %%get(_Node, ["", title]) -> "";
 
-get_statistic(N, A) -> 
+get_statistic(N, A) ->
     case catch get(N, A) of
-	{'EXIT', _} -> unknown;
+	{'EXIT', R} ->
+	    ?ERROR_MSG("get_statistic error for N: ~p, A: ~p~n~p", [N, A, R]),
+	    unknown;
 	Res -> Res
     end.
 
@@ -202,27 +274,28 @@ get(_, [{"cpu_util_idle", _}, title]) -> "CPU utilization - idle";
 get(_, [{"cpu_util_user", U}]) -> [{user, Us}, _, _] = element(2, U), Us;
 get(_, [{"cpu_util_nice_user", U}]) -> [_, {nice_user, NU}, _] = element(2, U), NU;
 get(_, [{"cpu_util_kernel", U}]) -> [_, _, {kernel, K}] = element(2, U), K;
-get(_, [{"cpu_util_wait", U}]) -> 
+get(_, [{"cpu_util_wait", U}]) ->
     case element(3, U) of
 	[{wait, W}, {idle, _}] -> W;  % Solaris
 	[{idle, _}] -> 0
     end;
-get(_, [{"cpu_util_idle", U}]) -> 
+get(_, [{"cpu_util_idle", U}]) ->
     case element(3, U) of
 	[{wait, _}, {idle, I}] -> I;  % Solaris
 	[{idle, I}] -> I
     end;
 
 get(_, [{"client", Id}, title]) -> atom_to_list(Id);
-get(_, [{"client", Id}, Host]) -> 
-    case ets:lookup(stats, {client, Host, Id}) of
+get(_, [{"client", Id}, Host]) ->
+    Table = table_name(Host),
+    case ets:lookup(Table, {client, Host, Id}) of
 	[{_, C}] -> C;
 	[] -> 0
     end;
 get(_, ["client", title]) -> "Client";
 get(N, ["client", Host]) ->
     lists:map(
-      fun(Id) -> 
+      fun(Id) ->
 	      [Id_string] = io_lib:format("~p", [Id]),
 	      {Id_string, get(N, [{"client", Id}, Host])}
       end,
@@ -230,16 +303,29 @@ get(N, ["client", Host]) ->
      );
 
 get(_, [{"os", Id}, title]) -> atom_to_list(Id);
-get(_, [{"os", Id}, list]) -> lists:usort(list_elem(oss, Id));
-get(_, [{"os", Id}, Host]) -> [{_, C}] = ets:lookup(stats, {os, Host, Id}), C;
+get(_, [{"os", _Id}, list]) -> lists:usort(list_elem(oss, id));
+get(_, [{"os", Id}, Host]) -> [{_, C}] = ets:lookup(table_name(Host), {os, Host, Id}), C;
 get(_, ["os", title]) -> "Operating System";
-get(N, ["os", Host]) -> 
+get(N, ["os", Host]) ->
     lists:map(
       fun(Id) ->
 	      [Id_string] = io_lib:format("~p", [Id]),
 	      {Id_string, get(N, [{"os", Id}, Host])}
       end,
       lists:usort(list_elem(oss, id))
+     );
+
+get(_, [{"conntype", Id}, title]) -> atom_to_list(Id);
+get(_, [{"conntype", _Id}, list]) -> lists:usort(list_elem(conntypes, id));
+get(_, [{"conntype", Id}, Host]) -> [{_, C}] = ets:lookup(table_name(Host), {conntype, Host, Id}), C;
+get(_, ["conntype", title]) -> "Connection Type";
+get(N, ["conntype", Host]) ->
+    lists:map(
+      fun(Id) ->
+	      [Id_string] = io_lib:format("~p", [Id]),
+	      {Id_string, get(N, [{"conntype", Id}, Host])}
+      end,
+      lists:usort(list_elem(conntypes, id))
      );
 
 get(_, [{"memsup_system", _}, title]) -> "Memory physical (bytes)";
@@ -263,6 +349,9 @@ get(N, ["localtime"]) ->
 get(_, ["vhost", title]) -> "Virtual host";
 get(_, ["vhost", Host]) -> Host;
 
+get(_, ["ejabberdversion", title]) -> "ejabberd version";
+get(N, ["ejabberdversion"]) -> element(2, rpc:call(N, application, get_key, [ejabberd, vsn]));
+
 get(_, ["totalerlproc", title]) -> "Total Erlang processes running";
 get(N, ["totalerlproc"]) -> rpc:call(N, erlang, system_info, [process_count]);
 get(_, ["operatingsystem", title]) -> "Operating System";
@@ -276,10 +365,10 @@ get(N, ["maxprocallowed"]) -> rpc:call(N, erlang, system_info, [process_limit]);
 get(_, ["procqueue", title]) -> "Number of processes on the running queue";
 get(N, ["procqueue"]) -> rpc:call(N, erlang, statistics, [run_queue]);
 get(_, ["uptimehuman", title]) -> "Uptime";
-get(N, ["uptimehuman"]) -> 
+get(N, ["uptimehuman"]) ->
     io_lib:format("~w days ~w hours ~w minutes ~p seconds", ms_to_time(get(N, ["uptime"])));
 get(_, ["lastrestart", title]) -> "Last restart";
-get(N, ["lastrestart"]) -> 
+get(N, ["lastrestart"]) ->
     Now = calendar:datetime_to_gregorian_seconds(rpc:call(N, erlang, localtime, [])),
     UptimeMS = get(N, ["uptime"]),
     Last_restartS = trunc(Now - (UptimeMS/1000)),
@@ -349,7 +438,10 @@ get(_, ["languages", Server]) -> get_languages(Server);
 get(_, ["client_os", title]) -> "Client/OS";
 get(_, ["client_os", Server]) -> get_client_os(Server);
 
-get(N, A) -> 
+get(_, ["client_conntype", title]) -> "Client/Connection Type";
+get(_, ["client_conntype", Server]) -> get_client_conntype(Server);
+
+get(N, A) ->
     io:format(" ----- node: '~p', A: '~p'~n", [N, A]),
     "666".
 
@@ -361,21 +453,21 @@ get_S2SConns() -> ejabberd_s2s:dirty_get_connections().
 
 get_tls_drv() ->
     R = lists:filter(
-	  fun(P) -> 
-		  case erlang:port_info(P, name) of 
-		      {name, "tls_drv"} -> true; 
-		      _ -> false 
-		  end 
+	  fun(P) ->
+		  case erlang:port_info(P, name) of
+		      {name, "tls_drv"} -> true;
+		      _ -> false
+		  end
 	  end, erlang:ports()),
     length(R).
 
 get_connections(Port) ->
     R = lists:filter(
-	  fun(P) -> 
-		  case inet:port(P) of 
+	  fun(P) ->
+		  case inet:port(P) of
 		      {ok, Port} -> true;
-		      _ -> false 
-		  end 
+		      _ -> false
+		  end
 	  end, erlang:ports()),
     length(R).
 
@@ -445,8 +537,6 @@ get_vcards(Host) ->
 	end,
     {atomic, {Host, Res}} = mnesia:transaction(F),
     Res.
-
--record(s2s, {fromto, pid, key}).
 
 get_s2sconnections(Host) ->
     F = fun() ->
@@ -533,8 +623,13 @@ get_regmucrooms(Host) ->
     Res.
 
 get_stat(Stat, Ims) ->
-    Res = ets:lookup(stats, Stat),
-    ets:update_counter(stats, Stat, {2,1,0,0}),
+    Host = case Stat of
+	       {_, H} -> H;
+	       {_, H, _, _} -> H
+	   end,
+    Table = table_name(Host),
+    Res = ets:lookup(Table, Stat),
+    ets:update_counter(Table, Stat, {2,1,0,0}),
     [{_, C}] = Res,
     calc_avg(C, Ims).
 %%C.
@@ -572,27 +667,37 @@ user_login(U) ->
     User = U#jid.luser,
     Host = U#jid.lserver,
     Resource = U#jid.lresource,
-    ets:update_counter(stats, {user_login, server}, 1),
-    ets:update_counter(stats, {user_login, Host}, 1),
+    ets:update_counter(table_name("server"), {user_login, server}, 1),
+    ets:update_counter(table_name(Host), {user_login, Host}, 1),
     request_iqversion(User, Host, Resource).
+
+
+user_logout_sm(_, JID, _Data) ->
+    user_logout(JID#jid.luser, JID#jid.lserver, JID#jid.lresource, no_status).
 
 %% cuando un usuario desconecta, buscar en la tabla su JID/USR y quitarlo
 user_logout(User, Host, Resource, _Status) ->
-    ets:update_counter(stats, {user_logout, server}, 1),
-    ets:update_counter(stats, {user_logout, Host}, 1),
+    TableHost = table_name(Host),
+    TableServer = table_name("server"),
+    ets:update_counter(TableServer, {user_logout, server}, 1),
+    ets:update_counter(TableHost, {user_logout, Host}, 1),
 
     JID = jlib:make_jid(User, Host, Resource),
-    case ets:lookup(stats, {session, JID}) of
-	[{_, Client_id, OS_id, Lang}] ->
-	    ets:delete(stats, {session, JID}),
-	    ets:update_counter(stats, {client, Host, Client_id}, -1),
-	    ets:update_counter(stats, {client, server, Client_id}, -1),
-	    ets:update_counter(stats, {os, Host, OS_id}, -1),
-	    ets:update_counter(stats, {os, server, OS_id}, -1),
-	    update_counter_create(stats, {client_os, Host, Client_id, OS_id}, -1),
-	    update_counter_create(stats, {client_os, server, Client_id, OS_id}, -1),
-	    update_counter_create(stats, {lang, Host, Lang}, -1),
-	    update_counter_create(stats, {lang, server, Lang}, -1);
+    case ets:lookup(TableHost, {session, JID}) of
+	[{_, Client_id, OS_id, Lang, ConnType, _Client, _Version, _OS}] ->
+	    ets:delete(TableHost, {session, JID}),
+	    ets:update_counter(TableHost, {client, Host, Client_id}, -1),
+	    ets:update_counter(TableServer, {client, server, Client_id}, -1),
+	    ets:update_counter(TableHost, {os, Host, OS_id}, -1),
+	    ets:update_counter(TableServer, {os, server, OS_id}, -1),
+	    ets:update_counter(TableHost, {conntype, Host, ConnType}, -1),
+	    ets:update_counter(TableServer, {conntype, server, ConnType}, -1),
+	    update_counter_create(TableHost, {client_os, Host, Client_id, OS_id}, -1),
+	    update_counter_create(TableServer, {client_os, server, Client_id, OS_id}, -1),
+	    update_counter_create(TableHost, {client_conntype, Host, Client_id, ConnType}, -1),
+	    update_counter_create(TableServer, {client_conntype, server, Client_id, ConnType}, -1),
+	    update_counter_create(TableHost, {lang, Host, Lang}, -1),
+	    update_counter_create(TableServer, {lang, server, Lang}, -1);
 	[] ->
 	    ok
     end.
@@ -602,14 +707,14 @@ request_iqversion(User, Host, Resource) ->
     FromStr = jlib:jid_to_string(From),
     To = jlib:make_jid(User, Host, Resource),
     ToStr = jlib:jid_to_string(To),
-    Packet = {xmlelement,"iq", 
+    Packet = {xmlelement,"iq",
 	      [{"from",FromStr}, {"to",ToStr}, {"type","get"}, {"xml:lang","es"}],
-	      [{xmlcdata,"\n"}, {xmlcdata,"  "}, 
-	       {xmlelement, "query", 
+	      [{xmlcdata,"\n"}, {xmlcdata,"  "},
+	       {xmlelement, "query",
 		[{"xmlns","jabber:iq:version"}], []}, {xmlcdata,"\n"}]},
-    ejabberd_local:route(From, To, Packet). 
+    ejabberd_local:route(From, To, Packet).
 
-%% cuando el virtualJID recibe una respuesta iqversion, 
+%% cuando el virtualJID recibe una respuesta iqversion,
 %% almacenar su JID/USR + client + OS en una tabla
 received_response(From, _To, El) ->
     try received_response(From, El)
@@ -626,27 +731,41 @@ received_response(From, {xmlelement, "iq", Attrs, Elc}) ->
 	       [] -> "unknown";
 	       L -> L
 	   end,
-    update_counter_create(stats, {lang, Host, Lang}, 1),
-    update_counter_create(stats, {lang, server, Lang}, 1),
+    TableHost = table_name(Host),
+    TableServer = table_name("server"),
+    update_counter_create(TableHost, {lang, Host, Lang}, 1),
+    update_counter_create(TableServer, {lang, server, Lang}, 1),
 
     [El] = xml:remove_cdata(Elc),
     {xmlelement, _, Attrs2, _Els2} = El,
     ?NS_VERSION = xml:get_attr_s("xmlns", Attrs2),
 
     Client = get_tag_cdata_subtag(El, "name"),
-    %%Version = get_tag_cdata_subtag(El, "version"),
+    Version = get_tag_cdata_subtag(El, "version"),
     OS = get_tag_cdata_subtag(El, "os"),
     {Client_id, OS_id} = identify(Client, OS),
 
-    ets:update_counter(stats, {client, Host, Client_id}, 1),
-    ets:update_counter(stats, {client, server, Client_id}, 1),
-    ets:update_counter(stats, {os, Host, OS_id}, 1),
-    ets:update_counter(stats, {os, server, OS_id}, 1),
-    update_counter_create(stats, {client_os, Host, Client_id, OS_id}, 1),
-    update_counter_create(stats, {client_os, server, Client_id, OS_id}, 1),
+    ConnType = get_connection_type(User, Host, Resource),
+
+    TableHost = table_name(Host),
+    TableServer = table_name("server"),
+    ets:update_counter(TableHost, {client, Host, Client_id}, 1),
+    ets:update_counter(TableServer, {client, server, Client_id}, 1),
+    ets:update_counter(TableHost, {os, Host, OS_id}, 1),
+    ets:update_counter(TableServer, {os, server, OS_id}, 1),
+    ets:update_counter(TableHost, {conntype, Host, ConnType}, 1),
+    ets:update_counter(TableServer, {conntype, server, ConnType}, 1),
+    update_counter_create(TableHost, {client_os, Host, Client_id, OS_id}, 1),
+    update_counter_create(TableServer, {client_os, server, Client_id, OS_id}, 1),
+    update_counter_create(TableHost, {client_conntype, Host, Client_id, ConnType}, 1),
+    update_counter_create(TableServer, {client_conntype, server, Client_id, ConnType}, 1),
 
     JID = jlib:make_jid(User, Host, Resource),
-    ets:insert(stats, {{session, JID}, Client_id, OS_id, Lang}).
+    ets:insert(TableHost, {{session, JID}, Client_id, OS_id, Lang, ConnType, Client, Version, OS}).
+
+get_connection_type(User, Host, Resource) ->
+    [_Node, {conn, Conn}, _IP] = ejabberd_sm:get_user_info(User, Host, Resource),
+    Conn.
 
 update_counter_create(Table, Element, C) ->
     case ets:lookup(Table, Element) of
@@ -666,10 +785,13 @@ list_elem(Type, id) ->
     Ids;
 list_elem(clients, full) ->
     [
+     {"Pidgin", pidgin},
+     {"pidgin", pidgin},
      {"gaim", gaim},
      {"Gajim", gajim},
      {"Tkabber", tkabber},
      {"Psi", psi},
+     {"Adium", adium},
      {"Pandion", pandion},
      {"Kopete", kopete},
      {"Exodus", exodus},
@@ -678,6 +800,7 @@ list_elem(clients, full) ->
      {"iChat", ichat},
      {"Miranda", miranda},
      {"Trillian", trillian},
+     {"QIP Infium", qipinfium},
      {"JAJC", jajc},
      {"Coccinella", coccinella},
      {"Gabber", gabber},
@@ -685,14 +808,24 @@ list_elem(clients, full) ->
      {"jabber.el", jabberel},
      {"unknown", unknown}
     ];
+list_elem(conntypes, full) ->
+    [
+     {"c2s", c2s},
+     {"c2s_tls", c2s_tls},
+     {"c2s_compressed", c2s_compressed},
+     {"http_poll", http_poll},
+     {"http_bind", http_bind},
+     {"unknown", unknown}
+    ];
 list_elem(oss, full) ->
     [
-     {"Linux", linux}, 
-     {"Win", windows}, 
-     {"Gentoo", linux}, 
-     {"Mac", mac}, 
-     {"BSD", bsd}, 
-     {"SunOS", linux}, 
+     {"Linux", linux},
+     {"Win", windows},
+     {"Gentoo", linux},
+     {"Mac", mac},
+     {"BSD", bsd},
+     {"SunOS", linux},
+     {"Debian", linux},
      {"Ubuntu", linux},
      {"unknown", unknown}
     ].
@@ -701,6 +834,8 @@ identify(Client, OS) ->
     Res = {try_match(Client, list_elem(clients, full)), try_match(OS, list_elem(oss, full))},
     case Res of
 	{libgaim, mac} -> {adium, mac};
+	{adium, unknown} -> {adium, mac};
+	{qipinfium, unknown} -> {qipinfium, windows};
 	_ -> Res
     end.
 
@@ -712,20 +847,30 @@ try_match(E, [{Str, Id} | L]) ->
     end.
 
 get_client_os(Server) ->
-    CO1 = ets:match(stats, {{client_os, Server, '$1', '$2'}, '$3'}),
+    CO1 = ets:match(table_name(Server), {{client_os, Server, '$1', '$2'}, '$3'}),
     CO2 = lists:map(
-	    fun([Cl, Os, A3]) -> 
-		    {lists:flatten([atom_to_list(Cl), "/", atom_to_list(Os)]), A3} 
+	    fun([Cl, Os, A3]) ->
+		    {lists:flatten([atom_to_list(Cl), "/", atom_to_list(Os)]), A3}
+	    end,
+	    CO1
+	   ),
+    lists:keysort(1, CO2).
+
+get_client_conntype(Server) ->
+    CO1 = ets:match(table_name(Server), {{client_conntype, Server, '$1', '$2'}, '$3'}),
+    CO2 = lists:map(
+	    fun([Cl, Os, A3]) ->
+		    {lists:flatten([atom_to_list(Cl), "/", atom_to_list(Os)]), A3}
 	    end,
 	    CO1
 	   ),
     lists:keysort(1, CO2).
 
 get_languages(Server) ->
-    L1 = ets:match(stats, {{lang, Server, '$1'}, '$2'}),
+    L1 = ets:match(table_name(Server), {{lang, Server, '$1'}, '$2'}),
     L2 = lists:map(
-	   fun([La, C]) -> 
-		   {La, C} 
+	   fun([La, C]) ->
+		   {La, C}
 	   end,
 	   L1
 	  ),
@@ -811,11 +956,11 @@ web_page_main(_, #request{path=["statsdx"], lang = Lang} = _Request) ->
 	   %%  do_stat(global, Lang, "ircconns")
 	   %% ])
 	   %%]),
-	   ?XC("h3", "Ratios"),
-	   ?XAE("table", [],
-		[?XE("tbody", [
-			      ])
-		]),
+	   %%?XC("h3", "Ratios"),
+	   %%?XAE("table", [],
+	   %%	[?XE("tbody", [
+	   %%		      ])
+	   %%	]),
 	   ?XC("h3", "Sessions: " ++ get_stat_n("client")),
 	   ?XAE("table", [],
 		[?XE("tbody",
@@ -824,7 +969,7 @@ web_page_main(_, #request{path=["statsdx"], lang = Lang} = _Request) ->
 		]),
 	   ?XC("h3", "Sessions: " ++ get_stat_n("os")),
 	   ?XAE("table", [],
-		[?XE("tbody", 
+		[?XE("tbody",
 		     do_stat_table(global, Lang, "os", server)
 		    )
 		]),
@@ -834,15 +979,87 @@ web_page_main(_, #request{path=["statsdx"], lang = Lang} = _Request) ->
 		     do_stat_table(global, Lang, "client_os", server)
 		    )
 		]),
+	   ?XC("h3", "Sessions: " ++ get_stat_n("conntype")),
+	   ?XAE("table", [],
+		[?XE("tbody",
+		     do_stat_table(global, Lang, "conntype", server)
+		    )
+		]),
+	   ?XC("h3", "Sessions: " ++ get_stat_n("client") ++ "/" ++ get_stat_n("conntype")),
+	   ?XAE("table", [],
+		[?XE("tbody",
+		     do_stat_table(global, Lang, "client_conntype", server)
+		    )
+		]),
 	   ?XC("h3", "Sessions: " ++ get_stat_n("languages")),
 	   ?XAE("table", [],
-		[?XE("tbody", 
+		[?XE("tbody",
 		     do_stat_table(global, Lang, "languages", server)
 		    )
 		])
 	  ],
     {stop, Res};
+web_page_main(_, #request{path=["statsdx" | FilterURL], q = Q, lang = Lang} = _Request) ->
+    Filter = parse_url_filter(FilterURL),
+    Sort_query = get_sort_query(Q),
+    Res = [?XC("h1", ?T("Statistics")++" Dx"),
+	   ?XC("h2", "Sessions with: "++ io_lib:format("~p", [Filter])),
+	   ?XE("table",
+	       [
+		?XE("thead", [?XE("tr", make_sessions_table_tr(Lang) )]),
+		?XE("tbody", do_sessions_table(global, Lang, Filter, Sort_query, server))
+	       ])
+	  ],
+    {stop, Res};
 web_page_main(Acc, _) -> Acc.
+
+%% Code copied from mod_muc_admin.erl
+%% Returns: {normal | reverse, Integer}
+get_sort_query(Q) ->
+    case catch get_sort_query2(Q) of
+	{ok, Res} -> Res;
+	_ -> {normal, 1}
+    end.
+get_sort_query2(Q) ->
+    {value, {_, String}} = lists:keysearch("sort", 1, Q),
+    Integer = list_to_integer(String),
+    case Integer >= 0 of
+	true -> {ok, {normal, Integer}};
+	false -> {ok, {reverse, abs(Integer)}}
+    end.
+make_sessions_table_tr(Lang) ->
+    Titles = ["Jabber ID",
+	      "Client ID",
+	      "OS ID",
+	      "Lang",
+	      "Connection",
+	      "Client",
+	      "Version",
+	      "OS"],
+    {Titles_TR, _} =
+	lists:mapfoldl(
+	  fun(Title, Num_column) ->
+		  NCS = integer_to_list(Num_column),
+		  TD = ?XE("td", [?CT(Title),
+				  ?BR,
+				  ?ACT("?sort="++NCS, "<"),
+				  ?C(" "),
+				  ?ACT("?sort=-"++NCS, ">")]),
+		  {TD, Num_column+1}
+	  end,
+	  1,
+	  Titles),
+    Titles_TR.
+
+%% @spec (Filter::string()) -> [{Class::string(), Type::string()}]
+parse_url_filter(FilterURL) ->
+    [List] = string:tokens(FilterURL, "/"),
+    parse_url_filter(List, []).
+parse_url_filter([Class, Type | List], Res) ->
+    parse_url_filter(List, Res ++ [{Class, Type}]);
+parse_url_filter(_, Res) ->
+    Res.
+
 
 web_page_node(_, Node, ["statsdx"], _Query, Lang) ->
     TransactionsCommited =
@@ -864,6 +1081,12 @@ web_page_node(_, Node, ["statsdx"], _Query, Lang) ->
 			     do_stat(Node, Lang, "httpbindusers"),
 			     do_stat(Node, Lang, "s2sconnections"),
 			     do_stat(Node, Lang, "s2sservers")
+			    ])
+	      ]),
+	 ?XC("h3", "ejabberd"),
+	 ?XAE("table", [],
+	      [?XE("tbody", [
+			     do_stat(Node, Lang, "ejabberdversion")
 			    ])
 	      ]),
 	 ?XC("h3", "Erlang"),
@@ -910,7 +1133,7 @@ web_page_node(_, Node, ["statsdx"], _Query, Lang) ->
 	 %%]),
 	 ?XC("h3", "Database"),
 	 ?XAE("table", [],
-	      [?XE("tbody", 
+	      [?XE("tbody",
 		   [
 		    ?XE("tr", [?XCT("td", "Transactions commited"),
 			       ?XAC("td", [{"class", "alignright"}],
@@ -943,16 +1166,16 @@ web_page_host(_, Host,
 	   ?XC("h3", "Roster"),
 	   ?XAE("table", [],
 		[?XE("tbody", [
-			       do_stat(global, Lang, "totalrosteritems", Host),
-			       do_stat(global, Lang, "meanitemsinroster", Host)
+			       do_stat(global, Lang, "totalrosteritems", Host)
+			       %%get_meanitemsinroster2(TotalRosterItems, RegisteredUsers)
 			      ])
 		]),
 	   ?XC("h3", "Users"),
 	   ?XAE("table", [],
 		[?XE("tbody", [
-			       do_stat(global, Lang, "onlineusers", Host),
-			       do_stat(global, Lang, "offlinemsg", Host),
-			       do_stat(global, Lang, "vcards", Host)
+			       do_stat(global, Lang, "onlineusers", Host)
+			       %%do_stat(global, Lang, "offlinemsg", Host), %% This make take a lot of time
+			       %%do_stat(global, Lang, "vcards", Host) %% This make take a lot of time
 			      ])
 		]),
 	   ?XC("h3", "Connections"),
@@ -981,11 +1204,11 @@ web_page_host(_, Host,
 	   %%  do_stat(global, Lang, "regpubsubnodes", Host)
 	   %% ])
 	   %%]),
-	   ?XC("h3", "Ratios"),
-	   ?XAE("table", [],
-		[?XE("tbody", [
-			      ])
-		]),
+	   %%?XC("h3", "Ratios"),
+	   %%?XAE("table", [],
+	   %%	[?XE("tbody", [
+	   %%		      ])
+	   %%	]),
 	   ?XC("h3", "Sessions: " ++ get_stat_n("client")),
 	   ?XAE("table", [],
 		[?XE("tbody",
@@ -1004,10 +1227,35 @@ web_page_host(_, Host,
 		     do_stat_table(global, Lang, "client_os", Host)
 		    )
 		]),
+	   ?XC("h3", "Sessions: " ++ get_stat_n("conntype")),
+	   ?XAE("table", [],
+		[?XE("tbody",
+		     do_stat_table(global, Lang, "conntype", Host)
+		    )
+		]),
+	   ?XC("h3", "Sessions: " ++ get_stat_n("client") ++ "/" ++ get_stat_n("conntype")),
+	   ?XAE("table", [],
+		[?XE("tbody",
+		     do_stat_table(global, Lang, "client_conntype", Host)
+		    )
+		]),
 	   ?XC("h3", "Sessions: " ++ get_stat_n("languages")),
 	   ?XAE("table", [],
-		[?XE("tbody", 
+		[?XE("tbody",
 		     do_stat_table(global, Lang, "languages", Host)
+		    )
+		])
+	  ],
+    {stop, Res};
+web_page_host(_, Host, #request{path=["statsdx" | FilterURL], q = Q,
+				lang = Lang} = _Request) ->
+    Filter = parse_url_filter(FilterURL),
+    Sort_query = get_sort_query(Q),
+    Res = [?XC("h1", ?T("Statistics")++" Dx"),
+	   ?XC("h2", "Sessions with: "++ io_lib:format("~p", [Filter])),
+	   ?XAE("table", [],
+		[?XE("tbody",
+		     do_sessions_table(global, Lang, Filter, Sort_query, Host)
 		    )
 		])
 	  ],
@@ -1019,21 +1267,87 @@ web_page_host(Acc, _, _) -> Acc.
 %% Web Admin Utils
 %%-------------------
 
-do_table_element(Lang, L, N) ->
+do_table_element(Lang, L, StatLink, N) ->
     ?XE("tr", [
-	       ?XCT("td", L),
+	       case StatLink of
+		   no_link -> ?XCT("td", L);
+		   _ -> ?XE("td", [?AC(make_url(StatLink, L), L)])
+               end,
 	       ?XAC("td", [{"class", "alignright"}],
 		    N)
 	      ]).
 
+make_url(StatLink, L) ->
+    List = case string:tokens(StatLink, "_") of
+	       [Stat] ->
+		   [Stat, L];
+	       [Stat1, Stat2] ->
+		   [L1, L2] = string:tokens(L, "/"),
+		   [Stat1, L1, Stat2, L2]
+	   end,
+    string:join(List, "/").
+
 do_stat_table(global, Lang, Stat, Host) ->
     Os = mod_statsdx:get_statistic(global, [Stat, Host]),
     lists:map(
-      fun({L, N}) -> 
-	      do_table_element(Lang, L, io_lib:format("~p", [N]))
+      fun({L, N}) ->
+	      do_table_element(Lang, L, Stat, io_lib:format("~p", [N]))
       end,
-      Os
+      lists:reverse(lists:keysort(2, Os))
      ).
+
+do_sessions_table(_Node, _Lang, Filter, {Sort_direction, Sort_column}, Host) ->
+    Sessions = get_sessions_filtered(Filter, Host),
+    SessionsSorted = sort_sessions(Sort_direction, Sort_column, Sessions),
+    lists:map(
+      fun( {{session, JID}, Client_id, OS_id, Lang, ConnType, Client, Version, OS} ) ->
+	      User = JID#jid.luser,
+	      Server = JID#jid.lserver,
+	      UserURL = "/admin/server/" ++ Server ++ "/user/" ++ User ++ "/",
+	      ?XE("tr", [
+			 ?XE("td", [?AC(UserURL, jlib:jid_to_string(JID))]),
+			 ?XCT("td", atom_to_list(Client_id)),
+			 ?XCT("td", atom_to_list(OS_id)),
+			 ?XCT("td", Lang),
+			 ?XCT("td", atom_to_list(ConnType)),
+			 ?XCT("td", Client),
+			 ?XCT("td", Version),
+			 ?XCT("td", OS)
+			])
+      end,
+      SessionsSorted
+     ).
+
+%% Code copied from mod_muc_admin.erl
+sort_sessions(Direction, Column, Rooms) ->
+    Rooms2 = lists:keysort(Column, Rooms),
+    case Direction of
+	normal -> Rooms2;
+	reverse -> lists:reverse(Rooms2)
+    end.
+
+get_sessions_filtered(Filter, server) ->
+    lists:foldl(
+      fun(Host, Res) ->
+	      try get_sessions_filtered(Filter, Host) of
+		  List when is_list(List) -> List ++ Res
+	      catch
+		  _:_ -> Res
+	      end
+      end,
+      [],
+      ?MYHOSTS);
+get_sessions_filtered(Filter, Host) ->
+    Match = case Filter of
+		[{"client", Client}] -> {{session, '$1'}, list_to_atom(Client), '$2', '$3', '$4', '$5', '$6', '$7'};
+		[{"os", OS}] -> {{session, '$1'}, '$2', list_to_atom(OS), '$3', '$4', '$5', '$6', '$7'};
+		[{"conntype", ConnType}] -> {{session, '$1'}, '$2', '$3', '$4', list_to_atom(ConnType), '$5', '$6', '$7'};
+		[{"languages", Lang}] -> {{session, '$1'}, '$2', '$3', Lang, '$4', '$5', '$6', '$7'};
+		[{"client", Client}, {"os", OS}] -> {{session, '$1'}, list_to_atom(Client), list_to_atom(OS), '$3', '$4', '$5', '$6', '$7'};
+		[{"client", Client}, {"conntype", ConnType}] -> {{session, '$1'}, list_to_atom(Client), '$2', '$3', list_to_atom(ConnType), '$5', '$6', '$7'};
+		_ -> {{session, '$1'}, '$2', '$3', '$4', '$5'}
+	    end,
+    ets:match_object(table_name(Host), Match).
 
 do_stat(Node, Lang, Stat) ->
     ?XE("tr", [
@@ -1044,7 +1358,7 @@ do_stat(Node, Lang, Stat) ->
 do_stat(Node, Lang, Stat, Host) ->
     %%[Res] = get_stat_v(Node, [Stat, Host]),
     %%do_table_element(Lang, get_stat_n(Stat), Res).
-    do_table_element(Lang, get_stat_n(Stat), get_stat_v(Node, [Stat, Host])).
+    do_table_element(Lang, get_stat_n(Stat), no_link, get_stat_v(Node, [Stat, Host])).
 
 %% Get a stat name
 get_stat_n(Stat) ->
