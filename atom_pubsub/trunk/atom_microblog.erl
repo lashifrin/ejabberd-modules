@@ -26,7 +26,7 @@ process(_LocalPath, _Request)->
 
 get_host([Domain,User|_Rest])-> {User, Domain, []}.
 
-get_collection([_Domain,_User, Node|R])->
+get_collection([_Domain,_User, Node|_R])->
 	case lists:member(Node, ["mood", "geoloc", "tune"]) of 
 		true -> "http://jabber.org/protocol/"++Node;
 		false -> Node
@@ -67,32 +67,39 @@ out(Args, 'GET', [Domain, UserNode]=Uri, _User) ->
 %% Collection
 
 out(Args, 'GET', [Domain, User, Node]=Uri, _User) -> 
-	Items = lists:sort(fun(X,Y)->
-			{_,DateX} = X#pubsub_item.modification,
-			{_,DateY} = Y#pubsub_item.modification,
-			DateX > DateY
-		end, mod_pubsub:get_items(
-				get_host(Uri),
-				get_collection(Uri))),
-	case Items of
-		[] -> error(404);
-		_ ->
-			#pubsub_item{modification = {_JID,LastDate}} = LastItem = hd(Items),
-			Etag =generate_etag(LastItem),
-			IfNoneMatch=proplists:get_value('If-None-Match', Args#request.headers),
-			if IfNoneMatch==Etag
-				-> 
-					success(304);
-				true ->
-					XMLEntries= [item_to_entry(Args,Node,Entry)||Entry <-  Items], 
-					{200, [{"Content-Type", "application/atom+xml"},{"Etag", Etag}], 
-					"<?xml version=\"1.0\" encoding=\"utf-8\"?>" 
-					++	xml:element_to_string(
-					collection(get_collection(Uri), collection_uri(Args,Domain,User,Node),
-						calendar:now_to_universal_time(LastDate), User, "", XMLEntries))}
+    case mod_pubsub:tree_action(get_host(Uri), get_node, [get_host(Uri),get_collection(Uri)]) of
+	{error, _} -> error(404);
+	_ ->
+		Items = lists:sort(fun(X,Y)->
+				{_,DateX} = X#pubsub_item.modification,
+				{_,DateY} = Y#pubsub_item.modification,
+				DateX > DateY
+			end, mod_pubsub:get_items(
+					get_host(Uri),
+					get_collection(Uri), "")),
+		case Items of
+			[] -> ?DEBUG("Items : ~p ~n", [collection(get_collection(Uri), 
+				collection_uri(Args,Domain,User,Node), calendar:now_to_universal_time(erlang:now()), User, "", [])]),
+				{200, [{"Content-Type", "application/atom+xml"}],
+					collection(get_collection(Uri), 
+						collection_uri(Args,Domain,User,Node), calendar:now_to_universal_time(erlang:now()), User, "", [])};
+			_ ->
+				#pubsub_item{modification = {_JID,LastDate}} = LastItem = hd(Items),
+				Etag =generate_etag(LastItem),
+				IfNoneMatch=proplists:get_value('If-None-Match', Args#request.headers),
+				if IfNoneMatch==Etag
+					-> 
+						success(304);
+					true ->
+						XMLEntries= [item_to_entry(Args,Node,Entry)||Entry <-  Items], 
+						{200, [{"Content-Type", "application/atom+xml"},{"Etag", Etag}], 
+						"<?xml version=\"1.0\" encoding=\"utf-8\"?>" 
+						++	xml:element_to_string(
+						collection(get_collection(Uri), collection_uri(Args,Domain,User,Node),
+							calendar:now_to_universal_time(LastDate), User, "", XMLEntries))}
+			end
 		end
 	end;
-
 %% Add new collection
 out(_Args, 'POST', [_Domain, _User], _User)-> error(403);
 
@@ -119,7 +126,7 @@ out(_Args, 'POST', [_, _, _], _) ->
 	{status, 403};
 			
 %% Atom doc
-out(Args, 'GET', [Domain,User, Node, Member]=URI, _User) -> 
+out(Args, 'GET', [_Domain,_U, Node, _Member]=URI, _User) -> 
 	Failure = fun(_Error)->error(404)end,
 	Success = fun(Item)->
 		Etag =generate_etag(Item),
@@ -136,7 +143,7 @@ out(Args, 'GET', [Domain,User, Node, Member]=URI, _User) ->
 		
 
 %% Update doc
-out(Args, 'PUT', [Domain,User, Node, Member]=Uri, User) -> 
+out(Args, 'PUT', [Domain,User, _Node, Member]=Uri, User) -> 
 	Payload = xml_stream:parse_element(Args#request.data),
 	Failure = fun(_Error)->error(404)end,
 	Success = fun(Item)->
@@ -167,7 +174,7 @@ out(Args, 'PUT', [Domain,User, Node, Member]=Uri, User) ->
 out(_Args, 'PUT',_Url, _User) ->
 	error(401);
 
-out(_Args, 'DELETE', [Domain,User, Node, _Member]=Uri, User) ->
+out(_Args, 'DELETE', [Domain,User, _Node, _Member]=Uri, User) ->
 	case mod_pubsub:delete_item(get_host(Uri), 
 								get_collection(Uri),
 								jlib:make_jid(User,Domain, ""),
@@ -215,7 +222,7 @@ item_to_entry(Args,Node,  Id,{xmlelement, "entry", Attrs, SubEl},
 	{xmlelement, "entry", [{"xmlns:app","http://www.w3.org/2007/app"}|Attrs], SubEl2};
 	
 %% Don't do anything except adding xmlns
-item_to_entry(Args,Node,  Id, {xmlelement, Name, Attrs, Subels}=Element, Item)->
+item_to_entry(_Args,Node,  _Id, {xmlelement, Name, Attrs, Subels}=Element, _Item)->
 	case proplists:is_defined("xmlns",Attrs) of
 		true -> Element;
 		false -> {xmlelement, Name, [{"xmlns", Node}|Attrs], Subels}
@@ -242,7 +249,7 @@ service(Args, Domain, User, Collections)->
 							{"xmlns:app", "http://www.w3.org/2007/app"}],[
 		{xmlelement, "workspace", [],[
 			{xmlelement, "atom:title", [],[{xmlcdata,"Feed for "++User++"@"++Domain}]} | 
-			lists:map(fun(#pubsub_node{nodeid={_Server, Id}, type=Type})->
+			lists:map(fun(#pubsub_node{nodeid={_Server, Id}})->
 				{xmlelement, "collection", [{"href", collection_uri(Args,Domain,User, Id)}], [
 					{xmlelement, "atom:title", [], [{xmlcdata, Id}]}
 				]}
