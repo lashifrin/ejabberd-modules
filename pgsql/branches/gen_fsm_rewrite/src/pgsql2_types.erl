@@ -90,7 +90,12 @@ decode_float(binary,Bin) ->
 
 
 decode_float(text,Bin) ->
-	list_to_float(binary_to_list(Bin)).
+	case erl_scan:string(binary_to_list(Bin)) of
+       {ok,[{float,1,Val}],1} -> Val;
+       {ok,[{integer,1,I}],1} -> float(I)
+    end.
+
+
 
 
 decode_date(binary,<<A:32/signed>>) ->

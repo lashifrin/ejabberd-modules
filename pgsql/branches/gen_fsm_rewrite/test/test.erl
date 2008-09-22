@@ -9,9 +9,9 @@
 -define(Q,"select * from test").
 
 %% Modify this 
--define(DB_USER,"imtrendsbot").
--define(DB_PASS,"imtrends").
--define(DB_DATABASE,"imtrends").
+-define(DB_USER,"**USER**").
+-define(DB_PASS,"**PASS**").
+-define(DB_DATABASE,"**DB**").
 
 repeat(_Fun,0) ->
 	ok;
