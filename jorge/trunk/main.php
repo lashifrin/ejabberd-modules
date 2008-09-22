@@ -323,11 +323,34 @@ if ($talker) {
 	$html->set_body('<tr style="background-image: url(img/bar_bg.png); background-repeat:repeat-x;">
 			<td><b> '.$time_t[$lang].' </b></td><td><b> '.$user_t[$lang].' </b></td><td><b> '.$thread[$lang].'</b></td>
 			<td align="right" style="padding-right: 5px; font-weight: normal;">
-			<form style="margin-bottom: 0;" action="favorites.php" method="post">
-			<input type="hidden" name="a" value="'.$_GET[a].'" />
-			<input type="hidden" name="init" value="1">
-			<input class="fav_main" type="submit" value="'.$fav_add[$lang].'" />
-			</form>
+			');
+	
+	// check favorite
+	$db->check_favorite($talker,$server,$tslice);
+	if ($db->result->cnt < 1) {
+
+			$html->set_body('
+					<form style="margin-bottom: 0;" action="favorites.php" method="post">
+					<input type="hidden" name="a" value="'.$_GET[a].'">
+					<input type="hidden" name="init" value="1">
+					<input class="fav_main" type="submit" value="'.$fav_add[$lang].'">
+					</form>
+					');
+		}
+		else {
+
+			$html->set_body('
+					<form style="margin-bottom: 0;" action="favorites.php" method="post">
+					<input type="hidden" name="a" value="'.$_GET[a].'">
+					<input type="hidden" name="init" value="1">
+					<i>'.$fav_favorited[$lang].'</i>
+					</form>
+					');
+	
+		
+		}
+	
+	$html->set_body('
 			<a id="pretty" title="'.$tip_export[$lang].'" class="foot" href="export.php?a='.$e_string.'">'.$export_link[$lang].'</a>&nbsp; | &nbsp;
 			<font color="#65a5e4">'.$all_for_u[$lang].'</font>
         		<a id="pretty" title="'.$all_for_u_m2_d[$lang].'" class="foot" href="chat_map.php?chat_map='.$predefined.'"><u>'.$all_for_u_m2[$lang].'</u></a>
