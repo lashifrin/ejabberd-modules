@@ -35,6 +35,7 @@ class db_manager {
 	protected $db_password;
 	protected $db_driver;
 	protected $xmpp_host;
+	protected $vhost;
 	private $messages_table = "logdb_messages_";
 	private $is_error = false;
 	private $id_query;
@@ -61,6 +62,8 @@ class db_manager {
 		$this->db_password = $db_password;
 		$this->db_driver = $db_driver;
 		$this->xmpp_host = $xmpp_host;
+		$this->vhost = str_replace("_",".", $xmpp_host);
+
 		try { 
 			$this->db_connect();
 			}
@@ -358,7 +361,9 @@ class db_manager {
 			FROM 
 				jorge_mylinks 
 			WHERE 
-				owner_id='$user_id' 
+				owner_id='$user_id'
+			AND
+				vhost='".$this->vhost."'
 			AND 
 				ext is NULL
 		
@@ -378,6 +383,8 @@ class db_manager {
 				pending_del 
 			WHERE 
 				owner_id='$user_id'
+			AND
+				vhost='".$this->vhost."'
 		";
 
 		return $this->select($query);
@@ -693,9 +700,9 @@ class db_manager {
 		$extra = $this->sql_validate($extra,"string");
 		$user_id = $this->user_id;
 		$query="INSERT INTO 
-				jorge_logger (id_user,id_log_detail,id_log_level,log_time,extra) 
+				jorge_logger (id_user,id_log_detail,id_log_level,log_time,extra,vhost) 
 			VALUES 
-				('$user_id','$id_log_detail','$id_log_level',NOW(),'$extra')
+				('$user_id','$id_log_detail','$id_log_level',NOW(),'$extra','".$this->vhost."')
 				
 		";
 
@@ -1012,14 +1019,15 @@ class db_manager {
 		$lnk = $this->sql_validate($link,"string");
 		$desc = $this->sql_validate($desc,"string");
 		$query="INSERT INTO
-				jorge_mylinks (owner_id,peer_name_id,peer_server_id,datat,link,description) 
+				jorge_mylinks (owner_id,peer_name_id,peer_server_id,datat,link,description,vhost) 
 			VALUES (
 					'".$this->user_id."',
 					'".$this->peer_name_id."',
 					'".$this->peer_server_id."',
 					'$datat',
 					'$lnk',
-					'$desc'
+					'$desc',
+					'".$this->vhost."'
 				)
 				
 		";
@@ -1038,6 +1046,8 @@ class db_manager {
 				jorge_mylinks 
 			WHERE 
 				owner_id='$user_id' 
+			AND
+				vhost='".$this->vhost."'
 			AND 
 				id_link='$link_id'
 				
@@ -1064,6 +1074,8 @@ class db_manager {
 				jorge_mylinks 
 			WHERE 
 				owner_id='$user_id' 
+			AND
+				vhost='".$this->vhost."'
 			AND 
 				ext is NULL 
 			ORDER BY 
@@ -1132,6 +1144,8 @@ class db_manager {
 				c.id_level=a.id_log_level 
 			AND 
 				id_user='$user_id' 
+			AND
+				a.vhost='".$this->vhost."'
 
 			$sql_1 
 			$sql_2
@@ -1168,6 +1182,8 @@ class db_manager {
 				jorge_logger 
 			WHERE 
 				id_user='$user_id' 
+			AND
+				vhost='".$this->vhost."'
 			
 			$sql_1 
 			$sql_2
@@ -1192,6 +1208,8 @@ class db_manager {
 				pending_del 
 			WHERE 
 				owner_id = '$user_id' 
+			AND
+				vhost='".$this->vhost."'
 			ORDER BY 
 				str_to_date(date,'%Y-%m-%d') 
 			DESC
@@ -1297,6 +1315,8 @@ class db_manager {
 				ext='1' 
 			WHERE 
 				owner_id ='".$this->user_id."' 
+			AND
+				vhost='".$this->vhost."'
 			AND 
 				peer_name_id='$peer_name_id' 
 			AND 
@@ -1323,6 +1343,8 @@ class db_manager {
 				peer_server_id='".$this->peer_server_id."' 
 			AND 
 				tslice='".$this->tslice."'
+			AND
+				vhost='".$this->vhost."'
 		";
 	
 		return $this->update($query);
@@ -1333,13 +1355,14 @@ class db_manager {
 
 		$this->id_query = "Q041";
 		$query="INSERT INTO 
-				pending_del(owner_id,peer_name_id,date,peer_server_id,type) 
+				pending_del(owner_id,peer_name_id,date,peer_server_id,type,vhost) 
 			VALUES (
 				'".$this->user_id."', 
 				'$peer_name_id',
 				'$tslice',
 				'$peer_server_id',
-				'$type'
+				'$type',
+				'".$this->vhost."'
 				)
 				
 		";
@@ -1361,6 +1384,8 @@ class db_manager {
 				date='$tslice' 
 			AND 
 				peer_server_id='$peer_server_id'
+			AND
+				vhost='".$this->vhost."'
 		";
 		
 		return $this->delete($query);
@@ -1553,6 +1578,8 @@ class db_manager {
 				ext = NULL 
 			WHERE 
 				owner_id ='".$this->user_id."' 
+			AND
+				vhost='".$this->vhost."'
 			AND 
 				peer_name_id='$peer_name_id' 
 			AND 
@@ -1578,6 +1605,8 @@ class db_manager {
 				peer_server_id='$peer_server_id' 
 			AND 
 				tslice='$tslice'
+			AND
+				vhost='".$this->vhost."'
 		";
 	
 		return $this->update($query);
@@ -1614,6 +1643,8 @@ class db_manager {
 				jorge_mylinks 
 			WHERE 
 				owner_id='".$this->user_id."' 
+			AND
+				vhost='".$this->vhost."'
 			AND 
 				ext='1' 
 			AND 
@@ -1643,6 +1674,8 @@ class db_manager {
 				peer_server_id='".$this->peer_server_id."' 
 			AND 
 				tslice='".$this->tslice."'
+			AND
+				vhost='".$this->vhost."'
 		";
 
 		return $this->delete($query);
@@ -1892,6 +1925,8 @@ class db_manager {
 				jorge_pref 
 			WHERE 
 				owner_id='".$this->user_id."'
+			AND
+				vhost = '".$this->vhost."'
 		";
 		$this->select($query,"raw");
 		return $this->commit_select(array("pref_id","pref_value"));
@@ -1904,7 +1939,7 @@ class db_manager {
 		$this->vital_check();
 		$pref_id = $this->sql_validate($pref_id,"integer");
 		$pref_value = $this->sql_validate($pref_value,"integer");
-		if ($this->row_count("SELECT pref_id FROM jorge_pref WHERE owner_id='".$this->user_id."' AND pref_id='$pref_id'") === false) {
+		if ($this->row_count("SELECT pref_id FROM jorge_pref WHERE owner_id='".$this->user_id."' AND pref_id='$pref_id' AND vhost='".$this->vhost."'") === false) {
 
 			return false;
 
@@ -1919,6 +1954,8 @@ class db_manager {
 						owner_id='".$this->user_id."' 
 					AND 
 						pref_id='$pref_id'
+					AND
+						vhost = '".$this->vhost."'
 				";
 				return $this->update($query);
 
@@ -1926,9 +1963,9 @@ class db_manager {
 			else{
 
 				$query="INSERT INTO 
-						jorge_pref(owner_id,pref_id,pref_value) 
+						jorge_pref(owner_id,pref_id,pref_value,vhost) 
 					VALUES 
-						('".$this->user_id."','$pref_id','$pref_value')
+						('".$this->user_id."','$pref_id','$pref_value','".$this->vhost."')
 				";
 				return $this->insert($query);
 				
@@ -1974,7 +2011,9 @@ class db_manager {
 			FROM 
 				jorge_favorites 
 			WHERE 
-				owner_id='".$this->user_id."' 
+				owner_id='".$this->user_id."'
+			AND
+				vhost='".$this->vhost."'
 			AND 
 				ext is NULL 
 			ORDER BY 
@@ -1995,13 +2034,14 @@ class db_manager {
 		#$peer_resource_id = $this->sql_validate($peer_resource_id,"integer");
 		$comment = $this->sql_validate($comment,"string");
 		$query="INSERT INTO 
-				jorge_favorites(owner_id,peer_name_id,peer_server_id,tslice,comment) 
+				jorge_favorites(owner_id,peer_name_id,peer_server_id,tslice,comment,vhost) 
 			VALUES(
 				'".$this->user_id."',
 				'".$this->peer_name_id."',
 				'".$this->peer_server_id."',
 				'".$this->tslice."',
-				'$comment'
+				'$comment',
+				'".$this->vhost."'
 				)
 			";
 		
@@ -2018,6 +2058,8 @@ class db_manager {
 				jorge_favorites
 			WHERE
 				owner_id = ".$this->user_id."
+			AND
+				vhost='".$this->vhost."'
 			AND
 				link_id = '$link_id';
 		";
@@ -2043,6 +2085,8 @@ class db_manager {
 				peer_name_id='".$this->peer_name_id."' 
 			AND 
 				peer_server_id='".$this->peer_server_id."'
+			AND
+				vhost='".$this->vhost."'
 			AND
 				ext is null
 		";
