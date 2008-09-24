@@ -53,7 +53,7 @@ while ($entry=mysql_fetch_array($result)) {
 mysql_free_result();
 
 // hourly stats
-$h_resolution="select hour,value from jorge_stats where day='$yesterday' order by hour asc";
+$h_resolution="select hour,value from jorge_stats where day='$yesterday' and vhost='".XMPP_HOST."' order by hour asc";
 $result=mysql_query($h_resolution);
 while ($entry=mysql_fetch_array($result)) {
 
@@ -62,7 +62,7 @@ while ($entry=mysql_fetch_array($result)) {
 mysql_free_result();
 
 // weekly/hours
-$w_resolution="select hour,value from jorge_stats where day<='$yesterday' and day >= '$last_week' order by day,hour asc";
+$w_resolution="select hour,value from jorge_stats where day<='$yesterday' and day >= '$last_week' and vhost='".XMPP_HOST."' order by day,hour asc";
 $result=mysql_query($w_resolution);
 while ($entry=mysql_fetch_array($result)) {
 	
@@ -86,7 +86,7 @@ $html->set_body('<h2><u>Stats for: '.$xmpp_host_dotted.'</u></h2><p style="paddi
 
 if ($mark1=="1") { 
 
-	$html->render_alert('Not enough data collected for graphs</h1><h2>minimum required: 30 days');
+	$html->alert_message('Not enough data collected for graphs</h1><h2>minimum required: 30 days');
 	
 }
 

@@ -2,7 +2,7 @@
 /*
 Jorge - frontend for mod_logdb - ejabberd server-side message archive module.
 
-Copyright (C) 2007 Zbigniew Zolkiewski
+Copyright (C) 2008 Zbigniew Zolkiewski
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -27,13 +27,20 @@ define("SQL_DEBUG",false); // sql debug
 // Default language (currently Polish and English translations are available):
 $lang_def = "eng"; // eng for English, pol for Polish
 
-// RPC Server settings (mod_xmlrpc)
+// vhost and RPC settings
 // RPC port:
 $rpc_port="4666";
 
-// RPC servers. Jorge can be configured to take advantage of redundancy XML-RPC servers. Add servers below. There is no limit in number of RPC servers.
-$rpc_arr[0] = "192.168.0.1"; // example
-$rpc_arr[1] = "192.168.0.2"; // example
+// vhost settings, format "xmpp.server.com"=>array of RPC servers (WARNING! Do not mistake vhost and RPC servers as this is crutial for authentication!)
+$vhosts = array(
+
+	"jabber.example.com"=>
+			array("10.0.0.1","10.0.0.2"),
+
+	"jabber.example.eu"=>
+			array("10.0.0.3","10.0.0.4")
+			
+			);
 
 // MySQL database where mod_logdb is running on:
 define("MYSQL_USER", ""); // username
@@ -53,12 +60,6 @@ define("CAPTCHA_PUBLIC","");
 
 // admin name (only name - without domain name):
 define("ADMIN_NAME","");
-
-// jabber server host name. Replace dots with underline (f.e: jabber_example_com)
-$xmpp_host = "";
-
-// do not touch this
-$xmpp_host_dotted=str_replace("_",".",$xmpp_host);
 
 // secret key for scrambling URLs. Put here some random data (32 chars):
 define("ENC_KEY","PleaseChangeMe");

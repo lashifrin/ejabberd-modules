@@ -105,7 +105,9 @@ if ($_GET[act]==="logout") {
 	          		$sess->set('login',$inpLogin);
 		  		$sess->set('uid_l',$inpLogin);
 		  		$sess->set('uid_p',$inpPass);
-		  		$sess->set('host',$xmpp_host);
+				$sess->set('vhost',XMPP_HOST);
+				// remember user choice
+				setcookie("fav_host", XMPP_HOST,time()+2592000);
 
 				// Get user_id if it is possible
 				if ($db->get_user_id($sess->get('uid_l')) === true) {
@@ -191,7 +193,16 @@ if ($_GET[act]==="logout") {
 
 			}
 
-		$html->system_message($wrong_data[$lang]);
+		if (no_vhost === true) {
+
+				$html->system_message($vhost_not_selected[$lang]);
+			
+			}
+			else{
+
+				$html->system_message($wrong_data[$lang]);
+		
+		}
 		$db->get_user_id($inpLogin);
 		$ui_fail = $db->result->user_id;
 		$query = "select count(id_user) as log_number from jorge_logger where id_user = '$ui_fail' and log_time > date_sub(now(),interval 1 minute)";
@@ -253,7 +264,48 @@ $html->set_body('
 		<form action="index.php" method="post">
 		<br><br>
 		<table class="ff" border="0" cellspacing="0" cellpadding="0">
-		<tr><td align="right">'.$login_w[$lang].'&nbsp;</td><td><input name="inpLogin" value="'.$_POST[inpLogin].'" class="log" >@'.$xmpp_host_dotted.'</td></tr>
+		<tr><td align="right">'.$login_w[$lang].'&nbsp;</td><td><input name="inpLogin" value="'.$_POST[inpLogin].'" class="log" >
+		
+		');
+
+// vhost support
+if (count($vhosts>1)) {
+
+		$html->set_body('<select name="vhost">
+				<option value="null">'.$vhost_select[$lang].'</option>
+		');
+
+		while (array_keys($vhosts)) {
+
+			$vhost = key($vhosts);
+			if ($_POST[vhost] == $vhost OR $_COOKIE['fav_host'] == $vhost) {
+
+					$selected_vhost="selected=\"selected\"";
+
+				}
+				else {
+
+					unset($selected_vhost);
+
+			}
+
+			$html->set_body('<option value="'.$vhost.'" '.$selected_vhost.'>'.$vhost.'</option>');
+			array_shift($vhosts);
+
+		}
+
+		$html->set_body('</select>');
+
+
+	}
+	else{
+
+		// There is only one vhost configured, so do not display select box
+		$html->set_body('@'.key($vhosts));
+
+}
+		
+$html->set_body('</td></tr>
 		<tr height="3" ><td></td></tr>
 		<tr><td align="right">'.$passwd_w[$lang].'&nbsp;</td><td><input name="inpPass" type="password" class="log"></td></tr>
 		<tr height="10"><td></td></tr>

@@ -86,7 +86,7 @@ if ($action === $activate_m[$lang]) {
 	else {
 
 		$user_name=htmlspecialchars($user_name);
-		$html->set_body($act_info[$lang].'<b>'.$user_name.'</b> (<i>'.$user_name.'@'.$xmpp_host_dotted.'</i>)<hr><br><br>
+		$html->set_body($act_info[$lang].'<b>'.$user_name.'</b> (<i>'.$user_name.'@'.XMPP_HOST.'</i>)<hr><br><br>
 				<center>
 					<form action="not_enabled.php" method="post">
 						<input class="red" type="submit" name="activate" value="'.$activate_m[$lang].'">

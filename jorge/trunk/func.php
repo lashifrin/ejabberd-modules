@@ -155,9 +155,8 @@ function decrypt_aes($key, $c_t) {
 
 
 
-function check_registered_user ($sess,$ejabberd_rpc,$xmpp_host) {
+function check_registered_user ($sess,$ejabberd_rpc) {
 	
-	if ($sess->get('host')!=$xmpp_host OR !$sess->get('host')) { return false; }
 	if (!$sess->is_registered('uid_l') OR !$sess->is_registered('uid_p')) 
 		{
 			return false;

@@ -29,14 +29,20 @@ if (__FILE__==$_SERVER['SCRIPT_FILENAME']) {
 
 }
 
+$vhost_select[pol] = "Wybierz serwer";
+$vhost_select[eng] = "Select server";
+
+$vhost_not_selected[pol] = "Nie wybrano żadnego serwera!";
+$vhost_not_selected[eng] = "No server have been selected!";
+
 $no_script[pol] = "Twoja przeglądarka ma wyłączoną obsługę JavaScript. Jorge wymaga aby obsługa Javascript-u była włączona!";
 $no_script[eng] = "Your browser dont support Javascript. Jorge require to have Javascript enabled!";
 
 $act_su[pol] = "Zapisywanie rozmów na serwerze zostało włączone!";
 $act_su[eng] = "Message archiving activated succesfuly!";
 
-$wrong_data[pol] = "Wprowadzono błędne dane, spróbuj jeszcze raz";
-$wrong_data[eng] = "Invalid data provided, please try again";
+$wrong_data[pol] = "Nieprawidłowa nazwa użytkownika lub hasło!";
+$wrong_data[eng] = "Bad username or password!";
 
 $wrong_data2[pol] = "Nieprawidłowe słowo z obrazka, spróbuj jeszcze raz";
 $wrong_data2[eng] = "You have entered wrong word from picture, try again";

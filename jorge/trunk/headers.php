@@ -53,22 +53,72 @@ $location=$_SERVER['PHP_SELF'];
 // session
 $sess = new session;
 
-// RPC server redundancy
-$rpc_host = check_rpc_server($rpc_arr,$rpc_port);
+// init html helper
+$html = new render_html();
 
-//debug
-debug(DEBUG,"Active RPC host: $rpc_host");
+if (!preg_match("/index.php/i",$location)) {
 
-// in case no RPC servers are available stop jorge
-if ($rpc_host===false) {
+		if ($sess->get('vhost') === null) {
 
-		print "<br><center><b>Currently service is unavailable. Please try again later.</b></center>";
-		exit;
+			header("Location: index.php?act=logout");
+		
+		}
+		if (array_key_exists($sess->get('vhost'), $vhosts) === false) {
+
+			header("Location: index.php?act=logout");
+			
+		}
+
+		define(XMPP_HOST,$sess->get('vhost'));
+		$rpc_host = check_rpc_server($vhosts[XMPP_HOST],$rpc_port);
+		debug(DEBUG,"Active RPC host: $rpc_host");
+
+		// in case no RPC servers are available stop jorge
+		if ($rpc_host===false) {
+
+			print "<br><center><b>Currently service is unavailable. Please try again later.</b><br>
+				<a href=\"index.php?act=logout\">Please logout</a>
+			</center>";
+			exit;
+		}
+
+		// create rpc object
+		$ejabberd_rpc = new rpc_connector("$rpc_host","$rpc_port",XMPP_HOST);
+		$xmpp_host = str_replace(".","_", XMPP_HOST);
+
 	}
+	else{
 
+		// check if selected host exist in configuration
+		if (array_key_exists($_POST[vhost], $vhosts) === true) {
+	
+				$rpc_host = check_rpc_server($vhosts["$_POST[vhost]"],$rpc_port);
+				debug(DEBUG,"Selecting RPC server during login: $rpc_host");
+				if ($rpc_host === false) {
 
-// create rpc object
-$ejabberd_rpc = new rpc_connector("$rpc_host","$rpc_port","$xmpp_host_dotted");
+						print "<br><center><b>Currently service is unavailable. Please try again later.<br>
+							<a href=\"index.php?act=logout\">Please logout</a>
+						</b></center>";
+						exit;
+					
+					}
+					else {
+
+						define(XMPP_HOST,$_POST[vhost]);		
+						$ejabberd_rpc = new rpc_connector("$rpc_host","$rpc_port",XMPP_HOST);
+						$xmpp_host = str_replace(".","_", XMPP_HOST);
+
+				}
+
+			}
+			else{
+
+				unset($_POST[inpLogin]);
+				unset($_POST[inpPass]);
+
+		}
+
+}
 
 // create db_manager object
 $db = new db_manager(MYSQL_HOST,MYSQL_NAME,MYSQL_USER,MYSQL_PASS,"mysql","$xmpp_host");
@@ -76,9 +126,6 @@ $db->set_debug(SQL_DEBUG);
 
 // create encryption object
 $enc = new url_crypt(ENC_KEY);
-
-// init html helper
-$html = new render_html();
 
 // username (token)
 define(TOKEN,$sess->get('uid_l'));
@@ -89,7 +136,7 @@ debug(DEBUG,"User session:".TOKEN);
 // authentication checks. Ensure if session data is not altered... (only when we are inside Jorge)
 if (!preg_match("/index.php/i",$location)) {
 
-	if (check_registered_user($sess,$ejabberd_rpc,$xmpp_host) !== true) { 
+	if (check_registered_user($sess,$ejabberd_rpc) !== true) { 
 	
 			header("Location: index.php?act=logout"); 
 			exit; 
@@ -171,7 +218,7 @@ if (TOKEN==ADMIN_NAME) {
 	$html->headers('<script language="javascript" type="text/javascript" src="lib/jquery.flot.pack.js"></script>');
 }
 $html->headers('
-	<title>'.$xmpp_host_dotted.':: Jorge Beta</title>
+	<title>Jorge Beta</title>
         <script type="text/javascript">
             $(function() {
 		$(\'table#maincontent tbody#searchfield tr\').quicksearch({

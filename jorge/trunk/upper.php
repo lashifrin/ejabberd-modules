@@ -290,7 +290,7 @@ $html->menu('
 	<table border="0" cellspacing="0" class="ff" width="100%">
 	<tr>
 		<td colspan="2" height="29" style="text-align: right;">
-		<b>'.TOKEN.'@'.$xmpp_host_dotted.'</b>&nbsp; | &nbsp;
+		<b>'.TOKEN.'@'.XMPP_HOST.'</b>&nbsp; | &nbsp;
 		<a href="settings.php">'.$menu_item_panel[$lang].'</a>&nbsp; | &nbsp;
 		<a href="#" onClick="smackzk();">'.$sel_client[$lang].'</a>&nbsp; | &nbsp;
 		<a href="help.php" target="_blank">'.$help_but[$lang].'</a>&nbsp; | &nbsp;<a href="index.php?act=logout">'.$log_out_b[$lang].'</a><hr size="1" noshade="noshade" style="color: #c9d7f1;"></td>

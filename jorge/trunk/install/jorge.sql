@@ -1,77 +1,27 @@
+-- MySQL dump 10.11
 --
--- Table structure for table `jorge_logger`
---
+-- Host: localhost    Database: jabster_logdb
+-- ------------------------------------------------------
+-- Server version	5.0.51b-log
 
-DROP TABLE IF EXISTS `jorge_logger`;
-CREATE TABLE `jorge_logger` (
-  `id_user` int(11) default NULL,
-  `id_log_detail` int(11) default NULL,
-  `id_log_level` int(11) default NULL,
-  `log_time` varchar(20) default NULL,
-  `extra` text,
-  KEY `jorge_log_idx` (`id_user`,`id_log_level`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-
---
--- Table structure for table `jorge_logger_dict`
---
-
-DROP TABLE IF EXISTS `jorge_logger_dict`;
-CREATE TABLE `jorge_logger_dict` (
-  `id_event` int(11) NOT NULL auto_increment,
-  `event` text,
-  `lang` char(3) default NULL,
-  PRIMARY KEY  (`id_event`),
-  KEY `jorge_logger_dict_idx` (`id_event`,`lang`)
-) ENGINE=MyISAM AUTO_INCREMENT=10 DEFAULT CHARSET=latin1;
-
---
--- Table structure for table `jorge_logger_level_dict`
---
-
-DROP TABLE IF EXISTS `jorge_logger_level_dict`;
-CREATE TABLE `jorge_logger_level_dict` (
-  `id_level` int(11) NOT NULL auto_increment,
-  `level` varchar(20) default NULL,
-  `lang` char(3) default NULL,
-  PRIMARY KEY  (`id_level`)
-) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=latin1;
-
---
--- Table structure for table `jorge_mylinks`
---
-
-DROP TABLE IF EXISTS `jorge_mylinks`;
-CREATE TABLE `jorge_mylinks` (
-  `id_link` int(11) NOT NULL auto_increment,
-  `owner_id` int(11) default NULL,
-  `peer_name_id` int(11) default NULL,
-  `peer_server_id` int(11) default NULL,
-  `datat` text,
-  `link` text,
-  `description` text,
-  PRIMARY KEY  (`id_link`)
-) ENGINE=MyISAM AUTO_INCREMENT=179 DEFAULT CHARSET=latin1;
-
---
--- Table structure for trash
---
-
-DROP TABLE IF EXISTS `pending_del`;
-CREATE TABLE `pending_del` (
-  `owner_id` int(11) default NULL,
-  `peer_name_id` int(11) default NULL,
-  `date` varchar(20) default NULL,
-  `peer_server_id` int(11) default NULL,
-  `timeframe` timestamp NOT NULL default CURRENT_TIMESTAMP,
-  KEY `owner_idx` (`owner_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
 -- Table structure for table `jorge_favorites`
 --
 
 DROP TABLE IF EXISTS `jorge_favorites`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
 CREATE TABLE `jorge_favorites` (
   `owner_id` int(11) default NULL,
   `peer_name_id` int(11) default NULL,
@@ -80,78 +30,145 @@ CREATE TABLE `jorge_favorites` (
   `tslice` varchar(20) default NULL,
   `comment` varchar(50) default NULL,
   `ext` int(11) default NULL,
-  KEY `jorge_fav_all` (`owner_id`,`peer_name_id`,`peer_server_id`,`resource_id`,`tslice`),
-  KEY `jorge_favorites_ext_idx` (`owner_id`,`ext`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+  `link_id` int(10) unsigned NOT NULL auto_increment,
+  `vhost` varchar(255) default NULL,
+  PRIMARY KEY  (`link_id`),
+  KEY `jorge_favorites_ext_idx` (`owner_id`,`ext`),
+  KEY `favorites_idx` (`owner_id`,`peer_name_id`,`peer_server_id`,`tslice`,`vhost`)
+) ENGINE=InnoDB AUTO_INCREMENT=100 DEFAULT CHARSET=latin1;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `jorge_logger`
+--
+
+DROP TABLE IF EXISTS `jorge_logger`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `jorge_logger` (
+  `id_user` int(11) default NULL,
+  `id_log_detail` int(11) default NULL,
+  `id_log_level` int(11) default NULL,
+  `log_time` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
+  `extra` text,
+  `vhost` varchar(255) default NULL,
+  KEY `logger_idx` (`id_user`,`id_log_detail`,`id_log_level`,`vhost`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `jorge_logger_dict`
+--
+
+DROP TABLE IF EXISTS `jorge_logger_dict`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `jorge_logger_dict` (
+  `id_event` int(11) NOT NULL auto_increment,
+  `event` text,
+  `lang` char(3) default NULL,
+  PRIMARY KEY  (`id_event`),
+  KEY `jorge_logger_dict_idx` (`id_event`,`lang`)
+) ENGINE=MyISAM AUTO_INCREMENT=10 DEFAULT CHARSET=latin1;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `jorge_logger_level_dict`
+--
+
+DROP TABLE IF EXISTS `jorge_logger_level_dict`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `jorge_logger_level_dict` (
+  `id_level` int(11) NOT NULL auto_increment,
+  `level` varchar(20) default NULL,
+  `lang` char(3) default NULL,
+  PRIMARY KEY  (`id_level`)
+) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=latin1;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `jorge_mylinks`
+--
+
+DROP TABLE IF EXISTS `jorge_mylinks`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `jorge_mylinks` (
+  `id_link` int(11) NOT NULL auto_increment,
+  `owner_id` int(11) default NULL,
+  `peer_name_id` int(11) default NULL,
+  `peer_server_id` int(11) default NULL,
+  `datat` text,
+  `link` text,
+  `description` text,
+  `ext` int(11) default NULL,
+  `link_id` int(11) default NULL,
+  `vhost` varchar(255) default NULL,
+  PRIMARY KEY  (`id_link`),
+  KEY `mylinks_idx` (`owner_id`,`vhost`)
+) ENGINE=InnoDB AUTO_INCREMENT=454 DEFAULT CHARSET=latin1;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `jorge_pref`
+--
+
+DROP TABLE IF EXISTS `jorge_pref`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `jorge_pref` (
+  `owner_id` int(11) default NULL,
+  `pref_id` int(11) default NULL,
+  `pref_value` int(11) default NULL,
+  `vhost` varchar(255) default NULL,
+  KEY `pref_idx` (`owner_id`,`vhost`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+SET character_set_client = @saved_cs_client;
 
 --
 -- Table structure for table `jorge_stats`
 --
 
 DROP TABLE IF EXISTS `jorge_stats`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
 CREATE TABLE `jorge_stats` (
   `day` date default NULL,
   `hour` tinyint(4) default NULL,
   `value` int(11) default NULL,
-  KEY `jorge_stats_idx` (`day`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+  `vhost` varchar(255) default NULL,
+  KEY `stats_idx` (`day`,`vhost`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+SET character_set_client = @saved_cs_client;
 
 --
--- Insert data into dictionary
+-- Table structure for table `pending_del`
 --
 
-LOCK TABLES `jorge_logger_dict` WRITE;
-/*!40000 ALTER TABLE `jorge_logger_dict` DISABLE KEYS */;
-INSERT INTO `jorge_logger_dict` VALUES (1,'Logged in','eng'),(2,'Logged out','eng'),(3,'Login failed','eng'),(4,'Deleted chat thread','eng'),(5,'Deleted whole archive','eng'),(6,'Turned off archivization','eng'),(7,'Turned on archivization','eng'),(8,'Chat exported','eng'),(9,'Deleted entire archive','eng');
-/*!40000 ALTER TABLE `jorge_logger_dict` ENABLE KEYS */;
-UNLOCK TABLES;
+DROP TABLE IF EXISTS `pending_del`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `pending_del` (
+  `owner_id` int(11) default NULL,
+  `peer_name_id` int(11) default NULL,
+  `date` varchar(20) default NULL,
+  `peer_server_id` int(11) default NULL,
+  `timeframe` timestamp NOT NULL default CURRENT_TIMESTAMP,
+  `type` enum('chat','favorite','mylink','other') default NULL,
+  `vhost` varchar(255) default NULL,
+  KEY `pending_idx` (`owner_id`,`peer_name_id`,`peer_server_id`,`date`,`type`,`vhost`),
+  KEY `pending_time_idx` (`timeframe`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+SET character_set_client = @saved_cs_client;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
-LOCK TABLES `jorge_logger_level_dict` WRITE;
-/*!40000 ALTER TABLE `jorge_logger_level_dict` DISABLE KEYS */;
-INSERT INTO `jorge_logger_level_dict` VALUES (1,'normal','eng'),(2,'warn','eng'),(3,'alert','eng');
-/*!40000 ALTER TABLE `jorge_logger_level_dict` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Lets create view for jorge_logger:
---
-
-CREATE VIEW v_jorge_logger AS 
-
-SELECT b.username AS username, c.level AS level, d.event AS event, a.log_time AS log_time, a.extra AS extra 
-	
-FROM 
-	jorge_logger a, 
-	jorge_logger_dict d, 
-	jorge_logger_level_dict c, 
-	logdb_users_jabber_autocom_pl b 
-	
-WHERE 
-b.user_id = a.id_user and 
-c.id_level = a.id_log_level and 
-d.id_event = a.id_log_detail;
-
---
--- Here is little tip: message view for your convinience. You can use this JOINS as primary data source:
-
-
--- CREATE VIEW `v_logdb_messages_YOUR_DATE_TABLE_YOUR_XMPP_SERVER` AS
--- 
--- SELECT a.username AS user_name, b.username AS peer_name, c.server, d.resource, f.direction, e.type, f.subject, f.body, f.timestamp 
---
--- FROM 
---  `logdb_users_YOUR_XMPP_SERVER` a, 
---  `logdb_users_YOUR_XMPP_SERVER` b,
---  `logdb_servers_YOUR_XMPP_SERVER` c, 
---  `logdb_resources_YOUR_XMPP_SERVER` d, 
---  `logdb_types_YOUR_XMPP_SERVER` e,
---  `logdb_messages_YOUR_DATE_TABLE_YOUR_XMPP_SERVER` f
---
--- WHERE 
--- a.user_id=f.owner_id and 
--- b.user_id=f.peer_name_id and
--- c.server_id=f.peer_server_id and 
--- d.resource_id=f.peer_resource_id and
--- e.type_id=f.type_id;
-
+-- Dump completed on 2008-09-24 18:02:54
