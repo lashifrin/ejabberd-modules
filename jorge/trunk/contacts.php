@@ -183,7 +183,7 @@ if ($roster_con) {
 
 	else {
 
-		$html->set_body('<p align="center"><b>'.$no_contacts[$lang].'</b></p>');
+		$html->status_message('<p align="center"><b>'.$no_contacts[$lang].'</b></p>');
 
 }
 require_once("footer.php");

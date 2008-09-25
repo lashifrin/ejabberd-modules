@@ -48,14 +48,15 @@ class db_manager {
 	private $time_start = null;
 	private $time_result = null;
 	private $user_query = null;
+	private $ignore_id = null;
 	public $result;
 
-	public function __construct($db_host,$db_name,$db_user,$db_password,$db_driver,$xmpp_host = null) {
-		$this->setData($db_host,$db_name,$db_user,$db_password,$db_driver,$xmpp_host);
+	public function __construct($db_host,$db_name,$db_user,$db_password,$db_driver,$xmpp_host = null,$ignore_id) {
+		$this->setData($db_host,$db_name,$db_user,$db_password,$db_driver,$xmpp_host,$ignore_id);
 	}
 
 
-	protected function setData($db_host,$db_name,$db_user,$db_password,$db_driver,$xmpp_host) {
+	protected function setData($db_host,$db_name,$db_user,$db_password,$db_driver,$xmpp_host,$ignore_id) {
 		$this->db_host = $db_host;
 		$this->db_name = $db_name;
 		$this->db_user = $db_user;
@@ -63,6 +64,7 @@ class db_manager {
 		$this->db_driver = $db_driver;
 		$this->xmpp_host = $xmpp_host;
 		$this->vhost = str_replace("_",".", $xmpp_host);
+		$this->ignore_id = $ignore_id;
 
 		try { 
 			$this->db_connect();
@@ -722,6 +724,8 @@ class db_manager {
 				`logdb_stats_$xmpp_host` 
 			WHERE 
 				owner_id = '$user_id' 
+			AND
+				peer_name_id!='".$this->ignore_id."'
 			GROUP BY 
 				substring(at,1,7) 
 			ORDER BY 
@@ -734,14 +738,13 @@ class db_manager {
 		return $this->commit_select(array("at_send","at"));
 	}
 
-	public function get_user_stats_calendar($mo,$ignore_id) {
+	public function get_user_stats_calendar($mo) {
 
 		$this->id_query = "Q023";
 		$this->vital_check();
 		$user_id = $this->user_id;
 		$xmpp_host = $this->xmpp_host;
 		$mo = $this->sql_validate($mo,"string");
-		$ignore_id = $this->sql_validate($ignore_id, "integer");
 		$query="SELECT 
 				distinct(substring(at,8,9)) as days 
 			FROM 
@@ -751,7 +754,7 @@ class db_manager {
 			AND
 				at like '$mo%' 
 			AND 
-				peer_name_id!='$ignore_id' 
+				peer_name_id!='".$this->ignore_id."' 
 			ORDER BY 
 				str_to_date(at,'%Y-%m-%d') 
 			DESC

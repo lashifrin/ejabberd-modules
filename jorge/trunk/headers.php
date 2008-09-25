@@ -120,8 +120,11 @@ if (!preg_match("/index.php/i",$location)) {
 
 }
 
+// define ignore id - see config.php.inc
+define(IGNORE_ID,$vhost_ignore[XMPP_HOST]);
+
 // create db_manager object
-$db = new db_manager(MYSQL_HOST,MYSQL_NAME,MYSQL_USER,MYSQL_PASS,"mysql","$xmpp_host");
+$db = new db_manager(MYSQL_HOST,MYSQL_NAME,MYSQL_USER,MYSQL_PASS,"mysql","$xmpp_host",IGNORE_ID);
 $db->set_debug(SQL_DEBUG);
 
 // create encryption object
@@ -137,7 +140,7 @@ debug(DEBUG,"User session:".TOKEN);
 if (!preg_match("/index.php/i",$location)) {
 
 	if (check_registered_user($sess,$ejabberd_rpc) !== true) { 
-	
+
 			header("Location: index.php?act=logout"); 
 			exit; 
 	}
@@ -159,9 +162,6 @@ if (in_array(TOKEN, $vhosts_admins[XMPP_HOST]) === true) {
 	define(ADMIN_NAME,TOKEN);
 
 }
-
-// define ignore id - see config.php.inc
-define(IGNORE_ID,$vhost_ignore[XMPP_HOST]);
 
 // run only for admins
 if (TOKEN===ADMIN_NAME) {

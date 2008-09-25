@@ -61,18 +61,45 @@ $lang=$sess->get('language');
 
 if ($wo_sess || $inpLogin || $inpPass) {
 
-        $resp = recaptcha_check_answer(CAPTCHA_PRIVATE,
-                                  $_SERVER["REMOTE_ADDR"],
-                                  $_POST["recaptcha_challenge_field"],
-                                  $_POST["recaptcha_response_field"]);
+	// set attepts in cookies
+	if ($_COOKIE["auth_attempt"]=="") {
+
+			// show captcha anyway if user comes for the first time or have disabled cookies
+			setcookie("auth_attempt",1,time()+600);
+			$auth_attempt = "3";
+
+		}
+		else{
+
+			$auth_attempt = $_COOKIE["auth_attempt"] + 1;
+			settype($auth_attempt,"string");
+			// if it is not numeric let set it to some high value
+			if (!ctype_digit($auth_attempt)) {
+
+				$auth_attempt = "100";
+
+			}
+
+			setcookie("auth_attempt",$auth_attempt,time()+600);
+	}
+
+	// on 3rd attempt - check captcha
+	if ($auth_attempt >= "3") {
+
+        		$resp = recaptcha_check_answer(CAPTCHA_PRIVATE,
+                		                  $_SERVER["REMOTE_ADDR"],
+                       		 	          $_POST["recaptcha_challenge_field"],
+						  $_POST["recaptcha_response_field"]);
 
 
-	if (!$resp->is_valid) { 
+			if (!$resp->is_valid) { 
 
-			unset($inpPass);
-			unset($inpLogin);
-			$html->system_message($wrong_data2[$lang]);
+					unset($inpPass);
+					unset($inpLogin);
+					$html->system_message($wrong_data2[$lang]);
 		
+			}
+
 	}
 
 }
@@ -89,7 +116,6 @@ if ($_GET[act]==="logout") {
 			}
 		
 		}
-
 		$sess->finish();
 		header("Location: index.php");
 	
@@ -108,6 +134,7 @@ if ($_GET[act]==="logout") {
 				$sess->set('vhost',XMPP_HOST);
 				// remember user choice
 				setcookie("fav_host", XMPP_HOST,time()+2592000);
+				setcookie("auth_attempt",0);
 
 				// Get user_id if it is possible
 				if ($db->get_user_id($sess->get('uid_l')) === true) {
@@ -310,11 +337,32 @@ $html->set_body('</td></tr>
 		<tr height="3" ><td></td></tr>
 		<tr><td align="right">'.$passwd_w[$lang].'&nbsp;</td><td><input name="inpPass" type="password" class="log"></td></tr>
 		<tr height="10"><td></td></tr>
-		<tr><td colspan="2">'.recaptcha_get_html(CAPTCHA_PUBLIC,$error = null, $use_ssl = true).'</td></tr>
-		<tr height="15" ><td></td></tr>
-		<tr><td colspan="2" align="right"><input class="red" type="submit" name="sublogin" value="'.$login_act[$lang].'"></td></tr>
+		');
+
+		// display captcha on 3rd attempt...
+		$check_cookie = $_COOKIE["auth_attempt"];
+		settype($check_cookie,"string");
+		if (!ctype_digit($check_cookie) OR $check_cookie=="") {
+
+				$cookie_failed = true;
+			
+			}
+			else{
+
+				$cookie_failed = false;
+
+		}
+
+		if ($check_cookie >= "2" OR $cookie_failed === true) {
+
+			$html->set_body('<tr><td colspan="2">'.recaptcha_get_html(CAPTCHA_PUBLIC,$error = null, $use_ssl = true).'</td></tr>
+					<tr height="15" ><td></td></tr>');
+
+		}
+
+		$html->set_body('<tr><td colspan="2" align="right"><input class="red" type="submit" name="sublogin" value="'.$login_act[$lang].'"></td></tr>
 		</table></form></center>	
-	');
+		');
 
 require_once("footer.php");
 ?>

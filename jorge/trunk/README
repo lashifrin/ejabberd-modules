@@ -21,6 +21,7 @@ Requirements:
 Client Requirements:
 - Jorge is tested and compatibile with: Firefox 2+ and Opera. (IE support is added from verion of 7, NOTE: IE6 is not supported and not tested - may work anyway)
 - Web-browser _must_ have enabled javascript as Jorge strongly relay on jQuery and other js related scripts
+- Cookies must be enabled
 
 Installing:
 - setup XML-RPC facility (mod_xmlrpc, available at http://svn.process-one.net/ejabberd-modules/mod_xmlrpc/trunk/)
