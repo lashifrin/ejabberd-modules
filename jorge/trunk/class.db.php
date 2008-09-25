@@ -2095,6 +2095,26 @@ class db_manager {
 
 	}
 
+	public function get_favorites_count() {
+
+		$this->id_query = "Q068";
+		$this->vital_check();
+		$query="SELECT
+				count(*) as cnt
+			FROM
+				jorge_favorites
+			WHERE
+				owner_id = '".$this->user_id."'
+			AND
+				vhost='".$this->vhost."'
+			AND
+				ext is null
+		";
+
+		return $this->select($query);
+
+	}
+
 	public function set_user_query($user_query) {
 
 		$this->user_query = $this->sql_validate($user_query,"string");
