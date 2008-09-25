@@ -137,7 +137,7 @@ if ($_GET[act]==="logout") {
 				$sess->set('vhost',XMPP_HOST);
 				// remember user choice
 				setcookie("fav_host", XMPP_HOST,time()+2592000);
-				setcookie("auth_attempt",0);
+				setcookie("auth_attempt",0,time()+2592000);
 
 				// Get user_id if it is possible
 				if ($db->get_user_id($sess->get('uid_l')) === true) {
