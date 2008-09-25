@@ -2,7 +2,7 @@
 /*
 Jorge - frontend for mod_logdb - ejabberd server-side message archive module.
 
-Copyright (C) 2007 Zbigniew Zolkiewski
+Copyright (C) 2008 Zbigniew Zolkiewski
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 require_once("headers.php");
 require_once("upper.php");
 
-$html->set_body($chat_map[$lang],$chat_select[$lang]);
+$html->set_overview('<h2>'.$chat_map[$lang].'</h2>'.'<small>'.$chat_select[$lang].'</small>');
 
 if ($_POST['chat_map']) {
 		

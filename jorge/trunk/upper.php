@@ -2,7 +2,7 @@
 /*
 Jorge - frontend for mod_logdb - ejabberd server-side message archive module.
 
-Copyright (C) 2007 Zbigniew Zolkiewski
+Copyright (C) 2008 Zbigniew Zolkiewski
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -39,6 +39,7 @@ if ($lang!="pol" && $lang!="eng") {
 if ($sess->get('log_status') === null) { 
 
 	header ("Location: not_enabled.php"); 
+	exit;
 	
 }
 
@@ -51,6 +52,10 @@ $my_links_count = $db->result->cnt;
 // number of items in trash
 $db->get_trash_count();
 $tr_n = $db->result->cnt;
+
+// number of favorites
+$db->get_favorites_count();
+$favorites_count = $db->result->cnt;
 
 // get preferences for saving
 $pref_id=$_GET['set_pref'];
@@ -117,7 +122,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_map='<a class="mmenu" href="chat_map.php">'.$menu_item_map[$lang].'</a>';
 		$menu_search='<b>'.$menu_item_search[$lang].'</b>';
 		$menu_mylinks='<a class="mmenu" href="my_links.php">'.$menu_item_links[$lang].' ('.$my_links_count.')</a>';
-		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'</a>';
+		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'('.$favorites_count.')</a>';
 		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
 		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
 		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
@@ -130,7 +135,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_map='<a class="mmenu" href="chat_map.php">'.$menu_item_map[$lang].'</a>';
 		$menu_search='<a class="mmenu" href="search_v2.php">'.$menu_item_search[$lang].'</a>';
 		$menu_mylinks='<a class="mmenu" href="my_links.php">'.$menu_item_links[$lang].' ('.$my_links_count.')</a>';
-		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'</a>';
+		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'('.$favorites_count.')</a>';
 		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
 		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
 		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
@@ -143,7 +148,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_map='<a class="mmenu" href="chat_map.php">'.$menu_item_map[$lang].'</a>';
 		$menu_search='<a class="mmenu" href="search_v2.php">'.$menu_item_search[$lang].'</a>';
 		$menu_mylinks='<b>'.$menu_item_links[$lang].' ('.$my_links_count.') </b>';
-		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'</a>';
+		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'('.$favorites_count.')</a>';
 		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
 		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
 		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
@@ -157,7 +162,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_map='<a class="mmenu" href="chat_map.php">'.$menu_item_map[$lang].'</a>';
 		$menu_search='<a class="mmenu" href="search_v2.php">'.$menu_item_search[$lang].'</a>';
 		$menu_mylinks='<a class="mmenu" href="my_links.php">'.$menu_item_links[$lang].' ('.$my_links_count.')</a>';
-		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'</a>';
+		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'('.$favorites_count.')</a>';
 		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
 		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
 		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
@@ -170,7 +175,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_map='<a class="mmenu" href="chat_map.php">'.$menu_item_map[$lang].'</a>';
 		$menu_search='<a class="mmenu" href="search_v2.php">'.$menu_item_search[$lang].'</a>';
 		$menu_mylinks='<a class="mmenu" href="my_links.php">'.$menu_item_links[$lang].' ('.$my_links_count.')</a>';
-		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'</a>';
+		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'('.$favorites_count.')</a>';
 		$menu_contacts='<b>'.$menu_item_contacts[$lang].'</b>';
 		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
 		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
@@ -183,7 +188,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_map='<a class="mmenu" href="chat_map.php">'.$menu_item_map[$lang].'</a>';
 		$menu_search='<a class="mmenu" href="search_v2.php">'.$menu_item_search[$lang].'</a>';
 		$menu_mylinks='<a class="mmenu" href="my_links.php">'.$menu_item_links[$lang].' ('.$my_links_count.')</a>';
-		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'</a>';
+		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'('.$favorites_count.')</a>';
 		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
 		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
 		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
@@ -197,7 +202,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_map='<a class="mmenu" href="chat_map.php">'.$menu_item_map[$lang].'</a>';
 		$menu_search='<a class="mmenu" href="search_v2.php">'.$menu_item_search[$lang].'</a>';
 		$menu_mylinks='<a class="mmenu" href="my_links.php">'.$menu_item_links[$lang].' ('.$my_links_count.')</a>';
-		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'</a>';
+		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'('.$favorites_count.')</a>';
 		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
 		$menu_logger='<b>'.$menu_item_logs[$lang].'</b>';
 		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
@@ -211,7 +216,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_map='<a class="mmenu" href="chat_map.php">'.$menu_item_map[$lang].'</a>';
 		$menu_search='<a class="mmenu" href="search_v2.php">'.$menu_item_search[$lang].'</a>';
 		$menu_mylinks='<a class="mmenu" href="my_links.php">'.$menu_item_links[$lang].' ('.$my_links_count.')</a>';
-		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'</a>';
+		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'('.$favorites_count.')</a>';
 		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
 		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
 		$menu_trash='<b>'.$menu_item_trash[$lang].'('.$tr_n.')</b>';
@@ -225,7 +230,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_map='<a class="mmenu" href="chat_map.php">'.$menu_item_map[$lang].'</a>';
 		$menu_search='<a class="mmenu" href="search_v2.php">'.$menu_item_search[$lang].'</a>';
 		$menu_mylinks='<a class="mmenu" href="my_links.php">'.$menu_item_links[$lang].' ('.$my_links_count.')</a>';
-		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'</a>';
+		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'('.$favorites_count.')</a>';
 		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
 		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
 		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
@@ -239,7 +244,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_map='<b>'.$menu_item_map[$lang].'</b>';
 		$menu_search='<a class="mmenu" href="search_v2.php">'.$menu_item_search[$lang].'</a>';
 		$menu_mylinks='<a class="mmenu" href="my_links.php">'.$menu_item_links[$lang].' ('.$my_links_count.')</a>';
-		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'</a>';
+		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'('.$favorites_count.')</a>';
 		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
 		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
 		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
@@ -253,7 +258,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_map='<a class="mmenu" href="chat_map.php">'.$menu_item_map[$lang].'</a>';
 		$menu_search='<a class="mmenu" href="search_v2.php">'.$menu_item_search[$lang].'</a>';
 		$menu_mylinks='<a class="mmenu" href="my_links.php">'.$menu_item_links[$lang].' ('.$my_links_count.')</a>';
-		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'</a>';
+		$menu_favorites='<a class="mmenu" href="favorites.php">'.$menu_item_fav[$lang].'('.$favorites_count.')</a>';
 		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
 		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
 		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';
@@ -265,7 +270,7 @@ if (preg_match("/search_v2.php/i",$location))
 		$menu_map='<a class="mmenu" href="chat_map.php">'.$menu_item_map[$lang].'</a>';
 		$menu_search='<a class="mmenu" href="search_v2.php">'.$menu_item_search[$lang].'</a>';
 		$menu_mylinks='<a class="mmenu" href="my_links.php">'.$menu_item_links[$lang].' ('.$my_links_count.')</a>';
-		$menu_favorites='<b>'.$menu_item_fav[$lang].'</b>';
+		$menu_favorites='<b>'.$menu_item_fav[$lang].'('.$favorites_count.')</b>';
 		$menu_contacts='<a class="mmenu" href="contacts.php">'.$menu_item_contacts[$lang].'</a>';
 		$menu_logger='<a class="mmenu" href="logger.php">'.$menu_item_logs[$lang].'</a>';
 		$menu_trash='<a class="mmenu" href="trash.php">'.$menu_item_trash[$lang].'('.$tr_n.')</a>';

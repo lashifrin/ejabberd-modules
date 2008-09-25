@@ -2,7 +2,7 @@
 /*
 Jorge - frontend for mod_logdb - ejabberd server-side message archive module.
 
-Copyright (C) 2007 Zbigniew Zolkiewski
+Copyright (C) 2008 Zbigniew Zolkiewski
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -54,6 +54,11 @@ if ($del === "t") {
 		if ($db->del_mylink($link_id) === true) {
 		
 				$html->status_message($my_links_removed[$lang]);
+				
+				// recount number of links
+				$db->get_mylinks_count();
+				$my_links_count = $db->result->cnt;
+
 			}
 
 			else {
@@ -87,6 +92,10 @@ if ($tigger === $my_links_commit[$lang]) {
 
 						$html->status_message($my_links_added[$lang].'
 									<br><a href="'.$view_type.'?a='.$link.'" style="color: blue;"><b>'.$my_links_back[$lang].'</b></a></div></center>');
+						
+						// recount number of links
+						$db->get_mylinks_count();
+						$my_links_count = $db->result->cnt;
 
 					}
 					else{
@@ -127,7 +136,7 @@ if ($variables[ismylink] === "1") {
 
 }
 
-$html->set_body('<h2>'.$my_links_desc_m[$lang].'</h2><small>'.$my_links_desc_e[$lang].'</small>');
+$html->set_overview('<h2>'.$my_links_desc_m[$lang].'</h2><small>'.$my_links_desc_e[$lang].'</small>');
 
 if ($my_links_count === "0") { 
 		

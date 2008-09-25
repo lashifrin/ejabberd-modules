@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 require_once("headers.php");
 require_once("upper.php");
 
-$html->set_body('<h2>'.$trash_name[$lang].'</h2><small>'.$trash_desc[$lang].'</small>');
+$html->set_overview('<h2>'.$trash_name[$lang].'</h2><small>'.$trash_desc[$lang].'</small>');
 
 if ($enc->decrypt_url($_GET[a]) === true) {
 
@@ -44,8 +44,11 @@ if ($action=="undelete") {
 		if ($db->move_chat_from_trash($talker,$server,$tslice,$lnk) === true) {
 
 				$back_link = $enc->crypt_url("tslice=$tslice&peer_name_id=$talker&peer_server_id=$server");
-                		$html->system_message($undo_info[$lang].'<br><a href="'.$view_type.'?a='.$back_link.'" style="color: blue;">'.$trash_vit[$lang].'</a>');
-				$tr_n = $tr_n - 1;
+                		$html->status_message($undo_info[$lang].'<br><a href="'.$view_type.'?a='.$back_link.'" style="color: blue;">'.$trash_vit[$lang].'</a>');
+				
+				// number of items in trash
+				$db->get_trash_count();
+				$tr_n = $db->result->cnt;
 
         		}
 
@@ -65,6 +68,10 @@ if ($action=="delete") {
 		if ($db->remove_messages_from_trash($talker,$server,$tslice) === true) {
 
 			$html->status_message($del_info[$lang]);
+			// number of items in trash
+			$db->get_trash_count();
+			$tr_n = $db->result->cnt;
+
 		}
 		else {
 

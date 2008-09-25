@@ -2,7 +2,7 @@
 /*
 Jorge - frontend for mod_logdb - ejabberd server-side message archive module.
 
-Copyright (C) 2007 Zbigniew Zolkiewski
+Copyright (C) 2008 Zbigniew Zolkiewski
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -31,7 +31,7 @@ class session {
 
     public $id;
 
-    function session ($lifetime=10800) { // czas ¿ycia sesji
+    function session ($lifetime=10800) { // czas ?ycia sesji
           @session_start();
     }
 

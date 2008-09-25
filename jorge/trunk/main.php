@@ -27,6 +27,8 @@ $e_string = $_GET['a'];
 $resource_id = $_GET['b'];
 $start = $_GET['start'];
 
+$html->set_overview('<h2>'.$archives_t[$lang].'</h2><small>'.$cal_notice[$lang].'. <a href="calendar_view.php?set_pref=1&v=2"><u>'.$change_view_cal[$lang].'</u></a></small>');
+
 if ($enc->decrypt_url($e_string) === true) {
 
 		$tslice = $enc->tslice;
@@ -118,9 +120,7 @@ $result = $db->result;
 if (count($result) !=0) {
 
 		// main table
-		$html->set_body('<h2>'.$archives_t[$lang].'</h2>
-				<small>'.$cal_notice[$lang].'. <a href="calendar_view.php?set_pref=1&v=2"><u>'.$change_view_cal[$lang].'</u></a></small><br>
-				<br><table class="ff" border="0">
+		$html->set_body('<br><br><table class="ff" border="0">
 				<tr class="main_s"><td colspan="1" style="text-align:left;">'.$main_date[$lang].'</td>
 			');
 		if ($tslice) { 
@@ -192,13 +192,8 @@ if (count($result) !=0) {
 	}
 	else {
 
-		$html->set_body('<h2>'.$archives_t[$lang].'</h2>
-				<small>'.$cal_notice[$lang].'. <a href="calendar_view.php?set_pref=1&v=2"><u>'.$change_view_cal[$lang].'</u></a></small><br>
-				<center><div class="message">'.$no_archives[$lang].'</div></center>');
+		$html->status_message($no_archives[$lang]);
 }
-
-// lets generate table name...
-$tslice_table='logdb_messages_'.$tslice.'_'.$xmpp_host;
 
 // Chats in selected days:
 if ($tslice) {

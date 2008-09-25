@@ -126,7 +126,7 @@ if ($search_phase!="") {
 			$time2_end = null;
 	}
 
-	$html->set_body('<h2>'.$search_res[$lang].'</h2><table align="center" border="0" cellspacing="0" class="ff">
+	$html->set_overview('<h2>'.$search_res[$lang].'</h2><table align="center" border="0" cellspacing="0" class="ff">
 			<tr class="header"><td>'.$time_t[$lang].'</td><td>'.$talks[$lang].'</td><td>'.$thread[$lang].'</td><td>'.$score.'</td></tr>
 			<tr class="spacer"><td colspan="4"></td></tr>'
 			);

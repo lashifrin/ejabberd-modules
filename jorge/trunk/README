@@ -1,4 +1,4 @@
-Jorge by Zbyszek Zolkiewski (C) 2008 (DEVELOPMENT RELEASE)
+Jorge by Zbyszek Zolkiewski (C) 2008 VERSION 1.5 (DEVELOPMENT RELEASE)
 
 About.
  Jorge is set of php scripts that are front-end for Oleg Palij mod_logdb.
@@ -26,14 +26,12 @@ Installing:
 - setup XML-RPC facility (mod_xmlrpc, available at http://svn.process-one.net/ejabberd-modules/mod_xmlrpc/trunk/)
 - copy Jorge files into your http server (sugested vhost over SSL connection). There is sample .htaccess file - showing how to rewrite port 80 to 443
 - set up database for Jorge (install/jorge.sql)
-- copy config.php.inc to config.php and edit file
+- copy config.php.inc to config.php and edit file - READ CAREFULLY
 - that's it!
 
 Archive usage:
 We can say that 1 milion messeges collected by the server consume approx. 65 Megabytes. Depending on number of users that use your server and
 how many will activate logging, you must compute db partitions.
-
-
 
 !!!SECURITY NOTICE!!!
 

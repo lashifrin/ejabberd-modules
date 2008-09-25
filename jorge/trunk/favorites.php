@@ -24,7 +24,7 @@ require_once("upper.php");
 $init = $_POST[init];
 
 // header
-$html->set_body('<h2>'.$fav_main[$lang].'</h2><small>'.$fav_desc[$lang].'</small>');
+$html->set_overview('<h2>'.$fav_main[$lang].'</h2><small>'.$fav_desc[$lang].'</small>');
 
 // add to favorites
 if ($init == "1") {
@@ -136,7 +136,7 @@ if (count($db->result)>0) {
 					<b>'.htmlspecialchars(cut_nick($nickname)).'</b> (<i>'.htmlspecialchars($user_name).'@'.htmlspecialchars($server_name).'</i>)
 				</td>
 				<td onclick="window.location=\''.$view_type.'?a='.$to_base.'&loc=3\';" style="padding-left: 10px; padding-right: 10px">'.verbose_date($row[tslice],$lang).'</td>
-				<td style="padding-left: 10px; padding-right: 10px;">'.$comment.'</td>
+				<td onclick="window.location=\''.$view_type.'?a='.$to_base.'&loc=3\';" style="padding-left: 10px; padding-right: 10px;">'.$comment.'</td>
 				<td style="text-align: center;"><a href="favorites.php?del=t&link_id='.$row[link_id].'" onClick="if (!confirm(\''.$del_conf_my_link[$lang].'\')) return false;">&nbsp;'.$fav_remove[$lang].'&nbsp;</td>
 				</tr>
 			');
@@ -148,7 +148,7 @@ if (count($db->result)>0) {
 
 	else {
 
-		$html->set_body('<center><div class="message" style="width: 450px;">'.$fav_empty[$lang].'</div></center>');
+		$html->status_message('<center><div class="message" style="width: 450px;">'.$fav_empty[$lang].'</div></center>');
 	
 }
 

@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 require_once("headers.php");
 require_once("upper.php");
 
-$html->set_body('<h2>'.$cal_head[$lang].'</h2><small>'.$cal_notice[$lang].'. <a href="main.php?set_pref=1&v=1"><u>'.$change_view[$lang].'</u></a></small><br><br>');
+$html->set_overview('<h2>'.$cal_head[$lang].'</h2><small>'.$cal_notice[$lang].'. <a href="main.php?set_pref=1&v=1"><u>'.$change_view[$lang].'</u></a></small><br><br>');
 
 if (isset($_GET['left'])) { 
 	
@@ -174,52 +174,64 @@ if ($talker) {
 		
 }
 
-$html->set_body('<div style="text-align: center; width: 200px; float: '.$float.'">
-		<form id="t_jump" action="calendar_view.php" method="post" name="t_jump">
-		<select style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="jump_box" size="0" onchange="javascript:document.t_jump.submit();">
-		<option value="jump">'.$jump_to_l[$lang].'</option>
-	');
 
 // select list
 $db->get_user_stats_drop_down();
 $ch_mo = $db->result;
-foreach($ch_mo as $result) {
 
-	list($s_y,$s_m) = split("-",$result[at_send]);
-	$sym="$s_y-$s_m";
+// check if user have some chats
+if (count($ch_mo)!=0) {
 
-	if ($jump_to!="" AND $sym==$mo) { 
+		$html->set_body('<div style="text-align: center; width: 200px; float: '.$float.'">
+			<form id="t_jump" action="calendar_view.php" method="post" name="t_jump">
+			<select style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="jump_box" size="0" onchange="javascript:document.t_jump.submit();">
+			<option value="jump">'.$jump_to_l[$lang].'</option>
+			');
+
+		foreach($ch_mo as $result) {
+
+			list($s_y,$s_m) = split("-",$result[at_send]);
+			$sym="$s_y-$s_m";
+
+			if ($jump_to!="" AND $sym==$mo) { 
 	
-			$sel_box="selected"; 
+					$sel_box="selected"; 
 			
-		} 
-		else { 
+				} 
+				else { 
 		
-			$sel_box=""; 
+					$sel_box=""; 
 			
+			}
+			$html->set_body('<option value="'.$sym.'" '.$sel_box.'>'.verbose_mo($result[at],$lang).'</option>');
+
 		}
-	$html->set_body('<option value="'.$sym.'" '.$sel_box.'>'.verbose_mo($result[at],$lang).'</option>');
 
+		$html->set_body('</select></form>');
+
+		// now generate calendar, the peer_name_id is hard-coded - this avoids of displaying chats with no-username
+		$db->get_user_stats_calendar($mo, IGNORE_ID);
+		$result_for_days = $db->result;
+
+		$i=0;
+		// days
+		foreach($result_for_days as $result) {
+
+			$i++;
+			$days[$i] = str_replace("-","",$result[days]);
+
+		}
+
+		list($y,$m) = split("-", $mo);
+		$html->set_body(calendar($user_id,$xmpp_host,$y,$m,$days,TOKEN,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,1,$null_a=0,$null_b=0,$cal_days,$enc));
+		unset($days);
+
+	}
+	else {
+
+		$html->status_message($no_archives[$lang]);
+		
 }
-
-$html->set_body('</select></form>');
-
-// now generate calendar, the peer_name_id is hard-coded - this avoids of displaying chats with no-username
-$db->get_user_stats_calendar($mo, IGNORE_ID);
-$result_for_days = $db->result;
-
-$i=0;
-// days
-foreach($result_for_days as $result) {
-
-	$i++;
-	$days[$i] = str_replace("-","",$result[days]);
-
-}
-
-list($y,$m) = split("-", $mo);
-$html->set_body(calendar($user_id,$xmpp_host,$y,$m,$days,TOKEN,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,1,$null_a=0,$null_b=0,$cal_days,$enc));
-unset($days);
 
 // if we got day, lets display chats from that day...
 if ($tslice) {
