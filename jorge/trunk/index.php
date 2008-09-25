@@ -269,7 +269,8 @@ $html->set_body('
 		');
 
 // vhost support
-if (count($vhosts>1)) {
+$vhost_count = count($vhosts);
+if ($vhost_count>1) {
 
 		$html->set_body('<select name="vhost">
 				<option value="null">'.$vhost_select[$lang].'</option>
@@ -301,7 +302,7 @@ if (count($vhosts>1)) {
 	else{
 
 		// There is only one vhost configured, so do not display select box
-		$html->set_body('@'.key($vhosts));
+		$html->set_body('@'.key($vhosts).'<input type="hidden" name="vhost" value="'.key($vhosts).'">');
 
 }
 		
