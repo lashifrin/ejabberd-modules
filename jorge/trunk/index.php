@@ -29,12 +29,12 @@ if ($sess->get('uid_l')) {
 
 	if ($sess->get('view_type') == "1") { 
 
-#			header ("Location: main.php");
+			header ("Location: main.php");
 
 		}
 		else {
 
-#			header ("Location: calendar_view.php");
+			header ("Location: calendar_view.php");
 	
 	}
 
