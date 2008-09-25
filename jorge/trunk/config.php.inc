@@ -42,6 +42,23 @@ $vhosts = array(
 			
 			);
 
+// array of admins for domain
+$vhosts_admins = array(
+
+	"jabber.example.com"=> array("admin1","admin2","admin3"),
+	"jabber.example.eu"=> array("admin10","admin20")
+
+	);
+
+// ignore_id per vhost, - this is _REQUIRED_, to find out empty user_id perform: select user_id from `logdb_users_YOUR_XMPP_HOST` where username='', after running mod_logdb on the server, if you dont
+// have an empty user_id, write whatever to any transport - then mod_logdb will generate that user_id. IgnoreID is simply used for filtering contacts without name (transports, etc..)
+$vhost_ignore = array(
+
+	"jabber.example.com"=>"9",
+	"jabber.example.eu"=>"5"
+
+	);
+
 // MySQL database where mod_logdb is running on:
 define("MYSQL_USER", ""); // username
 define("MYSQL_PASS", ""); // password
@@ -57,9 +74,6 @@ define("GAPPS_DOMAIN","");
 // Since version 1.5 Jorge is using reCAPTCHA code. Before running Jorge please go to: http://recaptcha.net/ and setup your account and get private key and public key:
 define("CAPTCHA_PRIVATE","");
 define("CAPTCHA_PUBLIC","");
-
-// admin name (only name - without domain name):
-define("ADMIN_NAME","");
 
 // secret key for scrambling URLs. Put here some random data (32 chars):
 define("ENC_KEY","PleaseChangeMe");
@@ -85,8 +99,5 @@ $copy = "jabster.pl &copy; 2008";
 
 // custom logo
 $brand_logo = "logo_jabster.png";
-
-// ignore this ID in queries - this is ID of user without name. see your users table for ID of this user and define it here (it is must)
-$ignore_id="";
 
 ?>

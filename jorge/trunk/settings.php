@@ -226,7 +226,7 @@ if ($total_messages=="f") {
 }
 $html->set_body('<p style="font-size: x-small;">'.$stats_personal[$lang].'<b> '.$total_messages.'</b></p><small><b>'.$stats_personal_top[$lang].'</b></small><br><br>');
 
-$top_ten_personal=do_sel("select peer_name_id,peer_server_id,at,count from `logdb_stats_$xmpp_host` where owner_id='$user_id' and peer_name_id!='$ignore_id' and ext is NULL order by count desc limit 10");
+$top_ten_personal=do_sel("select peer_name_id,peer_server_id,at,count from `logdb_stats_$xmpp_host` where owner_id='$user_id' and peer_name_id!='".IGNORE_ID."' and ext is NULL order by count desc limit 10");
 if (mysql_num_rows($top_ten_personal)!=0) {
 
 		$html->set_body('<table bgcolor="#ffffff" class="ff" cellspacing="0" cellpadding="3">

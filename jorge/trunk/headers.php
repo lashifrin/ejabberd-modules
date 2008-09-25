@@ -153,6 +153,16 @@ if (!preg_match("/index.php/i",$location)) {
 
 }
 
+// check if user have admin rights
+if (in_array(TOKEN, $vhosts_admins[XMPP_HOST]) === true) {
+
+	define(ADMIN_NAME,TOKEN);
+
+}
+
+// define ignore id - see config.php.inc
+define(IGNORE_ID,$vhost_ignore[XMPP_HOST]);
+
 // run only for admins
 if (TOKEN===ADMIN_NAME) {
 

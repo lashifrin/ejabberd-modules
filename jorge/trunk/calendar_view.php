@@ -205,7 +205,7 @@ foreach($ch_mo as $result) {
 $html->set_body('</select></form>');
 
 // now generate calendar, the peer_name_id is hard-coded - this avoids of displaying chats with no-username
-$db->get_user_stats_calendar($mo,$ignore_id);
+$db->get_user_stats_calendar($mo, IGNORE_ID);
 $result_for_days = $db->result;
 
 $i=0;
