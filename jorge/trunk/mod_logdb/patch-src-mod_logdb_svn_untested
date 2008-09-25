@@ -1,18 +1,17 @@
---- mod_logdb.erl.orig	2008-07-03 11:52:11.000000000 +0300
-+++ mod_logdb.erl	2008-06-27 22:47:27.000000000 +0300
-@@ -0,0 +1,1702 @@
+--- mod_logdb.erl.orig	2008-09-25 10:22:50.000000000 +0300
++++ mod_logdb.erl	2008-09-25 10:05:14.000000000 +0300
+@@ -0,0 +1,2067 @@
 +%%%----------------------------------------------------------------------
 +%%% File    : mod_logdb.erl
 +%%% Author  : Oleg Palij (mailto:o.palij@gmail.com xmpp://malik@jabber.te.ua)
 +%%% Purpose : Frontend for log user messages to db
 +%%% Version : trunk
-+%%% Id      : $Id: mod_logdb.erl 1065 2008-05-30 08:47:22Z malik $
++%%% Id      : $Id: mod_logdb.erl 1171 2008-09-17 17:02:54Z malik $
 +%%% Url     : http://www.dp.uz.gov.ua/o.palij/mod_logdb/
 +%%%----------------------------------------------------------------------
 +
 +-module(mod_logdb).
 +-author('o.palij@gmail.com').
-+-vsn('$Revision: 1065 $').
 +
 +-behaviour(gen_server).
 +-behaviour(gen_mod).
@@ -52,12 +51,24 @@
 +         list_to_string/1, string_to_list/1,
 +         get_module_settings/1, set_module_settings/2,
 +         purge_old_records/2]).
++% webadmin hooks
++-export([webadmin_menu/3,
++         webadmin_user/4,
++         webadmin_page/3,
++         user_parse_query/5]).
++% webadmin queries
++-export([vhost_messages_stats/3,
++         vhost_messages_stats_at/4,
++         user_messages_stats/4,
++         user_messages_stats_at/5]).
 +
 +-include("mod_logdb.hrl").
 +-include("ejabberd.hrl").
 +-include("jlib.hrl").
 +-include("ejabberd_ctl.hrl").
 +-include("adhoc.hrl").
++-include("web/ejabberd_web_admin.hrl").
++-include("web/ejabberd_http.hrl").
 +
 +-define(PROCNAME, ejabberd_mod_logdb).
 +% gen_server call timeout
@@ -137,6 +148,11 @@
 +    ejabberd_hooks:delete(disco_local_identity, VHost, ?MODULE, get_local_identity, 110),
 +    ejabberd_hooks:delete(disco_local_features, VHost, ?MODULE, get_local_features, 110),
 +    ejabberd_hooks:delete(disco_local_items, VHost, ?MODULE, get_local_items, 110),
++
++    ejabberd_hooks:delete(webadmin_menu_host, VHost, ?MODULE, webadmin_menu, 70),
++    ejabberd_hooks:delete(webadmin_user, VHost, ?MODULE, webadmin_user, 50),
++    ejabberd_hooks:delete(webadmin_page_host, VHost, ?MODULE, webadmin_page, 50),
++    ejabberd_hooks:delete(webadmin_user_parse_query, VHost, ?MODULE, user_parse_query, 50),
 +
 +    ?MYDEBUG("Removed hooks for ~p", [VHost]),
 +
@@ -342,7 +358,7 @@
 +           DBMod:stop(VHost),
 +           {stop, already_started, State};
 +         {error, Reason} ->
-+           timer:sleep(5000),
++           timer:sleep(30000),
 +           ?ERROR_MSG("Failed to start: ~p", [Reason]),
 +           {stop, db_connection_failed, State};
 +         {ok, SPid} ->
@@ -372,6 +388,11 @@
 +           ejabberd_hooks:add(adhoc_local_commands, VHost, ?MODULE, adhoc_local_commands, 110),
 +           %ejabberd_hooks:add(adhoc_sm_items, VHost, ?MODULE, adhoc_sm_items, 110),
 +           %ejabberd_hooks:add(adhoc_sm_commands, VHost, ?MODULE, adhoc_sm_commands, 110),
++
++           ejabberd_hooks:add(webadmin_menu_host, VHost, ?MODULE, webadmin_menu, 70),
++           ejabberd_hooks:add(webadmin_user, VHost, ?MODULE, webadmin_user, 50),
++           ejabberd_hooks:add(webadmin_page_host, VHost, ?MODULE, webadmin_page, 50),
++           ejabberd_hooks:add(webadmin_user_parse_query, VHost, ?MODULE, user_parse_query, 50),
 +
 +           ?MYDEBUG("Added hooks for ~p", [VHost]),
 +
@@ -1703,15 +1724,359 @@
 +                              end, lists:seq(1, N, M))
 +            end
 +    end.
---- mod_logdb.hrl.orig	2008-07-03 11:52:11.000000000 +0300
-+++ mod_logdb.hrl	2007-08-07 16:50:32.000000000 +0300
-@@ -0,0 +1,29 @@
++
++%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
++%
++% webadmin hooks
++%
++%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
++webadmin_menu(Acc, _Host, Lang) ->
++    [{"messages", ?T("Users Messages")} | Acc].
++
++webadmin_user(Acc, User, Server, Lang) ->
++    Sett = get_user_settings(User, Server),
++    Log =
++      case Sett#user_settings.dolog_default of
++           false ->
++              ?INPUTT("submit", "dolog", "Log Messages");
++           true ->
++              ?INPUTT("submit", "donotlog", "Do Not Log Messages");
++           _ -> []
++      end,
++    Acc ++ [?XE("h3", [?ACT("messages/", "Messages"), ?C(" "), Log])].
++
++webadmin_page(_, Host,
++              #request{path = ["messages"],
++                       q = Query,
++                       lang = Lang}) when is_list(Host) ->
++    Res = vhost_messages_stats(Host, Query, Lang),
++    {stop, Res};
++webadmin_page(_, Host,
++              #request{path = ["messages", Date],
++                       q = Query,
++                       lang = Lang}) when is_list(Host) ->
++    Res = vhost_messages_stats_at(Host, Query, Lang, Date),
++    {stop, Res};
++webadmin_page(_, Host,
++              #request{path = ["user", U, "messages"],
++                       q = Query,
++                       lang = Lang}) ->
++    Res = user_messages_stats(U, Host, Query, Lang),
++    {stop, Res};
++webadmin_page(_, Host,
++              #request{path = ["user", U, "messages", Date],
++                       q = Query,
++                       lang = Lang}) ->
++    Res = mod_logdb:user_messages_stats_at(U, Host, Query, Lang, Date),
++    {stop, Res};
++webadmin_page(Acc, _, _) -> Acc.
++
++user_parse_query(_, "dolog", User, Server, _Query) ->
++    Sett = get_user_settings(User, Server),
++    % TODO: check returned value
++    set_user_settings(User, Server, Sett#user_settings{dolog_default=true}),
++    {stop, ok};
++user_parse_query(_, "donotlog", User, Server, _Query) ->
++    Sett = get_user_settings(User, Server),
++    % TODO: check returned value
++    set_user_settings(User, Server, Sett#user_settings{dolog_default=false}),
++    {stop, ok};
++user_parse_query(Acc, _Action, _User, _Server, _Query) ->
++    ?INFO_MSG("Returning ~p", [Acc]),
++    Acc.
++
++%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
++%
++% webadmin funcs
++%
++%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
++vhost_messages_stats(Server, Query, Lang) ->
++    Res = case catch vhost_messages_parse_query(Server, Query) of
++                     {'EXIT', Reason} ->
++                         ?ERROR_MSG("~p", [Reason]),
++                         error;
++                     VResult -> VResult
++          end,
++    {Time, Value} = timer:tc(mod_logdb, get_vhost_stats, [Server]),
++    ?INFO_MSG("get_vhost_stats(~p) elapsed ~p sec", [Server, Time/1000000]),
++    %case get_vhost_stats(Server) of
++    case Value of
++         {'EXIT', CReason} ->
++              ?ERROR_MSG("Failed to get_vhost_stats: ~p", [CReason]),
++              [?XC("h1", ?T("Error occupied while fetching list"))];
++         {error, GReason} ->
++              ?ERROR_MSG("Failed to get_vhost_stats: ~p", [GReason]),
++              [?XC("h1", ?T("Error occupied while fetching list"))];
++         {ok, []} ->
++              [?XC("h1", ?T("No logged messages for ") ++ Server)];
++         {ok, Dates} ->
++              Fun = fun({Date, Count}) ->
++                         ID = jlib:encode_base64(binary_to_list(term_to_binary(Server++Date))),
++                         ?XE("tr",
++                          [?XE("td", [?INPUT("checkbox", "selected", ID)]),
++                           ?XE("td", [?AC(Date, Date)]),
++                           ?XC("td", integer_to_list(Count))
++                          ])
++                    end,
++              [?XC("h1", ?T("Logged messages for ") ++ Server)] ++
++               case Res of
++                    ok -> [?CT("Submitted"), ?P];
++                    error -> [?CT("Bad format"), ?P];
++                    nothing -> []
++               end ++
++               [?XAE("form", [{"action", ""}, {"method", "post"}],
++                [?XE("table",
++                 [?XE("thead",
++                  [?XE("tr",
++                   [?X("td"),
++                    ?XCT("td", "Date"),
++                    ?XCT("td", "Count")
++                   ])]),
++                  ?XE("tbody",
++                      lists:map(Fun, Dates)
++                     )]),
++                  ?BR,
++                  ?INPUTT("submit", "delete", "Delete Selected")
++                ])]
++   end.
++
++vhost_messages_stats_at(Server, Query, Lang, Date) ->
++   {Time, Value} = timer:tc(mod_logdb, get_vhost_stats_at, [Server, Date]),
++   ?INFO_MSG("get_vhost_stats_at(~p,~p) elapsed ~p sec", [Server, Date, Time/1000000]),
++   %case get_vhost_stats_at(Server, Date) of
++   case Value of
++        {'EXIT', CReason} ->
++             ?ERROR_MSG("Failed to get_vhost_stats_at: ~p", [CReason]),
++             [?XC("h1", ?T("Error occupied while fetching list"))];
++        {error, GReason} ->
++             ?ERROR_MSG("Failed to get_vhost_stats_at: ~p", [GReason]),
++             [?XC("h1", ?T("Error occupied while fetching list"))];
++        {ok, []} ->
++             [?XC("h1", ?T("No logged messages for ") ++ Server ++ ?T(" at ") ++ Date)];
++        {ok, Users} ->
++             Res = case catch vhost_messages_at_parse_query(Server, Date, Users, Query) of
++                        {'EXIT', Reason} ->
++                            ?ERROR_MSG("~p", [Reason]),
++                            error;
++                        VResult -> VResult
++                   end,
++             Fun = fun({User, Count}) ->
++                         ID = jlib:encode_base64(binary_to_list(term_to_binary(User++Server))),
++                         ?XE("tr",
++                          [?XE("td", [?INPUT("checkbox", "selected", ID)]),
++                           ?XE("td", [?AC("../user/"++User++"/messages/"++Date, User)]),
++                           ?XC("td", integer_to_list(Count))
++                          ])
++                   end,
++             [?XC("h1", ?T("Logged messages for ") ++ Server ++ ?T(" at ") ++ Date)] ++
++              case Res of
++                    ok -> [?CT("Submitted"), ?P];
++                    error -> [?CT("Bad format"), ?P];
++                    nothing -> []
++              end ++
++              [?XAE("form", [{"action", ""}, {"method", "post"}],
++                [?XE("table",
++                 [?XE("thead",
++                  [?XE("tr",
++                   [?X("td"),
++                    ?XCT("td", "User"),
++                    ?XCT("td", "Count")
++                   ])]),
++                  ?XE("tbody",
++                      lists:map(Fun, Users)
++                     )]),
++                  ?BR,
++                  ?INPUTT("submit", "delete", "Delete Selected")
++                ])]
++   end.
++
++user_messages_stats(User, Server, Query, Lang) ->
++    Jid = jlib:jid_to_string({User, Server, ""}),
++
++    Res = case catch user_messages_parse_query(User, Server, Query) of
++               {'EXIT', Reason} ->
++                    ?ERROR_MSG("~p", [Reason]),
++                    error;
++               VResult -> VResult
++          end,
++
++   {Time, Value} = timer:tc(mod_logdb, get_user_stats, [User, Server]),
++   ?INFO_MSG("get_user_stats(~p,~p) elapsed ~p sec", [User, Server, Time/1000000]),
++
++   case Value of
++        {'EXIT', CReason} ->
++            ?ERROR_MSG("Failed to get_user_stats: ~p", [CReason]),
++            [?XC("h1", ?T("Error occupied while fetching days"))];
++        {error, GReason} ->
++            ?ERROR_MSG("Failed to get_user_stats: ~p", [GReason]),
++            [?XC("h1", ?T("Error occupied while fetching days"))];
++        {ok, []} ->
++            [?XC("h1", ?T("No logged messages for ") ++ Jid)];
++        {ok, Dates} ->
++            Fun = fun({Date, Count}) ->
++                      ID = jlib:encode_base64(binary_to_list(term_to_binary(User++Date))),
++                      ?XE("tr",
++                       [?XE("td", [?INPUT("checkbox", "selected", ID)]),
++                        ?XE("td", [?AC(Date, Date)]),
++                        ?XC("td", integer_to_list(Count))
++                       ])
++                       %[?AC(Date, Date ++ " (" ++ integer_to_list(Count) ++ ")"), ?BR]
++                  end,
++            [?XC("h1", ?T("Logged messages for ") ++ Jid)] ++
++             case Res of
++                   ok -> [?CT("Submitted"), ?P];
++                   error -> [?CT("Bad format"), ?P];
++                   nothing -> []
++             end ++
++             [?XAE("form", [{"action", ""}, {"method", "post"}],
++              [?XE("table",
++               [?XE("thead",
++                [?XE("tr",
++                 [?X("td"),
++                  ?XCT("td", "Date"),
++                  ?XCT("td", "Count")
++                 ])]),
++                ?XE("tbody",
++                    lists:map(Fun, Dates)
++                   )]),
++                ?BR,
++                ?INPUTT("submit", "delete", "Delete Selected")
++              ])]
++    end.
++
++user_messages_stats_at(User, Server, Query, Lang, Date) ->
++   Jid = jlib:jid_to_string({User, Server, ""}),
++
++   {Time, Value} = timer:tc(mod_logdb, get_user_messages_at, [User, Server, Date]),
++   ?INFO_MSG("get_user_messages_at(~p,~p,~p) elapsed ~p sec", [User, Server, Date, Time/1000000]),
++   case Value of
++        {'EXIT', CReason} ->
++           ?ERROR_MSG("Failed to get_user_messages_at: ~p", [CReason]),
++           [?XC("h1", ?T("Error occupied while fetching messages"))];
++        {error, GReason} ->
++           ?ERROR_MSG("Failed to get_user_messages_at: ~p", [GReason]),
++           [?XC("h1", ?T("Error occupied while fetching messages"))];
++        {ok, []} ->
++           [?XC("h1", ?T("No logged messages for ") ++ Jid ++ ?T(" at ") ++ Date)];
++        {ok, User_messages} ->
++           Res =  case catch user_messages_at_parse_query(Server,
++                                                                    Date,
++                                                                    User_messages,
++                                                                    Query) of
++                       {'EXIT', Reason} ->
++                            ?ERROR_MSG("~p", [Reason]),
++                            error;
++                       VResult -> VResult
++                  end,
++
++           UniqUsers = lists:foldl(fun(#msg{peer_name=PName, peer_server=PServer}, List) ->
++                                 case lists:member(PName++"@"++PServer, List) of
++                                      true -> List;
++                                      false -> lists:append([PName++"@"++PServer], List)
++                                 end
++                               end, [], User_messages),
++
++           % Users to filter (sublist of UniqUsers)
++           CheckedUsers = case lists:keysearch("filter", 1, Query) of
++                           {value, _} ->
++                              lists:filter(fun(UFUser) ->
++                                                ID = jlib:encode_base64(binary_to_list(term_to_binary(UFUser))),
++                                                lists:member({"selected", ID}, Query)
++                                           end, UniqUsers);
++                           false -> []
++                         end,
++
++           % UniqUsers in html (noone selected -> everyone selected)
++           Users = lists:map(fun(UHUser) ->
++                                ID = jlib:encode_base64(binary_to_list(term_to_binary(UHUser))),
++                                Input = case lists:member(UHUser, CheckedUsers) of
++                                         true -> [?INPUTC("checkbox", "selected", ID)];
++                                         false when CheckedUsers == [] -> [?INPUTC("checkbox", "selected", ID)];
++                                         false -> [?INPUT("checkbox", "selected", ID)]
++                                        end,
++                                ?XE("tr",
++                                 [?XE("td", Input),
++                                  ?XC("td", UHUser)])
++                             end, lists:sort(UniqUsers)),
++           % Messages to show (based on Users)
++           User_messages_filtered = case CheckedUsers of
++                                         [] -> User_messages;
++                                         _  -> lists:filter(fun(#msg{peer_name=PName, peer_server=PServer}) ->
++                                                  lists:member(PName++"@"++PServer, CheckedUsers)
++                                               end, User_messages)
++                                    end,
++
++           Msgs_Fun = fun(#msg{timestamp=Timestamp,
++                               subject=Subject,
++                               direction=Direction,
++                               peer_name=PName, peer_server=PServer, peer_resource=PRes,
++                               body=Body}) ->
++                      TextRaw = case Subject of
++                                     "" -> Body;
++                                     _ -> [?T("Subject"),": ",Subject,"<br>", Body]
++                                end,
++                      ID = jlib:encode_base64(binary_to_list(term_to_binary(Timestamp))),
++                      % replace \n with <br>
++                      Text = lists:map(fun(10) -> "<br>";
++                                           (A) -> A
++                                        end, TextRaw),
++                      Resource = case PRes of
++                                      [] -> [];
++                                      undefined -> [];
++                                      R -> "/" ++ R
++                                 end,
++                      ?XE("tr",
++                       [?XE("td", [?INPUT("checkbox", "selected", ID)]),
++                        ?XC("td", convert_timestamp(Timestamp)),
++                        ?XC("td", atom_to_list(Direction)++": "++PName++"@"++PServer++Resource),
++                        ?XC("td", Text)])
++                 end,
++           % Filtered user messages in html
++           Msgs = lists:map(Msgs_Fun, lists:sort(User_messages_filtered)),
++
++           [?XC("h1", ?T("Logged messages for ") ++ Jid ++ ?T(" at ") ++ Date)] ++
++            case Res of
++                 ok -> [?CT("Submitted"), ?P];
++                 error -> [?CT("Bad format"), ?P];
++                 nothing -> []
++            end ++
++            [?XAE("form", [{"action", ""}, {"method", "post"}],
++             [?XE("table",
++                  [?XE("thead",
++                       [?X("td"),
++                        ?XCT("td", "User")
++                       ]
++                      ),
++                   ?XE("tbody",
++                        Users
++                      )]),
++              ?INPUTT("submit", "filter", "Filter Selected")
++             ] ++
++             [?XE("table",
++                  [?XE("thead",
++                       [?XE("tr",
++                        [?X("td"),
++                         ?XCT("td", "Date, Time"),
++                         ?XCT("td", "Direction: Jid"),
++                         ?XCT("td", "Body")
++                        ])]),
++                   ?XE("tbody",
++                        Msgs
++                      )]),
++              ?INPUTT("submit", "delete", "Delete Selected"),
++              ?BR
++             ]
++            )]
++    end.
+--- mod_logdb.hrl.orig	2008-09-25 10:22:50.000000000 +0300
++++ mod_logdb.hrl	2008-09-15 14:12:08.000000000 +0300
+@@ -0,0 +1,35 @@
 +%%%----------------------------------------------------------------------
 +%%% File    : mod_logdb.hrl
 +%%% Author  : Oleg Palij (mailto:o.palij@gmail.com xmpp://malik@jabber.te.ua)
 +%%% Purpose :
 +%%% Version : trunk
-+%%% Id      : $Id: mod_logdb.hrl 838 2007-08-07 13:50:32Z malik $
++%%% Id      : $Id: mod_logdb.hrl 1163 2008-09-15 11:12:08Z malik $
 +%%% Url     : http://www.dp.uz.gov.ua/o.palij/mod_logdb/
 +%%%----------------------------------------------------------------------
 +
@@ -1735,21 +2100,26 @@
 +                        dolog_default,
 +                        dolog_list=[],
 +                        donotlog_list=[]}).
---- mod_logdb_mnesia.erl.orig	2008-07-03 11:52:11.000000000 +0300
-+++ mod_logdb_mnesia.erl	2008-06-27 17:21:59.000000000 +0300
-@@ -0,0 +1,547 @@
++
++-define(INPUTC(Type, Name, Value),
++        ?XA("input", [{"type", Type},
++                      {"name", Name},
++                      {"value", Value},
++                      {"checked", "true"}])).
+--- mod_logdb_mnesia.erl.orig	2008-09-25 10:22:50.000000000 +0300
++++ mod_logdb_mnesia.erl	2008-09-16 15:14:37.000000000 +0300
+@@ -0,0 +1,546 @@
 +%%%----------------------------------------------------------------------
 +%%% File    : mod_logdb_mnesia.erl
 +%%% Author  : Oleg Palij (mailto:o.palij@gmail.com xmpp://malik@jabber.te.ua)
 +%%% Purpose : mnesia backend for mod_logdb
 +%%% Version : trunk
-+%%% Id      : $Id: mod_logdb_mnesia.erl 1070 2008-06-27 14:21:58Z malik $
++%%% Id      : $Id: mod_logdb_mnesia.erl 1169 2008-09-16 12:14:36Z malik $
 +%%% Url     : http://www.dp.uz.gov.ua/o.palij/mod_logdb/
 +%%%----------------------------------------------------------------------
 +
 +-module(mod_logdb_mnesia).
 +-author('o.palij@gmail.com').
-+-vsn('$Revision: 1070 $').
 +
 +-include("mod_logdb.hrl").
 +-include("ejabberd.hrl").
@@ -2285,21 +2655,20 @@
 +               {type, bag},
 +               {attributes, record_info(fields, msg)},
 +               {record_name, msg}]).
---- mod_logdb_mysql.erl.orig	2008-07-03 11:52:11.000000000 +0300
-+++ mod_logdb_mysql.erl	2008-07-03 11:47:53.000000000 +0300
-@@ -0,0 +1,1000 @@
+--- mod_logdb_mysql.erl.orig	2008-09-25 10:22:50.000000000 +0300
++++ mod_logdb_mysql.erl	2008-09-16 15:14:37.000000000 +0300
+@@ -0,0 +1,999 @@
 +%%%----------------------------------------------------------------------
 +%%% File    : mod_logdb_mysql.erl
 +%%% Author  : Oleg Palij (mailto:o.palij@gmail.com xmpp://malik@jabber.te.ua)
 +%%% Purpose : MySQL backend for mod_logdb
 +%%% Version : trunk
-+%%% Id      : $Id: mod_logdb_mysql.erl 1075 2008-07-01 13:18:18Z malik $
++%%% Id      : $Id: mod_logdb_mysql.erl 1169 2008-09-16 12:14:36Z malik $
 +%%% Url     : http://www.dp.uz.gov.ua/o.palij/mod_logdb/
 +%%%----------------------------------------------------------------------
 +
 +-module(mod_logdb_mysql).
 +-author('o.palij@gmail.com').
-+-vsn('$Revision: 1075 $').
 +
 +-include("mod_logdb.hrl").
 +-include("ejabberd.hrl").
@@ -3288,21 +3657,20 @@
 +get_result({error, MySQLRes}) ->
 +    Reason = mysql:get_result_reason(MySQLRes),
 +    {error, Reason}.
---- mod_logdb_mysql5.erl.orig	2008-07-03 11:52:11.000000000 +0300
-+++ mod_logdb_mysql5.erl	2008-07-03 11:47:36.000000000 +0300
-@@ -0,0 +1,921 @@
+--- mod_logdb_mysql5.erl.orig	2008-09-25 10:22:50.000000000 +0300
++++ mod_logdb_mysql5.erl	2008-09-25 10:09:34.000000000 +0300
+@@ -0,0 +1,924 @@
 +%%%----------------------------------------------------------------------
 +%%% File    : mod_logdb_mysql5.erl
 +%%% Author  : Oleg Palij (mailto:o.palij@gmail.com xmpp://malik@jabber.te.ua)
 +%%% Purpose : MySQL 5 backend for mod_logdb
 +%%% Version : trunk
-+%%% Id      : $Id: mod_logdb_mysql5.erl 1074 2008-07-01 13:18:06Z malik $
++%%% Id      : $Id: mod_logdb_mysql5.erl 1169 2008-09-16 12:14:36Z malik $
 +%%% Url     : http://www.dp.uz.gov.ua/o.palij/mod_logdb/
 +%%%----------------------------------------------------------------------
 +
 +-module(mod_logdb_mysql5).
 +-author('o.palij@gmail.com').
-+-vsn('$Revision: 1074 $').
 +
 +-include("mod_logdb.hrl").
 +-include("ejabberd.hrl").
@@ -3369,6 +3737,9 @@
 +resources_table(VHost) ->
 +   prefix() ++ "resources" ++ suffix(VHost).
 +
++logmessage_name(VHost) ->
++   prefix() ++ "logmessage" ++ suffix(VHost).
++
 +%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 +%
 +% gen_mod callbacks
@@ -3423,7 +3794,7 @@
 +    Date = convert_timestamp_brief(Msg#msg.timestamp),
 +    TableName = messages_table(VHost, Date),
 +
-+    Query = [ "CALL logmessage "
++    Query = [ "CALL ",logmessage_name(VHost)," "
 +                 "('", TableName, "',",
 +                  "'", Date, "',",
 +                  "'", Msg#msg.owner_name, "',",
@@ -3799,6 +4170,7 @@
 +                case sql_query_internal(DBRef, SQuery) of
 +                     {updated, 0} ->
 +                         {updated, _} = sql_query_internal(DBRef, ["DROP TABLE ",Table,";"]),
++                         {updated, _} = sql_query_internal(DBRef, ["DROP VIEW IF EXISTS ",view_table(VHost,Date),";"]),
 +                         ok;
 +                     {updated, _} -> ok;
 +                     {error, _} -> error
@@ -3996,7 +4368,7 @@
 +    end.
 +
 +create_internals(DBRef, VHost) ->
-+    sql_query_internal(DBRef, ["DROP PROCEDURE IF EXISTS `logmessage`;"]),
++    sql_query_internal(DBRef, ["DROP PROCEDURE IF EXISTS ",logmessage_name(VHost),";"]),
 +    case sql_query_internal(DBRef, [get_logmessage(VHost)]) of
 +         {updated, _} ->
 +            ?MYDEBUG("Created logmessage for ~p", [VHost]),
@@ -4091,7 +4463,7 @@
 +    RName = resources_table(VHost),
 +    StName = stats_table(VHost),
 +    io_lib:format("
-+CREATE PROCEDURE logmessage(tablename TEXT, atdate TEXT, owner TEXT, peer_name TEXT, peer_server TEXT, peer_resource TEXT, mdirection VARCHAR(4), mtype VARCHAR(10), msubject TEXT, mbody TEXT, mtimestamp DOUBLE)
++CREATE PROCEDURE ~s(tablename TEXT, atdate TEXT, owner TEXT, peer_name TEXT, peer_server TEXT, peer_resource TEXT, mdirection VARCHAR(4), mtype VARCHAR(10), msubject TEXT, mbody TEXT, mtimestamp DOUBLE)
 +BEGIN
 +   DECLARE ownerID MEDIUMINT UNSIGNED; 
 +   DECLARE peer_nameID MEDIUMINT UNSIGNED;
@@ -4211,22 +4583,21 @@
 +         INSERT INTO ~s (owner_id, peer_name_id, peer_server_id, at, count) VALUES (@ownerID, @peer_nameID, @peer_serverID, atdate, 1);
 +      END IF;
 +   END IF;
-+END;", [UName,UName,UName,UName,SName,SName,RName,RName,UName,UName,SName,RName,StName,StName]).
---- mod_logdb_pgsql.erl.orig	2008-07-03 11:52:11.000000000 +0300
-+++ mod_logdb_pgsql.erl	2008-07-03 11:36:46.000000000 +0300
-@@ -0,0 +1,990 @@
++END;", [logmessage_name(VHost),UName,UName,UName,UName,SName,SName,RName,RName,UName,UName,SName,RName,StName,StName]).
+--- mod_logdb_pgsql.erl.orig	2008-09-25 10:22:50.000000000 +0300
++++ mod_logdb_pgsql.erl	2008-09-25 10:16:13.000000000 +0300
+@@ -0,0 +1,993 @@
 +%%%----------------------------------------------------------------------
 +%%% File    : mod_logdb_pgsql.erl
 +%%% Author  : Oleg Palij (mailto:o.palij@gmail.com xmpp://malik@jabber.te.ua)
 +%%% Purpose : Posgresql backend for mod_logdb
 +%%% Version : trunk
-+%%% Id      : $Id: mod_logdb_pgsql.erl 1067 2008-06-27 13:01:05Z malik $
++%%% Id      : $Id: mod_logdb_pgsql.erl 1169 2008-09-16 12:14:36Z malik $
 +%%% Url     : http://www.dp.uz.gov.ua/o.palij/mod_logdb/
 +%%%----------------------------------------------------------------------
 +
 +-module(mod_logdb_pgsql).
 +-author('o.palij@gmail.com').
-+-vsn('$Revision: 1067 $').
 +
 +-include("mod_logdb.hrl").
 +-include("ejabberd.hrl").
@@ -4293,6 +4664,9 @@
 +resources_table(VHost, Schema) ->
 +   prefix(Schema) ++ "resources" ++ suffix(VHost).
 +
++logmessage_name(VHost, Schema) ->
++   prefix(Schema) ++ "logmessage" ++ suffix(VHost).
++
 +%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 +%
 +% gen_mod callbacks
@@ -4325,7 +4699,7 @@
 +   Password = gen_mod:get_opt(password, Opts, ""),
 +   Schema = gen_mod:get_opt(schema, Opts, "public"),
 +
-+   ?MYDEBUG("Starting pgsql backend", []),
++   ?MYDEBUG("Starting pgsql backend for ~p", [VHost]),
 +
 +   case catch pgsql:connect(Server, DB, User, Password, Port) of
 +       {ok, DBRef} ->
@@ -4352,7 +4726,7 @@
 +    Date = convert_timestamp_brief(Msg#msg.timestamp),
 +    TableName = messages_table(VHost, Schema, Date),
 +
-+    Query = [ "SELECT logmessage "
++    Query = [ "SELECT ",logmessage_name(VHost, Schema)," "
 +                 "('", TableName, "',",
 +                  "'", Date, "',",
 +                  "'", Msg#msg.owner_name, "',",
@@ -4732,6 +5106,7 @@
 +       case sql_query_internal(DBRef, SQuery) of
 +            {updated, 0} ->
 +                {updated, _} = sql_query_internal(DBRef, ["DROP TABLE ",Table," CASCADE;"]),
++                {updated, _} = sql_query_internal(DBRef, ["DROP VIEW ",view_table(VHost, Schema, Date),";"]),
 +                ok;
 +            {updated, _} -> ok;
 +            {error, _} -> error
@@ -5033,7 +5408,7 @@
 +    SName = servers_table(VHost,Schema),
 +    RName = resources_table(VHost,Schema),
 +    StName = stats_table(VHost,Schema),
-+    io_lib:format("CREATE OR REPLACE FUNCTION \"logmessage\" (tbname TEXT, atdt TEXT, owner TEXT, peer_name TEXT, peer_server TEXT, peer_resource TEXT, mdirection VARCHAR(4), mtype VARCHAR(9), msubj TEXT, mbody TEXT, mtimestamp DOUBLE PRECISION) RETURNS INTEGER AS $$
++    io_lib:format("CREATE OR REPLACE FUNCTION ~s (tbname TEXT, atdt TEXT, owner TEXT, peer_name TEXT, peer_server TEXT, peer_resource TEXT, mdirection VARCHAR(4), mtype VARCHAR(9), msubj TEXT, mbody TEXT, mtimestamp DOUBLE PRECISION) RETURNS INTEGER AS $$
 +DECLARE
 +   ownerID INTEGER;
 +   peer_nameID INTEGER;
@@ -5117,7 +5492,7 @@
 +   RETURN 0;
 +END;
 +$$ LANGUAGE plpgsql;
-+", [UName,UName,UName,UName,SName,SName,RName,RName,Schema,escape_vhost(VHost),Schema,Schema,UName,UName,SName,RName,StName,StName]).
++", [logmessage_name(VHost,Schema),UName,UName,UName,UName,SName,SName,RName,RName,Schema,escape_vhost(VHost),Schema,Schema,UName,UName,SName,RName,StName,StName]).
 +
 +%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 +%
@@ -5205,21 +5580,20 @@
 +get_result(Rez) ->
 +    {error, undefined, Rez}.
 +
---- mod_logdb_mnesia_old.erl.orig	2008-07-03 11:52:11.000000000 +0300
-+++ mod_logdb_mnesia_old.erl	2008-06-27 16:18:12.000000000 +0300
-@@ -0,0 +1,259 @@
+--- mod_logdb_mnesia_old.erl.orig	2008-09-25 10:22:50.000000000 +0300
++++ mod_logdb_mnesia_old.erl	2008-09-16 15:14:37.000000000 +0300
+@@ -0,0 +1,258 @@
 +%%%----------------------------------------------------------------------
 +%%% File    : mod_logdb_mnesia_old.erl
 +%%% Author  : Oleg Palij (mailto:o.palij@gmail.com xmpp://malik@jabber.te.ua)
 +%%% Purpose : mod_logmnesia backend for mod_logdb (should be used only for copy_tables functionality)
 +%%% Version : trunk
-+%%% Id      : $Id: mod_logdb_mnesia_old.erl 1069 2008-06-27 13:18:12Z malik $
++%%% Id      : $Id: mod_logdb_mnesia_old.erl 1169 2008-09-16 12:14:36Z malik $
 +%%% Url     : http://www.dp.uz.gov.ua/o.palij/mod_logdb/
 +%%%----------------------------------------------------------------------
 +
 +-module(mod_logdb_mnesia_old).
 +-author('o.palij@gmail.com').
-+-vsn('$Revision: 1069 $').
 +
 +-include("ejabberd.hrl").
 +-include("jlib.hrl").
@@ -5467,21 +5841,20 @@
 +             ?ERROR_MSG("Failed to create stats table: ~p", [Reason]),
 +             error
 +    end.
---- gen_logdb.erl.orig	2008-07-03 11:52:11.000000000 +0300
-+++ gen_logdb.erl	2008-04-14 16:08:37.000000000 +0300
-@@ -0,0 +1,165 @@
+--- gen_logdb.erl.orig	2008-09-25 10:22:50.000000000 +0300
++++ gen_logdb.erl	2008-09-16 15:14:37.000000000 +0300
+@@ -0,0 +1,164 @@
 +%%%----------------------------------------------------------------------
 +%%% File    : gen_logdb.erl
 +%%% Author  : Oleg Palij (mailto:o.palij@gmail.com xmpp://malik@jabber.te.ua)
 +%%% Purpose : Describes generic behaviour for mod_logdb backends.
 +%%% Version : trunk
-+%%% Id      : $Id: gen_logdb.erl 995 2008-02-07 14:16:40Z malik $
++%%% Id      : $Id: gen_logdb.erl 1169 2008-09-16 12:14:36Z malik $
 +%%% Url     : http://www.dp.uz.gov.ua/o.palij/mod_logdb/
 +%%%----------------------------------------------------------------------
 +
 +-module(gen_logdb).
 +-author('o.palij@gmail.com').
-+-vsn('$Revision: 995 $').
 +
 +-export([behaviour_info/1]).
 +
@@ -5635,9 +6008,62 @@
 +   ];
 +behaviour_info(_) ->
 +   undefined.
---- mod_muc/mod_muc_room_svn.erl	2007-08-03 11:55:19.000000000 +0300
-+++ mod_muc/mod_muc_room.erl	2007-08-03 14:42:46.000000000 +0300
-@@ -581,6 +581,12 @@
+--- web/ejabberd_web_admin-2.0.2.erl	2008-09-14 22:37:35.000000000 +0300
++++ web/ejabberd_web_admin.erl	2008-09-15 22:37:35.000000000 +0300
+@@ -1515,25 +1515,31 @@
+ 
+ 
+ user_parse_query(User, Server, Query) ->
+-    case lists:keysearch("chpassword", 1, Query) of
+-	{value, _} ->
+-	    case lists:keysearch("password", 1, Query) of
+-		{value, {_, undefined}} ->
+-		    error;
+-		{value, {_, Password}} ->
+-		    ejabberd_auth:set_password(User, Server, Password),
+-		    ok;
+-		_ ->
+-		    error
+-	    end;
+-	_ ->
+-	    case lists:keysearch("removeuser", 1, Query) of
+-		{value, _} ->
+-		    ejabberd_auth:remove_user(User, Server),
+-		    ok;
+-		false ->
+-		    nothing
+-	    end
++    lists:foldl(fun({Action, Value}, Acc) when Acc == nothing ->
++                      user_parse_query1(Action, User, Server, Query);
++                   ({Action, Value}, Acc) ->
++                      Acc
++                end, nothing, Query).
++
++user_parse_query1("password", User, Server, Query) ->
++    nothing;
++user_parse_query1("chpassword", User, Server, Query) ->
++    case lists:keysearch("password", 1, Query) of
++        {value, {_, undefined}} ->
++            error;
++        {value, {_, Password}} ->
++            ejabberd_auth:set_password(User, Server, Password),
++            ok;
++        _ ->
++            error
++    end;
++user_parse_query1("removeuser", User, Server, Query) ->
++    ejabberd_auth:remove_user(User, Server),
++    ok;
++user_parse_query1(Action, User, Server, Query) ->
++    case ejabberd_hooks:run_fold(webadmin_user_parse_query, Server, [], [Action, User, Server, Query]) of
++         [] -> nothing;
++         Res -> Res
+     end.
+ 
+ 
+--- mod_muc/mod_muc_room-2.0.2.erl	2008-09-14 22:38:15.000000000 +0300
++++ mod_muc/mod_muc_room.erl	2008-09-14 22:38:32.000000000 +0300
+@@ -695,6 +695,12 @@
  handle_sync_event({change_config, Config}, _From, StateName, StateData) ->
      {result, [], NSD} = change_config(Config, StateData),
      {reply, {ok, NSD#state.config}, StateName, NSD};
@@ -5650,11 +6076,11 @@
  handle_sync_event(_Event, _From, StateName, StateData) ->
      Reply = ok,
      {reply, Reply, StateName, StateData}.
---- msgs/uk-1.1.4.msg	2007-12-11 14:15:44.000000000 +0200
-+++ msgs/uk.msg	2008-07-03 11:52:11.000000000 +0300
-@@ -372,6 +372,35 @@
- {"ejabberd virtual hosts", "віртуальні хости ejabberd"}.
- {"Host", "Хост"}.
+--- msgs/uk-2.0.2.msg	2008-09-17 20:00:52.000000000 +0300
++++ msgs/uk.msg	2008-09-25 10:22:50.000000000 +0300
+@@ -388,6 +388,35 @@
+ % mod_offline_odbc.erl
+ {"Your contact offline message queue is full. The message has been discarded.", "Черга повідомлень, що не були доставлені, переповнена. Повідомлення не було збережено."}.
  
 +% mod_logdb
 +{"Users Messages", "Повідомлення користувачів"}.
@@ -5688,11 +6114,11 @@
  % Local Variables:
  % mode: erlang
  % End:
---- msgs/ru-1.1.4.msg	2007-12-11 14:15:51.000000000 +0200
-+++ msgs/ru.msg	2008-07-03 11:52:11.000000000 +0300
-@@ -372,6 +372,35 @@
- {"ejabberd virtual hosts", "Виртуальные хосты ejabberd"}.
- {"Host", "Хост"}.
+--- msgs/ru-2.0.2.msg	2008-09-17 19:53:21.000000000 +0300
++++ msgs/ru.msg	2008-09-25 10:22:50.000000000 +0300
+@@ -388,6 +388,35 @@
+ % mod_offline_odbc.erl
+ {"Your contact offline message queue is full. The message has been discarded.", "Очередь недоставленных сообщений Вашего адресата переполнена. Сообщение не было сохранено."}.
  
 +% mod_logdb.erl
 +{"Users Messages", "Сообщения пользователей"}.
@@ -5726,29 +6152,11 @@
  % Local Variables:
  % mode: erlang
  % End:
---- msgs/nl-1.1.4.msg	2007-12-11 14:15:58.000000000 +0200
-+++ msgs/nl.msg	2007-04-26 16:04:49.000000000 +0300
-@@ -331,4 +331,15 @@
- {"Members:", "Groepsleden:"}.
- {"Displayed Groups:", "Weergegeven groepen:"}.
- {"Group ", "Groep "}.
-+{"Users Messages", "Gebruikersberichten"}.
-+{"Date", "Datum"}.
-+{"Count", "Aantal"}.
-+{"Logged messages for ", "Gelogde berichten van "}.
-+{" at ", " op "}.
-+{"No logged messages for ", "Geen gelogde berichten van "}.
-+{"Date, Time", "Datum en tijd"}.
-+{"Direction: Jid", "Richting: Jabber ID"}.
-+{"Subject", "Onderwerp"}.
-+{"Body", "Berichtveld"}.
-+{"Messages", "Berichten"}.
- 
---- msgs/pl-1.1.4.msg	2007-12-11 14:16:04.000000000 +0200
-+++ msgs/pl.msg	2007-09-06 09:52:55.000000000 +0300
-@@ -423,3 +423,27 @@
- % ./mod_muc/mod_muc.erl
- {"ejabberd MUC module\nCopyright (c) 2003-2006 Alexey Shchepin", ""}.
+--- msgs/pl-2.0.2.msg	2008-09-17 19:49:51.000000000 +0300
++++ msgs/pl.msg	2008-09-17 19:50:46.000000000 +0300
+@@ -408,6 +408,31 @@
+ % mod_offline.erl
+ {"Your contact offline message queue is full. The message has been discarded.", "Twoja kolejka wiadomoci offline jest pełna. Wiadomoć została odrzucona."}.
  
 +% mod_logdb
 +{"Users Messages", "Wiadomości użytkownika"}.
@@ -5774,3 +6182,247 @@
 +{"Jids/Domains to ignore", "JID/Domena która ma być ignorowana"}.
 +{"Purge messages older than (days)", "Usuń wiadomości starsze niż (w dniach)"}.
 +{"Poll users settings (seconds)", "Czas aktualizacji preferencji użytkowników (sekundy)"}.
++
+ % Local Variables:
+ % mode: erlang
+ % End:
+--- msgs/nl-2.0.2.msg	2008-09-17 19:51:40.000000000 +0300
++++ msgs/nl.msg	2008-09-17 19:52:20.000000000 +0300
+@@ -379,6 +379,19 @@
+ % mod_proxy65/mod_proxy65_service.erl
+ {"ejabberd SOCKS5 Bytestreams module", "ejabberd SOCKS5 Bytestreams module"}.
+ 
++% mod_logdb
++{"Users Messages", "Gebruikersberichten"}.
++{"Date", "Datum"}.
++{"Count", "Aantal"}.
++{"Logged messages for ", "Gelogde berichten van "}.
++{" at ", " op "}.
++{"No logged messages for ", "Geen gelogde berichten van "}.
++{"Date, Time", "Datum en tijd"}.
++{"Direction: Jid", "Richting: Jabber ID"}.
++{"Subject", "Onderwerp"}.
++{"Body", "Berichtveld"}.
++{"Messages", "Berichten"}.
++
+ % Local Variables:
+ % mode: erlang
+ % End:
+--- ./mod_roster-2.0.2.erl	2008-09-14 23:44:20.000000000 +0300
++++ mod_roster.erl	2008-09-14 23:44:54.000000000 +0300
+@@ -48,7 +48,7 @@
+ -include("mod_roster.hrl").
+ -include("web/ejabberd_http.hrl").
+ -include("web/ejabberd_web_admin.hrl").
+-
++-include("mod_logdb.hrl").
+ 
+ start(Host, Opts) ->
+     IQDisc = gen_mod:get_opt(iqdisc, Opts, one_queue),
+@@ -829,6 +829,14 @@
+     Res = user_roster_parse_query(User, Server, Items1, Query),
+     Items = mnesia:dirty_index_read(roster, US, #roster.us),
+     SItems = lists:sort(Items),
++
++    Settings = case gen_mod:is_loaded(Server, mod_logdb) of
++         true ->
++             mod_logdb:get_user_settings(User, Server);
++         false ->
++             []
++    end,
++
+     FItems =
+ 	case SItems of
+ 	    [] ->
+@@ -876,7 +884,33 @@
+ 					      [?INPUTT("submit",
+ 						       "remove" ++
+ 						       ejabberd_web_admin:term_to_id(R#roster.jid),
+-						       "Remove")])])
++						       "Remove")]),
++                                         case gen_mod:is_loaded(Server, mod_logdb) of
++                                              true ->
++                                                 Peer = jlib:jid_to_string(R#roster.jid),
++                                                 A = lists:member(Peer, Settings#user_settings.dolog_list),
++                                                 B = lists:member(Peer, Settings#user_settings.donotlog_list),
++                                                 {Name, Value} =
++                                                   if
++                                                     A ->
++                                                       {"donotlog", "Do Not Log Messages"};
++                                                     B ->
++                                                       {"dolog", "Log Messages"};
++                                                     Settings#user_settings.dolog_default == true ->
++                                                       {"donotlog", "Do Not Log Messages"};
++                                                     Settings#user_settings.dolog_default == false ->
++                                                       {"dolog", "Log Messages"}
++                                                   end,
++
++                                                 ?XAE("td", [{"class", "valign"}],
++                                                      [?INPUTT("submit",
++                                                               Name ++
++                                                               ejabberd_web_admin:term_to_id(R#roster.jid),
++                                                               Value)]);
++                                              false ->
++                                                 ?X([])
++                                         end
++                                        ])
+ 			    end, SItems))])]
+ 	end,
+     [?XC("h1", ?T("Roster of ") ++ us_to_list(US))] ++
+@@ -958,11 +992,42 @@
+ 						 {"subscription", "remove"}],
+ 						[]}]}}),
+ 			      throw(submitted);
+-			  false ->
+-			      ok
+-		      end
+-
+-	      end
++                          false ->
++                            case lists:keysearch(
++                                   "donotlog" ++ ejabberd_web_admin:term_to_id(JID), 1, Query) of
++                                {value, _} ->
++                                     Peer = jlib:jid_to_string(JID),
++                                     Settings = mod_logdb:get_user_settings(User, Server),
++                                     DNLL = case lists:member(Peer, Settings#user_settings.donotlog_list) of
++                                                 false -> lists:append(Settings#user_settings.donotlog_list, [Peer]);
++                                                 true -> Settings#user_settings.donotlog_list
++                                            end,
++                                     DLL = lists:delete(jlib:jid_to_string(JID), Settings#user_settings.dolog_list),
++                                     Sett = Settings#user_settings{donotlog_list=DNLL, dolog_list=DLL},
++                                     % TODO: check returned value
++                                     ok = mod_logdb:set_user_settings(User, Server, Sett),
++                                     throw(nothing);
++                                false ->
++                                   case lists:keysearch(
++                                          "dolog" ++ ejabberd_web_admin:term_to_id(JID), 1, Query) of
++                                       {value, _} ->
++                                          Peer = jlib:jid_to_string(JID),
++                                          Settings = mod_logdb:get_user_settings(User, Server),
++                                          DLL = case lists:member(Peer, Settings#user_settings.dolog_list) of
++                                                     false -> lists:append(Settings#user_settings.dolog_list, [Peer]);
++                                                     true -> Settings#user_settings.dolog_list
++                                                end,
++                                          DNLL = lists:delete(jlib:jid_to_string(JID), Settings#user_settings.donotlog_list),
++                                          Sett = Settings#user_settings{donotlog_list=DNLL, dolog_list=DLL},
++                                          % TODO: check returned value
++                                          ok = mod_logdb:set_user_settings(User, Server, Sett),
++                                          throw(nothing);
++                                       false ->
++                                           ok
++                                   end % dolog
++                            end % donotlog
++                      end % remove
++              end % validate
+       end, Items),
+     nothing.
+ 
+--- ./mod_roster_odbc-2.0.2.erl	2008-09-14 23:44:27.000000000 +0300
++++ mod_roster_odbc.erl	2008-09-14 23:45:01.000000000 +0300
+@@ -48,7 +48,7 @@
+ -include("mod_roster.hrl").
+ -include("web/ejabberd_http.hrl").
+ -include("web/ejabberd_web_admin.hrl").
+-
++-include("mod_logdb.hrl").
+ 
+ start(Host, Opts) ->
+     IQDisc = gen_mod:get_opt(iqdisc, Opts, one_queue),
+@@ -937,6 +937,14 @@
+     Res = user_roster_parse_query(User, Server, Items1, Query),
+     Items = get_roster(LUser, LServer),
+     SItems = lists:sort(Items),
++
++    Settings = case gen_mod:is_loaded(Server, mod_logdb) of
++         true ->
++             mod_logdb:get_user_settings(User, Server);
++         false ->
++             []
++    end,
++
+     FItems =
+ 	case SItems of
+ 	    [] ->
+@@ -984,7 +992,33 @@
+ 					      [?INPUTT("submit",
+ 						       "remove" ++
+ 						       ejabberd_web_admin:term_to_id(R#roster.jid),
+-						       "Remove")])])
++						       "Remove")]),
++                                         case gen_mod:is_loaded(Server, mod_logdb) of
++                                              true ->
++                                                 Peer = jlib:jid_to_string(R#roster.jid),
++                                                 A = lists:member(Peer, Settings#user_settings.dolog_list),
++                                                 B = lists:member(Peer, Settings#user_settings.donotlog_list),
++                                                 {Name, Value} =
++                                                   if
++                                                     A ->
++                                                       {"donotlog", "Do Not Log Messages"};
++                                                     B ->
++                                                       {"dolog", "Log Messages"};
++                                                     Settings#user_settings.dolog_default == true ->
++                                                       {"donotlog", "Do Not Log Messages"};
++                                                     Settings#user_settings.dolog_default == false ->
++                                                       {"dolog", "Log Messages"}
++                                                   end,
++
++                                                 ?XAE("td", [{"class", "valign"}],
++                                                      [?INPUTT("submit",
++                                                               Name ++
++                                                               ejabberd_web_admin:term_to_id(R#roster.jid),
++                                                               Value)]);
++                                              false ->
++                                                 ?X([])
++                                         end
++                                        ])
+ 			    end, SItems))])]
+ 	end,
+     [?XC("h1", ?T("Roster of ") ++ us_to_list(US))] ++
+@@ -1066,11 +1100,42 @@
+ 						 {"subscription", "remove"}],
+ 						[]}]}}),
+ 			      throw(submitted);
+-			  false ->
+-			      ok
+-		      end
+-
+-	      end
++                          false ->
++                            case lists:keysearch(
++                                   "donotlog" ++ ejabberd_web_admin:term_to_id(JID), 1, Query) of
++                                {value, _} ->
++                                     Peer = jlib:jid_to_string(JID),
++                                     Settings = mod_logdb:get_user_settings(User, Server),
++                                     DNLL = case lists:member(Peer, Settings#user_settings.donotlog_list) of
++                                                 false -> lists:append(Settings#user_settings.donotlog_list, [Peer]);
++                                                 true -> Settings#user_settings.donotlog_list
++                                            end,
++                                     DLL = lists:delete(jlib:jid_to_string(JID), Settings#user_settings.dolog_list),
++                                     Sett = Settings#user_settings{donotlog_list=DNLL, dolog_list=DLL},
++                                     % TODO: check returned value
++                                     ok = mod_logdb:set_user_settings(User, Server, Sett),
++                                     throw(nothing);
++                                false ->
++                                   case lists:keysearch(
++                                          "dolog" ++ ejabberd_web_admin:term_to_id(JID), 1, Query) of
++                                       {value, _} ->
++                                          Peer = jlib:jid_to_string(JID),
++                                          Settings = mod_logdb:get_user_settings(User, Server),
++                                          DLL = case lists:member(Peer, Settings#user_settings.dolog_list) of
++                                                     false -> lists:append(Settings#user_settings.dolog_list, [Peer]);
++                                                     true -> Settings#user_settings.dolog_list
++                                                end,
++                                          DNLL = lists:delete(jlib:jid_to_string(JID), Settings#user_settings.donotlog_list),
++                                          Sett = Settings#user_settings{donotlog_list=DNLL, dolog_list=DLL},
++                                          % TODO: check returned value
++                                          ok = mod_logdb:set_user_settings(User, Server, Sett),
++                                          throw(nothing);
++                                       false ->
++                                           ok
++                                   end % dolog
++                            end % donotlog
++                      end % remove
++              end % validate
+       end, Items),
+     nothing.
+ 
