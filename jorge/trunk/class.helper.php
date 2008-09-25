@@ -178,6 +178,7 @@ Class render_html {
 
 	protected $html_head = array();
 	protected $html_menu = array();
+	protected $html_over;
 	protected $html_main = array();
 	protected $html_body = array();
 	protected $html_foot = array();
@@ -243,6 +244,13 @@ Class render_html {
 
         }
 
+	public function set_overview($html) {
+
+		$this->html_over = $html;
+		return;
+
+	}
+
         public function set_body($html) {
 
                 if ($this->body_items === 0) {
@@ -280,6 +288,7 @@ Class render_html {
 		
 		$html_head = $this->html_head;
 		$html_menu = $this->html_menu;
+		$html_over = $this->html_over;
                 $html_main = $this->html_main;
                 $html_body = $this->html_body;
 		$html_foot = $this->html_foot;
@@ -295,6 +304,7 @@ Class render_html {
 			$out .= $html_menu[$z];
 		
 		}
+		$out .= $html_over;
 		$out .= $html_main[alert_message];
 		$out .= $html_main[status_message];
                 for ($z=0;$z<=$this->body_items;$z++) {
@@ -322,19 +332,19 @@ Class render_html {
 	protected function render_alert($message, $class = "message") {
 
 
-		return '<center><div class="'.$class.'">'.$message.'</div></center>';
+		return '<center><div class="'.$class.'">'.$message.'</div><br></center>';
 
 	}
 
 	protected function render_status($message, $class = "message") {
 
-		return '<center><div class="'.$class.'">'.$message.'</div></center>';
+		return '<center><div class="'.$class.'">'.$message.'</div><br></center>';
 	
 	}
 
 	protected function render_system($message, $class = null) {
 
-		return '<center><div class="system">'.$message.'</div></center>';
+		return '<center><div class="system">'.$message.'</div><br></center>';
 
 	}
 
