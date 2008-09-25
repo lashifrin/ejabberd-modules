@@ -29,14 +29,15 @@ if ($sess->get('uid_l')) {
 
 	if ($sess->get('view_type') == "1") { 
 
-			header ("Location: main.php");
+#			header ("Location: main.php");
 
 		}
 		else {
 
-			header ("Location: calendar_view.php");
+#			header ("Location: calendar_view.php");
 	
 	}
+
 }
 
 // get post data
@@ -106,7 +107,7 @@ if ($wo_sess || $inpLogin || $inpPass) {
 
 if ($_GET[act]==="logout") {
 
-		if ($db->get_user_id($sess->get('uid_l')) === true) {
+		if ($db->get_user_id(TOKEN) === true) {
 		
 			if($db->result->user_id) {
 			
@@ -116,8 +117,10 @@ if ($_GET[act]==="logout") {
 			}
 		
 		}
+
 		$sess->finish();
 		header("Location: index.php");
+		exit;
 	
 	} 
 	

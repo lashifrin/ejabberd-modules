@@ -116,6 +116,16 @@ if (!preg_match("/index.php/i",$location)) {
 				unset($_POST[inpLogin]);
 				unset($_POST[inpPass]);
 
+				// Try to recreate db object...
+				if ($_GET[act] === "logout") {
+
+					if ($sess->get('vhost')!="") {
+
+						$xmpp_host = str_replace(".","_", $sess->get('vhost'));
+					
+					}
+				}
+
 		}
 
 }

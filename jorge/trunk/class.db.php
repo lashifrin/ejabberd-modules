@@ -62,8 +62,8 @@ class db_manager {
 		$this->db_user = $db_user;
 		$this->db_password = $db_password;
 		$this->db_driver = $db_driver;
-		$this->xmpp_host = $xmpp_host;
-		$this->vhost = str_replace("_",".", $xmpp_host);
+		$this->xmpp_host = $this->sql_validate($xmpp_host,"string");
+		$this->vhost = str_replace("_",".", $this->sql_validate($xmpp_host,"string"));
 		$this->ignore_id = $ignore_id;
 
 		try { 
