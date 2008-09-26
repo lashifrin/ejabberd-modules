@@ -36,8 +36,10 @@ $sess = new session;
 // language
 $lang = $sess->get('language');
 
-// RPC server redundancy
-$rpc_host = check_rpc_server($rpc_arr,$rpc_port);
+define(XMPP_HOST,$sess->get('vhost'));
+$xmpp_host = str_replace(".","_", XMPP_HOST);
+
+$rpc_host = check_rpc_server($vhosts[XMPP_HOST],$rpc_port);
 
 // in case no RPC servers are available stop jorge
 if ($rpc_host===false) {
@@ -47,10 +49,10 @@ if ($rpc_host===false) {
 	}
 
 // connect to xmpp server
-$ejabberd_rpc = new rpc_connector("$rpc_host","$rpc_port","$xmpp_host_dotted");
+$ejabberd_rpc = new rpc_connector("$rpc_host","$rpc_port",XMPP_HOST);
 
 // authenticate
-if (check_registered_user($sess,$ejabberd_rpc,$xmpp_host) !== true) { 
+if (check_registered_user($sess,$ejabberd_rpc) !== true) { 
 
 	header("Location: index.php?act=logout"); 
 	exit; 
