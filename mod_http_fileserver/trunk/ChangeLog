@@ -1,3 +1,10 @@
+2008-09-26  Badlop  <badlop@process-one.net>
+
+	* src/web/mod_http_fileserver.erl: Converted to gen_server
+	behaviour (EJAB-561). Use the general reopen_log_hook instead of
+	ejabberdctl command.
+	* README.txt: Explain that this requires ejabberd trunk SVN 1561
+
 2008-07-28  Badlop  <badlop@process-one.net>
 
 	* doc/mod_http_fileserver.tex: Update LaTeX code for section title
