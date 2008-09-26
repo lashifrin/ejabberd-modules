@@ -27,7 +27,13 @@ $e_string = $_GET['a'];
 $resource_id = $_GET['b'];
 $start = $_GET['start'];
 
-$html->set_overview('<h2>'.$archives_t[$lang].'</h2><small>'.$cal_notice[$lang].'. <a href="calendar_view.php?set_pref=1&v=2"><u>'.$change_view_cal[$lang].'</u></a></small>');
+if ($_GET[a]) {
+
+	$jump_link = "&a=".$_GET['a'];
+
+}
+
+$html->set_overview('<h2>'.$archives_t[$lang].'</h2><small>'.$cal_notice[$lang].'. <a href="calendar_view.php?set_pref=1&v=2'.$jump_link.'"><u>'.$change_view_cal[$lang].'</u></a></small>');
 
 if ($enc->decrypt_url($e_string) === true) {
 

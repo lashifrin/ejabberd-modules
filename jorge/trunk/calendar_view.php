@@ -22,7 +22,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 require_once("headers.php");
 require_once("upper.php");
 
-$html->set_overview('<h2>'.$cal_head[$lang].'</h2><small>'.$cal_notice[$lang].'. <a href="main.php?set_pref=1&v=1"><u>'.$change_view[$lang].'</u></a></small><br><br>');
+if ($_GET[a]) {
+
+	$jump_link = "&a=".$_GET['a'];
+
+}
+
+$html->set_overview('<h2>'.$cal_head[$lang].'</h2><small>'.$cal_notice[$lang].'. <a href="main.php?set_pref=1&v=1'.$jump_link.'"><u>'.$change_view[$lang].'</u></a></small><br><br>');
 
 if (isset($_GET['left'])) { 
 	
