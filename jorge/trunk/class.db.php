@@ -2118,6 +2118,99 @@ class db_manager {
 
 	}
 
+	public function get_top_ten($date) {
+
+		$this->id_query = "Q069";
+		$date = $this->sql_validate($date,"date");
+		$query="SELECT
+				at, 
+				owner_id, 
+				peer_name_id, 
+				peer_server_id, 
+				count 
+			FROM 
+				`logdb_stats_".$this->xmpp_host."` 
+			WHERE 
+				at = '$date' 
+			ORDER BY 
+				count 
+			DESC LIMIT 10
+		";
+		
+		$this->select($query,"raw");
+		return $this->commit_select(array("at","owner_id","peer_name_id","peer_server_id","count"));
+
+	}
+
+	public function get_monthly_stats() {
+
+		$this->id_query = "Q070";
+		$query="SELECT 
+				count(distinct(owner_id)) AS users_total, 
+				unix_timestamp(at)*1000 AS time_unix, 
+				sum(count) AS messages 
+			FROM 
+				`logdb_stats_".$this->xmpp_host."` 
+			GROUP BY 
+				at 
+			ORDER BY 
+				str_to_date(at,'%Y-%m-%d') 
+			DESC LIMIT 30
+		";
+		$this->select($query,"raw");
+		return $this->commit_select(array("users_total","time_unix","messages"));
+
+	}
+
+	public function get_hourly_stats($date) {
+
+		$this->id_query = "Q071";
+		$date = $this->sql_validate($date,"date");
+		$query="SELECT
+				hour,
+				value 
+			FROM 
+				jorge_stats 
+			WHERE 
+				day='$date' 
+			AND 
+				vhost='".XMPP_HOST."' 
+			ORDER BY 
+				hour 
+			ASC
+		";
+
+		$this->select($query,"raw");
+		return $this->commit_select(array("hour","value"));
+
+	}
+
+	public function get_weekly_stats($date_start,$date_end) {
+
+		$this->id_query = "Q072";
+		$date_start = $this->sql_validate($date_start,"date");
+		$date_end = $this->sql_validate($date_end,"date");
+		$query="select 
+				hour,
+				value 
+			FROM 
+				jorge_stats 
+			WHERE 
+				day<='$date_end' 
+			AND 
+				day >= '$date_start' 
+			AND 
+				vhost='".XMPP_HOST."' 
+			ORDER BY 
+				day,hour 
+			ASC
+		";
+
+		$this->select($query,"raw");
+		return $this->commit_select(array("hour","value"));
+
+	}
+
 	public function set_user_query($user_query) {
 
 		$this->user_query = $this->sql_validate($user_query,"string");
