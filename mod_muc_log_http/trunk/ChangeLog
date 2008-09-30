@@ -1,3 +1,8 @@
+2008-09-30  Badlop  <badlop@process-one.net>
+
+	* src/mod_muc_log_http.erl: Update record definitions to ejabberd
+	trunk SVN
+
 2008-05-17  Badlop  <badlop@process-one.net>
 
 	* src/mod_muc_log_http.erl: Use httpd_util:to_lower when not

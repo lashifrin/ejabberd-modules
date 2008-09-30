@@ -27,21 +27,25 @@
 -include("ejabberd_http.hrl").
 -include("ejabberd_web_admin.hrl").
 
-%% Copied from mod_muc/mod_muc*.erl
+%% Copied from mod_muc/mod_muc.erl
+-record(muc_online_room, {name_host, pid}).
+%% Copied from mod_muc/mod_muc_room.erl
 -define(MAX_USERS_DEFAULT, 200).
 -define(MAX_USERS_DEFAULT_LIST,
 	[5, 10, 20, 30, 50, 100, 200, 500, 1000, 2000, 5000]).
 -define(DICT, dict).
--record(muc_online_room, {name_host, pid}).
 -record(lqueue, {queue, len, max}).
 -record(config, {title = "",
+		 description = "",
 		 allow_change_subj = true,
 		 allow_query_users = true,
 		 allow_private_messages = true,
+		 allow_visitor_status = true,
+		 allow_visitor_nickchange = true,
 		 public = true,
 		 public_list = true,
 		 persistent = false,
-		 moderated = false, % TODO
+		 moderated = true,
 		 members_by_default = true,
 		 members_only = false,
 		 allow_user_invites = false,
