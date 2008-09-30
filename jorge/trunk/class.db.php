@@ -29,13 +29,13 @@ remember to handle errors gracefully!
 
 class db_manager {
 
-	protected $db_host;
-	protected $db_name;
-	protected $db_user;
-	protected $db_password;
-	protected $db_driver;
-	protected $xmpp_host;
-	protected $vhost;
+	private $db_host;
+	private $db_name;
+	private $db_user;
+	private $db_password;
+	private $db_driver;
+	private $xmpp_host;
+	private $vhost;
 	private $messages_table = "logdb_messages_";
 	private $is_error = false;
 	private $id_query;
@@ -56,7 +56,7 @@ class db_manager {
 	}
 
 
-	protected function setData($db_host,$db_name,$db_user,$db_password,$db_driver,$xmpp_host,$ignore_id) {
+	private function setData($db_host,$db_name,$db_user,$db_password,$db_driver,$xmpp_host,$ignore_id) {
 		$this->db_host = $db_host;
 		$this->db_name = $db_name;
 		$this->db_user = $db_user;
@@ -76,7 +76,7 @@ class db_manager {
 			
 	}
 
-	protected function db_mysql() {
+	private function db_mysql() {
 
 		$conn = mysql_connect("$this->db_host", "$this->db_user", "$this->db_password");
 		if (!$conn) {
@@ -98,7 +98,7 @@ class db_manager {
 
 	}
 
-	protected function do_query($query) {
+	private function do_query($query) {
 
 		$this->show_debug_info($query, $time = false);
 		if ($this->is_error === false) {
@@ -2174,7 +2174,7 @@ class db_manager {
 			WHERE 
 				day='$date' 
 			AND 
-				vhost='".XMPP_HOST."' 
+				vhost='".$this->vhost."' 
 			ORDER BY 
 				hour 
 			ASC
@@ -2200,7 +2200,7 @@ class db_manager {
 			AND 
 				day >= '$date_start' 
 			AND 
-				vhost='".XMPP_HOST."' 
+				vhost='".$this->vhost."' 
 			ORDER BY 
 				day,hour 
 			ASC
