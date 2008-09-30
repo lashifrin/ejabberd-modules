@@ -79,8 +79,6 @@ $html->set_body('</select></form>');
 
 if ($con_map AND $_POST['chat_map'] != "null") {
 
-	$html->set_body('<h2>'.$cal_head[$lang].':</h2>');
-
 	// split username and server name
 	list($name_peer,$server_peer) = split("@",$con_map);
 

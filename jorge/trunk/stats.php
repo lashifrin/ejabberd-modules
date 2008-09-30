@@ -34,81 +34,106 @@ $today = date("Y-n-j");
 $yesterday = date("Y-n-j", strtotime("-1 day"));
 $last_week = date("Y-n-j", strtotime("-7 days"));
 
-// user stats
-$top_ten_talkers_today="select at, owner_id, peer_name_id, peer_server_id, count from `logdb_stats_$xmpp_host` where at = '$today' order by count desc limit 10";
-$top_ten_talkers_yesterday="select at, owner_id, peer_name_id, peer_server_id, count from `logdb_stats_$xmpp_host` where at = (select date_format((date_sub(curdate(),interval 1 day)), \"%Y-%c-%e\")) order by count desc limit 10";
-
 // global user stats and total messages - last 30 days
-$month_stats="select count(distinct(owner_id)) users_total, unix_timestamp(at)*1000 as time_unix, sum(count) as messages from `logdb_stats_$xmpp_host` group by at order by str_to_date(at,'%Y-%m-%d') desc limit 30";
-$result=mysql_query($month_stats) or die;
-if (mysql_num_rows($result)<30) { $mark1="1"; } else { $mark1="0"; }
+$db->get_monthly_stats();
+$result = $db->result;
 
-while ($entry=mysql_fetch_array($result)) {
+if (count($result)<30) { 
+
+		$mark1="1"; 
+		
+	} 
+	else { 
+	
+		$mark1="0"; 
+	
+}
+
+foreach ($result as $entry) {
+
 	$i++;
 	$f[$i] = $entry[time_unix];
 	$d[$i] = $entry[messages];
 	$e[$i] = $entry[users_total];
 	
 }
-mysql_free_result();
 
 // hourly stats
-$h_resolution="select hour,value from jorge_stats where day='$yesterday' and vhost='".XMPP_HOST."' order by hour asc";
-$result=mysql_query($h_resolution);
-while ($entry=mysql_fetch_array($result)) {
+$db->get_hourly_stats($yesterday);
+$result = $db->result;
+foreach ($result as $entry) {
 
 	$hs[$entry[hour]] = $entry[value];
 }
-mysql_free_result();
 
-// weekly/hours
-$w_resolution="select hour,value from jorge_stats where day<='$yesterday' and day >= '$last_week' and vhost='".XMPP_HOST."' order by day,hour asc";
-$result=mysql_query($w_resolution);
-while ($entry=mysql_fetch_array($result)) {
+// weekly stats
+$db->get_weekly_stats($last_week,$yesterday);
+$result = $db->result;
+foreach ($result as $entry) {
 	
 	$idx++;
 	$hy[$idx] = $entry[value];
 
 }
-mysql_free_result();
 
-
-$html->set_body('<h2><u>Stats for: '.$xmpp_host_dotted.'</u></h2><p style="padding-left: 10px;">
+$html->set_overview('<h2><u>Stats for: '.XMPP_HOST.'</u></h2><p style="padding-left: 10px;">
 		Total <b>'.number_format(total_messages($xmpp_host)).'</b> messages logged by the server in <b>'.number_format(total_chats($xmpp_host)).'</b> conversations. Current database size is: <b>'.db_size().'</b> MB</p>
-		<hr size="1" noshade="noshade" style="color: #cccccc;"><table class="ff">
-		<tr><td style="padding-left: 10px"><div id="no_users" style="width:1000px;height:250px;"></div><br>
-		<div id="no_messages" style="width:1000px;height:250px;"></div><br>
-		<div id="hourly_yesterday" style="width:1000px;height:250px;"></div><br>
-		<div id="hourly_week" style="width:1000px;height:250px;"></div></td>
-		<td style="padding-left: 30px; vertical-align: top;">
-		<div><b>Top 10 talkers today:</b><br><br>
-		');
+		<hr size="1" noshade="noshade" style="color: #cccccc;">
+		<table class="ff">');
 
-if ($mark1=="1") { 
+if ($mark1=="0") {
+		$html->set_body('<tr>
+			<td style="padding-left: 10px">
+			<div id="no_users" style="width:1000px;height:250px;"></div><br>
+			<div id="no_messages" style="width:1000px;height:250px;"></div><br>
+			<div id="hourly_yesterday" style="width:1000px;height:250px;"></div><br>
+			<div id="hourly_week" style="width:1000px;height:250px;"></div></td>
+			<td style="padding-left: 30px; vertical-align: top;">
+			<div><b>Top 10 talkers today:</b><br><br>
+			');
 
-	$html->alert_message('Not enough data collected for graphs</h1><h2>minimum required: 30 days');
+	}
+	else{
+
+		$html->status_message('Not enough data collected for graphs (<i>minimum required: 30 days</i>).');
+		$html->set_body('<tr><td><div><b>Top 10 talkers today:</b><br><br>');
+		
 	
 }
 
 
-$result=mysql_query($top_ten_talkers_today);
 $i=0;
-while ($entry=mysql_fetch_array($result)) {
+$db->get_top_ten($today);
+$result = $db->result;
+foreach ($result as $entry) {
 	
 	$i++;
-	$html->set_body('<b>'.$i.'.</b> '.htmlspecialchars(get_user_name($entry[owner_id],$xmpp_host)).'@'.$xmpp_host_dotted.'<b> --> </b>'.htmlspecialchars(get_user_name($entry[peer_name_id],$xmpp_host)).'@'.htmlspecialchars(get_server_name($entry[peer_server_id],$xmpp_host)).' (<i><b>'.$entry[count].'</b></i>)<br>');
+	$db->get_user_name($entry[owner_id]);
+	$local_user = $db->result->username;
+	$db->get_user_name($entry[peer_name_id]);
+	$peer_name = $db->result->username;
+	$db->get_server_name($entry[peer_server_id]);
+	$peer_server = $db->result->server_name;
+	$html->set_body('<b>'.$i.'.</b> '.htmlspecialchars($local_user).'@'.XMPP_HOST.'<b> --> </b>'.htmlspecialchars($peer_name).'@'.htmlspecialchars($peer_server).' (<i><b>'.$entry[count].'</b></i>)<br>');
 
 }
+
 $html->set_body('</div><br><hr size="1" noshade="noshade" style="color: #cccccc;"><br>');
 
-$i=0;
 $html->set_body('<div><b>Top 10 talkers yesterday:</b><br><br>');
-
-$result=mysql_query($top_ten_talkers_yesterday);
-while ($entry=mysql_fetch_array($result)) {
+$i=0;
+$db->get_top_ten($yesterday);
+$result = $db->result;
+foreach ($result as $entry) {
 
 	$i++;
-	$html->set_body('<b>'.$i.'.</b> '.htmlspecialchars(get_user_name($entry[owner_id],$xmpp_host)).'@'.$xmpp_host_dotted.'<b> --> </b>'.htmlspecialchars(get_user_name($entry[peer_name_id],$xmpp_host)).'@'.htmlspecialchars(get_server_name($entry[peer_server_id],$xmpp_host)).' (<i><b>'.$entry[count].'</b></i>)<br>');
+	$db->get_user_name($entry[owner_id]);
+	$local_user = $db->result->username;
+	$db->get_user_name($entry[peer_name_id]);
+	$peer_name = $db->result->username;
+	$db->get_server_name($entry[peer_server_id]);
+	$peer_server = $db->result->server_name;
+	$html->set_body('<b>'.$i.'.</b> '.htmlspecialchars($local_user).'@'.XMPP_HOST.'<b> --> </b>'.htmlspecialchars($peer_name).'@'.htmlspecialchars($peer_server).' (<i><b>'.$entry[count].'</b></i>)<br>');
 	
 }
 
