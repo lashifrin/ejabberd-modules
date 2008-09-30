@@ -265,7 +265,7 @@ if ($_GET[act]==="logout") {
 
 $html->set_body('
 
-        	<script>
+        	<script type="text/javascript">
          		var RecaptchaOptions = {
              			theme : \'clean\'
               		};
@@ -337,9 +337,9 @@ if ($vhost_count>1) {
 }
 		
 $html->set_body('</td></tr>
-		<tr height="3" ><td></td></tr>
+		<tr style="height: 3pt;" ><td></td></tr>
 		<tr><td align="right">'.$passwd_w[$lang].'&nbsp;</td><td><input name="inpPass" type="password" class="log"></td></tr>
-		<tr height="10"><td></td></tr>
+		<tr style="height: 10pt;"><td></td></tr>
 		');
 
 		// display captcha on 3rd attempt...
@@ -359,7 +359,7 @@ $html->set_body('</td></tr>
 		if ($check_cookie >= "2" OR $cookie_failed === true) {
 
 			$html->set_body('<tr><td colspan="2">'.recaptcha_get_html(CAPTCHA_PUBLIC,$error = null, $use_ssl = true).'</td></tr>
-					<tr height="15" ><td></td></tr>');
+					<tr style="height: 15;"><td></td></tr>');
 
 		}
 

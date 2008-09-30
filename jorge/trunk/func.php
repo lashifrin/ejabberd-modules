@@ -632,7 +632,7 @@ if ($c_type=="1") {
 	<table width="200"  border="0" cellpadding="0" cellspacing="0" class="calbck">
       	<tr>
         <td><img src="img/cal_corn_11.png" width="15" height="7" alt="cal_img"></td>
-        <td background="img/cal_bck_top.gif"></td>
+        <td style="background-image: url(img/cal_bck_top.gif);"></td>
         <td><img src="img/cal_corn_12.png" width="14" height="7" alt="cal_img"></td>
       	</tr>
       	<tr>
@@ -754,7 +754,7 @@ $verb_date = "$year-$m-1";
       	</tr>
       	<tr>
         <td><img src="img/cal_corn_21.png" width="15" height="16" alt="cal_img"></td>
-        <td background="img/cal_bck_bot.png"></td>
+        <td style="background-image: url(img/cal_bck_bot.png);"></td>
         <td><img src="img/cal_corn_22.png" width="14" height="16" alt="cal_img"></td>
       	</tr>
     	</table>

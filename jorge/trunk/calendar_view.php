@@ -24,11 +24,11 @@ require_once("upper.php");
 
 if ($_GET[a]) {
 
-	$jump_link = "&a=".$_GET['a'];
+	$jump_link = "&amp;a=".$_GET['a'];
 
 }
 
-$html->set_overview('<h2>'.$cal_head[$lang].'</h2><small>'.$cal_notice[$lang].'. <a href="main.php?set_pref=1&v=1'.$jump_link.'"><u>'.$change_view[$lang].'</u></a></small><br><br>');
+$html->set_overview('<h2>'.$cal_head[$lang].'</h2><small>'.$cal_notice[$lang].'. <a href="main.php?set_pref=1&amp;v=1'.$jump_link.'"><u>'.$change_view[$lang].'</u></a></small><br><br>');
 
 if (isset($_GET['left'])) { 
 	
@@ -267,7 +267,7 @@ if ($tslice) {
         		<table width="200" border="0" cellpadding="0" cellspacing="0" class="calbck_con">
       			<tr>
         			<td><img src="img/cal_corn_11.png" width="15" height="7"></td>
-        			<td background="img/cal_bck_top.gif"></td>
+        			<td style="background-image: url(img/cal_bck_top.gif);"></td>
         			<td><img src="img/cal_corn_12.png" width="14" height="7"></td>
       			</tr>
       			<tr>
@@ -350,7 +350,7 @@ if ($tslice) {
       		</tr>
       		<tr>
         	<td><img src="img/cal_corn_21.png" width="15" height="16"></td>
-        	<td background="img/cal_bck_bot.png"></td>
+        	<td style="background-image: url(img/cal_bck_bot.png);"></td>
         	<td><img src="img/cal_corn_22.png" width="14" height="16"></td>
       		</tr>
     		</table>
@@ -545,7 +545,7 @@ if ($talker) {
                                 if ($out!=TOKEN) {
 
                                 		$html->set_body('
-							<br><div style="text-align: left; padding-left: 5px;"><a class="export" id="pretty" title="'.$resource_only[$lang].'" href="?a='.$e_string.'&b='.$entry[peer_resource_id].'">
+							<br><div style="text-align: left; padding-left: 5px;"><a class="export" id="pretty" title="'.$resource_only[$lang].'" href="?a='.$e_string.'&amp;b='.$entry[peer_resource_id].'">
                                 			<small><i>'.cut_nick(htmlspecialchars($resource)).'</i></small></a></div>
 						');
 
@@ -607,14 +607,14 @@ for($i=0;$i < $nume;$i=$i+$num_lines_bro){
 
             		if ($resource_id) { 
 			
-					$add_res="&b=$resource_id"; 
+					$add_res="&amp;b=$resource_id"; 
 				} 
 				else { 
 			
 					$add_res=""; 
 			}
 
-            		$html->set_body('<a class="menu_chat" href="?a='.$e_string.$add_res.'&start='.$i.'"> <b>['.$i.']</b> </font></a>');
+            		$html->set_body('<a class="menu_chat" href="?a='.$e_string.$add_res.'&amp;start='.$i.'"> <b>['.$i.']</b> </font></a>');
             }
 
             else { 
