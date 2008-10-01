@@ -38,7 +38,38 @@ Add the following request handler (around line 150 in ejabberd.cfg)
 			]}
 .
 .
+
 Restart ejabberd.
+
+# Configuring your PEP nodes 
+
+For your PEP nodes to be published, you need to activate persistence.
+Two ways :
+
+- for existing nodes :
+<iq type='set'
+    id='config2'>
+  <pubsub xmlns='http://jabber.org/protocol/pubsub#owner'>
+    <configure node='http://jabber.org/protocol/tune'> <!-- for user-tune -->
+      <x xmlns='jabber:x:data' type='submit'>
+        <field var='FORM_TYPE' type='hidden'>
+          <value>http://jabber.org/protocol/pubsub#node_config</value>
+        </field>
+        <field var='pubsub#persist_items'><value>1</value></field>
+        <field var='pubsub#max_items'><value>1</value></field>
+      </x>
+    </configure>
+  </pubsub>
+</iq>
+
+- for new nodes :
+It's better to change src/mod_pubsub/node_pep.erl to :
+ 
+{persist_items, true},
+{max_items, 1},
+
+in the options() function. All future PEP nodes will be published with those parameters by default.
+
 
 # What you get
 
