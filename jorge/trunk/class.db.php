@@ -2211,6 +2211,50 @@ class db_manager {
 
 	}
 
+	public function get_personal_top() {
+
+		$this->id_query = "Q073";
+		$this->vital_check();
+		$query="SELECT 
+				peer_name_id,
+				peer_server_id,
+				at,
+				count 
+			FROM 
+				`logdb_stats_".$this->xmpp_host."` 
+			WHERE 
+				owner_id='".$this->user_id."' 
+			AND
+				peer_name_id!='".$this->ignore_id."' 
+			AND 
+				ext is NULL 
+			ORDER BY 
+				count 
+			DESC LIMIT 10
+		";
+
+		$this->select($query,"raw");
+		return $this->commit_select(array("dff"));
+	
+	}
+
+	public function get_personal_sum() {
+
+		$this->id_query = "Q074";
+		$this->vital_check();
+		$query="SELECT
+				sum(count) as cnt 
+			FROM
+				`logdb_stats_".$this->xmpp_host."` 
+			WHERE 
+				owner_id='".$this->user_id."' 
+			AND
+				peer_name_id!='".$this->ignore_id."'
+		";
+		return $this->select($query);
+
+	}
+
 	public function set_user_query($user_query) {
 
 		$this->user_query = $this->sql_validate($user_query,"string");
