@@ -23,7 +23,6 @@ SVC document : http://<server>:5280/pubsub/<domain>/<user>
 # Install 
 You need to run ejabberd trunk revision > 1561 or ejabberd 2.0.3 or later.
 
-As you probably have the source for ejabberd, you must export "tree_action" in mod_pubsub. It should be exported in future version of ejabberd. Recompile ejabberd.
 
 Compile using `make`
 Copy beam file in your ejabberd installation.
