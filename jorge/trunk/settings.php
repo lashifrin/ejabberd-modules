@@ -140,9 +140,7 @@ if ($close === $close_commit[$lang])	{
 
 $html->set_overview('<h2>'.$settings_desc[$lang].'</h2><small>'.$settings_desc_detail[$lang].'</small>');
 $html->set_body('<center><table><form action="settings.php" method="post">
-		<tr style="font-size: x-small;"><td>'.$setting_d1[$lang].'</td><td><input class="btn_set" type="submit" name="toggle" value="
-	');
-
+		<tr style="font-size: x-small;"><td>'.$setting_d1[$lang].'</td><td><input class="btn_set" type="submit" name="toggle" value="');
 $db->is_log_enabled();
 if ($db->result->is_enabled === false) { 
 		
@@ -155,8 +153,7 @@ if ($db->result->is_enabled === false) {
 		
 	}
 
-$html->set_body('
-	"></td></tr></form>
+$html->set_body('"></td></tr></form>
 	<form action="settings.php" method="post">
 	<tr style="font-size: x-small;"><td>'.$setting_d2[$lang].'</td>
 	<td><input class="btn_set" type="submit" name="del_all" value="'.$settings_del[$lang].'" onClick="if (!confirm(\''.$del_all_conf[$lang].'\')) return false;"></form></td></tr>
