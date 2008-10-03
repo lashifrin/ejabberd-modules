@@ -187,6 +187,21 @@ $my_links_desc_e[eng] = "Here you can find saved fragments of your chats";
 $settings_desc[pol] = "Ustawienia archiwum";
 $settings_desc[eng] = "Archive settings";
 
+$settings_desc_detail[pol] = "Panel zawiera opcje pozwalające kontrolować archiwizacje rozmów oraz opcje dotyczące konta";
+$settings_desc_detail[eng] = "The panel consist of options that let you control message archiving as well as options regarding your account";
+
+$api_access_enable[pol] = "Włącz publiczne API dla tego konta";
+$api_access_enable[eng] = "Enable API access for this account";
+
+$api_access_disable[pol] = "Wyłącz publiczne API dla tego konta";
+$api_access_disable[eng] = "Disable API access for this account";
+
+$api_access_on[pol] = "API dla tego konta jest włączone";
+$api_access_off[eng] = "API access is enabled for this account";
+
+$api_access_learn[pol] = "Dowiedz się więcej na temat publicznego API";
+$api_access_learn[eng] = "Learn more about public API";
+
 $print_t[pol] = "drukuj";
 $print_t[eng] = "print";
 

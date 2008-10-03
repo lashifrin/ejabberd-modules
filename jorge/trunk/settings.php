@@ -54,6 +54,7 @@ if ($tgle) {
 						$sess->set('log_status',false);
 						$db->set_logger("6","1");
 						$html->status_message($status_msg3[$lang]);
+						$html->system_message($status_msg1[$lang]);
 					
 					}
 					else{
@@ -137,10 +138,11 @@ if ($close === $close_commit[$lang])	{
 
 }
 
-// this is horrible! must be fixed:
-$html->set_body('<h2>'.$settings_desc[$lang].'</h2><center><table><form action="settings.php" method="post">
+$html->set_overview('<h2>'.$settings_desc[$lang].'</h2><small>'.$settings_desc_detail[$lang].'</small>');
+$html->set_body('<center><table><form action="settings.php" method="post">
 		<tr style="font-size: x-small;"><td>'.$setting_d1[$lang].'</td><td><input class="btn_set" type="submit" name="toggle" value="
 	');
+
 $db->is_log_enabled();
 if ($db->result->is_enabled === false) { 
 		
@@ -218,29 +220,33 @@ if (GAPPS === true) {
 	}
 
 $html->set_body('</table><hr size="1" noshade="noshade" style="color: #c9d7f1;"><br><small><b>'.$stats_personal_d[$lang].'</b></small>');
-$total_messages=number_format($total_messages=do_sel_quick("select sum(count) from `logdb_stats_$xmpp_host` where owner_id='$user_id' and peer_name_id!='".IGNORE_ID."'"));
-if ($total_messages=="f") { 
 
-	$total_messages="0"; 
-	
-}
+$db->get_personal_sum();
+$total_messages = number_format($db->result->cnt);
+
 $html->set_body('<p style="font-size: x-small;">'.$stats_personal[$lang].'<b> '.$total_messages.'</b></p><small><b>'.$stats_personal_top[$lang].'</b></small><br><br>');
 
-$top_ten_personal=do_sel("select peer_name_id,peer_server_id,at,count from `logdb_stats_$xmpp_host` where owner_id='$user_id' and peer_name_id!='".IGNORE_ID."' and ext is NULL order by count desc limit 10");
-if (mysql_num_rows($top_ten_personal)!=0) {
+$db->get_personal_top();
+$results = $db->result;
+
+if (count($results)!=0) {
 
 		$html->set_body('<table bgcolor="#ffffff" class="ff" cellspacing="0" cellpadding="3">
 				<tr style="background-image: url(img/bar_new.png); background-repeat:repeat-x; color: #fff; font-weight: bold;">
 				<td>'.$stats_personal_count[$lang].'</td><td style="text-align: center;">'.$stats_peer[$lang].'</td><td>'.$stats_when[$lang].'</td></tr>
 			');
 
-		while ($result=mysql_fetch_array($top_ten_personal)) {
+		foreach ($results as $result) {
 
-			$nickname=query_nick_name($ejabberd_roster,get_user_name($result[peer_name_id],$xmpp_host), get_server_name($result[peer_server_id],$xmpp_host));
+			$db->get_user_name($result[peer_name_id]);
+			$user_name = $db->result->username;
+			$db->get_server_name($result[peer_server_id]);
+			$server_name = $db->result->server_name;
+			$nickname=query_nick_name($ejabberd_roster,$user_name,$server_name);
 			$to_base = $enc->crypt_url("tslice=$result[at]&peer_name_id=$result[peer_name_id]&peer_server_id=$result[peer_server_id]");
 			$html->set_body('
 				<tr><td style="text-align: center; font-weight: bold;">'.$result[count].'</td><td><b>'.$nickname.'</b>&nbsp;
-				<small>('.htmlspecialchars(get_user_name($result[peer_name_id],$xmpp_host)).'@'.htmlspecialchars(get_server_name($result[peer_server_id],$xmpp_host)).')</small>
+				<small>('.htmlspecialchars($user_name).'@'.htmlspecialchars($server_name).')</small>
 				</td><td><a id="pretty" title="'.$stats_see[$lang].'" href="'.$view_type.'?a='.$to_base.'"><u>'.$result[at].'</u></a></td></tr>
 			');
 
