@@ -32,7 +32,7 @@ Add the following request handler (around line 150 in ejabberd.cfg)
 {8080, ejabberd_http, [
 			 http_poll, 
 			 web_admin,
-			 {request_handlers, [{["pep"], atom_microblog}%Make sure it's "pep", or change it in atom_microblog.erl
+			 {request_handlers, [{["pep"], atom_microblog},%Make sure it's "pep", or change it in atom_microblog.erl
 								{["pubsub"], atom_pubsub}]}  %Make sure it's "pubsub", or change it in atom_pubsub.erl
 			
 			]}
