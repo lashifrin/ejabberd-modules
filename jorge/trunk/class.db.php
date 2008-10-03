@@ -2232,9 +2232,9 @@ class db_manager {
 				count 
 			DESC LIMIT 10
 		";
-
+		
 		$this->select($query,"raw");
-		return $this->commit_select(array("dff"));
+		return $this->commit_select(array("peer_name_id","peer_server_id","at","count"));
 	
 	}
 
