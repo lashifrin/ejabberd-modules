@@ -2295,44 +2295,10 @@ class db_manager {
 			return false;
 			
 		}
-		$this->id_query = "Q078";
-		$query="DELETE FROM 
-				jorge_mylinks 
-			WHERE 
-				owner_id='".$this->user_id."'
-			AND
-				vhost='".$this->vhost."'
-			";
-		if ($this->delete($query) === false) {
+		if ($this->jorge_cleanup_soft() === false) {
 
 			return false;
 
-		}
-		$this->id_query = "Q079";
-		$query="DELETE FROM 
-				jorge_favorites 
-			WHERE
-				owner_id='".$this->user_id."'
-			AND
-				vhost='".$this->vhost."'
-			";
-		if ($this->delete($query) === false) {
-
-			return false;
-
-		}
-		$this->id_query = "Q080";
-		$query="DELETE FROM 
-				pending_del 
-			WHERE 
-				owner_id='".$this->user_id."'
-			AND
-				vhost='".$this->vhost."'
-			";
-		if ($this->delete($query) === false) {
-
-			return false;
-		
 		}
 
 		return true;
@@ -2365,6 +2331,53 @@ class db_manager {
 
 			return false;
 
+		}
+
+		return true;
+
+	}
+
+	public function jorge_cleanup_soft() {
+
+		$this->id_query = "Q083";
+		$this->vital_check();
+		$query="DELETE FROM 
+				jorge_mylinks 
+			WHERE 
+				owner_id='".$this->user_id."'
+			AND
+				vhost='".$this->vhost."'
+			";
+		if ($this->delete($query) === false) {
+
+			return false;
+
+		}
+		$this->id_query = "Q084";
+		$query="DELETE FROM 
+				jorge_favorites 
+			WHERE
+				owner_id='".$this->user_id."'
+			AND
+				vhost='".$this->vhost."'
+			";
+		if ($this->delete($query) === false) {
+
+			return false;
+
+		}
+		$this->id_query = "Q085";
+		$query="DELETE FROM 
+				pending_del 
+			WHERE 
+				owner_id='".$this->user_id."'
+			AND
+				vhost='".$this->vhost."'
+			";
+		if ($this->delete($query) === false) {
+
+			return false;
+		
 		}
 
 		return true;
