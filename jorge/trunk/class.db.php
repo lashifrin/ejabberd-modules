@@ -2255,6 +2255,114 @@ class db_manager {
 
 	}
 
+	public function erase_all() {
+
+		$this->id_query = "Q075";
+		$this->vital_check();
+		$query="SELECT 
+				distinct(at) 
+			FROM 
+				`logdb_stats_".$this->xmpp_host."` 
+			WHERE 
+				owner_id='".$this->user_id."'
+		";
+		$this->select($query,"raw");
+		$this->commit_select(array("at"));
+		$results = $this->result;
+		$this->id_query = "Q076";
+		foreach ($results as $result) {
+
+			$query="DELETE FROM 
+					`logdb_messages_$result[at]_".$this->xmpp_host."` 
+				WHERE 
+					owner_id='".$this->user_id."'
+				";
+			if ($this->delete($query) === false) {
+					
+					return false;
+
+			}
+		
+		}
+		$this->id_query = "Q077";
+		$query="DELETE FROM
+				`logdb_stats_".$this->xmpp_host."` 
+			WHERE 
+				owner_id='".$this->user_id."'
+			";
+		if ($this->delete($query) === false) {
+
+			return false;
+			
+		}
+		$this->id_query = "Q078";
+		$query="DELETE FROM 
+				jorge_mylinks 
+			WHERE 
+				owner_id='".$this->user_id."'
+			";
+		if ($this->delete($query) === false) {
+
+			return false;
+
+		}
+		$this->id_query = "Q079";
+		$query="DELETE FROM 
+				jorge_favorites 
+			WHERE
+				owner_id='".$this->user_id."'
+			";
+		if ($this->delete($query) === false) {
+
+			return false;
+
+		}
+		$this->id_query = "Q080";
+		$query="DELETE FROM 
+				pending_del 
+			WHERE 
+				owner_id='".$this->user_id."'
+			";
+		if ($this->delete($query) === false) {
+
+			return false;
+		
+		}
+
+		return true;
+
+	}
+
+	public function jorge_cleanup() {
+
+		$this->id_query = "Q081";
+		$this->vital_check();
+		$query="DELETE FROM 
+				jorge_pref 
+			WHERE 
+				owner_id='".$this->user_id."'
+			";
+		if ($this->delete($query) === false) {
+
+			return false;
+
+		}
+		$this->id_query = "Q082";
+		$query="DELETE FROM
+				`logdb_settings_".$this->xmpp_host."` 
+			where 
+				owner_id='".$this->user_id."'
+			";
+		if ($this->delete($query) === false) {
+
+			return false;
+
+		}
+
+		return true;
+
+	}
+
 	public function set_user_query($user_query) {
 
 		$this->user_query = $this->sql_validate($user_query,"string");
