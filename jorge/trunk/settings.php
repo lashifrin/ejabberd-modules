@@ -67,23 +67,17 @@ if ($tgle) {
 }
 
 // delete entire archive
-if ($del_a) {
+if ($del_a === $settings_del[$lang]) {
 
-	$result=remove_messages($user_id,$xmpp_host);
-	if ($result=="t") {
+	if ($db->erase_all() === true) {
 
-		$html->status_message($deleted_all[$lang]);
-		$db->set_logger("9","2");
+			$html->status_message($deleted_all[$lang]);
+			$db->set_logger("9","2");
 
-	}
-	elseif($result=="0"){
-
-		$html->status_message($delete_nothing[$lang]);
-
-	}
-	elseif($result=="f"){
+		}
+		else{
 	
-		$html->alert_message($delete_error[$lang]);
+			$html->alert_message($delete_error[$lang]);
 
 	}
 
@@ -92,16 +86,15 @@ if ($del_a) {
 // close account
 if ($close === $close_commit[$lang])	{
 
-	$close_now=rpc_close_account($user_id,$xmpp_host,$ejabberd_rpc);
-	if ($close_now === false) { 
+	if ($ejabberd_rpc->delete_account() === false) { 
 
 			$html->alert_message($close_failed[$lang]);
 		
 		}
+		else{
 
-	elseif($close_now === true) {
-
-			if(GAPPS === true) {
+			// Temporary hack for jabster.pl as of 2.0 Gapps support will be removed from jorge
+			if(GAPPS === true AND XMPP_HOST === 'jabster.pl') {
 
 				set_include_path('lib');
 	        		require_once 'lib/Zend/Loader.php';
@@ -130,10 +123,20 @@ if ($close === $close_commit[$lang])	{
 				
 					}
 			}
+
+			if($db->jorge_cleanup() === false) {
+
+				$html->alert_message($oper_fail[$lang]);
 			
-		$sess->finish();
-		header("Location: index.php?act=logout");
-		exit;
+			}
+			if($db->jorge_cleanup_soft() === false) {
+
+				$html->alert_message($oper_fail[$lang]);
+			}
+
+			$sess->finish();
+			header("Location: index.php?act=logout");
+			exit;
 	}
 
 }
