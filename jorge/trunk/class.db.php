@@ -2300,6 +2300,8 @@ class db_manager {
 				jorge_mylinks 
 			WHERE 
 				owner_id='".$this->user_id."'
+			AND
+				vhost='".$this->vhost."'
 			";
 		if ($this->delete($query) === false) {
 
@@ -2311,6 +2313,8 @@ class db_manager {
 				jorge_favorites 
 			WHERE
 				owner_id='".$this->user_id."'
+			AND
+				vhost='".$this->vhost."'
 			";
 		if ($this->delete($query) === false) {
 
@@ -2322,6 +2326,8 @@ class db_manager {
 				pending_del 
 			WHERE 
 				owner_id='".$this->user_id."'
+			AND
+				vhost='".$this->vhost."'
 			";
 		if ($this->delete($query) === false) {
 
@@ -2341,6 +2347,8 @@ class db_manager {
 				jorge_pref 
 			WHERE 
 				owner_id='".$this->user_id."'
+			AND
+				vhost='".$this->vhost."'
 			";
 		if ($this->delete($query) === false) {
 
