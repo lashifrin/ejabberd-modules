@@ -1,11 +1,12 @@
 
 	mod_cron - Execute scheduled commands
 
+	http://www.ejabberd.im/mod_cron
 	Author: Badlop
-	http://ejabberd.jabber.ru/mod_cron
+	Requirements: ejabberd trunk SVN 1635 or newer
 
 
-This module allows advanced ejabberd administrators to schedule commands for 
+This module allows advanced ejabberd administrators to schedule commands for
 periodic and automatic execution. This module is a similar concept than the
 *nix's cron program. Obviously, the admin must know in advance which module,
 function and arguments to use, so this module is not intended for starting
@@ -40,7 +41,7 @@ Where:
 For example, let's define some dummy tasks:
  * Every 3 hours, print on the log file some info about mnesia:
     {3, hours, mnesia, info, []}
-   
+
  * Every day, try to register certain account:
     {1, days, ejabberd_auth, try_register, ["tommy", "jabber.example.org", "MyP455WorD"]}
 
@@ -60,10 +61,10 @@ For example:
 ]}.
 
 
-	EJABBERD-CTL
-	============
+	EJABBERD COMMANDS
+	=================
 
-This module provides two new commands on the ejabberd-ctl command line tool:
+This module provides two new commands that can be executed using ejabberdctl:
  * cron-list: list scheduled tasks
  * cron-del taskid: delete this task from the schedule
 

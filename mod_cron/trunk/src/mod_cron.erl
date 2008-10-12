@@ -11,26 +11,27 @@
 
 -behaviour(gen_mod).
 
--export([ctl_process/3,
+-export([
+	 cron_list/1, cron_del/1,
 	 run_task/3,
 	 web_menu_host/3, web_page_host/3,
-	 start/2, 
+	 start/2,
 	 stop/1]).
 
--include("ejabberd_ctl.hrl").
+-include("ejabberd_commands.hrl").
 -include("ejabberd.hrl").
--include("ejabberd_http.hrl").
--include("ejabberd_web_admin.hrl").
+-include("web/ejabberd_http.hrl").
+-include("web/ejabberd_web_admin.hrl").
 
 -record(task, {taskid, timerref, host, task}).
 
 
 %% ---------------------
-%% gen_mod 
+%% gen_mod
 %% ---------------------
 
-start(Host, Opts) -> 
-    ejabberd_ctl:register_commands(Host, command_list(), ?MODULE, ctl_process),
+start(Host, Opts) ->
+    ejabberd_commands:register_commands(commands()),
     ejabberd_hooks:add(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
     ejabberd_hooks:add(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
     Tasks = gen_mod:get_opt(tasks, Opts, []),
@@ -38,7 +39,7 @@ start(Host, Opts) ->
     [add_task(Host, Task) || Task <- Tasks].
 
 stop(Host) ->
-    ejabberd_ctl:unregister_commands(Host, command_list(), ?MODULE, ctl_process),
+    ejabberd_commands:unregister_commands(commands()),
     ejabberd_hooks:delete(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
     ejabberd_hooks:delete(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
     %% Delete tasks of this host
@@ -46,7 +47,7 @@ stop(Host) ->
 
 
 %% ---------------------
-%% Task management 
+%% Task management
 %% ---------------------
 
 %% Method to add new task
@@ -117,28 +118,31 @@ get_tasks(Host) ->
 
 
 %% ---------------------
-%% Commands 
+%% ejabberd commands
 %% ---------------------
 
-command_list() ->
+commands() ->
     [
-     {"cron-list", "list scheduled tasks"},
-     {"cron-del taskid", "delete this task from the schedule"}
+     #ejabberd_commands{name = cron_list, tags = [cron],
+		       desc = "List tasks scheduled in a host",
+		       module = ?MODULE, function = cron_list,
+		       args = [{host, string}],
+			   result = {tasks, {list, {task, {tuple, [{id, integer}, {task, string}]}}}}},
+     #ejabberd_commands{name = cron_del, tags = [cron],
+		       desc = "Delete this task from the schedule",
+		       module = ?MODULE, function = cron_del,
+		       args = [{taskid, integer}],
+			   result = {res, rescode}}
     ].
 
-ctl_process(_Val, Host, ["cron-list"]) ->
+cron_list(Host) ->
     Tasks = get_tasks(Host),
-    [io:format("~p ~p~n", [T#task.taskid, T#task.task]) || T <- Tasks],
-    ?STATUS_SUCCESS;
+    [{T#task.taskid, io_lib:format("~p", [T#task.task])} || T <- Tasks].
 
-ctl_process(_Val, _Host, ["cron-del", TaskId_string]) ->
+cron_del(TaskId_string) ->
     TaskId = list_to_integer(TaskId_string),
-    Result = delete_taskid(TaskId),
-    io:format("~p~n", [Result]),
-    ?STATUS_SUCCESS;
-
-ctl_process(Val, _Host, _Args) ->
-    Val.
+    delete_taskid(TaskId),
+	ok.
 
 
 %% ---------------------
@@ -148,14 +152,14 @@ ctl_process(Val, _Host, _Args) ->
 web_menu_host(Acc, _Host, Lang) ->
     [{"cron", ?T("Cron Tasks")} | Acc].
 
-web_page_host(_, Host, 
+web_page_host(_, Host,
 	      #request{path = ["cron"],
 		       lang = Lang} = _Request) ->
     Tasks = get_tasks(Host),
     Tasks_table = make_tasks_table(Tasks, Lang),
     Res = [?XC("h1", "Cron Tasks")] ++ Tasks_table,
     {stop, Res};
-web_page_host(Acc, _, _) -> Acc. 
+web_page_host(Acc, _, _) -> Acc.
 
 make_tasks_table(Tasks, Lang) ->
     TList = lists:map(

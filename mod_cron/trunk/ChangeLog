@@ -1,3 +1,7 @@
+2008-10-12  Badlop  <badlop@process-one.net>
+
+	* src/mod_cron.erl: Update from ctl to commands (EJAB-694)
+
 2008-07-29  Badlop  <badlop@process-one.net>
 
 	* src/mod_cron.erl: Fix call to ejabberd_hooks:delete
