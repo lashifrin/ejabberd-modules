@@ -4,6 +4,10 @@
         Homepage: http://www.ejabberd.im/mod_xmlrpc
         Author: Badlop 
 
+	Note: this module will only receive bugfixes.
+	If you are using ejabberd trunk SVN 1635 or newer, you will probably
+	prefer to install ejabberd_xmlrpc.
+	
 
 	DESCRIPTION
 	-----------

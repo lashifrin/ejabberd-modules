@@ -1,3 +1,8 @@
+2008-10-12  Badlop  <badlop@process-one.net>
+
+	* README.txt: Add a note about ejabberd_xmlrpc existence for newer
+	ejabberd trunk SVN 1635
+
 2008-08-31  Badlop  <badlop@process-one.net>
 
 	* README.txt: Added Java example client and fixed the PHP
