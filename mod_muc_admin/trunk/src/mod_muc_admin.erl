@@ -13,39 +13,39 @@
 
 -export([
 	 start/2, stop/1, % gen_mod API
-	 create_room/3, destroy_room/3, % MUC Admin API
+	 muc_online_rooms/1,
+	 muc_unregister_nick/1,
+	 create_room/3, destroy_room/3,
+	 create_rooms_file/1, destroy_rooms_file/1,
+	 rooms_unused_list/2, rooms_unused_destroy/2,
 	 change_room_option/4,
-	 set_affiliation/4,
+	 set_room_affiliation/4,
 	 web_menu_main/2, web_page_main/2, % Web Admin API
-	 web_menu_host/3, web_page_host/3,
-	 ctl_process/2, ctl_process/3 % ejabberdctl API
+	 web_menu_host/3, web_page_host/3
 	]).
 
 -include("ejabberd.hrl").
--include("ejabberd_ctl.hrl").
 -include("jlib.hrl").
--include("ejabberd_http.hrl").
--include("ejabberd_web_admin.hrl").
+-include("web/ejabberd_http.hrl").
+-include("web/ejabberd_web_admin.hrl").
+-include("ejabberd_commands.hrl").
 
-%% Copied from mod_muc/mod_muc.erl
--record(muc_online_room, {name_host, pid}).
-%% Copied from mod_muc/mod_muc_room.erl
+%% Copied from mod_muc/mod_muc*.erl
 -define(MAX_USERS_DEFAULT, 200).
 -define(MAX_USERS_DEFAULT_LIST,
 	[5, 10, 20, 30, 50, 100, 200, 500, 1000, 2000, 5000]).
 -define(DICT, dict).
+-record(muc_online_room, {name_host, pid}).
 -record(lqueue, {queue, len, max}).
 -record(config, {title = "",
 		 description = "",
 		 allow_change_subj = true,
 		 allow_query_users = true,
 		 allow_private_messages = true,
-		 allow_visitor_status = true,
-		 allow_visitor_nickchange = true,
 		 public = true,
 		 public_list = true,
 		 persistent = false,
-		 moderated = true,
+		 moderated = false, % TODO
 		 members_by_default = true,
 		 members_only = false,
 		 allow_user_invites = false,
@@ -76,94 +76,117 @@
 %%----------------------------
 
 start(Host, _Opts) ->
+    ejabberd_commands:register_commands(commands()),
     ejabberd_hooks:add(webadmin_menu_main, ?MODULE, web_menu_main, 50),
     ejabberd_hooks:add(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
     ejabberd_hooks:add(webadmin_page_main, ?MODULE, web_page_main, 50),
-    ejabberd_hooks:add(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
-    ejabberd_ctl:register_commands(commands_global(), ?MODULE, ctl_process),
-    ejabberd_ctl:register_commands(Host, commands_host(), ?MODULE, ctl_process).
+    ejabberd_hooks:add(webadmin_page_host, Host, ?MODULE, web_page_host, 50).
 
 stop(Host) ->
+    ejabberd_commands:unregister_commands(commands()),
     ejabberd_hooks:delete(webadmin_menu_main, ?MODULE, web_menu_main, 50),
     ejabberd_hooks:delete(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
     ejabberd_hooks:delete(webadmin_page_main, ?MODULE, web_page_main, 50),
     ejabberd_hooks:delete(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
-    ejabberd_hooks:delete(webadmin_user, Host, ?MODULE, web_user, 50),
-    ejabberd_ctl:unregister_commands(commands_global(), ?MODULE, ctl_process),
-    ejabberd_ctl:unregister_commands(Host, commands_host(), ?MODULE, ctl_process).
+    ejabberd_hooks:delete(webadmin_user, Host, ?MODULE, web_user, 50).
 
+%%%
+%%% Register commands
+%%%
 
-%%----------------------------
-%% ctl commands
-%%----------------------------
-
-commands_global() ->
+commands() ->
     [
-     {"muc-unregister-nick nick", "unregister the nick in the muc service"},
-     {"muc-create-file file", "create the rooms indicated in file"},
-     {"muc-destroy-file file", "destroy the rooms whose JID is indicated in file"},
-     {"muc-unused-list days", "list rooms without activity in last days"},
-     {"muc-unused-destroy days", "destroy rooms without activity last days"},
-     {"muc-online-rooms", "list existing rooms"}
+     #ejabberd_commands{name = muc_online_rooms, tags = [muc],
+		       desc = "List existing rooms ('global' to get all vhosts)",
+		       module = ?MODULE, function = muc_online_rooms,
+		       args = [{host, string}],
+		       result = {rooms, {list, {room, string}}}},
+     #ejabberd_commands{name = muc_unregister_nick, tags = [muc],
+		       desc = "Unregister the nick in the MUC service",
+		       module = ?MODULE, function = muc_unregister_nick,
+		       args = [{nick, string}],
+		       result = {res, rescode}},
+
+     #ejabberd_commands{name = create_room, tags = [muc_room],
+		       desc = "Create a MUC room name@service in host",
+		       module = ?MODULE, function = create_room,
+		       args = [{name, string}, {service, string},
+			       {host, string}],
+		       result = {res, rescode}},
+     #ejabberd_commands{name = destroy_room, tags = [muc_room],
+		       desc = "Destroy a MUC room",
+		       module = ?MODULE, function = destroy_room,
+		       args = [{name, string}, {service, string},
+			       {host, string}],
+		       result = {res, rescode}},
+     #ejabberd_commands{name = create_rooms_file, tags = [muc],
+		       desc = "Create the rooms indicated in file",
+		       module = ?MODULE, function = create_rooms_file,
+		       args = [{file, string}],
+		       result = {res, rescode}},
+     #ejabberd_commands{name = destroy_rooms_file, tags = [muc],
+		       desc = "Destroy the rooms indicated in file",
+		       module = ?MODULE, function = destroy_rooms_file,
+		       args = [{file, string}],
+		       result = {res, rescode}},
+     #ejabberd_commands{name = rooms_unused_list, tags = [muc],
+		       desc = "List the rooms that are unused for many days in host",
+		       module = ?MODULE, function = rooms_unused_list,
+		       args = [{host, string}, {days, integer}],
+		       result = {rooms, {list, {room, string}}}},
+     #ejabberd_commands{name = rooms_unused_destroy, tags = [muc],
+		       desc = "Destroy the rooms that are unused for many days in host",
+		       module = ?MODULE, function = rooms_unused_destroy,
+		       args = [{host, string}, {days, integer}],
+		       result = {rooms, {list, {room, string}}}},
+
+     #ejabberd_commands{name = change_room_option, tags = [muc_room],
+		       desc = "Change an option in a MUC room",
+		       module = ?MODULE, function = change_room_option,
+		       args = [{name, string}, {service, string},
+			       {option, string}, {value, string}],
+		       result = {res, rescode}},
+
+     #ejabberd_commands{name = set_room_affiliation, tags = [muc_room],
+		       desc = "Change an option in a MUC room",
+		       module = ?MODULE, function = set_room_affiliation,
+		       args = [{name, string}, {service, string},
+			       {jid, string}, {affiliation, string}],
+		       result = {res, rescode}}
     ].
 
-commands_host() ->
-    [
-     {"muc-unused-list days", "list rooms without activity in last days"},
-     {"muc-unused-destroy days", "destroy rooms without activity last days"},
-     {"muc-online-rooms", "list existing rooms"}
-    ].
 
-ctl_process(_Val, ["muc-unregister-nick", Nick]) ->
-    case muc_unregister_nick(Nick) of
-	unregistered ->
-	    ?STATUS_SUCCESS;
-	{error, Error} ->
-	    io:format("Error unregistering ~p: ~p~n", [Nick, Error]),
-	    ?STATUS_ERROR
-    end;
+%%%
+%%% ejabberd commands
+%%%
 
-ctl_process(_Val, ["muc-create-file", Filename]) ->
-    muc_create_file(Filename),
-    io:format("Restart MUC or ejabberd for changes to take effect.~n"),
-    ?STATUS_SUCCESS;
-
-ctl_process(_Val, ["muc-destroy-file", Filename]) ->
-    muc_destroy_file(Filename),
-    ?STATUS_SUCCESS;
-
-ctl_process(Val, ["muc-unused-list", Days]) ->
-    ctl_process(Val, global, ["muc-unused-list", Days]);
-
-ctl_process(Val, ["muc-unused-destroy", Days]) ->
-    ctl_process(Val, global, ["muc-unused-destroy", Days]);
-
-ctl_process(Val, ["muc-online-rooms"]) ->
-    ctl_process(Val, global, ["muc-online-rooms"]);
-
-ctl_process(Val, _Args) ->
-    Val.
-
-
-ctl_process(_Val, Host, ["muc-unused-list", Days]) ->
-    {NA, NP, RP} = muc_unused(list, Host, list_to_integer(Days)),
-    io:format("Unused rooms: ~p out of ~p~n", [NP, NA]),
-    [io:format("~s@~s~n", [R, H]) || {R, H, _P} <- RP],
-    ?STATUS_SUCCESS;
-
-ctl_process(_Val, Host, ["muc-unused-destroy", Days]) ->
-    {NA, NP, RP} = muc_unused(destroy, Host, list_to_integer(Days)),
-    io:format("Destroyed unused rooms: ~p out of ~p~n", [NP, NA]),
-    [io:format("~s@~s~n", [R, H]) || {R, H, _P} <- RP],
-    ?STATUS_SUCCESS;
-
-ctl_process(_Val, ServerHost, ["muc-online-rooms"]) ->
+muc_online_rooms(ServerHost) ->
     MUCHost = find_host(ServerHost),
-    format_print_room(MUCHost, ets:tab2list(muc_online_room)),
-    ?STATUS_SUCCESS;
+    Rooms = ets:tab2list(muc_online_room),
+    lists:map(
+      fun({_, {Roomname, Host}, _}) ->
+	      case MUCHost of
+		  global ->
+		      Roomname ++ "@" ++ Host;
+		  Host ->
+		      Roomname ++ "@" ++ Host;
+		  _ ->
+		      ok
+	      end
+      end,
+      Rooms).
 
-ctl_process(Val, _Host, _Args) ->
-    Val.
+muc_unregister_nick(Nick) ->
+    F2 = fun(N) ->
+		 [{_,Key,_}] = mnesia:index_read(muc_registered, N, 3),
+		 mnesia:delete({muc_registered, Key})
+	 end,
+    case mnesia:transaction(F2, [Nick], 1) of
+	{atomic, ok} ->
+	    ok;
+	{aborted, _Error} ->
+	    error
+    end.
 
 
 %%----------------------------
@@ -346,7 +369,7 @@ prepare_room_info(Room_info) ->
 %%----------------------------
 
 %% @spec (Name::string(), Host::string(), ServerHost::string()) ->
-%%       ok | {error, room_already_exists}
+%%       ok | error
 %% @doc Create a room immediately with the default options.
 create_room(Name, Host, ServerHost) ->
 
@@ -380,7 +403,7 @@ create_room(Name, Host, ServerHost) ->
 	    {atomic, ok} = register_room(Host, Name, Pid),
 	    ok;
 	_ ->
-	    {error, room_already_exists}
+	    error
     end.
 
 register_room(Host, Name, Pid) ->
@@ -399,15 +422,17 @@ muc_create_room({Name, Host, _}, DefRoomOpts) ->
 %% @spec (Name::string(), Host::string(), ServerHost::string()) ->
 %%       ok | {error, room_not_exists}
 %% @doc Destroy the room immediately.
-destroy_room(Name, Host, ServerHost) ->
-    case mnesia:dirty_read(muc_online_room, {Name, Host}) of
+%% If the room has participants, they are not notified that the room was destroyed;
+%% they will notice when they try to chat and receive an error that the room doesn't exist.
+destroy_room(Name, Service, Server) ->
+    case mnesia:dirty_read(muc_online_room, {Name, Service}) of
 	[R] ->
 	    Pid = R#muc_online_room.pid,
-	    mod_muc:room_destroyed(Host, Name, Pid, ServerHost),
-	    {atomic, ok} = mod_muc:forget_room(Host, Name),
+	    mod_muc:room_destroyed(Service, Name, Pid, Server),
+	    {atomic, ok} = mod_muc:forget_room(Service, Name),
 	    ok;
 	[] ->
-	    {error, room_not_exists}
+	    error
     end.
 
 destroy_room({N, H, SH}) ->
@@ -422,12 +447,13 @@ destroy_room({N, H, SH}) ->
 %% The format of the file is: one chatroom JID per line
 %% The file encoding must be UTF-8
 
-muc_destroy_file(Filename) ->
+destroy_rooms_file(Filename) ->
     {ok, F} = file:open(Filename, [read]),
     RJID = read_room(F),
     Rooms = read_rooms(F, RJID, []),
     file:close(F),
-    [destroy_room(A) || A <- Rooms].
+    [destroy_room(A) || A <- Rooms],
+	ok.
 
 read_rooms(_F, eof, L) ->
     L;
@@ -465,7 +491,7 @@ join([H|T], Sep) ->
 %% Create Rooms in File
 %%----------------------------
 
-muc_create_file(Filename) ->
+create_rooms_file(Filename) ->
     {ok, F} = file:open(Filename, [read]),
     RJID = read_room(F),
     Rooms = read_rooms(F, RJID, []),
@@ -473,7 +499,8 @@ muc_create_file(Filename) ->
     %% Read the default room options defined for the first virtual host
     DefRoomOpts = gen_mod:get_module_opt(?MYNAME, mod_muc,
 					 default_room_options, []),
-    [muc_create_room(A, DefRoomOpts) || A <- Rooms].
+    [muc_create_room(A, DefRoomOpts) || A <- Rooms],
+	ok.
 
 
 %%----------------------------
@@ -482,6 +509,16 @@ muc_create_file(Filename) ->
 
 %%---------------
 %% Control
+
+rooms_unused_list(Host, Days) ->
+    rooms_unused_report(list, Host, Days).
+rooms_unused_destroy(Host, Days) ->
+    rooms_unused_report(destroy, Host, Days).
+
+rooms_unused_report(Action, Host, Days) ->
+    {NA, NP, RP} = muc_unused(Action, Host, Days),
+    io:format("Unused rooms: ~p out of ~p~n", [NP, NA]),
+    [R ++ "@" ++ H || {R, H, _P} <- RP].
 
 muc_unused(Action, ServerHost, Days) ->
     Host = find_host(ServerHost),
@@ -509,9 +546,9 @@ get_rooms(Host) ->
     Get_room_names = fun(Room_reg, Names) ->
 			     Pid = Room_reg#muc_online_room.pid,
 			     case {Host, Room_reg#muc_online_room.name_host} of
-				 {Host, {Name1, Host}} -> 
+				 {Host, {Name1, Host}} ->
 				     [{Name1, Host, Pid} | Names];
-				 {global, {Name1, Host1}} -> 
+				 {global, {Name1, Host1}} ->
 				     [{Name1, Host1, Pid} | Names];
 				 _ ->
 				     Names
@@ -560,8 +597,8 @@ decide_room({_Room_name, _Host, Room_pid}, Last_allowed) ->
 		       end,
 
     case {Persistent, Just_created, Num_users, Has_hist, seconds_to_days(Last)} of
-	{_true, false, 0, _, Last_days} 
-	when Last_days >= Last_allowed -> 
+	{_true, false, 0, _, Last_days}
+	when Last_days >= Last_allowed ->
 	    true;
 	_ ->
 	    false
@@ -575,7 +612,7 @@ seconds_to_days(S) ->
 
 act_on_rooms(Action, Rooms, ServerHost) ->
     ServerHosts = [ {A, find_host(A)} || A <- ?MYHOSTS ],
-    Delete = fun({_N, H, _Pid} = Room) -> 
+    Delete = fun({_N, H, _Pid} = Room) ->
 		     SH = case ServerHost of
 			      global -> find_serverhost(H, ServerHosts);
 			      O -> O
@@ -608,8 +645,9 @@ act_on_room(list, _, _) ->
 %% the option to change (for example title or max_users),
 %% and the value to assign to the new option.
 %% For example:
-%%   change_room_option("testroom", "conference.localhost", title, "Test Room")
-change_room_option(Name, Service, Option, Value) ->
+%%   change_room_option("testroom", "conference.localhost", "title", "Test Room")
+change_room_option(Name, Service, OptionString, Value) ->
+    Option = list_to_atom(OptionString),
     Pid = get_room_pid(Name, Service),
     {ok, _} = change_room_option(Pid, Option, Value),
     ok.
@@ -628,7 +666,7 @@ get_room_pid(Name, Service) ->
 %% It is required to put explicitely all the options because
 %% the record elements are replaced at compile time.
 %% So, this can't be parametrized.
-change_option(Option, Value, Config) -> 
+change_option(Option, Value, Config) ->
     case Option of
 	allow_change_subj -> Config#config{allow_change_subj = Value};
 	allow_private_messages -> Config#config{allow_private_messages = Value};
@@ -650,34 +688,19 @@ change_option(Option, Value, Config) ->
 
 
 %%----------------------------
-%% Unregister Nick
-%%----------------------------
-
-muc_unregister_nick(Nick) ->
-    F2 = fun(N) -> 
-		 [{_,Key,_}] = mnesia:index_read(muc_registered, N, 3), 
-		 mnesia:delete({muc_registered, Key})
-	 end,
-    case mnesia:transaction(F2, [Nick], 1) of
-	{atomic, ok} ->
-	    unregistered;
-	{aborted, Error} ->
-	    {error, Error}
-    end.
-
-%%----------------------------
 %% Change Room Affiliation
 %%----------------------------
 
-%% @spec(Name, Service, JID, Affiliation) -> ok | {error, Error}
+%% @spec(Name, Service, JID, AffiliationString) -> ok | {error, Error}
 %%       Name = string()
 %%       Service = string()
 %%       JID = string()
-%%	 Affiliation = outcast, none, member, admin, owner
+%%	     AffiliationString = "outcast" | "none" | "member" | "admin" | "owner"
 %% @doc Set the affiliation of JID in the room Name@Service.
 %% If the affiliation is 'none', the action is to remove,
 %% In any other case the action will be to create the affiliation.
-set_affiliation(Name, Service, JID, Affiliation) ->
+set_room_affiliation(Name, Service, JID, AffiliationString) ->
+    Affiliation = list_to_atom(AffiliationString),
     case mnesia:dirty_read(muc_online_room, {Name, Service}) of
 	[R] ->
 	    %% Get the PID for the online room so we can get the state of the room
@@ -691,7 +714,7 @@ set_affiliation(Name, Service, JID, Affiliation) ->
 	    mod_muc:store_room(Res#state.host, Res#state.room, make_opts(Res)),
 	    ok;
 	[] ->
-	    {error, room_not_exists}
+	    error
     end.
 
 change_affiliation(none, LJID, Affiliations) ->
@@ -735,19 +758,8 @@ uptime_seconds() ->
 
 find_host(global) ->
     global;
+find_host("global") ->
+    global;
 find_host(ServerHost) ->
     gen_mod:get_module_opt_host(ServerHost, mod_muc, "conference.@HOST@").
 
-format_print_room(Host1, Rooms)->
-    lists:foreach(
-      fun({_, {Roomname, Host}, _}) ->
-	      case Host1 of
-		  global ->
-		      io:format("~s@~s~n", [Roomname, Host]);
-		  Host ->
-		      io:format("~s@~s~n", [Roomname, Host]);
-		  _ ->
-		      ok
-	      end
-      end,
-      Rooms).
