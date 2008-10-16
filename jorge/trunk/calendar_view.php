@@ -89,10 +89,28 @@ if ($enc->decrypt_url($e_string) === true) {
 }
 
 // validation
-if (validate_date($tslice) == "f") { unset ($tslice); unset($e_string); unset($talker); unset($left); unset($right); unset($mo); unset($action); }
+if (validate_date($tslice) === false) { 
+
+	unset ($tslice); 
+	unset($e_string); 
+	unset($talker); 
+	unset($left); 
+	unset($right); 
+	unset($mo); 
+	unset($action); 
+	
+}
 
 // some validation things...
-if ($start) { if ((validate_start($start))!="t") { $start="0";  }  }
+if ($start) { 
+
+	if ((validate_start($start))!==true) { 
+	
+		$start="0";  
+		
+	}  
+	
+}
 
 // undo delete
 if ($action=="undelete") {
@@ -163,7 +181,14 @@ if (!isset($mo)) {
 }
 
 // validate mo if fail, silently fallback to current date
-if (validate_date($mo."-1") == "f") { unset ($tslice); unset($e_string); unset($talker); $mo=date("Y-m");  }
+if (validate_date($mo."-1") === false) { 
+	
+	unset ($tslice); 
+	unset($e_string); 
+	unset($talker); 
+	$mo=date("Y-m");  
+
+}
 
 // master div
 $html->set_body('<div>');

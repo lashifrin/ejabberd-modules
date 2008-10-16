@@ -112,7 +112,7 @@ if ($action === "delete") {
 // some validation things...
 if ($start) { 
 
-	if ((validate_start($start))!="t") { 
+	if ((validate_start($start))!==true) { 
 	
 		$start="0";  
 		

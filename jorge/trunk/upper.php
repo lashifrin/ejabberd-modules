@@ -319,9 +319,15 @@ if ($search_loc==1) {
 
 		$time2_start=$_POST[time2_start];
 		$time2_end=$_POST[time2_end];
-		if (validate_date($time2_start=="f")) { unset($time2_start); }
-		if (validate_date($time2_start=="f")) { unset($time2_end); }
-	
+		if (validate_date($time2_start) === false) { 
+		
+			unset($time2_start); 
+		}
+		if (validate_date($time2_start) === false) { 
+		
+			unset($time2_end); 
+		}
+
 	}
 		
 	if ($time2_start AND $time2_end) { 

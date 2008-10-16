@@ -29,9 +29,12 @@ if (__FILE__==$_SERVER['SCRIPT_FILENAME']) {
 
 
 function getmicrotime(){
+
 	list($usec, $sec) = explode(" ",microtime());
 	return ((float)$usec + (float)$sec);
+
 }
+
 
 function query_nick_name($ejabberd_roster,$talker, $server="") {
 
@@ -46,113 +49,24 @@ function query_nick_name($ejabberd_roster,$talker, $server="") {
 
 }
 
+
 function validate_date($tslice) {
 
 	if ($tslice) {
 		list($ye, $mo, $da) = split("-", $tslice);
-		if (!ctype_digit($ye) || !ctype_digit($mo) || !ctype_digit($da)  ) { return "f"; } else { return "t"; }
+		if (!ctype_digit($ye) || !ctype_digit($mo) || !ctype_digit($da)  ) { 
+	
+				return false;
+			} 
+			else { 
+			
+				return true;
+		}
 	}
 
-}
-
-function encode_url($url,$token,$url_key) {
-
-	$key=$url_key;
-	$uri_e = strrev($url);
-	$uri_e=encrypt_aes($key,$uri_e);
-	$uri_e = str_replace("+", "kezyt2s0", $uri_e); 
-
-return $uri_e;
+	return true;
 
 }
-
-function decode_url2($url,$token,$url_key) {
-
-	$key=$url_key;
-	$url = str_replace("kezyt2s0", "+",$url);
-	$uri_d=decrypt_aes($key,$url);
-	$uri_d = strrev($uri_d);
-	list($tslice,$talker,$server,$ismylink,$linktag,$lnk,$action,$strt) = split("@",$uri_d);
-	$variables[tslice] = $tslice;
-	$variables[talker] = $talker;
-	$variables[server] = $server;
-	$variables[ismylink] = $ismylink;
-	$variables[linktag] = $linktag;
-	$variables[lnk] = $lnk;
-	$variables[action] = $action;
-	$variables[strt] = $strt;
-	return $variables;
-
-}
-
-function decode_url_simple($url,$token,$url_key) {
-
-	$key=$url_key;
-	$url = str_replace("kezyt2s0", "+",$url);
-	$uri_d=decrypt_aes($key,$url);
-	$uri_d = strrev($uri_d);
-	return $uri_d;
-	
-}
-
-
-function decode_search_url($url,$token,$url_key) {
-
-	$key=$url_key;
-	$url = str_replace("kezyt2s0", "+",$url);
-	$uri_d=decrypt_aes($key,$url);
-	$uri_d = strrev($uri_d);
-	list($tslice,$offset_arch,$offset_day,$search_phase,$url_prev,$tag_count) = split("@",$uri_d);
-	$s_variables[tslice] = $tslice;
-	$s_variables[offset_arch] = $offset_arch;
-	$s_variables[offset_day] = $offset_day;
-	$s_variables[search_phase] = $search_phase;
-	$s_variables[url_prev] = $url_prev;
-	$s_variables[tag_count] = $tag_count;
-	return $s_variables;
-
-}
-
-function decode_trange($url,$token,$url_key) {
-
-	$key=$url_key;
-	$url = str_replace("kezyt2s0", "+",$url);
-	$uri_d=decrypt_aes($key,$url);
-	$uri_d = strrev($uri_d);
-	list($time2_start,$time2_end) = split("@",$uri_d);
-	$time2s[0] = $time2_start;
-	$time2s[1] = $time2_end;
-	return $time2s;
-
-}
-
-
-function decode_predefined($url,$token,$url_key) {
-	$key=$url_key;
-	$url = str_replace("kezyt2s0", "+",$url);
-	$uri_d=decrypt_aes($key,$url);
-	$uri_d = strrev($uri_d);
-	return $uri_d;
-
-}
-
-
-
-
-function encrypt_aes($key, $plain_text) {
-  $plain_text = trim($plain_text);
-  $iv = substr(md5($key), 0,mcrypt_get_iv_size (MCRYPT_RIJNDAEL_256,MCRYPT_MODE_CFB));
-  $c_t = mcrypt_cfb (MCRYPT_RIJNDAEL_256, $key, $plain_text, MCRYPT_ENCRYPT, $iv);
-  return base64_encode($c_t);
-}
-
-function decrypt_aes($key, $c_t) {
-  $c_t = base64_decode($c_t);
-  $iv = substr(md5($key), 0,mcrypt_get_iv_size (MCRYPT_RIJNDAEL_256,MCRYPT_MODE_CFB));
-  $p_t = mcrypt_cfb (MCRYPT_RIJNDAEL_256, $key, $c_t, MCRYPT_DECRYPT, $iv);
-  return trim($p_t);
-}
-
 
 
 function check_registered_user ($sess,$ejabberd_rpc) {
@@ -176,252 +90,45 @@ function check_registered_user ($sess,$ejabberd_rpc) {
 
 	}
 
-return false;
+	return false;
 
 }
+
 
 function is_query_from($query) {
 
 	list($from,$talker,$query_p) = split(":",$query);
 	$from=trim($from);
 	if ($from=="from") {
-				$qquery[from] = "t";
-				$qquery[talker] = trim($talker);
-				$qquery[talker] = str_replace("//","@",$qquery[talker]); // hack for parametrized search
-				if ($query_p) {
+
+			$qquery[from] = "t";
+			$qquery[talker] = trim($talker);
+			$qquery[talker] = str_replace("//","@",$qquery[talker]); // hack for parametrized search
+			if ($query_p) {
+				
 					$qquery[query] = $query_p;
 					$qquery[words] = "t";
 					return $qquery;
-					}
-					else
-					{
+					
+				}
+				else {
+
 					$qquery[words] = "f";
 					return $qquery;
-					}
-	}
-
-	else {
-
-	// normal search
-	return "f";
-
-	}
-
-
-}
-
-
-function db_q($user_id,$server="",$tslice_table="",$talker="",$search_p="",$type,$start="",$xmpp_host,$num_lines_bro="",$time_s="",$end_s="",$res_id="") {
-
-	$start_set=$start;
-	if ($start_set=="") { $start_set="0"; }
-	$end_set=$start+$num_lines_bro;
-
-	if ($time_s AND $end_s) {
-
-		$add_tl = " and str_to_date(at,'%Y-%m-%d') >= str_to_date('$time_s','%Y-%m-%d') and str_to_date(at,'%Y-%m-%d') <= str_to_date('$end_s','%Y-%m-%d')";
-
-	}
-
-	// chat list
-	if ($type=="1") {
-
-		$query="select distinct(at) from `logdb_stats_$xmpp_host` where owner_id='$user_id' $add_tl order by str_to_date(at,'%Y-%m-%d') asc";
-	}
-
-	// chat list - specific day
-	if ($type=="2") {
-
-		$query="select a.username, b.server as server_name, c.peer_name_id as todaytalk, c.peer_server_id as server, c.count as lcount from `logdb_users_$xmpp_host` a, `logdb_servers_$xmpp_host` b, `logdb_stats_$xmpp_host` c where c.owner_id = '$user_id' and a.user_id=c.peer_name_id and b.server_id=c.peer_server_id and c.at = '$tslice_table' and username!='' order by lower(username)";
+					
+			}
 	
-	}
-
-	// chat with user
-	if ($type=="3") {
-
-		if ($res_id>1) { $sel_resource="and (peer_resource_id='$res_id' OR peer_resource_id='1')"; }
-		$query="select from_unixtime(timestamp+0) as ts,direction, peer_name_id, peer_server_id, peer_resource_id, body from `$tslice_table` where owner_id = '$user_id' and peer_name_id='$talker' and peer_server_id='$server' $sel_resource and ext is NULL order by ts limit $start_set,$end_set";
-
-	}
-
-	// phase search
-	if ($type=="4") {
-		$query="select timestamp as ts, peer_name_id, peer_server_id, direction, ext, body, match(body) against('$search_p' IN BOOLEAN MODE) as score from `logdb_messages_$tslice_table"."_$xmpp_host` force index (search_i) where match(body) against('$search_p' IN BOOLEAN MODE) and owner_id='$user_id' limit $start_set,10000";
-	}
-
-	// user phase search
-	if ($type=="5" OR $type=="7") {
-
-		if ($type=="5") {
-				$addq = "match(body) against('$search_p' IN BOOLEAN MODE) and";
-				$adds = ",match(body) against('$search_p' IN BOOLEAN MODE) as score";
-				$tcon = "timestamp as ts,";
-			}
-			else { 
-				$addq=""; 
-				$tcon="from_unixtime(timestamp+0) as ts,";
-			}
-
-		$query="select $tcon peer_name_id, peer_server_id, direction, ext, body $adds from `logdb_messages_$tslice_table"."_$xmpp_host` force index(search_i) where $addq owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server' order by from_unixtime(timestamp) limit $start_set,10000";
-	}
-
-	// limited search
-	if ($type=="6") {
-		$query="select distinct(at) from `logdb_stats_$xmpp_host` where owner_id='$user_id' $add_tl order by str_to_date(at,\"%Y-%m-%d\") asc limit $start_set,10000";
 		}
+		else {
 
-
-	// optimized user chat list
-	if ($type=="8") {
-
-		$query="select at from `logdb_stats_$xmpp_host` force index (global_idx) where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server' order by str_to_date(at,'%Y-%m-%d') asc";
-	}
-
-
-	# uncomment to debug query
-	#print "<span style=\"font-size:x-small;\">Query: ".htmlspecialchars($query)." [end] in query type: $type</span><br>";
-	$result=mysql_query($query) or die;
-	if (mysql_errno()) { return "f"; }
-	return $result;
-
-}
-
-
-function get_user_id($token,$xmpp_host) {
-	$result = mysql_query("select user_id from `logdb_users_$xmpp_host` where username='$token'");
-	$row = mysql_fetch_row($result);
-	$user_id=$row[0];
-	if ($user_id) { return $user_id; } else { return "f";}
-
-}
-
-function get_user_name($user_id,$xmpp_host) {
-
-	$result=mysql_query("select username from `logdb_users_$xmpp_host` where user_id='$user_id'");
-	$row=mysql_fetch_row($result);
-	$user_name = $row[0];
-	if ($user_name) { return $user_name; } else { return "f";}
-
-}
-
-function get_num_lines($tslice_table,$user_id,$talker,$server) {
-
-	$result=mysql_query("select count(timestamp) from `$tslice_table` where owner_id = '$user_id' and peer_name_id='$talker' and peer_server_id='$server'");
-	$row=mysql_fetch_row($result);
-	$num=$row[0];
-	return $num;
-}
-
-function get_server_name ($server_id,$xmpp_host) {
-
-
-	$result=mysql_query("select server from `logdb_servers_$xmpp_host` where server_id ='$server_id'");
-	$row=mysql_fetch_row($result);
-	$server_name = $row[0];
-	if ($server_name) { return $server_name; } else { return "f";}
-
-}
-
-function get_resource_name ($resource_id,$xmpp_host) {
-
-	$result=mysql_query("select resource from `logdb_resources_$xmpp_host` where resource_id = '$resource_id'");
-	$row=mysql_fetch_row($result);
-	$resource=$row[0];
-	if ($resource) { return $resource; } else { return FALSE; }
-
-}
-
-function get_stats($user_id,$tslice,$xmpp_host) {
-
-	$result=mysql_query("select count from `logdb_stats_$xmpp_host` where owner_id='$user_id' and at='$tslice'");
-	$row=mysql_fetch_row($result);
-	$stats=$row[0];
-	mysql_free_result($result);
-	return $stats;
-
-}
-
-
-function get_server_id ($server_name,$xmpp_host) {
-
-	$result=mysql_query("select server_id from `logdb_servers_$xmpp_host` where server ='$server_name'");
-	$row=mysql_fetch_row($result);
-	$server_id=$row[0];
-	if ($server_id) { return $server_id; } else { return "f";}
-
-}
-
-
-function set_log_t($token,$xmpp_host) {
-
-
-	$result=mysql_query("select user_id from `logdb_users_$xmpp_host` where username = '$token'");
-	$row=mysql_fetch_row($result);
-	$user_id = $row[0];
-	if (!$user_id) {
-		$query="insert into `logdb_users_$xmpp_host` set username='$token'";
-		$result = mysql_query($query) or die ("Error2");
+			// normal search
+			return "f";
 
 	}
 
-	$query="insert into `logdb_settings_$xmpp_host` (owner_id,dolog_default) values ((select user_id from `logdb_users_$xmpp_host` where username='$token'), '1')";
-	$result = mysql_query($query) or die ("Error");
-	return "t";
+
 }
 
-
-function update_set_log_tgle($user_id,$xmpp_host) {
-
-	$result = mysql_query("select dolog_default from `logdb_settings_$xmpp_host` where owner_id='$user_id'");
-	$row = mysql_fetch_row($result);
-	if ($row[0] == "0") { $settings="1"; } elseif ($row[0] == "1") { $settings="0"; }
-
-	$query = "update `logdb_settings_$xmpp_host` set dolog_default = '$settings' where owner_id = '$user_id'";
-	$result = mysql_query($query) or die ("Error");
-	if ($settings=="1") { return "on"; } elseif ($settings=="0") { return "off"; } 
-	return "f";
-}
-
-
-function turn_red($haystack,$needle)
-{
-     $h=strtoupper($haystack);
-     $n=strtoupper($needle);
-     $pos=strpos($h,$n);
-     if ($pos !== false)
-         {
-        $var=substr($haystack,0,$pos)."<span class=\"hlt\">".substr($haystack,$pos,strlen($needle))."</span>";
-        $var.=substr($haystack,($pos+strlen($needle)));
-        $haystack=$var;
-        }
-     return $haystack;
-}
-
-
-function parse_urls($text, $maxurl_len = 40, $target = '_blank')
-{
-    if (preg_match_all('/((ht|f)tps?:\/\/([\w\.]+\.)?[\w-]+(\.[a-zA-Z]{2,4})?[^\s\r\n\(\)"\'<>\!]+)/si', $text, $urls))
-    {
-        $offset1 = ceil(0.65 * $maxurl_len) - 2;
-        $offset2 = ceil(0.30 * $maxurl_len) - 1;
-       
-        foreach (array_unique($urls[1]) AS $url)
-        {
-            if ($maxurl_len AND strlen($url) > $maxurl_len)
-            {
-                $urltext = substr($url, 0, $offset1) . '...' . substr($url, -$offset2);
-            }
-            else
-            {
-                $urltext = $url;
-            }
-           
-            $text = str_replace($url, '<a href="'. $url .'" target="'. $target .'" title="'. $url .'" class="menue">'. htmlspecialchars($urltext) .'</a>', $text);
-        }
-    }
-
-    return $text;
-} 
 
 function verbose_date($dd,$lang="",$t="") {
 	// this function need to be changed!
@@ -442,6 +149,7 @@ function verbose_date($dd,$lang="",$t="") {
 
 }
 
+
 function verbose_mo($dd,$lang) {
 	// this function need to be changed!
 	 $dd=strftime("%b %Y",strtotime($dd));
@@ -456,22 +164,40 @@ function verbose_mo($dd,$lang) {
 
 function validate_start($start) {
 
-	if (!ctype_digit($start)) { return "f"; }
-	if (fmod($start,10)=="0") { return "t"; } else { return "f"; }
+	if (!ctype_digit($start)) { 
+	
+		return false;
+	
+	}
+	if (fmod($start,10)=="0") { 
+	
+			return true;
+			
+		} 
+		else { 
+		
+			return false;
+			
+	}
 
 }
+
 
 function db_size() {
 
-  $result = mysql_query("show table status");
-  $size = 0;
-  while($row = mysql_fetch_array($result)) {
-      $size += $row["Data_length"];
-  }
-  $size = round(($size/1024)/1024, 1);
-  return $size;
+	$result = mysql_query("show table status");
+	$size = 0;
+	while($row = mysql_fetch_array($result)) {
+
+		$size += $row["Data_length"];
+	
+	}
+
+	$size = round(($size/1024)/1024, 1);
+	return $size;
 
 }
+
 
 function verbose_split_line($in_minutes,$lang,$verb_h,$in_min) {
 
@@ -484,6 +210,7 @@ function verbose_split_line($in_minutes,$lang,$verb_h,$in_min) {
 
 }
 
+
 function cut_nick($nick) {
 
 	if (strlen($nick)> 25) {
@@ -492,35 +219,6 @@ function cut_nick($nick) {
 	}
 	
 	return $nick;
-}
-
-function total_messages($xmpp_host) {
-
-  $result = mysql_query("select sum(count) from `logdb_stats_$xmpp_host`");
-  $count = mysql_fetch_row($result);
-  $m_count = $count[0]; 
-  return $m_count;
-
-}
-
-function total_chats($xmpp_host) {
-
-  $result = mysql_query("select count(owner_id) from `logdb_stats_$xmpp_host`");
-  $count = mysql_fetch_row($result);
-  $m_count = $count[0]; 
-  return $m_count;
-
-}
-
-
-
-function get_do_log_list($user_id,$xmpp_host) {
-
-	$result = mysql_query("select donotlog_list from logdb_settings_$xmpp_host where owner_id = '$user_id'");
-	$row = mysql_fetch_row($result);
-	$splited_list = explode("\n", $row[0]);
-	return $splited_list;
-
 }
 
 
@@ -536,6 +234,7 @@ function new_parse_url($text) {
 	
 	return $text;
 }
+
 
 function calendar($user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,$c_type,$name_peer=0,$server_peer=0,$cal_days=0,$enc=null) {
 	
@@ -608,9 +307,7 @@ function calendar($user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_name_e
 //links to next and previous month only for browser
 if ($c_type=="1") {
 	// encode links
-	#$link_left= encode_url("$y-$prev",$token,$url_key);
 	$link_left = $enc->crypt_url("tslice=$y-$prev");
-	#$link_right= encode_url("$x-$next",$token,$url_key);
 	$link_right = $enc->crypt_url("tslice=$x-$next");
 
 	// check if we have chats in prev and next mo
@@ -764,97 +461,6 @@ $verb_date = "$year-$m-1";
     return($calendar);
 }
 
-function delete_chat($talker,$server,$xmpp_host,$user_id,$tslice,$token,$enc,$lnk) {
-
-        if (!ctype_digit($talker) OR !ctype_digit($server)) { return "f"; }
-        $query="update `logdb_messages_$tslice"."_$xmpp_host` set ext = '1' where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server'";
-        $result=mysql_query($query) or die ("Ooops...Error");
-        $query="insert into pending_del(owner_id,peer_name_id,date,peer_server_id) values ('$user_id', '$talker','$tslice','$server')";
-        $result=mysql_query($query) or die ("Ooops...Error");
-        $jid_date = ' '.get_user_name($talker,$xmpp_host).'@'.get_server_name($server,$xmpp_host).' ('.$tslice.')';
-        $query="insert into jorge_logger (id_user,id_log_detail,id_log_level,log_time,extra) values ('$user_id',4,1,NOW(),'$jid_date')";
-        mysql_query($query) or die;
-	// remove user stats
-        $query="delete from `logdb_stats_$xmpp_host` where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server' and at='$tslice' limit 1";
-	$result=mysql_query($query) or die ("Ooops...Error");
-	mysql_free_result($result);
-        // also if there were some saved links - we clean them up from mylinks as well. We are so nice...
-        $query="update jorge_mylinks set ext='1' where owner_id ='$user_id' and peer_name_id='$talker' and link like '$lnk%'";
-        $result=mysql_query($query) or die ("Ooops...Error");
-        mysql_free_result($result);
-	// delete from favorites
-	$query="update jorge_favorites set ext='1' where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server' and tslice='$tslice'";
-	$result=mysql_query($query) or die ("Ooops...Error");
-	mysql_free_result($result);
-	// links
-	$undelete_link = $enc->crypt_url("tslice=$tslice&peer_name_id=$talker&peer_server_id=$server&lnk=$lnk&action=undelete");
-	
-return $undelete_link;
-
-
-}
-
-function undo_deleted_chat($talker,$server,$user_id,$tslice,$xmpp_host,$lnk) {
-
-	if (!ctype_digit($talker) OR !ctype_digit($server)) { return "f"; }
-	// undelete chat
-	$query="update `logdb_messages_$tslice"."_$xmpp_host` set ext = NULL where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server'";
-	$result=mysql_query($query) or die ("Ooops...Error");
-	// remove from pending table
-	$query="delete from pending_del where owner_id='$user_id' and peer_name_id='$talker' and date='$tslice' and peer_server_id='$server'";
-	$result=mysql_query($query) or die ("Ooops...Error");
-	// recount message stats for user
-	$query="select count(body) from `logdb_messages_$tslice"."_$xmpp_host` where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server' and ext is NULL";
-	$result=mysql_query($query) or die ("Ooops...Error");
-	$row=mysql_fetch_row($result);
-	$new_stats=$row[0];
-	mysql_free_result($result);
-
-	$query="select * from `logdb_stats_$xmpp_host` where owner_id = '$user_id' and peer_name_id='$talker' and peer_server_id='$server' and at = '$tslice'";
-	$result=mysql_query($query) or die("Ooops...Error");
-	if (mysql_num_rows($result) < 1 ) {
-			$query="insert into `logdb_stats_$xmpp_host` (owner_id,peer_name_id,peer_server_id,at,count) values ('$user_id','$talker','$server','$tslice','$new_stats')";
-			mysql_query($query) or die ("Ooops...Error");
-			mysql_free_result($result);
-		}
-		else
-		{
-			$query="update `logdb_stats_$xmpp_host` set count='$new_stats' where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server' and at='$tslice'";
-			$result=mysql_query($query) or die ("Ooops...Error");
-			mysql_free_result($result);
-		}
-
-	// undelete saved links
-	$query="update jorge_mylinks set ext=NULL where owner_id ='$user_id' and peer_name_id='$talker' and link like '$lnk%'";
-	$result=mysql_query($query) or die ("Ooops...Error");
-	mysql_free_result($result);
-	// undelete favorites
-	$query="update jorge_favorites set ext=NULL where owner_id='$user_id' and peer_name_id='$talker' and peer_server_id='$server' and tslice='$tslice'";
-	$result=mysql_query($query) or die ("Ooops...Error");
-	mysql_free_result($result);
-
-return "t";
-
-}
-
-function do_sel_quick($query) {
-
-	$do_query=mysql_query($query);
-	if (mysql_errno($do_query)>0) { return "f"; }
-	if (mysql_num_rows($do_query)<1) { return "0"; }
-	$result=mysql_fetch_row($do_query);
-	$m_val=$result[0];
-	return $m_val;
-
-}
-
-function do_sel($query) {
-
-	$do_query=mysql_query($query);
-	if (mysql_errno($do_query)>0) { return "f"; }
-	return $do_query;
-	
-}
 
 function prev_c_day ($xmpp_host,$tslice, $user_id, $talker, $server) {
 
@@ -877,57 +483,6 @@ function next_c_day ($xmpp_host,$tslice, $user_id, $talker, $server) {
 
 }
 
-function ch_favorite($user_id,$tslice,$talker,$server) {
-
-	$check=do_sel_quick("select count(*) from jorge_favorites where owner_id='$user_id' and tslice='$tslice' and peer_name_id='$talker' and peer_server_id='$server'");
-	if ($check=="f") { return "f"; }
-	elseif($check>0) { return "1"; }
-	elseif($check==0) { return "0"; }
-
-}
-
-function remove_messages($user_id,$xmpp_host) {
-
-	// check user_id one more
-	if (!ctype_digit($user_id)OR!$xmpp_host) { return "f"; }
-
-	$result=mysql_query("select distinct(at) from `logdb_stats_$xmpp_host` where owner_id='$user_id'");
-	if (mysql_num_rows($result)!=0) {
-		while ($row=mysql_fetch_array($result)) {
-	
-			mysql_query("delete from `logdb_messages_$row[at]_$xmpp_host` where owner_id='$user_id'");
-			if (mysql_errno()>0) {
-					
-					// return f on any error
-					return "f";
-				
-				}
-	
-		}
-	
-		// remove stats
-		mysql_query("delete from `logdb_stats_$xmpp_host` where owner_id='$user_id'");
-		// remove mylinks
-		mysql_query("delete from jorge_mylinks where owner_id='$user_id'");
-		// remove favorites
-		mysql_query("delete from jorge_favorites where owner_id='$user_id'");
-		// remove from pending_del
-		mysql_query("delete from pending_del where owner_id='$user_id'");
-		return "t";
-	
-		}
-
-	else
-
-		{
-
-		return "0";
-
-		}
-
-return "f";
-
-}
 
 function check_thread($db,$peer_name_id,$peer_server_id,$at,$xmpp_host,$dir=NULL) {
 
@@ -955,76 +510,7 @@ function check_thread($db,$peer_name_id,$peer_server_id,$at,$xmpp_host,$dir=NULL
 
 	}
 
-return false;
-
-}
-
-function rpc_close_account($user_id,$xmpp_host,$ejabberd_rpc) {
-
-	if ($ejabberd_rpc->delete_account() === true) {
-	
-		// this is to be removed some day as mod_logdb should use hook for ejabberd_auth:remove(), but for now it does not.
-		$result=remove_messages($user_id,$xmpp_host);
-		if ($result=="t") {
-				
-				if (jorge_cleanup($user_id,$xmpp_host)===true) {
-
-						return true; 
-
-					}
-
-					else{
-
-						return false;
-					
-					}
-
-				}
-			
-				elseif($result=="f") {
-					
-						return false;
-					
-					}
-				else {
-				
-						// remove_messages() can return other status beside error
-						if (jorge_cleanup($user_id,$xmpp_host)===true) {
-						
-								return true; 
-						
-							}
-							
-							else {
-						
-								return false;
-							}
-
-				}
-			
-	}
-	
-	else {
-
-		return false;
-
-	}
-
-return false;
-
-}
-
-
-function jorge_cleanup($user_id,$xmpp_host) {
-
-	if (!ctype_digit($user_id)) { return false; }
-	$query="delete from jorge_pref where owner_id='$user_id'";
-	mysql_query($query);
-	if (mysql_errno()>0) { return false; }
-	$query="delete from `logdb_settings_".$xmpp_host."` where owner_id='$user_id'";
-	mysql_query($query);
-	if (mysql_errno()>0) { return false; }
-	return true;
+	return false;
 
 }
 
@@ -1042,9 +528,10 @@ function check_rpc_server($rpc_arr,$rpc_port) {
 
 	}
 
-return false;
+	return false;
 	
 }
+
 
 function debug($debug=false,$string) {
 
@@ -1053,7 +540,8 @@ function debug($debug=false,$string) {
 		print "<small>".htmlspecialchars($string)."</small><br>";
 	}
 
-return;
+	return;
+
 }
 
 ?>
