@@ -223,9 +223,8 @@ if (preg_match("/main.php/i",$location)) {
 	');
 }
 $html->headers('
-        		<script type="text/javascript" src="lib/jquery-1.2.1.pack.js"></script>
+        		<script type="text/javascript" src="lib/jquery.pack.js"></script>
 			<script type="text/javascript" src="lib/jquery.bgiframe.min.js"></script>
-			<script type="text/javascript" src="lib/dimensions.js"></script>
 			<script type="text/javascript" src="lib/jquery.tooltip.js"></script>
 			<script type="text/javascript" src="lib/jquery.quicksearch.js"></script>
 			<script type="text/javascript" src="lib/jquery.autocomplete.pack.js"></script>
@@ -246,8 +245,23 @@ $html->headers('
 			position: \'before\',
 			attached: \'#maincontent\',
 			labelText: \'QuickFilter:\',
+			inputClass: \'c_map_class\',
+			loaderImg: \'img/loader.gif\',
 			delay: 30
 		});
+
+
+	$(\'select#c_map option\').quicksearch({
+			stripeRowClass: [\'odd\', \'even\'],
+			position: \'before\',
+			inputText: \''.$filter_form_tip[$lang].'\',
+			inputClass: \'c_map_class\',
+			attached: \'#c_map_form\',
+			labelText: \''.$filter_form[$lang].':\',
+			loaderImg: \'img/loader.gif\',
+			delay: 30
+		});
+
 
 		$(\'img\').Tooltip();
 

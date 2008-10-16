@@ -48,7 +48,9 @@ if($con_map === true) {
 $ejabberd_roster->sort_by_nick("az");
 $roster_chat = $ejabberd_roster->get_roster();
 
-$html->set_body('<br><br><br><form action="chat_map.php" method="post" name="chat_map_form">
+$html->set_body('<br><br><br>
+		<form id="c_map_form" action="chat_map.php" method="post" name="chat_map_form">
+		<p>'.$filter_tip[$lang].'</p>
 		<span style="padding-right: 20px">'.$chat_m_select[$lang].'</span>
 		<select id="c_map" style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="chat_map" size="0" onchange="javascript:document.chat_map_form.submit();">
 		<option value="null">'.$chat_c_list[$lang].'</option>

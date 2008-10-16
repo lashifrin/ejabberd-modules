@@ -268,10 +268,13 @@ input.btn_set{
    border-bottom-color:#363;
 }
 
-
-
-
-
+input.c_map_class{
+   color: grey;
+   font-size: x-small;
+   text-align: center;
+   background-color:#fff;
+   border:1px solid;
+}
 
 #tooltip.fancy {
 	background-color: #ffffcc;

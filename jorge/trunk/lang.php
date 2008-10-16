@@ -118,6 +118,15 @@ $menu_item_logs[eng] = "Logs";
 $menu_item_trash[pol] = "Kosz";
 $menu_item_trash[eng] = "Trash";
 
+$filter_form[pol] = "Filtruj listę kontaktów:";
+$filter_form[eng] = "Filter your contacts:";
+
+$filter_form_tip[pol] = "Wpisz nazwę kontaktu";
+$filter_form_tip[eng] = "Type contact name";
+
+$filter_tip[pol] = "...a następnie wybierz z listy, lub przeszukaj listę ręcznie:";
+$filter_tip[eng] = "...and next select it from list, or search contact list by hand:";
+
 $search_box[pol] = "Szukaj w archiwach";
 $search_box[eng] = "Search in archives";
 

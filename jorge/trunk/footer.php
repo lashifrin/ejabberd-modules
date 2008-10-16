@@ -64,36 +64,51 @@ if (!preg_match("/index.php/i",$location) AND !preg_match("/not_enabled.php/i",$
 
 	<script type="text/javascript">
 		$(document).ready(function() {
-		$("#t_search").autocomplete(
-			[
+	        function format(mail) {
+			return mail.name + " &lt;" + mail.jid + "&gt";
+		}
+		$("#t_search").autocomplete([');
 
-	');
-
-	// this is for local autocomplete, TODO: make it dynamic via AJAX
 	$ejabberd_roster->sort_by_jid("az");
 	$roster_auto = $ejabberd_roster->get_roster();
 	while(array_keys($roster_auto)) {
 
 		$jid = htmlspecialchars(key($roster_auto));
+		$nic = htmlspecialchars($roster_auto[$jid][nick]);
 		array_shift($roster_auto);
-		$html->foot('"from:'.$jid.'",');
+		$html->foot('{ name: "'.$nic.'", jid:"'.$jid.'" },');
 
 	}
 
-	$html->foot('"\" \""
-
-		],
+	$html->foot('],
 		{
-		minChars: 0,
+		minChars: 1,
+		parse: function(data) {
+			return $.map(eval(data), function(row) {
+				return {
+					data: row,
+					value: row.name,
+					result: row.name + " <" + row.jid + ">"
+				}
+			});
+		},
+		formatItem:function(row, i, max, term) {
+			return row.name.replace(new RegExp("(" + term + ")", "gi"), "<strong>$1</strong>") + "<br><span style=\'font-size: 80%;\'>JabberID: &lt;" + row.jid + "&gt;</span>";
+		},
+		formatResult: function(row) {
+		                        return "from:" + row.jid;
+		},
+		multiple: false,
 		max: 10,
 		cacheLength: 200,
 		matchSubset: true,
-		selectFirst: false,
+		selectFirst: true,
 		matchContains: true
 		}
 
-			);
-	
+			).result(function(e, item) {
+				$("#content").append("<p>selected " + format(item) + "</p>");
+			});
 		});
 
 	</script>
