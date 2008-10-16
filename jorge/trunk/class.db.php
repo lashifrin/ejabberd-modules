@@ -18,12 +18,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 ###########################################################################
 
-EXPERIMENTAL VERSION: DO NOT USE! IT IS NOT FINISHED AND NOT INCLUDE MANY METHODS YET!
+This class provide usefull methods for managing message archives created with mod_logdb.
+This is pre-release. Do not use outside project Jorge.
 
-See API.txt for details.
+Documentation is available in API.txt.
 
-NOTICE: in case of any error (query error, validation error etc.) instance is marked as faulty, all queries are aborted and exception is thrown
-remember to handle errors gracefully!
+NOTICE: By default class discards any query with is execuded after query error has occured. This is for debug purposes only.
 
 */
 

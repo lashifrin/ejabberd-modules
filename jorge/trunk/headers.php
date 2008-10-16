@@ -245,8 +245,8 @@ $html->headers('
 			position: \'before\',
 			attached: \'#maincontent\',
 			labelText: \'QuickFilter:\',
+			loaderText: \'\',
 			inputClass: \'c_map_class\',
-			loaderImg: \'img/loader.gif\',
 			delay: 30
 		});
 
@@ -258,7 +258,6 @@ $html->headers('
 			inputClass: \'c_map_class\',
 			attached: \'#c_map_form\',
 			labelText: \''.$filter_form[$lang].':\',
-			loaderImg: \'img/loader.gif\',
 			delay: 30
 		});
 

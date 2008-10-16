@@ -1,8 +1,8 @@
-Jorge by Zbyszek Zolkiewski (C) 2008 VERSION 1.5 (DEVELOPMENT RELEASE)
+Jorge by Zbyszek Zolkiewski (C) 2008 VERSION 1.5-pre_release
 
 About.
  Jorge is set of php scripts that are front-end for Oleg Palij mod_logdb.
-It is still under strong development so use it at your own risk.
+It is under development so use it at your own risk.
 
 Licensing.
  Jorge is distributed by GPL License provided in COPYING file as well in parts in all source files.
@@ -13,20 +13,20 @@ If you found any bug or have any improvement idea you can contact me at (email/x
 Patches are most welcome.
 
 Requirements:
-- working ejabberd server with current mod_logdb (compatibile version is bundled with Jorge)
-- mod_xmlrpc - for XML-RPC
+- working ejabberd 2.x (or higher) with mod_logdb (compatibile version is bundled with Jorge)
+- mod_xmlrpc - revision 772
 - mysql5 server
 - any http server supporting PHP (5.2.x or higher) with gd, mcrypt and xmlrpc support
 
 Client Requirements:
-- Jorge is tested and compatibile with: Firefox 2+ and Opera. (IE support is added from verion of 7, NOTE: IE6 is not supported and not tested - may work anyway)
+- Jorge is tested and compatibile with: Firefox 2.x, Firefox 3.x, Opera 9.x and Google Chrome (IE7 and IE8+ may work but it is not recomended due to IE standards violations, IE6 is not supported at all)
 - Web-browser _must_ have enabled javascript as Jorge strongly relay on jQuery and other js related scripts
 - Cookies must be enabled
 
 Installing:
-- setup XML-RPC facility (mod_xmlrpc, available at http://svn.process-one.net/ejabberd-modules/mod_xmlrpc/trunk/)
-- copy Jorge files into your http server (sugested vhost over SSL connection). There is sample .htaccess file - showing how to rewrite port 80 to 443
-- set up database for Jorge (install/jorge.sql)
+- setup XML-RPC facility (mod_xmlrpc, available at http://svn.process-one.net/ejabberd-modules/mod_xmlrpc/trunk/ - Use rev772!)
+- copy Jorge files into your http server (sugested vhost over SSL connection).
+- set up database for Jorge (install/jorge.sql), see README inside install dir
 - copy config.php.inc to config.php and edit file - READ CAREFULLY
 - that's it!
 
@@ -38,3 +38,4 @@ how many will activate logging, you must compute db partitions.
 
 Before use check if you set registered_globals to off. It is *required* for security reasons!
 Jorge is compatibile out of the box with: mod_security2 and php-hardened (suhosin) and easy to chroot.
+It is strongly recomended to use encrypted sessions.
