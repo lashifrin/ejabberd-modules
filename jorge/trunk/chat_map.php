@@ -147,5 +147,6 @@ if ($con_map AND $_POST['chat_map'] != "null") {
 
 }
 
+$html->set_body('<small><i>*-'.$ff_notice[$lang].'</i></small>');
 require_once("footer.php");
 ?>

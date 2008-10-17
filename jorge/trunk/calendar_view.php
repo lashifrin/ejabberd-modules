@@ -334,15 +334,17 @@ if ($tslice) {
 				
 			}
 
-		// this is hack for not displaying chats with jids without names...
+		// this is hack for not displaying chats with jids without names... (this is pice of old code, will not change it until 2.0)
 		if ($user_name!="") {
 		
 				if ($mrk==1) {
 
-						$previous_t = prev_c_day($xmpp_host,$tslice,$user_id,$entry[todaytalk],$entry[server]); 
+						$db->get_next_prev_day($entry[todaytalk],$entry[server],$tslice,"p");
+						$previous_t = $db->result->at;
 						$to_base_prev = $enc->crypt_url("tslice=$previous_t&peer_name_id=$entry[todaytalk]&peer_server_id=$entry[server]");
 
-						$next_t = next_c_day($xmpp_host,$tslice,$user_id,$entry[todaytalk],$entry[server]);
+						$db->get_next_prev_day($entry[todaytalk],$entry[server],$tslice,"n");
+						$next_t = $db->result->at;
 						$to_base_next = $enc->crypt_url("tslice=$next_t&peer_name_id=$entry[todaytalk]&peer_server_id=$entry[server]");
 				
 				}

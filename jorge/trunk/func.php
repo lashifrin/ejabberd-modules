@@ -462,28 +462,6 @@ $verb_date = "$year-$m-1";
 }
 
 
-function prev_c_day ($xmpp_host,$tslice, $user_id, $talker, $server) {
-
-	$query="select at from logdb_stats_$xmpp_host where owner_id='$user_id' and peer_name_id = '$talker' and peer_server_id = '$server' and str_to_date(at, '%Y-%m-%d') < str_to_date('$tslice', '%Y-%m-%d') order by str_to_date(at,'%Y-%m-%d') desc limit 1";
-	$prev_c_day = mysql_query($query);
-	$prev_c_day_m = mysql_fetch_row($prev_c_day);
-	$prev_day_c = $prev_c_day_m[0];
-	if ($prev_day_c) { return $prev_day_c; } else { return FALSE; }
-
-}
-
-
-function next_c_day ($xmpp_host,$tslice, $user_id, $talker, $server) {
-
-	$query="select at from logdb_stats_$xmpp_host where owner_id='$user_id' and peer_name_id = '$talker' and peer_server_id = '$server' and str_to_date(at, '%Y-%m-%d') > str_to_date('$tslice', '%Y-%m-%d') order by str_to_date(at,'%Y-%m-%d') asc limit 1";
-	$next_c_day = mysql_query($query);
-	$next_c_day_m = mysql_fetch_row($next_c_day);
-	$next_day_c = $next_c_day_m[0];
-	if ($next_day_c) { return $next_day_c; } else { return FALSE; }
-
-}
-
-
 function check_thread($db,$peer_name_id,$peer_server_id,$at,$xmpp_host,$dir=NULL) {
 
 	#adjust this hours as needed, we assume if chat is +/- 1 hour on the edge of day, then chat is related
