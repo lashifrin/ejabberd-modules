@@ -110,7 +110,6 @@ if ($search_phase!="") {
 
 						$score="score";
 			}
-
 	}
 
 
@@ -443,8 +442,8 @@ if ($search_phase!="") {
 	}
 
 	// if normal search:
-	if ($type!="7") {
-
+	if ($type!="7" AND $type!==NULL) {
+		
 		$db->get_search_results();
 		$result = $db->result;
 		$num_results = count($result);
