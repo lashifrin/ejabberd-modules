@@ -2397,6 +2397,24 @@ class db_manager {
 
 	}
 
+	public function get_last_day() {
+
+		$this->id_query = "Q087";
+		$this->vital_check();
+		$query="SELECT 
+				at 
+			FROM
+				`logdb_stats_".$this->xmpp_host."` 
+			WHERE 
+				owner_id = '".$this->user_id."' 
+			ORDER BY str_to_date(at,'%Y-%m-%d') DESC LIMIT 1
+		";
+
+		return $this->select($query);
+
+	}
+
+
 	public function set_user_query($user_query) {
 
 		$this->user_query = $this->sql_validate($user_query,"string");
