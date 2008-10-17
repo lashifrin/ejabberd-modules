@@ -357,13 +357,12 @@ class db_manager {
 
 		$this->id_query = "Q004";
 		$this->vital_check();
-		$user_id = $this->user_id;
 		$query="SELECT 
 				count(id_link) as cnt
 			FROM 
 				jorge_mylinks 
 			WHERE 
-				owner_id='$user_id'
+				owner_id='".$this->user_id."'
 			AND
 				vhost='".$this->vhost."'
 			AND 
@@ -378,13 +377,12 @@ class db_manager {
 	
 		$this->id_query = "Q005";
 		$this->vital_check();
-		$user_id = $this->user_id;
 		$query="SELECT 
 				count(*) as cnt
 			FROM 
 				pending_del 
 			WHERE 
-				owner_id='$user_id'
+				owner_id='".$this->user_id."'
 			AND
 				vhost='".$this->vhost."'
 		";
@@ -574,14 +572,12 @@ class db_manager {
 
 		$this->id_query = "Q016";
 		$this->vital_check();
-		$user_id = $this->user_id;
-		$xmpp_host = $this->xmpp_host;
 		$query="SELECT 
 				dolog_default as is_enabled
 			FROM 
-				`logdb_settings_$xmpp_host` 
+				`logdb_settings_".$this->xmpp_host."` 
 			WHERE 
-				owner_id='$user_id'
+				owner_id='".$this->user_id."'
 		";
 		
 		if ($this->select($query) === true) {
@@ -616,11 +612,10 @@ class db_manager {
 	public function total_messages() {
 	
 		$this->id_query = "Q017";
-		$xmpp_host = $this->xmpp_host;
 		$query="SELECT 
 				sum(count) as total_messages
 			FROM 
-				`logdb_stats_$xmpp_host`
+				`logdb_stats_".$this->xmpp_host."`
 		";
 		return $this->select($query);
 
@@ -629,11 +624,10 @@ class db_manager {
 	public function total_chats() {
 
 		$this->id_query = "Q018";
-		$xmpp_host = $this->xmpp_host;
 		$query="SELECT 
 				count(owner_id) as total_chats
 			FROM 
-				`logdb_stats_$xmpp_host
+				`logdb_stats_".$this->xmpp_host."`
 		";
 		return $this->select($query);
 
@@ -643,14 +637,12 @@ class db_manager {
 
 		$this->id_query = "Q019";
 		$this->vital_check();
-		$user_id = $this->user_id;
-		$xmpp_host = $this->xmpp_host;
 		$query="SELECT 
 				donotlog_list as donotlog
 			FROM 
-				logdb_settings_$xmpp_host 
+				logdb_settings_".$this->xmpp_host." 
 			WHERE 
-				owner_id = '$user_id'
+				owner_id = '".$this->user_id."'
 		";
 
 		$this->select($query);
@@ -664,8 +656,6 @@ class db_manager {
 
 		$this->id_query = "Q020";
 		$this->vital_check();
-		$user_id = $this->user_id;
-		$xmpp_host = $this->xmpp_host;
 		if ($bool === true) {
 
 				$val = 1;
@@ -682,11 +672,11 @@ class db_manager {
 		}
 		
 		$query="UPDATE 
-				`logdb_settings_$xmpp_host`
+				`logdb_settings_".$this->xmpp_host."`
 			SET 	
 				dolog_default = '$val' 
 			WHERE 
-				owner_id = '$user_id'
+				owner_id = '".$this->user_id."'
 		";
 
 		return $this->update($query);
@@ -700,11 +690,10 @@ class db_manager {
 		$id_log_detail = $this->sql_validate($event_id,"integer");
 		$id_log_level = $this->sql_validate($event_level,"integer");
 		$extra = $this->sql_validate($extra,"string");
-		$user_id = $this->user_id;
 		$query="INSERT INTO 
 				jorge_logger (id_user,id_log_detail,id_log_level,log_time,extra,vhost) 
 			VALUES 
-				('$user_id','$id_log_detail','$id_log_level',NOW(),'$extra','".$this->vhost."')
+				('".$this->user_id."','$id_log_detail','$id_log_level',NOW(),'$extra','".$this->vhost."')
 				
 		";
 
@@ -715,15 +704,13 @@ class db_manager {
 
 		$this->id_query = "Q022";
 		$this->vital_check();
-		$user_id = $this->user_id;
-		$xmpp_host = $this->xmpp_host;
 		$query="SELECT 
 				substring(at,1,7) as at_send, 
 				at 
 			FROM 
-				`logdb_stats_$xmpp_host` 
+				`logdb_stats_".$this->xmpp_host."` 
 			WHERE 
-				owner_id = '$user_id' 
+				owner_id = '".$this->user_id."' 
 			AND
 				peer_name_id!='".$this->ignore_id."'
 			GROUP BY 
@@ -742,15 +729,13 @@ class db_manager {
 
 		$this->id_query = "Q023";
 		$this->vital_check();
-		$user_id = $this->user_id;
-		$xmpp_host = $this->xmpp_host;
 		$mo = $this->sql_validate($mo,"string");
 		$query="SELECT 
 				distinct(substring(at,8,9)) as days 
 			FROM 
-				`logdb_stats_$xmpp_host` 
+				`logdb_stats_".$this->xmpp_host."` 
 			WHERE 
-				owner_id = '$user_id' 
+				owner_id = '".$this->user_id."' 
 			AND
 				at like '$mo%' 
 			AND 
@@ -769,7 +754,6 @@ class db_manager {
 		
 		$this->id_query = "Q024";
 		$this->vital_check();
-		$user_id = $this->user_id;
 		$xmpp_host = $this->xmpp_host;
 		$tslice_table = $this->sql_validate($tslice,"string");
 		$query="SELECT 
@@ -783,7 +767,7 @@ class db_manager {
 				`logdb_servers_$xmpp_host` b, 
 				`logdb_stats_$xmpp_host` c 
 			WHERE 
-				c.owner_id = '$user_id' 
+				c.owner_id = '".$this->user_id."' 
 			AND 
 				a.user_id=c.peer_name_id 
 			AND 
@@ -959,11 +943,10 @@ class db_manager {
 
 		$this->id_query = "Q028";
 		$this->prepare($peer_name_id,$peer_server_id,$tslice);
-		$xmpp_host = $this->xmpp_host;
 		$query="SELECT 
 				substring(at,1,7) as at 
 			FROM 
-				`logdb_stats_$xmpp_host` 
+				`logdb_stats_".$this->xmpp_host."` 
 			FORCE INDEX 
 				(global_idx)
 			WHERE 
@@ -989,12 +972,11 @@ class db_manager {
 
 		$this->id_query = "Q029";
 		$this->prepare($peer_name_id,$peer_server_id,$tslice);
-		$xmpp_host = $this->xmpp_host;
 		$mo = $this->sql_validate($month,"string");
 		$query="SELECT 
 				at 
 			FROM 
-				`logdb_stats_$xmpp_host` 
+				`logdb_stats_".$this->xmpp_host."` 
 			FORCE INDEX
 				(global_idx)
 			WHERE 
@@ -1017,7 +999,6 @@ class db_manager {
 
 		$this->id_query = "Q030";
 		$this->prepare($peer_name_id,$peer_server_id,$tslice);
-		$xmpp_host = $this->xmpp_host;
 		$datat = $this->sql_validate($link_date,"string");
 		$lnk = $this->sql_validate($link,"string");
 		$desc = $this->sql_validate($desc,"string");
@@ -1043,12 +1024,11 @@ class db_manager {
 
 		$this->id_query = "Q031";
 		$this->vital_check();
-		$user_id = $this->user_id;
 		$link_id = $this->sql_validate($link_id,"integer");
 		$query="DELETE FROM 
 				jorge_mylinks 
 			WHERE 
-				owner_id='$user_id' 
+				owner_id='".$this->user_id."' 
 			AND
 				vhost='".$this->vhost."'
 			AND 
@@ -1064,7 +1044,6 @@ class db_manager {
 
 		$this->id_query = "Q032";
 		$this->vital_check();
-		$user_id = $this->user_id;
 		$query="SELECT
 				id_link,
 				peer_name_id,
@@ -1076,7 +1055,7 @@ class db_manager {
 			FROM 
 				jorge_mylinks 
 			WHERE 
-				owner_id='$user_id' 
+				owner_id='".$this->user_id."' 
 			AND
 				vhost='".$this->vhost."'
 			AND 
@@ -1097,15 +1076,13 @@ class db_manager {
 
 		$this->id_query = "Q033";
 		$this->vital_check();
-		$user_id = $this->user_id;
-		$xmpp_host = $this->xmpp_host;
 		$log_list = $this->sql_validate($log_list,"string");
 		$query="UPDATE 
-				logdb_settings_$xmpp_host 
+				logdb_settings_".$this->xmpp_host." 
 			SET 
 				donotlog_list='$log_list' 
 			WHERE 
-				owner_id='$user_id'
+				owner_id='".$this->user_id."'
 		";
 		return $this->update($query);
 
@@ -1115,8 +1092,6 @@ class db_manager {
 
 		$this->id_query = "Q034";
 		$this->vital_check();
-		$user_id = $this->user_id;
-		$xmpp_host = $this->xmpp_host;
 		$offset = $this->sql_validate($offset,"integer");
 		if ($event_id !== null) {
 				
@@ -1146,7 +1121,7 @@ class db_manager {
 			AND 
 				c.id_level=a.id_log_level 
 			AND 
-				id_user='$user_id' 
+				id_user='".$this->user_id."' 
 			AND
 				a.vhost='".$this->vhost."'
 
@@ -1168,7 +1143,6 @@ class db_manager {
 
 		$this->id_query = "Q035";
 		$this->vital_check();
-		$user_id = $this->user_id;
 		if ($event_id !== null) {
 				
 				$event_id = $this->sql_validate($event_id,"integer");
@@ -1184,7 +1158,7 @@ class db_manager {
 			FROM 
 				jorge_logger 
 			WHERE 
-				id_user='$user_id' 
+				id_user='".$this->user_id."' 
 			AND
 				vhost='".$this->vhost."'
 			
@@ -1200,7 +1174,6 @@ class db_manager {
 
 		$this->id_query = "Q036";
 		$this->vital_check();
-		$user_id = $this->user_id;
 		$query="SELECT 
 				peer_name_id,
 				peer_server_id,
@@ -1210,7 +1183,7 @@ class db_manager {
 			FROM 
 				pending_del 
 			WHERE 
-				owner_id = '$user_id' 
+				owner_id = '".$this->user_id."' 
 			AND
 				vhost='".$this->vhost."'
 			ORDER BY 
@@ -1289,9 +1262,8 @@ class db_manager {
 	private function remove_user_stats($peer_name_id,$peer_server_id,$tslice) {
 
 		$this->id_query = "Q038";
-		$xmpp_host = $this->xmpp_host;
 		$query="DELETE FROM 
-				`logdb_stats_$xmpp_host` 
+				`logdb_stats_".$this->xmpp_host."` 
 			WHERE 
 				owner_id='".$this->user_id."' 
 			AND 
@@ -2020,7 +1992,7 @@ class db_manager {
 			AND 
 				ext is NULL 
 			ORDER BY 
-				tslice 
+				str_to_date(tslice,'%Y-%m-%d')
 			DESC
 		";
 
