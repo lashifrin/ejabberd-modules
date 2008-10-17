@@ -42,7 +42,6 @@ if ($_GET[a]) {
 
 			}
 			else {
-
 				unset($variables);
 
 			}

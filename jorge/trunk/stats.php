@@ -76,8 +76,13 @@ foreach ($result as $entry) {
 
 }
 
+$db->total_messages();
+$total_messages = $db->result->total_messages;
+$db->total_chats();
+$total_chats = $db->result->total_chats;
+
 $html->set_overview('<h2><u>Stats for: '.XMPP_HOST.'</u></h2><p style="padding-left: 10px;">
-		Total <b>'.number_format(total_messages($xmpp_host)).'</b> messages logged by the server in <b>'.number_format(total_chats($xmpp_host)).'</b> conversations. Current database size is: <b>'.db_size().'</b> MB</p>
+		Total <b>'.number_format($total_messages).'</b> messages logged by the server in <b>'.number_format($total_chats).'</b> conversations.</b></p>
 		<hr size="1" noshade="noshade" style="color: #cccccc;">
 		<table class="ff">');
 

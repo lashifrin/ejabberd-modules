@@ -39,3 +39,4 @@ how many will activate logging, you must compute db partitions.
 Before use check if you set registered_globals to off. It is *required* for security reasons!
 Jorge is compatibile out of the box with: mod_security2 and php-hardened (suhosin) and easy to chroot.
 It is strongly recomended to use encrypted sessions.
+If you are using Hardened_PHP or Suhosin alter get.max_value_length to some greater value f.e 1024.
