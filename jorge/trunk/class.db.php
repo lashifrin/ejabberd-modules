@@ -2384,6 +2384,47 @@ class db_manager {
 
 	}
 
+	public function get_next_prev_day($peer_name_id, $peer_server_id, $tslice, $np) {
+	
+		$this->id_query = "Q086";
+		$this->vital_check();
+		$this->prepare($peer_name_id,$peer_server_id,$tslice);
+		if ($np === "n") {
+
+				$sql1 = ">";
+				$sql2 = "ASC";
+			}
+			elseif($np === "p") {
+
+				$sql1 = "<";
+				$sql2 = "DESC";
+			}
+			else{
+
+				return false;
+
+		}
+		$query="SELECT
+				at 
+			FROM
+				logdb_stats_".$this->xmpp_host."
+			WHERE 
+				owner_id='".$this->user_id."' 
+			AND
+				peer_name_id = '".$this->peer_name_id."' 
+			AND 
+				peer_server_id = '".$this->peer_server_id."' 
+			AND 
+				str_to_date(at, '%Y-%m-%d') $sql1 str_to_date('".$this->tslice."', '%Y-%m-%d') 
+			ORDER BY 
+				str_to_date(at,'%Y-%m-%d') 
+			$sql2 LIMIT 1
+		";
+		
+		return $this->select($query);
+
+	}
+
 	public function set_user_query($user_query) {
 
 		$this->user_query = $this->sql_validate($user_query,"string");
