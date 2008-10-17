@@ -290,11 +290,17 @@ if ($start) {
 
 }
 
+//Generate quick jump
+$db->get_last_day();
+$ql_date = $db->result->at;
+$quick_link = $enc->crypt_url("tslice=$ql_date");
+
 $html->menu('
 	<a name="top"></a>
 	<table border="0" cellspacing="0" class="ff" width="100%">
 	<tr>
 		<td colspan="2" height="29" style="text-align: right;">
+		<a href="'.$view_type.'?a='.$quick_link.'" title="'.$qlink_l[$lang].'"><span style="font-weight: bold; color: white;">&#8656;</span></a>
 		<b>'.TOKEN.'@'.XMPP_HOST.'</b>&nbsp; | &nbsp;
 		<a href="settings.php">'.$menu_item_panel[$lang].'</a>&nbsp; | &nbsp;
 		<a href="#" onClick="smackzk();">'.$sel_client[$lang].'</a>&nbsp; | &nbsp;
@@ -402,16 +408,17 @@ $html->menu('<input class="red" type="submit" value="'.$search_box[$lang].'">
 		</form></td>
 		</tr>
 		<tr style="background-image: url(img/bell-bak.png); height: 24;">
-		<td colspan="11" width="100%" style="text-align: left; padding-left: 30px; color: white;">
-			'.$menu_main.' | '
-			.$menu_map.' | '
-			.$menu_favorites.' | '
-			.$menu_mylinks.' | '
-			.$menu_search.' | '
-			.$menu_contacts.' | '
-			.$menu_logger.$menu_stats.' | ' 
-			.$menu_trash. 
-			' | <a class="mmenu" href="#" onClick="window.location.reload()">'.$refresh[$lang].'</a></td>
+			<td colspan="11" width="100%" style="text-align: left; padding-left: 30px; color: white;">
+				'.$menu_main.' | '
+				.$menu_map.' | '
+				.$menu_favorites.' | '
+				.$menu_mylinks.' | '
+				.$menu_search.' | '
+				.$menu_contacts.' | '
+				.$menu_logger.$menu_stats.' | ' 
+				.$menu_trash. 
+				' | <a class="mmenu" href="#" onClick="window.location.reload()">'.$refresh[$lang].'</a>
+			</td>
 		</tr>
 		</table>
 		<p align="center"><b>'.$alert.'</b></p>

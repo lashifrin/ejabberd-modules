@@ -807,4 +807,7 @@ $oper_fail[eng] = "<center><b>Operation failed! Please try again later or contac
 $go_to_jorge[pol] = "Idz do strony glownej";
 $go_to_jorge[eng] = "Go to Jorge main page";
 
+$qlink_l[pol] = "Szybki link: Przejdź do ostatnich rozmów";
+$qlink_l[eng] = "Quick link: Go to latest chats";
+
 ?>
