@@ -737,7 +737,7 @@ class db_manager {
 			WHERE 
 				owner_id = '".$this->user_id."' 
 			AND
-				at like '$mo%' 
+				at like '$mo-%' 
 			AND 
 				peer_name_id!='".$this->ignore_id."' 
 			ORDER BY 
@@ -986,7 +986,7 @@ class db_manager {
 			AND 
 				peer_server_id='".$this->peer_server_id."' 
 			AND 
-				at like '$mo%'
+				at like '$mo-%'
 				
 		";
 
