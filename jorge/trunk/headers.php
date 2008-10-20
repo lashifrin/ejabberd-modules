@@ -130,11 +130,8 @@ if (!preg_match("/index.php/i",$location)) {
 
 }
 
-// define ignore id - see config.php.inc
-define(IGNORE_ID,$vhost_ignore[XMPP_HOST]);
-
 // create db_manager object
-$db = new db_manager(MYSQL_HOST,MYSQL_NAME,MYSQL_USER,MYSQL_PASS,"mysql","$xmpp_host",IGNORE_ID);
+$db = new db_manager(MYSQL_HOST,MYSQL_NAME,MYSQL_USER,MYSQL_PASS,"mysql","$xmpp_host");
 $db->set_debug(SQL_DEBUG);
 
 // create encryption object

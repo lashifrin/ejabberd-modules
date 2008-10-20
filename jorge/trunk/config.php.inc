@@ -50,15 +50,6 @@ $vhosts_admins = array(
 
 	);
 
-// ignore_id per vhost, - this is _REQUIRED_, to find out empty user_id perform: select user_id from `logdb_users_YOUR_XMPP_HOST` where username='', after running mod_logdb on the server, if you dont
-// have an empty user_id, write whatever to any transport - then mod_logdb will generate that user_id. IgnoreID is simply used for filtering contacts without name (transports, etc..)
-$vhost_ignore = array(
-
-	"jabber.example.com"=>"9",
-	"jabber.example.eu"=>"5"
-
-	);
-
 // MySQL database where mod_logdb is running on:
 define("MYSQL_USER", ""); // username
 define("MYSQL_PASS", ""); // password
