@@ -2407,6 +2407,8 @@ class db_manager {
 				`logdb_stats_".$this->xmpp_host."` 
 			WHERE 
 				owner_id = '".$this->user_id."' 
+			AND
+				peer_name_id != '".$this->ignore_id."'
 			ORDER BY str_to_date(at,'%Y-%m-%d') DESC LIMIT 1
 		";
 
