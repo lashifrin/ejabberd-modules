@@ -51,12 +51,15 @@ class db_manager {
 	private $ignore_id = null;
 	public $result;
 
-	public function __construct($db_host,$db_name,$db_user,$db_password,$db_driver,$xmpp_host = null,$ignore_id) {
-		$this->setData($db_host,$db_name,$db_user,$db_password,$db_driver,$xmpp_host,$ignore_id);
+	public function __construct($db_host,$db_name,$db_user,$db_password,$db_driver,$xmpp_host = null) {
+
+		$this->setData($db_host,$db_name,$db_user,$db_password,$db_driver,$xmpp_host);
+	
 	}
 
 
-	private function setData($db_host,$db_name,$db_user,$db_password,$db_driver,$xmpp_host,$ignore_id) {
+	private function setData($db_host,$db_name,$db_user,$db_password,$db_driver,$xmpp_host) {
+
 		$this->db_host = $db_host;
 		$this->db_name = $db_name;
 		$this->db_user = $db_user;
@@ -64,14 +67,23 @@ class db_manager {
 		$this->db_driver = $db_driver;
 		$this->xmpp_host = $this->sql_validate($xmpp_host,"string");
 		$this->vhost = str_replace("_",".", $this->sql_validate($xmpp_host,"string"));
-		$this->ignore_id = $ignore_id;
 
 		try { 
+
 			$this->db_connect();
+
 			}
 		catch(Exception $e) {
+
         		echo "Exception: ".$e->getMessage();
         		echo ", Code: ".$e->getCode();
+
+		}
+		
+		if ($this->vhost) {
+
+			$this->set_ignore_id();
+		
 		}
 			
 	}
@@ -2416,6 +2428,36 @@ class db_manager {
 
 	}
 
+	private function get_ignore_id() {
+
+		$this->id_query = "Q088";
+		$query="SELECT
+				user_id AS ignore_id
+			FROM
+				`logdb_users_".$this->xmpp_host."` 
+			WHERE
+				username=''
+		";
+
+		return $this->select($query);
+		
+	}
+
+	private function set_ignore_id() {
+
+		if ($this->get_ignore_id() === false) {
+
+				return false;
+
+			}
+			else{
+
+				$this->ignore_id = $this->result->ignore_id;
+				return true;
+				
+		}
+
+	}
 
 	public function set_user_query($user_query) {
 
