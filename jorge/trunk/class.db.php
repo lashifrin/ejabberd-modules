@@ -959,8 +959,6 @@ class db_manager {
 				substring(at,1,7) as at 
 			FROM 
 				`logdb_stats_".$this->xmpp_host."` 
-			FORCE INDEX 
-				(global_idx)
 			WHERE 
 				owner_id='".$this->user_id."' 
 			AND 
@@ -974,7 +972,7 @@ class db_manager {
 			ASC
 			
 		";
-		
+
 		$this->select($query,"raw");
 		return $this->commit_select(array("at"));
 
@@ -989,8 +987,6 @@ class db_manager {
 				at 
 			FROM 
 				`logdb_stats_".$this->xmpp_host."` 
-			FORCE INDEX
-				(global_idx)
 			WHERE 
 				owner_id='".$this->user_id."' 
 			AND 
