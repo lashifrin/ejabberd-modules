@@ -69,23 +69,35 @@ function validate_date($tslice) {
 }
 
 
-function check_registered_user ($sess,$ejabberd_rpc) {
+function check_registered_user ($sess,$ejabberd_rpc,$enc) {
 	
-	if (!$sess->is_registered('uid_l') OR !$sess->is_registered('uid_p')) 
-		{
+	if (!$sess->is_registered('uid_l') OR !$sess->is_registered('uid_p')) {
+			
 			return false;
   		}
-	else {
-
-		$ejabberd_rpc->set_user($sess->get('uid_l'),$sess->get('uid_p'));
-		if ($ejabberd_rpc->auth() === true) {
-
-			return true;
-
-		}
 		else {
-			return false;
-		}
+
+			if ($enc->decrypt_url($sess->get('uid_p')) === true) {
+
+					$uid_p = $enc->single;
+
+				}
+				else {
+
+					return false;
+
+			}
+
+			$ejabberd_rpc->set_user($sess->get('uid_l'),$uid_p);
+			if ($ejabberd_rpc->auth() === true) {
+
+					return true;
+
+				}
+				else {
+			
+					return false;
+			}
 
 
 	}

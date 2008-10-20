@@ -146,7 +146,7 @@ debug(DEBUG,"User session:".TOKEN);
 // authentication checks. Ensure if session data is not altered... (only when we are inside Jorge)
 if (!preg_match("/index.php/i",$location)) {
 
-	if (check_registered_user($sess,$ejabberd_rpc) !== true) { 
+	if (check_registered_user($sess,$ejabberd_rpc,$enc) !== true) { 
 
 			header("Location: index.php?act=logout"); 
 			exit; 

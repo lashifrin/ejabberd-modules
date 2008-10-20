@@ -133,7 +133,7 @@ if ($_GET[act]==="logout") {
 
 	          		$sess->set('login',$inpLogin);
 		  		$sess->set('uid_l',$inpLogin);
-		  		$sess->set('uid_p',$inpPass);
+		  		$sess->set('uid_p',$enc->crypt_url("single=$inpPass"));
 				$sess->set('vhost',XMPP_HOST);
 				// remember user choice
 				setcookie("fav_host", XMPP_HOST,time()+2592000);

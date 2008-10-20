@@ -51,8 +51,11 @@ if ($rpc_host===false) {
 // connect to xmpp server
 $ejabberd_rpc = new rpc_connector("$rpc_host","$rpc_port",XMPP_HOST);
 
+// initialize encryption system
+$enc = new url_crypt(ENC_KEY);
+
 // authenticate
-if (check_registered_user($sess,$ejabberd_rpc) !== true) { 
+if (check_registered_user($sess,$ejabberd_rpc,$enc) !== true) { 
 
 	header("Location: index.php?act=logout"); 
 	exit; 
@@ -61,9 +64,6 @@ if (check_registered_user($sess,$ejabberd_rpc) !== true) {
 
 // create database object
 $db = new db_manager(MYSQL_HOST,MYSQL_NAME,MYSQL_USER,MYSQL_PASS,"mysql","$xmpp_host");
-
-// initialize encryption system
-$enc = new url_crypt(ENC_KEY);
 
 // set user data
 define(TOKEN,$sess->get('uid_l'));

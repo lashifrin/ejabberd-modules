@@ -98,6 +98,7 @@ Class parser {
 	public $tag_count = null;
 	public $time_start = null;
 	public $time_end = null;
+	public $single = null;
 
 
 	protected function decode_string($url) {
@@ -157,6 +158,9 @@ Class parser {
 					}
 				if (isset($time_end)) {
 						$this->time_end = $time_end;
+					}
+				if (isset($single)) {
+						$this->single = $single;
 					}
 				
 				return true;
