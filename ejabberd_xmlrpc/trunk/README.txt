@@ -155,15 +155,15 @@ $ ejabberdctl help user_resources
   Tags: session
   Description: List user's connected resources
 
-3. You can try to execute the command in the shell:
-$ ejabberdctl user_resources badlop localhost
+3. You can try to execute the command in the shell for the account testuser@localhost:
+$ ejabberdctl user_resources testuser localhost
 Home
 Psi
 
 4. Now implement the proper XML-RPC call in your XML-RPC client.
    This example will use the Erlang library:
 $ erl
-1> xmlrpc:call({127, 0, 0, 1}, 4560, "/", {call, user_resources, [{struct, [{user, "badlop"}, {host, "localhost"}]}]}).
+1> xmlrpc:call({127, 0, 0, 1}, 4560, "/", {call, user_resources, [{struct, [{user, "testuser"}, {host, "localhost"}]}]}).
 {ok,{response,[{struct,[{resources,{array,[{struct,[{resource,"Home"}]},
                                            {struct,[{resource,"Psi"}]}]}}]}]}}
 
@@ -172,9 +172,60 @@ $ erl
    argument providing information of a valid account. For example:
 1> xmlrpc:call({127, 0, 0, 1}, 4560, "/", {call, user_resources, [
   {struct, [{user, "xmlrpc-robot"}, {server, "jabber.example.org"}, {password, "mYXMLrpcBotPasSword"}]},
-  {struct, [{user, "badlop"}, {host, "localhost"}]}
+  {struct, [{user, "testuser"}, {host, "localhost"}]}
 ]}).
 
+
+	EXAMPLE IN PHP
+	--------------
+
+This is an XML-RPC client in PHP, thanks to Zbyszek Żółkiewski and Calder.
+It requires "allow_url_fopen = On" in your php.ini.
+
+-------
+<?
+$param=array("user"=>"testuser", "host"=>"localhost");
+$request = xmlrpc_encode_request('user_resources', $param, (array('encoding' => 'utf-8')));
+
+$context = stream_context_create(array('http' => array(
+    'method' => "POST",
+    'header' => "User-Agent: XMLRPC::Client mod_xmlrpc\r\n" .
+                "Content-Type: text/xml\r\n" .
+                "Content-Length: ".strlen($request),
+    'content' => $request
+)));
+
+$file = file_get_contents("http://127.0.0.1:4560/RPC2", false, $context);
+
+$response = xmlrpc_decode($file);
+
+if (xmlrpc_is_fault($response)) {
+    trigger_error("xmlrpc: $response[faultString] ($response[faultCode])");
+} else {
+    print_r($response);
+}
+
+?>
+-------
+
+The response, following the example would be like this:
+-------
+$ php5 call.php
+Array
+(
+    [resources] => Array
+        (
+            [0] => Array
+                (
+                    [resource] => Home
+                )
+            [1] => Array
+                (
+                    [resource] => Psi
+                )
+        )
+)
+-------
 
 
 
@@ -273,39 +324,6 @@ timeout = 3000000
 client = XMLRPC::Client.new2("http://#{host}", "#{host}", timeout)
 result = client.call("echothis", "800")
 puts result
--------
-
-
-	EXAMPLE IN PHP
-	--------------
-
-This is an XML-RPC client in PHP, thanks to Zbyszek Żółkiewski and Calder.
-It requires "allow_url_fopen = On" in your php.ini.
-
--------
-<?
-$param=array("user"=>"test_user","host"=>"example.com","password"=>"some_password");
-$request = xmlrpc_encode_request('check_password', $param, (array('encoding' => 'utf-8')));
-
-$context = stream_context_create(array('http' => array(
-    'method' => "POST",
-    'header' => "User-Agent: XMLRPC::Client mod_xmlrpc\r\n" .
-                "Content-Type: text/xml\r\n" .
-                "Content-Length: ".strlen($request),
-    'content' => $request
-)));
-
-$file = file_get_contents("http://127.0.0.1:4560/RPC2", false, $context);
-
-$response = xmlrpc_decode($file);
-
-if (xmlrpc_is_fault($response)) {
-    trigger_error("xmlrpc: $response[faultString] ($response[faultCode])");
-} else {
-    print_r($response);
-}
-
-?>
 -------
 
 

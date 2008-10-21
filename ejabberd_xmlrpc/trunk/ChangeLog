@@ -1,3 +1,7 @@
+2008-10-21  Badlop  <badlop@process-one.net>
+
+	* README.txt: Updated PHP example
+
 2008-10-12  Badlop  <badlop@process-one.net>
 
 	* src/ejabberd_xmlrpc.erl: Major rewrite of mod_xmlrpc to be an
