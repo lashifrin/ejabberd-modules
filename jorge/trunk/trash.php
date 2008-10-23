@@ -106,12 +106,23 @@ if ($tr_n < 1) {
 			$server_name = $db->result->server_name;
 			$tslice = $entry["date"];
 			$nickname = query_nick_name($ejabberd_roster,$talker,$server_name);
+			if (!$nickname) {
+
+					$nickname = $not_in_r[$lang];
+					unset($malpa);
+
+				}
+				else {
+
+					$malpa = "@";
+
+			}
 			$reconstruct_link = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$entry[peer_server_id]");
 			$undelete_link = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$entry[peer_server_id]&lnk=$reconstruct_link&action=undelete");
 			$delete_link = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$entry[peer_server_id]&lnk=$reconstruct_link&action=delete");
 
 			$html->set_body('
-					<tr><td style="padding-left: 10px; padding-right: 10px;"><b>'.$nickname.'</b> (<i>'.htmlspecialchars($talker).'@'.htmlspecialchars($server_name).'</i>)</td>
+					<tr><td style="padding-left: 10px; padding-right: 10px;"><b>'.$nickname.'</b> (<i>'.htmlspecialchars($talker).$malpa.htmlspecialchars($server_name).'</i>)</td>
 					<td style="text-align: center;">'.$tslice.'</td>
 					<td style="padding-left: 5px; padding-right: 5px; font-size: x-small;">'.$entry[timeframe].'</td>
 					<td style="padding-left: 10px;"><a href="trash.php?a='.$undelete_link.'">'.$trash_undel[$lang].'</a></td>

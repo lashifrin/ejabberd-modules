@@ -819,4 +819,7 @@ $message_no_subject[eng] = "This message don't have subject.";
 $message_type_error[pol] = "Wiadomość została oznaczona jako zawierająca błąd i prawdopodobnie nie została dostarczona.";
 $message_type_error[eng] = "Message have been marked as faulty, and probably was not delivered.";
 
+$message_type_headline[pol] = "Wiadomość typu <i>Headline</i> o temacie: ";
+$message_type_headline[eng] = "Message type <i>Headline</i> sent with subject: ";
+
 ?>

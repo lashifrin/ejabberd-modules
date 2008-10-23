@@ -116,7 +116,12 @@ if ($variables[ismylink] === "1") {
 	$nickname=query_nick_name($ejabberd_roster,$uname,$sname);
 	$jid=''.$uname.'@'.$sname.'';
 	$hidden_fields = $enc->crypt_url("tslice=$enc->tslice&peer_name_id=$variables[peer_name_id]&peer_server_id=$variables[peer_server_id]&lnk=$variables[lnk]&strt=$variables[strt]&linktag=$variables[linktag]");
+	if (!$nickname) {
 
+			$nickname = $not_in_r[$lang];
+			$jid = $sname;
+
+	}
 	$html->set_body('
 		<center>
 		'.$my_links_save_d[$lang].'<br />
@@ -162,6 +167,12 @@ if ($my_links_count === "0") {
 			$nickname=query_nick_name($ejabberd_roster,$peer_name,$peer_server);
 			$desc = htmlspecialchars($entry[description]);
 			$jid = $peer_name.'@'.$peer_server;
+			if (!$nickname) {
+
+				$nickname = $not_in_r[$lang];
+				$jid = $peer_server;
+			
+			}
 			$html->set_body('
 					<tr style="cursor: pointer;" bgcolor="#e8eef7" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#e8eef7\';">
 					<td onclick="window.location=\''.$view_type.'?loc=4&a='.$entry['link'].'\';" style="padding-left: 10px; padding-right: 10px">'.verbose_date($entry['datat'],$lang).'</td>

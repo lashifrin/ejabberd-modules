@@ -184,9 +184,9 @@ if (!isset($mo)) {
 if (validate_date($mo."-1") === false) { 
 	
 	unset ($tslice); 
-	unset($e_string); 
-	unset($talker); 
-	$mo=date("Y-m");  
+	unset ($e_string); 
+	unset ($talker); 
+	$mo = date("Y-m");  
 
 }
 
@@ -274,7 +274,7 @@ if ($tslice) {
 		
 		$roster_name = query_nick_name($ejabberd_roster,$sort_me[username],$sort_me[server_name]);
 		$arr_key++;
-		if ($roster_name === "") {
+		if (!$roster_name) {
 
 			$sorted_spec[$arr_key] = array(
 					"roster_name"=>$roster_name,
@@ -300,11 +300,14 @@ if ($tslice) {
 		}
 	
 	}
-
+	
 	// sort and split two lists: normal contacts and special contacts.
 	asort($sorted_list);
-	$sorted_list = array_merge($sorted_list,$sorted_spec);
-	
+	if ($sorted_spec) {
+
+		$sorted_list = array_merge($sorted_list,$sorted_spec);
+
+	}
 	$html->set_body('<td valign="top" style="padding-top: 15px;">
         		<table width="200" border="0" cellpadding="0" cellspacing="0" class="calbck_con">
       			<tr>
@@ -345,15 +348,19 @@ if ($tslice) {
 		}
 		
 		$nickname = $entry[roster_name];
-		if ($nickname === "") { 
+		if (!$nickname) { 
 		
+				$calday_class="caldays4";
 				$nickname = $not_in_r[$lang];
 				$spec_con = '<br><span style="text-indent: 10px; font-size: smaller;">(<i>'.htmlspecialchars($server_name).'</i>)</span>';
+				unset($malpa);
 				
 			}
 			else {
 
+				$calday_class="caldays3";
 				unset($spec_con);
+				$malpa = "@";
 
 		}
 		
@@ -376,18 +383,7 @@ if ($tslice) {
 					
 		}
 
-		if ($spec_con) {
-
-				unset($malpa);
-
-			}
-			else {
-
-				$malpa="@";
-
-		}
-					
-		$html->set_body('<a class="caldays3" id="pretty" href="?a='.$to_base2.'" title="JabberID:;'.htmlspecialchars($user_name).$malpa.htmlspecialchars($server_name).';---;
+		$html->set_body('<a class="'.$calday_class.'" id="pretty" href="?a='.$to_base2.'" title="JabberID:;'.htmlspecialchars($user_name).$malpa.htmlspecialchars($server_name).';---;
 			<b>'.$chat_lines[$lang].$entry[lcount].'</b>">'.$bold_b.cut_nick($nickname).$bold_e.'</a>');
 				
 		if ($mrk==1 AND $next_t != NULL) { 
@@ -621,27 +617,37 @@ if ($talker) {
 			$ts_mark="1";
 		}
 
-		if ($col==="main_row_message") {
+		if ($col==="main_row_message" OR $col==="main_row_headline") {
 
-				if ($entry["subject"] == "") {
+			if ($entry["subject"] == "") {
 
-						$subject = $message_no_subject[$lang];
-
-					}
-					else{
-
-						$subject = $entry["subject"];
+					$subject = $message_no_subject[$lang];
 
 				}
+				else{
 
-				$html->set_body('<tr class="main_row_message_title"><td colspan="7"><b>'.$message_type_message[$lang].'</b> <i>'.htmlspecialchars($subject).'</i></td></tr>');
+					$subject = $entry["subject"];
+
+			}
+		
+		}
+
+		if ($col==="main_row_message") {
+
+			$html->set_body('<tr class="main_row_message_title"><td colspan="7"><b>'.$message_type_message[$lang].'</b> <i>'.htmlspecialchars($subject).'</i></td></tr>');
 
 		}
 
 		if ($col==="main_row_error") {
 
-				$html->set_body('<tr class="main_row_error"><td colspan="7"><b>'.$message_type_error[$lang].'</b></td></tr>');
+			$html->set_body('<tr class="main_row_error"><td colspan="7"><b>'.$message_type_error[$lang].'</b></td></tr>');
 				
+		}
+
+		if ($col==="main_row_headline") {
+
+			$html->set_body('<tr class="main_row_headline"><td colspan="7"><b>'.$message_type_headline[$lang].'</b><i>'.htmlspecialchars($subject).'</i></td></tr>');
+
 		}
 
                 $html->set_body('<tr class="'.$col.'"><td class="time_chat" style="padding-left: 10px; padding-right: 10px;";>'.$ts.'</td>');

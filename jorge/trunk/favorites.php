@@ -39,10 +39,21 @@ if ($init == "1") {
 		$db->get_server_name($peer_server_id);
 		$server_name = $db->result->server_name;
 		$nick_name =  query_nick_name($ejabberd_roster,$user_name, $server_name);
+		if (!$nick_name) {
+
+				$nick_name = $not_in_r[$lang];
+				unset($malpa);
+			
+			}
+			else{
+
+				$malpa = "@";
+
+		}
 		$html->set_body('
 				<center>'.$fav_add[$lang].':<br>
 				<table class="ff" border="0" cellspacing="0">
-				<tr class="main_row_b"><td style="text-align: center;">'.$fav_chat[$lang].'<b>'.cut_nick($nick_name).'</b> (<i>'.$user_name.'@'.$server_name.'</i>)</td></tr>
+				<tr class="main_row_b"><td style="text-align: center;">'.$fav_chat[$lang].'<b>'.cut_nick($nick_name).'</b> (<i>'.$user_name.$malpa.$server_name.'</i>)</td></tr>
 				<form style="margin-bottom: 0;" action="favorites.php" method="post">
 				<tr><td colspan="3" align="center">
 					<textarea class="ccc" name="desc" rows="4">'.$my_links_optional[$lang].'</textarea>
@@ -130,10 +141,21 @@ if (count($db->result)>0) {
 					$comment = wordwrap($comment,30,"<br>",true);
 			
 			}
+			if (!$nickname) { 
+			
+					$nickname = $not_in_r[$lang]; 
+					unset($malpa);
+			
+				}
+				else {
+
+					$malpa = "@";
+
+			}
 			$html->set_body('
 				<tr style="cursor: pointer;" bgcolor="#e8eef7" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#e8eef7\';">
 				<td onclick="window.location=\''.$view_type.'?a='.$to_base.'&loc=3\';" style="padding-left: 10px; padding-right: 10px">
-					<b>'.htmlspecialchars(cut_nick($nickname)).'</b> (<i>'.htmlspecialchars($user_name).'@'.htmlspecialchars($server_name).'</i>)
+					<b>'.htmlspecialchars(cut_nick($nickname)).'</b> (<i>'.htmlspecialchars($user_name).$malpa.htmlspecialchars($server_name).'</i>)
 				</td>
 				<td onclick="window.location=\''.$view_type.'?a='.$to_base.'&loc=3\';" style="padding-left: 10px; padding-right: 10px">'.verbose_date($row[tslice],$lang).'</td>
 				<td onclick="window.location=\''.$view_type.'?a='.$to_base.'&loc=3\';" style="padding-left: 10px; padding-right: 10px;">'.$comment.'</td>
