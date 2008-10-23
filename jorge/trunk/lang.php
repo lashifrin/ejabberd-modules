@@ -313,8 +313,8 @@ $del_conf[eng] = "Do you really want to delete this chat?";
 $del_conf_my_link[pol] = "Czy na pewno usunąć ten link?";
 $del_conf_my_link[eng] = "Do you really want to remove that link?";
 
-$not_in_r[pol] = "Poza listą kontaktów";
-$not_in_r[eng] = "Not in roster";
+$not_in_r[pol] = "Kontakt specjalny";
+$not_in_r[eng] = "Special contact";
 
 $del_moved[pol] = "Rozmowa została przeniesiona do kosza.";
 $del_moved[eng] = "Chat have been moved to trash.";
@@ -809,5 +809,14 @@ $go_to_jorge[eng] = "Go to Jorge main page";
 
 $qlink_l[pol] = "Szybki link: Przejdź do ostatnich rozmów";
 $qlink_l[eng] = "Quick link: Go to latest chats";
+
+$message_type_message[pol] = "Wiadomość wysłana z tematem: ";
+$message_type_message[eng] = "Message sent with subject:";
+
+$message_no_subject[pol] = "Ta wiadomość nie posiada tematu.";
+$message_no_subject[eng] = "This message don't have subject.";
+
+$message_type_error[pol] = "Wiadomość została oznaczona jako zawierająca błąd i prawdopodobnie nie została dostarczona.";
+$message_type_error[eng] = "Message have been marked as faulty, and probably was not delivered.";
 
 ?>

@@ -786,13 +786,11 @@ class db_manager {
 				b.server_id=c.peer_server_id 
 			AND 
 				c.at = '$tslice' 
-			AND 
-				username!='' 
 			ORDER BY 
 				lower(username)
 				
 		";
-		
+
 		$this->select($query,"raw");
 		return $this->commit_select(array("username","server_name","todaytalk","server","lcount"));
 
@@ -826,7 +824,9 @@ class db_manager {
 		$tslice_table = $this->construct_table($this->tslice);
 		$query="SELECT 
 				from_unixtime(timestamp+0) as ts,
-				direction, 
+				direction,
+				type,
+				subject,
 				peer_name_id, 
 				peer_server_id, 
 				peer_resource_id, 
@@ -851,7 +851,7 @@ class db_manager {
 		";
 
 		$this->select($query,"raw");
-		return $this->commit_select(array("ts","direction","peer_name_id","peer_server_id","peer_resource_id","body"));
+		return $this->commit_select(array("ts","direction","type","subject","peer_name_id","peer_server_id","peer_resource_id","body"));
 
 	}
 
