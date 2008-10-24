@@ -543,15 +543,27 @@ if ($talker) {
 
 	}
 	// processing messages. this should be handled as separate message_processor, so that tree view and calendar view can share the same code withoud redundancy. To be done in 2.0
+	$mark_me = false;
 	$result = $db->result;
 	foreach($result as $entry) {
 
-		if ($resource_last !== $entry[peer_resource_id]) {
+		// always get resource_id if message is type of groupchat
+		if ($entry[type] !== "groupchat") {
+
+				if ($resource_last !== $entry[peer_resource_id]) {
+
+					$db->get_resource_name($entry[peer_resource_id]);
+					$resource = $db->result->resource_name;
+
+				}
+			
+			}
+			else{
 
 				$db->get_resource_name($entry[peer_resource_id]);
 				$resource = $db->result->resource_name;
 
-			}
+		}
 
 		$resource_last = $entry[peer_resource_id];
                 $licz++;
@@ -567,19 +579,6 @@ if ($talker) {
 						$col="main_row_b"; 
 				}
 			}
-			elseif($entry["type"] === "groupchat") {
-
-				if ($entry["direction"] === "to") {
-
-						$col="main_row_group_to";
-
-					}
-					else {
-
-						$col="main_row_group_from";
-
-					}
-				}
 			elseif($entry["type"] === "error") {
 
 					$col="main_row_error";
@@ -623,45 +622,47 @@ if ($talker) {
 			$ts_mark="1";
 		}
 
-		// setting subject
-		if ($col==="main_row_message" OR $col==="main_row_headline") {
+		// run code only if type is not groupchat
+		if ($entry["type"] !== "groupchat") {
 
-			if ($entry["subject"]) {
+			// setting subject
+			if ($col==="main_row_message" OR $col==="main_row_headline") {
 
-					$subject = ": ".$entry["subject"];
+				if ($entry["subject"]) {
+
+						$subject = ": ".$entry["subject"];
+
+					}
+					else{
+
+						unset($subject);
 
 				}
-				else{
+		
+			}
 
-					unset($subject);
+			// add line in case of special message
+			if ($col==="main_row_message") {
+
+				$html->set_body('<tr class="main_row_message"><td colspan="7" class="main_row_special">'.$message_type_message[$lang].' '.htmlspecialchars($subject).'</td></tr>');
 
 			}
-		
-		}
 
-		// add line in case of special message
-		if ($col==="main_row_message") {
+			if ($col==="main_row_error") {
 
-			$html->set_body('<tr class="main_row_message"><td colspan="7" class="main_row_special">'.$message_type_message[$lang].' '.htmlspecialchars($subject).'</td></tr>');
-
-		}
-
-		if ($col==="main_row_error") {
-
-			$html->set_body('<tr class="main_row_error"><td colspan="7" class="main_row_special">'.$message_type_error[$lang].'</td></tr>');
+				$html->set_body('<tr class="main_row_error"><td colspan="7" class="main_row_special">'.$message_type_error[$lang].'</td></tr>');
 				
+			}
+
+			if ($col==="main_row_headline") {
+
+				$html->set_body('<tr class="main_row_headline"><td colspan="7" class="main_row_special">'.$message_type_headline[$lang].' '.htmlspecialchars($subject).'</td></tr>');
+
+			}
+
 		}
 
-		if ($col==="main_row_headline") {
-
-			$html->set_body('<tr class="main_row_headline"><td colspan="7" class="main_row_special">'.$message_type_headline[$lang].' '.htmlspecialchars($subject).'</td></tr>');
-
-		}
-
-		// timestamp
-                $html->set_body('<tr class="'.$col.'"><td class="time_chat" style="padding-left: 10px; padding-right: 10px;";>'.$ts.'</td>');
-
-		// calculate chat direction, weather to display nick
+		// calculate chat direction, whether to display nick...
                 if ($entry["direction"] == "from") {
 
                                 $out=$nickname;
@@ -677,66 +678,141 @@ if ($talker) {
                         
 			}
 
-                if ($aa<2 AND $tt<2) {
+		// timestamp, beginning of the chatline
+		if ($entry["type"] !== "groupchat") {
 
-                                $html->set_body('<td style="padding-left: 5px; padding-right: 10px; nowrap="nowrap">'.cut_nick($out).'<a name="'.$licz.'"></a>');
+                		$html->set_body('<tr class="'.$col.'"><td class="time_chat" style="padding-left: 10px; padding-right: 10px;";>'.$ts.'</td>');
 
-                                if ($out!=TOKEN) {
+			}
+			else{
 
-						if ($spec_mark === false) {
+				if ($out!==TOKEN) {
 
-                                				$html->set_body('
-									<br><div style="text-align: left; padding-left: 5px;">
-									<a class="export" id="pretty" title="'.$resource_only[$lang].'" href="?a='.$e_string.'&amp;b='.$entry[peer_resource_id].'">
-                                					<small><i>'.cut_nick(htmlspecialchars($resource)).'</i></small></a></div>
-									');
+					// colorize
+					if ($resource_group === $resource OR !$resource_group) {
+
+							if (!$col) {
+
+								$col = "main_row_group_to";
 							
+							}
+							$col=$col;
+						
+						}
+						else{
+
+							if($col === "main_row_group_from") {
+
+								$col="main_row_group_to";
 							}
 							else{
 
-								$html->set_body('<br><div style="text-align: left; padding-left: 5px;">
-									<small><i>'.cut_nick(htmlspecialchars($server_name)).'</i></small></div>
-									');
-						}
+								$col="main_row_group_from";
 
-                                }
+							}
+						
+					}
+					$html->set_body('<tr class="'.$col.'"><td class="time_chat" style="padding-left: 10px; padding-right: 10px;";>'.$ts.'</td>');
 
-                                $html->set_body('</td>');
-                                $here="1";
-
-                        }
-                        else {
-
-                                $html->set_body('<td style="text-align: right; padding-right: 5px">-</td>');
-				$here="0";
-                        
+				}
 		}
 
-		// process body part
-                $new_s=htmlspecialchars($entry["body"]);
-                $to_r = array("\n");
-                $t_ro = array("<br>");
-                $new_s=str_replace($to_r,$t_ro,$new_s);
-                $new_s=wordwrap($new_s,107,"<br>",true);
-                $new_s=new_parse_url($new_s);
-                $html->set_body('<td width="800" colspan="3">'.$new_s.'</td>');
-		$lnk = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$entry[peer_server_id]");
-		$to_base2 = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$entry[peer_server_id]&ismylink=1&linktag=$licz&lnk=$lnk&strt=$start");
-                if ($here=="1") { 
-			
-				$html->set_body('<td colspan="2" style="padding-left: 2px; font-size: 9px;"><a style="color: #1466bc" href="my_links.php?a='.$to_base2.'">'.$my_links_save[$lang].'</a></td>');
-			
-			} 
-			else { 
-			
-				$html->set_body('<td></td>');
-				
-			}
-
-                if ($t=2) { $c=1; $t=0; } // WTF!?
+		// different bahaviour for groupchat and other messages
+		if ($entry["type"] !== "groupchat") {
                 
-		$html->set_body('</tr>');
-	
+				if ($aa<2 AND $tt<2) {
+
+                                		$html->set_body('<td style="padding-left: 5px; padding-right: 10px; nowrap="nowrap">'.cut_nick($out).'<a name="'.$licz.'"></a>');
+
+                                		if ($out !== TOKEN) {
+
+								if ($spec_mark === false) {
+
+                                						$html->set_body('
+											<br><div style="text-align: left; padding-left: 5px;">
+											<a class="export" id="pretty" title="'.$resource_only[$lang].'" href="?a='.$e_string.'&amp;b='.$entry[peer_resource_id].'">
+                                							<small><i>'.cut_nick(htmlspecialchars($resource)).'</i></small></a></div>
+											');
+							
+									}
+									else{
+
+										$html->set_body('<br><div style="text-align: left; padding-left: 5px;">
+											<small><i>'.cut_nick(htmlspecialchars($server_name)).'</i></small></div>
+											');
+								}
+
+                                		}
+
+                                		$html->set_body('</td>');
+                                		$here="1";
+
+                        		}
+                        		else {
+
+                                		$html->set_body('<td style="text-align: right; padding-right: 5px">-</td>');
+						$here="0";
+                        
+				}
+
+			}
+			else{
+
+				// do not display own chats sent to MUC
+				if ($out !== TOKEN) {
+
+						if ($resource_group!==$resource) {
+
+								$html->set_body('<td style="padding-left: 5px; padding-right: 10px; nowrap="nowrap"><small>MUC: <i>'.cut_nick($out).'</i></small><a name="'.$licz.'"></a>
+                                					<br><div style="text-align: left; padding-left: 5px;">'.cut_nick(htmlspecialchars($resource)).'</div></td>
+									');
+								$here="1";
+								$resource_group = $resource;
+						
+							}
+							else{
+
+								$html->set_body('<td style="text-align: right; padding-right: 5px">-</td>');
+								$here="0";
+							
+							}
+					
+					}
+					else{
+
+						$here="0";
+					
+					}
+		}
+
+		// process body part, do not show chat if message is type of groupchat
+		if ($out!==TOKEN OR $entry["type"] !== "groupchat") {
+
+                	$new_s=htmlspecialchars($entry["body"]);
+                	$to_r = array("\n");
+                	$t_ro = array("<br>");
+                	$new_s=str_replace($to_r,$t_ro,$new_s);
+                	$new_s=wordwrap($new_s,107,"<br>",true);
+                	$new_s=new_parse_url($new_s);
+                	$html->set_body('<td width="800" colspan="3">'.$new_s.'</td>');
+			$lnk = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$entry[peer_server_id]");
+			$to_base2 = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$entry[peer_server_id]&ismylink=1&linktag=$licz&lnk=$lnk&strt=$start");
+                	if ($here=="1") { 
+			
+					$html->set_body('<td colspan="2" style="padding-left: 2px; font-size: 9px;"><a style="color: #1466bc" href="my_links.php?a='.$to_base2.'">'.$my_links_save[$lang].'</a></td>');
+			
+				} 
+				else { 
+			
+					$html->set_body('<td></td>');
+				
+				}
+
+                	if ($t=2) { $c=1; $t=0; } // WTF!?
+                
+			$html->set_body('</tr>');
+
+		}
 	}
 	
 $html->set_body('</tbody>');
