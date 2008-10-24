@@ -126,7 +126,7 @@ if ($search_phase!="") {
 	}
 
 	$html->set_overview('<h2>'.$search_res[$lang].'</h2><table align="center" border="0" cellspacing="0" class="ff">
-			<tr class="header"><td>'.$time_t[$lang].'</td><td>'.$talks[$lang].'</td><td>'.$thread[$lang].'</td><td>'.$score.'</td></tr>
+			<tr class="header"><td width="150">'.$time_t[$lang].'</td><td>'.$talks[$lang].'</td><td>'.$thread[$lang].'</td><td>'.$score.'</td></tr>
 			<tr class="spacer"><td colspan="4"></td></tr>'
 			);
 
@@ -304,7 +304,7 @@ if ($search_phase!="") {
 									onclick="window.open(\''.$view_type.'?a='.$to_base.'\');" 
 									onMouseOver="this.bgColor=\'c3d9ff\';" 
 									onMouseOut="this.bgColor=\'#'.$col.'\';">
-									<td width="120">'.$results["ts"].'</td>
+									<td width="120" style="text-align: center;">'.$results["ts"].'</td>
 									');
 
 							// username from user roster
@@ -525,7 +525,7 @@ if ($search_phase!="") {
 			}
 
 			// content
-			$html->set_body('<td width="120">'.$dat["ts"].'</td>
+			$html->set_body('<td width="120" style="text-align: center;">'.$dat["ts"].'</td>
 					<td style="text-align: left;">'.$fr.'&nbsp;&nbsp;'.cut_nick($talk).'&nbsp;&nbsp;</td>
 					<td width="700">'.$body_talk.'</td>
 					<td style="text-align: center;">'.round($dat[score],2).'</td>

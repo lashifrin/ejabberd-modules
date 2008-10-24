@@ -543,7 +543,6 @@ if ($talker) {
 
 	}
 	// processing messages. this should be handled as separate message_processor, so that tree view and calendar view can share the same code withoud redundancy. To be done in 2.0
-	$mark_me = false;
 	$result = $db->result;
 	foreach($result as $entry) {
 
