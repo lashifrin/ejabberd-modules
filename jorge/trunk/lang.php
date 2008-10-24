@@ -810,16 +810,13 @@ $go_to_jorge[eng] = "Go to Jorge main page";
 $qlink_l[pol] = "Szybki link: Przejdź do ostatnich rozmów";
 $qlink_l[eng] = "Quick link: Go to latest chats";
 
-$message_type_message[pol] = "Wiadomość wysłana z tematem: ";
-$message_type_message[eng] = "Message sent with subject:";
-
-$message_no_subject[pol] = "Ta wiadomość nie posiada tematu.";
-$message_no_subject[eng] = "This message don't have subject.";
+$message_type_message[pol] = "Wiadomość";
+$message_type_message[eng] = "Message";
 
 $message_type_error[pol] = "Wiadomość została oznaczona jako zawierająca błąd i prawdopodobnie nie została dostarczona.";
 $message_type_error[eng] = "Message have been marked as faulty, and probably was not delivered.";
 
-$message_type_headline[pol] = "Wiadomość typu <i>Headline</i> o temacie: ";
-$message_type_headline[eng] = "Message type <i>Headline</i> sent with subject: ";
+$message_type_headline[pol] = "Headline";
+$message_type_headline[eng] = "Headline";
 
 ?>

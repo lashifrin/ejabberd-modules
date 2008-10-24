@@ -276,6 +276,7 @@ if ($tslice) {
 		$arr_key++;
 		if (!$roster_name) {
 
+			// split contact into 2 arrays: one with full jids, second without names - transports, agents..
 			$sorted_spec[$arr_key] = array(
 					"roster_name"=>$roster_name,
 					"username"=>$sort_me[username],
@@ -541,6 +542,7 @@ if ($talker) {
 			$html->alert_message($oper_fail[$lang]);
 
 	}
+	// processing messages. this should be handled as separate message_processor, so that tree view and calendar view can share the same code withoud redundancy. To be done in 2.0
 	$result = $db->result;
 	foreach($result as $entry) {
 
@@ -553,6 +555,7 @@ if ($talker) {
 
 		$resource_last = $entry[peer_resource_id];
                 $licz++;
+		// marking messages
 		if ($entry["type"] === "chat" OR $entry["type"] == "") {
 
                 		if ($entry["direction"] === "to") { 
@@ -603,55 +606,62 @@ if ($talker) {
                 if ($time_diff>$split_line AND $licz>1) { 
                                 
 				$in_minutes = round(($time_diff/60),0);
-                                $html->set_body('<tr class="splitl"><td colspan="7" style="font-size: 10px;"><i>'.verbose_split_line($in_minutes,$lang,$verb_h,$in_min).'</i><hr size="1" noshade="noshade" style="color: #cccccc;"></td></tr>');
+                                $html->set_body('<tr class="splitl">
+							<td colspan="7" style="font-size: 10px;"><i>'.verbose_split_line($in_minutes,$lang,$verb_h,$in_min).'</i>
+							<hr size="1" noshade="noshade" style="color: #cccccc;"></td></tr>
+						');
 		}
 
-		# check if chat is continuation from previous day
+		// check if chat is continuation from previous day
 		if ($ts_mark!="1" AND substr($ts, 0 , strpos($ts, ":")) == 00 ) {
 
 			if ( check_thread($db,$talker,$server,$tslice,$xmpp_host,2)===TRUE) {
 				
 					$html->set_body('<tr><td colspan="6" style="text-align: left; padding-left: 5px;" class="message"><a href="calendar_view.php?a='.$to_base_prev.'">'.$cont_chat_p[$lang].'</a></td></tr>');
 			}
-			#check only first line
+			// check only first line
 			$ts_mark="1";
 		}
 
+		// setting subject
 		if ($col==="main_row_message" OR $col==="main_row_headline") {
 
-			if ($entry["subject"] == "") {
+			if ($entry["subject"]) {
 
-					$subject = $message_no_subject[$lang];
+					$subject = ": ".$entry["subject"];
 
 				}
 				else{
 
-					$subject = $entry["subject"];
+					unset($subject);
 
 			}
 		
 		}
 
+		// add line in case of special message
 		if ($col==="main_row_message") {
 
-			$html->set_body('<tr class="main_row_message_title"><td colspan="7"><b>'.$message_type_message[$lang].'</b> <i>'.htmlspecialchars($subject).'</i></td></tr>');
+			$html->set_body('<tr class="main_row_message"><td colspan="7" class="main_row_special">'.$message_type_message[$lang].' '.htmlspecialchars($subject).'</td></tr>');
 
 		}
 
 		if ($col==="main_row_error") {
 
-			$html->set_body('<tr class="main_row_error"><td colspan="7"><b>'.$message_type_error[$lang].'</b></td></tr>');
+			$html->set_body('<tr class="main_row_error"><td colspan="7" class="main_row_special">'.$message_type_error[$lang].'</td></tr>');
 				
 		}
 
 		if ($col==="main_row_headline") {
 
-			$html->set_body('<tr class="main_row_headline"><td colspan="7"><b>'.$message_type_headline[$lang].'</b><i>'.htmlspecialchars($subject).'</i></td></tr>');
+			$html->set_body('<tr class="main_row_headline"><td colspan="7" class="main_row_special">'.$message_type_headline[$lang].' '.htmlspecialchars($subject).'</td></tr>');
 
 		}
 
+		// timestamp
                 $html->set_body('<tr class="'.$col.'"><td class="time_chat" style="padding-left: 10px; padding-right: 10px;";>'.$ts.'</td>');
 
+		// calculate chat direction, weather to display nick
                 if ($entry["direction"] == "from") {
 
                                 $out=$nickname;
@@ -702,6 +712,7 @@ if ($talker) {
                         
 		}
 
+		// process body part
                 $new_s=htmlspecialchars($entry["body"]);
                 $to_r = array("\n");
                 $t_ro = array("<br>");
@@ -730,7 +741,7 @@ if ($talker) {
 	
 $html->set_body('</tbody>');
 
-# Check thread. ToDo: Run code only on last page
+// Check thread. ToDo: Run code only on last page
 if (substr($ts, 0 , strpos($ts, ":")) == 23) {
 	if ( check_thread($db,$talker,$server,$tslice,$xmpp_host,1) === true) {
 		

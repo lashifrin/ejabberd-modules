@@ -159,12 +159,12 @@ tr.main_row_a { background-color: #e8eef7; }
 tr.main_row_b { background-color: #e0e9f7; }
 tr.main_row_error { background-color: #de5b5b; }
 tr.main_row_headline { background-color: #9fd8ee; }
-tr.main_row_message_title { background-color: #5cc483; }
-tr.main_row_message { background-color: #94cfaa; }
+tr.main_row_message { background-color: #ade8df; }
 tr.main_row_group_to { background-color: #fdffbb; }
 tr.main_row_group_from { background-color: #fdffd4; }
 tr.spacer { background-color: #afccf7; }
 tr.spacerb { background-color: #ffffcc; }
+td.main_row_special { font-size: x-small; font-style: italic; }
 
 tr.splitl {
 
