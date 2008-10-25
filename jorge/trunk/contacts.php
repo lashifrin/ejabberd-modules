@@ -158,7 +158,7 @@ if ($roster_con) {
 
 			$html->set_body('
 				<tr bgcolor="'.$col.'" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#'.$col.'\';">
-				<td title="'.$con_title[$lang].'" style="padding-left:7px" onclick="window.location=\'chat_map.php?chat_map='.$predefined.'\';"><b>'.cut_nick(htmlspecialchars($nick)).'</b></td>
+				<td style="padding-left:7px"><b>'.cut_nick(htmlspecialchars($nick)).'</b></td>
 				<td>(<i>'.htmlspecialchars($jid).'</i>)</td>
 				<td style="text-align: center;">'.cut_nick(htmlspecialchars($grp)).'</td>
 				<td style="text-align: center;"><a href="chat_map.php?chat_map='.$predefined.'"><u>'.$show_chat_as_map[$lang].'</u></a>|

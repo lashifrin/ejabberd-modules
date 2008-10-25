@@ -148,14 +148,14 @@ $all_for_u[eng] = "Show all chats using: ";
 $all_for_u_m[pol] = "strumienia";
 $all_for_u_m[eng] = "stream";
 
-$all_for_u_m_d[pol] = "Pokazuje rozmowę jako strumień wiadomości";
-$all_for_u_m_d[eng] = "Show chat as chat stream";
+$all_for_u_m_d[pol] = "Pokaż wszystkie rozmowy z tą osobą jako strumień wiadomości";
+$all_for_u_m_d[eng] = "Show all conversations with this user as stream";
 
 $all_for_u_m2[pol] = "mapy";
 $all_for_u_m2[eng] = "map";
 
-$all_for_u_m2_d[pol] = "Pokazuje rozmowę jako mapę rozmów";
-$all_for_u_m2_d[eng] = "Show chat as chat map";
+$all_for_u_m2_d[pol] = "Pokaż wszystkie rozmowy z tą osobą jako mapę rozmów";
+$all_for_u_m2_d[eng] = "Show all conversations with this user as chat map";
 
 $all_for_u_t[pol] = "Pokaż wszystkie rozmowy z tym użytkownikiem";
 $all_for_u_t[eng] = "Show all chats from this user";
@@ -257,7 +257,7 @@ $my_links_optional[pol] = "Opis (opcjonalne, max 120 znakow)";
 $my_links_optional[eng] = "Description (optional, max 120 characters)";
 
 $my_links_chat[pol] = "Rozmowa z:";
-$my_links_chat[eng] = "Chat with:";
+$my_links_chat[eng] = "Conversation with:";
 
 $my_links_commit[pol] = "zapisz";
 $my_links_commit[eng] = "save";
@@ -332,10 +332,10 @@ $help_but[pol] = "Pomoc";
 $help_but[eng] = "Help";
 
 $tip_delete[pol] = "Usuń historię rozmowy z tego dnia";
-$tip_delete[eng] = "Delete chat from this day";
+$tip_delete[eng] = "Delete this conversation";
 
 $tip_export[pol] = "Eksportuj rozmowę do pliku tekstowego";
-$tip_export[eng] = "Export this chat into text file";
+$tip_export[eng] = "Export this conversation to text file";
 
 $customize1[pol] = "Dostosuj logowanie";
 $customize1[eng] = "Customize logging";
@@ -398,7 +398,7 @@ $con_notice[pol] = "Uwaga: wyświetlane są tylko kontakty z przypisaną nazwą 
 $con_notice[eng] = "Notice: displaying only contacts with assigned nicknames.";
 
 $con_title[pol] = "Kliknij na kontakcie aby zobaczyć archiwum rozmów";
-$con_title[eng] = "Click on contact name to see chat history";
+$con_title[eng] = "Click on contact name to see conversation history";
 
 $con_saved[pol] = "Zmiany zostały zapisane";
 $con_saved[eng] = "Changes have beed saved";
@@ -416,7 +416,7 @@ $in_min[pol] = "minut";
 $in_min[eng] = "minutes";
 
 $verb_h[pol] = "przerwa w rozmowie trwająca ponad godzinę";
-$verb_h[eng] = "chat break more than one hour";
+$verb_h[eng] = "interruption in conversation lasting more than an hour";
 
 $time_range_w[pol] = "Pole \"Od\" nie może być większe od pola \"Do\"";
 $time_range_w[eng] = "Field \"From\" cannot be greater than field \"To\"";
@@ -602,8 +602,8 @@ $months_name_pol = array("Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec"
 $months_name_eng = array("January","February","March","April","May","June","July",
                              "August","September","October","November","December");
 
-$jump_to_l[pol] = "Przejdź do miesiąca";
-$jump_to_l[eng] = "Jump to month";
+$jump_to_l[pol] = "Wybierz miesiąc";
+$jump_to_l[eng] = "Select month";
 
 $chat_list_l[pol] = "Lista rozmów:";
 $chat_list_l[eng] = "Chat list:";
@@ -660,10 +660,10 @@ $sel_no[pol] = "Nie";
 $sel_no[eng] = "No";
 
 $jump_to_next[pol] = "Przejdź do następnego dnia rozmowy";
-$jump_to_next[eng] = "Jump to next day of chat";
+$jump_to_next[eng] = "Go to next conversation with this user";
 
 $jump_to_prev[pol] = "Przejdź do poprzedniego dnia rozmowy";
-$jump_to_prev[eng] = "Jump to previous day of chat";
+$jump_to_prev[eng] = "Go to to previous conversation with this user";
 
 $show_chats[pol] = "Pokaż rozmowę jako";
 $show_chats[eng] = "Show chat as";
@@ -751,7 +751,7 @@ $fav_favorited[pol] = "Ta rozmowa jest dodana do ulubionych";
 $fav_favorited[eng] = "This chat is added to favorites";
 
 $fav_contact[pol] = "Rozmowa z:";
-$faf_contact[eng] = "Chat with:";
+$fav_contact[eng] = "Conversation with:";
 
 $fav_when[pol] = "Kiedy:";
 $fav_when[eng] = "When:";
@@ -807,8 +807,8 @@ $oper_fail[eng] = "<center><b>Operation failed! Please try again later or contac
 $go_to_jorge[pol] = "Idz do strony glownej";
 $go_to_jorge[eng] = "Go to Jorge main page";
 
-$qlink_l[pol] = "Szybki link: Przejdź do ostatnich rozmów";
-$qlink_l[eng] = "Quick link: Go to latest chats";
+$qlink_l[pol] = "Przejdź do najnowszych rozmów";
+$qlink_l[eng] = "Go to latest conversations";
 
 $message_type_message[pol] = "Wiadomość";
 $message_type_message[eng] = "Message";
