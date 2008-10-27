@@ -206,24 +206,57 @@ if ($tslice) {
 
         $db->get_user_chats($tslice);
         $result = $db->result;
+	if (count($result)>0) {
+
+			$display_conversations = true;
+
+		}
+		else{
+
+			$display_conversations = false;
+
+	}
+
+if ($display_conversations === true) {
+
         // we need to sort list by nickname so we need to combiet 2 results: roster and mod_logdb chatlist:
         foreach($result as $sort_me) {
 
                 $roster_name = query_nick_name($ejabberd_roster,$sort_me[username],$sort_me[server_name]);
                 $arr_key++; 
-                $sorted_list[$arr_key] = array(
-                                "roster_name"=>$roster_name,
-                                "username"=>$sort_me[username],
-                                "server_name"=>$sort_me[server_name],
-                                "todaytalk"=>$sort_me[todaytalk],
-                                "server"=>$sort_me[server],
-                                "lcount"=>$sort_me[lcount]
-                                );
+		if (!$roster_name) {
+			
+				// split contact into 2 arrays: one with full jids, second without names - transports, agents..
+                        	$sorted_spec[$arr_key] = array(
+                                        "roster_name"=>$roster_name,
+                                        "username"=>$sort_me[username],
+                                        "server_name"=>$sort_me[server_name],
+                                        "todaytalk"=>$sort_me[todaytalk],
+                                        "server"=>$sort_me[server],
+                                        "lcount"=>$sort_me[lcount]
+                                        );
+			}
+			else {
+
+                		$sorted_list[$arr_key] = array(
+                                	"roster_name"=>$roster_name,
+                                	"username"=>$sort_me[username],
+                                	"server_name"=>$sort_me[server_name],
+                                	"todaytalk"=>$sort_me[todaytalk],
+                                	"server"=>$sort_me[server],
+                                	"lcount"=>$sort_me[lcount]
+                                	);
+		}
 
         }
 
         // sort list
         asort($sorted_list);
+	if ($sorted_spec) {
+
+		$sorted_list = array_merge($sorted_list,$sorted_spec);
+	
+	}
 
 	$html->set_body('<td valign="top" style="padding-top: 15px;">
 			<table class="ff">');
@@ -231,7 +264,7 @@ if ($tslice) {
 		
 		$user_name = $entry[username];
 		$server_name = $entry[server_name];
-		if ($talker==$entry["todaytalk"] AND $server==$entry[server]) { 
+		if ($talker == $entry["todaytalk"] AND $server==$entry[server]) { 
 		
 				$bold_b="<b>"; $bold_e="</b>"; 
 				
@@ -244,20 +277,37 @@ if ($tslice) {
 		}
 			
 		$nickname = $entry[roster_name];
-		if ($nickname=="f") { 
+		if (!$nickname) { 
 		
-			$nickname=$not_in_r[$lang]; 
+				$nickname=$not_in_r[$lang]; 
+				unset($malpa);
+				$calday_class="caldays4";
+				$spec_con = '<br><span style="text-indent: 10px; font-size: smaller;">(<i>'.htmlspecialchars($server_name).'</i>)</span>';
 			
+			}
+			else{
+			
+				$malpa = "@";
+				unset($spec_con);
+				unset($calday_class);
+
 		}
 		
 		$to_base2 = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[todaytalk]&peer_server_id=$entry[server]");
 		$html->set_body('<tr>
-				<td><a id="pretty" href="?a='.$to_base2.'" title="JabberID:;'.htmlspecialchars($user_name).'@'.htmlspecialchars($server_name).'">'.$bold_b.cut_nick($nickname).$bold_e.'</a></td>
-				</tr>');
+				<td><a class="'.$calday_class.'" id="pretty" href="?a='.$to_base2.'" title="JabberID:;'.htmlspecialchars($user_name).$malpa.htmlspecialchars($server_name).'">
+						'.$bold_b.cut_nick($nickname).$bold_e.'</a>');
+		if ($spec_con) {
+
+			$html->set_body($bold_b.$spec_con.$bold_e);
+		}
+
+		$html->set_body('</td></tr>');
 	}
 
 	$html->set_body('</table></td>');
 
+	}
 }
 
 // Chat thread:
@@ -281,9 +331,15 @@ if ($talker) {
 	$db->get_server_name($server);
 	$server_name = $db->result->server_name;
 	$nickname = query_nick_name($ejabberd_roster,$talker_name,$server_name);
-	if ($nickname=="f") { 
+	if ($nickname === "") { 
 			
-			$nickname=$not_in_r[$lang]; 
+			$nickname=$not_in_r[$lang];
+			$spec_mark = true;
+		}
+		else {
+
+			$spec_mark = false;
+
 	}
 	$predefined = $enc->crypt_url("jid=$talker_name@$server_name");
 	$html->set_body('<table id="maincontent" border="0" cellspacing="0" class="ff"><tr><td colspan="4"><div id="fav_result"></div></td></tr>');
@@ -362,109 +418,36 @@ if ($talker) {
 			<tr class="spacer"><td colspan="6"></td></tr>
 			<tbody id="searchfield">
 		');
-	if ($db->get_user_chat($tslice,$talker,$server,$resource_id,$start,$num_lines_bro) === false) {
 
-			$html->set_body($oper_fail[$lang]);
+	if($db->get_user_chat($tslice,$talker,$server,$resource_id,$start,$num_lines_bro) === false) {
+
+			$html->alert_message($oper_fail[$lang]);
+
 	}
+	// processing messages. this should be handled as separate message_processor, so that tree view and calendar view can share the same code withoud redundancy. To be done in 2.0
 	$result = $db->result;
-	foreach ($result as $entry) {
 
-                if ($resource_last !== $entry[peer_resource_id]) {
+	// some strings to pass to message_processor
+	$lang_pack = array(
+				$cont_chat_p[$lang],
+				$message_type_message[$lang],
+				$message_type_error[$lang],
+				$message_type_headline[$lang],
+				$resource_only[$lang],
+				$muc_message[$lang],
+				$my_links_save[$lang],
+				$verb_h[$lang],
+				$in_min[$lang]
+			);
 
-                                $db->get_resource_name($entry[peer_resource_id]);
-                                $resource = $db->result->resource_name;
+	// Sent all data to parsing function (message processor)
+	if (message_processor($tslice,$server_name,$start,$nickname,$result,$db,$html,$enc,TOKEN,$split_line,$lang_pack,$lang,$spec_mark,$e_string) !== true) {
 
-                        }
-                $resource_last = $entry[peer_resource_id];
-		$licz++;	
-		if ($entry["direction"] == "to") { 
-		
-				$col="main_row_a"; 
-				
-			} 
-			else { 
-			
-				$col="main_row_b"; 
-			
-		}
+			$html->alert_message($oper_fail[$lang]);
+			$html->destroy_content();
 
-		$ts=strstr($entry["ts"], ' ');
-		$pass_to_next = $entry["ts"];
-		$new_d = $entry["ts"];
-		$time_diff = abs((strtotime("$old_d") - strtotime(date("$new_d"))));
-		$old_d = $pass_to_next;
-
-		if ($time_diff>$split_line AND $licz>1) { 
-
-				$in_minutes = round(($time_diff/60),0);
-				$html->set_body('<tr class="splitl"><td colspan="6" style="font-size: 10px;"><i>'.verbose_split_line($in_minutes,$lang,$verb_h,$in_min).'</i><hr size="1" noshade="noshade" style="color: #cccccc;"></td></tr>');
-
-			} // splitting line - defaults to 900s = 15min
-
-		$html->set_body('<tr class="'.$col.'"><td class="time_chat" style="padding-left: 10px; padding-right: 10px;";>'.$ts.'</td>');
-
-		if ($entry["direction"] == "from") { 
-
-				$out=$nickname;
-				$tt=$tt+1;
-				$aa=0;
-			
-			} 
-			else { 
-
-				$out = TOKEN;
-				$aa=$aa+1;
-				$tt=0;
-		}
-
-		if ($aa<2 AND $tt<2) {
-			
-				$html->set_body('<td style="padding-left: 5px; padding-right: 10px; nowrap="nowrap">'.cut_nick($out).'<a name="'.$licz.'"></a>');
-
-				if ($out!=TOKEN) {
-
-					$html->set_body('<br><div style="text-align: left; padding-left: 5px;"><a class="export" id="pretty" title="'.$resource_only[$lang].'" href="?a='.$e_string.'&b='.$entry[peer_resource_id].'">
-							<small><i>'.cut_nick(htmlspecialchars($resource)).'</i></small></a></div>');
-					
-				}
-				
-				$html->set_body('</td>');
-				$here="1"; 
-			}
-			else {
-
-				$html->set_body('<td style="text-align: right; padding-right: 5px">-</td>');
-				$here="0"; 
-		
-		}
-
-		$new_s=htmlspecialchars($entry["body"]);
-		$to_r = array("\n");
-		$t_ro = array("<br>");
-		$new_s=str_replace($to_r,$t_ro,$new_s);
-		$new_s=wordwrap($new_s,107,"<br>",true);
-		$new_s=new_parse_url($new_s);
-		$lnk = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$entry[peer_server_id]");
-                $to_base2 = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$entry[peer_server_id]&ismylink=1&linktag=$licz&lnk=$lnk&strt=$start");
-		$html->set_body('<td width="800" colspan="2">'.$new_s.'</td>');
-		if ($here=="1") { 
-				
-				$html->set_body('<td colspan="2" style="padding-left: 2px; font-size: 9px;"><a href="my_links.php?a='.$to_base2.'">'.$my_links_save[$lang].'</a></td>');
-			} 
-			else { 
-
-				$html->set_body('<td></td>');
-		}
-
-		if ($t=2) { 
-				
-			$c=1; 
-			$t=0; 
-		}
-
-		$html->set_body('</tr>');
 	}
-	
+
  	$html->set_body('</tbody><tr class="spacer" height="1px"><td colspan="6"></td></tr><tr style="background-image: url(img/bar_bg.png); background-repeat:repeat-x;"><td style="text-align: center;" colspan="9">');
 
 	for($i=0;$i < $nume;$i=$i+$num_lines_bro){
