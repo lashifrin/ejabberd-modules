@@ -264,8 +264,25 @@ if (count($ch_mo)!=0) {
 		
 }
 
-// if we got day, lets display chats from that day...
+// if we got day, lets display chats from that day but only if there are some
 if ($tslice) {
+
+	$db->get_user_chats($tslice);
+	$result = $db->result;
+	if (count($result)>0) {
+
+			$display_conversations = true;
+
+		}
+		else{
+
+			$display_conversations = false;
+
+	}
+
+}
+
+if ($display_conversations === true) {
 	
 	$db->get_user_chats($tslice);
 	$result = $db->result;
@@ -757,10 +774,17 @@ if ($talker) {
 			}
 			else{
 
-				// do not display own chats sent to MUC
+				// do not display own chats sent to MUC. Here resource is actualy nickname as MUC standard specify
 				if ($out !== TOKEN) {
 
 						if ($resource_group!==$resource) {
+
+								// if message is sent without resource, that must be channel message, advise user.
+								if ($resource==="") {
+
+									$resource=$muc_message[$lang];
+								
+								}
 
 								$html->set_body('<td style="padding-left: 5px; padding-right: 10px; nowrap="nowrap"><small>MUC: <i>'.cut_nick($out).'</i></small><a name="'.$licz.'"></a>
                                 					<br><div style="text-align: left; padding-left: 5px;">'.cut_nick(htmlspecialchars($resource)).'</div></td>
@@ -785,6 +809,8 @@ if ($talker) {
 		}
 
 		// process body part, do not show chat if message is type of groupchat
+		// this is sadly funny i write this 'if' and i dont know what exacly it do :/
+
 		if ($out!==TOKEN OR $entry["type"] !== "groupchat") {
 
                 	$new_s=htmlspecialchars($entry["body"]);

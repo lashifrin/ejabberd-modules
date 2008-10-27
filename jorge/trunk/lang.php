@@ -143,7 +143,7 @@ $search_warn[pol] = "Uwaga: Wyszukuje tylko w wybranym przedziale czasu";
 $search_warn[eng] = "Warning: Showing results only from selected time range";
 
 $all_for_u[pol] = "Pokaż wszystkie rozmowy używając: ";
-$all_for_u[eng] = "Show all chats using: ";
+$all_for_u[eng] = "Show conversations with this user using: ";
 
 $all_for_u_m[pol] = "strumienia";
 $all_for_u_m[eng] = "stream";
@@ -176,7 +176,7 @@ $main_date[pol] = "Data:";
 $main_date[eng] = "Date:";
 
 $talks[pol] = "Lista rozmów:";
-$talks[eng] = "Chat list:";
+$talks[eng] = "Conversation list:";
 
 $thread[pol] = "Treść:";
 $thread[eng] = "Content:";
@@ -317,13 +317,13 @@ $not_in_r[pol] = "Kontakt specjalny";
 $not_in_r[eng] = "Special contact";
 
 $del_moved[pol] = "Rozmowa została przeniesiona do kosza.";
-$del_moved[eng] = "Chat have been moved to trash.";
+$del_moved[eng] = "Conversation moved to trash.";
 
 $del_info[pol] = "Rozmowa została usunięta";
-$del_info[eng] = "Chat have been deleted";
+$del_info[eng] = "Conversation have been deleted";
 
 $undo_info[pol] = "Rozmowa została przywrócona";
-$undo_info[eng] = "Chat restored succesfuly";
+$undo_info[eng] = "Conversation restored succesfuly";
 
 $del_my_link[pol] = "usuń";
 $del_my_link[eng] = "delete";
@@ -564,7 +564,7 @@ $trash_name[pol] = "Kosz";
 $trash_name[eng] = "Trash";
 
 $trash_desc[pol] = "Lista rozmów usuniętych. Wiadomości które przebywają w koszu dłużej niż 30 dni są automatycznie usuwane";
-$trash_desc[eng] = "List of trashed chats. Chats that are left in trash are automaticly deleted after 30 days.";
+$trash_desc[eng] = "List of trashed conversations. Conversations that are left in trash are automaticly deleted after 30 days.";
 
 $trash_undel[pol] = "Przywróć";
 $trash_undel[eng] = "Restore";
@@ -582,7 +582,7 @@ $trash_empty[pol] = "Kosz jest pusty";
 $trash_empty[eng] = "Trash is empty";
 
 $trash_recovered[pol] = "Rozmowa została przeniesiona do archiwum";
-$trash_recovered[eng] = "Chat have been moved to archive";
+$trash_recovered[eng] = "Conversation have been moved to archive";
 
 $cal_head[pol] = "Kalendarz rozmów.";
 $cal_head[eng] = "Chat calendar";
@@ -606,7 +606,7 @@ $jump_to_l[pol] = "Wybierz miesiąc";
 $jump_to_l[eng] = "Select month";
 
 $chat_list_l[pol] = "Lista rozmów:";
-$chat_list_l[eng] = "Chat list:";
+$chat_list_l[eng] = "Conversation list:";
 
 $select_view[pol] = "Wybierz rodzaj widoku przeglądarki:";
 $select_view[eng] = "Select prefered view for browser:";
@@ -732,14 +732,14 @@ $fav_main[eng] = "Favorites";
 $fav_desc[pol] = "Lista rozmów oznaczonych jako \"Ulubione\"";
 $fav_desc[eng] = "List of chats marked as favorites";
 
-$fav_add[pol] = "Dodaj tę rozmowę do ulubionych";
-$fav_add[eng] = "Add this chat to favorites";
+$fav_add[pol] = "Dodaj rozmowę do ulubionych";
+$fav_add[eng] = "Add conversation to favorites";
 
 $fav_chat[pol] = "Rozmowa z: ";
-$fav_chat[eng] = "Chat with: ";
+$fav_chat[eng] = "Conversation with: ";
 
 $fav_success[pol] = "Rozmowa została dodana do Twoich <i>Ulubionych</i> !";
-$fav_success[eng] = "This chat had been succesfully added to your <i>Favorites</i> !";
+$fav_success[eng] = "Conversation has been succesfully added to your <i>Favorites</i> !";
 
 $fav_discard[pol] = "Ukryj tą informacje";
 $fav_discard[eng] = "Discard this message";
@@ -748,7 +748,7 @@ $fav_exist[pol] = "Ooops...Ta rozmowa juz znajduje się w Twoich <i>Ulubionych</
 $fav_exist[eng] = "Ooops...This chat is already in your <i>Favorites</i>";
 
 $fav_favorited[pol] = "Ta rozmowa jest dodana do ulubionych";
-$fav_favorited[eng] = "This chat is added to favorites";
+$fav_favorited[eng] = "This conversation is already added to favorites";
 
 $fav_contact[pol] = "Rozmowa z:";
 $fav_contact[eng] = "Conversation with:";
@@ -769,7 +769,7 @@ $fav_remove[pol] = "usuń";
 $fav_remove[eng] = "delete";
 
 $fav_removed[pol] = "Rozmowa została usnięta z <i>Ulubionych</i>";
-$fav_removed[eng] = "Chat has been deleted from <i>Favorites</i>";
+$fav_removed[eng] = "Conversation has been deleted from <i>Favorites</i>";
 
 $fav_empty[pol] = "Nie masz aktualnie zapisanych żadnych <i>Ulubionych</i> rozmów";
 $fav_empty[eng] = "You dont have any <i>Favorites</i> chats saved";
@@ -818,5 +818,8 @@ $message_type_error[eng] = "Message have been marked as faulty, and probably was
 
 $message_type_headline[pol] = "Headline";
 $message_type_headline[eng] = "Headline";
+
+$muc_message[pol] = "Wiadomość systemowa:";
+$muc_message[eng] = "System message:";
 
 ?>

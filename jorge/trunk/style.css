@@ -11,11 +11,13 @@ h2 {
 	}
 
 input.cc { width: 400px; border: 1px solid gray; }
+input:focus.cc { width: 400px; border: 1px solid #73a6ff; }
 select.cc { width: 70pt; border: 1px solid gray; }
 select.cc2 { width: 40pt; border: 1px solid gray; text-align: center; }
 select.cc3 { width: 100pt; border: 1px solid gray; text-align: center; }
 
 input.log { width: 250px; border: 1px solid gray;}
+input:focus.log { width: 250px; border: 1px solid #73a6ff;}
 input.ccc { width: 400px; border: 1px solid gray; }
 textarea.ccc { width: 400px; border: 1px solid gray; }
 
@@ -280,6 +282,15 @@ input.c_map_class{
    text-align: center;
    background-color:#fff;
    border:1px solid;
+}
+
+input:focus.c_map_class {
+   color: grey;
+   font-size: x-small;
+   text-align: center;
+   background-color:#fff;
+   border:1px solid #73a6ff;
+
 }
 
 #tooltip.fancy {
