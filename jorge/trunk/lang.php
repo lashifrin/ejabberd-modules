@@ -822,4 +822,7 @@ $message_type_headline[eng] = "Headline";
 $muc_message[pol] = "Wiadomość systemowa:";
 $muc_message[eng] = "System message:";
 
+$donate[pol] = "<small>Pomóż rozwijać Projekt Jorge.<a href=\"http://www.jabster.pl/index.php?q=node/43\" target=\"_blank\"><u>Przeczytaj więcej...</u></a></small>";
+$donate[eng] = "<small>Help develop Project Jorge.<a href=\"http://www.planeta.toliman.pl/2008/10/donate-project-jorge.html\" target=\"_blank\"><u>Read More...</u></a></small>";
+
 ?>
