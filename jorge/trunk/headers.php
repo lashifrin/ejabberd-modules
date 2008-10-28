@@ -183,10 +183,12 @@ if ($sw_lang_t=="t") {
 	if ($sess->get('language') == "pol") { 
 	
 			$sess->set('language', 'eng'); 
+			setcookie("jorge_language","eng",time()+2592000);
 		} 
 		elseif($sess->get('language') == "eng") { 
 		
 			$sess->set('language','pol'); 
+			setcookie("jorge_language","pol",time()+2592000);
 	} 
 }
 

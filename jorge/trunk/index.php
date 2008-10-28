@@ -49,15 +49,33 @@ $inpLogin = strtolower($inpLogin);
 // language selection
 if ($lng_sw=="pol") {
 
-		$sess->set('language','pol'); }
-
+		$sess->set('language','pol');
+		setcookie("jorge_language","pol",time()+2592000);
+		
+	}
 	elseif($lng_sw=="eng") { 
 		
 		$sess->set('language','eng'); 
+		setcookie("jorge_language","eng",time()+2592000);
 }
 
-// defaults to english
-if (!$sess->get('language')) { $sess->set('language',$lang_def); }
+// Set default language 
+if (!$sess->get('language')) { 
+
+	$cookie_lang = $_COOKIE["jorge_language"];
+	if ($cookie_lang === "eng" OR $cookie_lang === "pol") {
+
+			$sess->set('language',$cookie_lang);
+
+		}
+		else{
+
+			$sess->set('language',$lang_def); 
+
+	}
+	
+}
+
 $lang=$sess->get('language');
 
 if ($wo_sess || $inpLogin || $inpPass) {
@@ -193,7 +211,29 @@ if ($_GET[act]==="logout") {
 							
 								}
 
-							$sess->set('language',$s_lang);
+							// If user is logging with different language interface as saved in profile, set new preference
+							if ($s_lang !== $_COOKIE["jorge_language"] AND ($_COOKIE["jorge_language"] === "eng" OR $_COOKIE["jorge_language"] === "pol")) {
+
+									$sess->set('language',$_COOKIE["jorge_language"]);
+									if ($_COOKIE["jorge_language"] === "pol") {
+
+											$db->set_jorge_pref("2",$_COOKIE["jorge_language"]);
+
+										}
+										elseif($_COOKIE["jorge_language"] === "eng") {
+
+											$db->set_jorge_pref("2",$_COOKIE["jorge_language"]);
+
+									}
+
+								}
+								else{
+
+									$sess->set('language',$s_lang);
+									// Update cookie
+									setcookie("jorge_language",$s_lang,time()+2592000);
+
+							}
 						}
 					}
 
