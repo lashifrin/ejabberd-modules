@@ -118,7 +118,7 @@ if (!preg_match("/index.php/i",$location) AND !preg_match("/not_enabled.php/i",$
 }
 
 // Display donate button only if configured and on login screen
-if (donate_button === true AND preg_match("/index.php/i",$location)) {
+if (donate_button !== false AND preg_match("/index.php/i",$location)) {
 
 	$html->set_body('<div align="center">'.$donate[$lang].'<br>
 		<form action="https://www.paypal.com/cgi-bin/webscr" method="post">
