@@ -206,6 +206,8 @@ $html->headers('
 			<link rel="shortcut icon" href="favicon.ico"> 
 			<link rel="stylesheet" href="style.css" type="text/css">
 			<link rel="stylesheet" href="jquery.autocomplete.css" type="text/css">
+			<link rel="alternate" type="application/rss+xml" title="Project Jorge ChangeLog" href="https://jorge.jabster.pl/changelog.xml">
+
 	');
 
 if (preg_match("/main.php/i",$location)) {
