@@ -712,10 +712,15 @@ class db_manager {
 		return $this->insert($query);
 	}
 
-	public function get_user_stats_drop_down() {
+	public function get_user_stats_drop_down($spec_ignore = false) {
 
 		$this->id_query = "Q022";
 		$this->vital_check();
+		if ($spec_ignore === true) {
+
+			$sql = "AND peer_name_id != '".$this->ignore_id."'";
+
+		}
 		$query="SELECT 
 				substring(at,1,7) as at_send, 
 				at 
@@ -723,8 +728,7 @@ class db_manager {
 				`logdb_stats_".$this->xmpp_host."` 
 			WHERE 
 				owner_id = '".$this->user_id."' 
-			AND
-				peer_name_id!='".$this->ignore_id."'
+				$sql
 			GROUP BY 
 				substring(at,1,7) 
 			ORDER BY 
@@ -732,16 +736,21 @@ class db_manager {
 			DESC
 		
 		";
-		
+
 		$this->select($query,"raw");
 		return $this->commit_select(array("at_send","at"));
 	}
 
-	public function get_user_stats_calendar($mo) {
+	public function get_user_stats_calendar($mo,$spec_ignore = false) {
 
 		$this->id_query = "Q023";
 		$this->vital_check();
 		$mo = $this->sql_validate($mo,"string");
+		if ($spec_ignore === true) {
+
+			$sql = "AND peer_name_id != '".$this->ignore_id."'";
+
+		}
 		$query="SELECT 
 				distinct(substring(at,8,9)) as days 
 			FROM 
@@ -750,8 +759,7 @@ class db_manager {
 				owner_id = '".$this->user_id."' 
 			AND
 				at like '$mo-%' 
-			AND 
-				peer_name_id!='".$this->ignore_id."' 
+				$sql
 			ORDER BY 
 				str_to_date(at,'%Y-%m-%d') 
 			DESC
@@ -1848,11 +1856,16 @@ class db_manager {
 
 	}
 
-	public function get_folder_content($at) {
+	public function get_folder_content($at,$spec_ignore = false) {
 
 		$this->id_query = "Q058";
 		$this->vital_check();
 		$at = $this->sql_validate($at,"string");
+                if ($spec_ignore === true) {
+
+                        $sql = "AND peer_name_id != '".$this->ignore_id."'";
+
+                }
 		$query="SELECT 
 				distinct(at) AS at 
 			FROM 
@@ -1861,6 +1874,7 @@ class db_manager {
 				owner_id = '".$this->user_id."' 
 			AND 
 				substring(at,1,7) = '$at' 
+				$sql
 			ORDER BY 
 				str_to_date(at,'%Y-%m-%d') 
 			DESC
@@ -1898,9 +1912,15 @@ class db_manager {
 
 	}
 
-	public function get_jorge_pref() {
+	public function get_jorge_pref($pref_id = null) {
 
 		$this->id_query = "Q061";
+		if ($pref_id !== null) {
+
+			$pref_id = $this->sql_validate($pref_id,"integer");
+			$sql = "AND pref_id = '$pref_id'";
+				
+		}
 		$query="SELECT 
 				pref_id, 
 				pref_value 
@@ -1908,11 +1928,24 @@ class db_manager {
 				jorge_pref 
 			WHERE 
 				owner_id='".$this->user_id."'
+				$sql
 			AND
 				vhost = '".$this->vhost."'
 		";
-		$this->select($query,"raw");
-		return $this->commit_select(array("pref_id","pref_value"));
+
+		if ($pref_id === null) {
+
+				$this->select($query,"raw");
+				return $this->commit_select(array("pref_id","pref_value"));
+				
+			}
+			else{
+
+				return $this->select($query);
+				
+		}
+
+		return false;
 
 	}
 
@@ -2405,18 +2438,23 @@ class db_manager {
 
 	}
 
-	public function get_last_day() {
+	public function get_last_day($spec_ignore = false) {
 
 		$this->id_query = "Q087";
 		$this->vital_check();
+		if ($spec_ignore === true) {
+
+			$sql = "AND peer_name_id != '".$this->ignore_id."'";
+
+		}
+
 		$query="SELECT 
 				at 
 			FROM
 				`logdb_stats_".$this->xmpp_host."` 
 			WHERE 
 				owner_id = '".$this->user_id."' 
-			AND
-				peer_name_id != '".$this->ignore_id."'
+				$sql
 			ORDER BY str_to_date(at,'%Y-%m-%d') DESC LIMIT 1
 		";
 
