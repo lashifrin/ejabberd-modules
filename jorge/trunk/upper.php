@@ -377,7 +377,7 @@ if ($search_loc==1) {
 
 	}
 
-	$html->menu('<select class="cc" name="time2_start" style="text-align: center;"><option value="">'.$time_range_from[$lang].'</option>');
+	$html->menu('<select name="time2_start" style="text-align: center;"><option value="">'.$time_range_from[$lang].'</option>');
 
 	for ($t=1;$t<=$r;$t++) {
 
@@ -395,7 +395,7 @@ if ($search_loc==1) {
 
 	$pass_t=$t;
 	
-	$html->menu('</select>&nbsp;<select class="cc" name="time2_end" style="text-align: center;"><option value="">'.$time_range_to[$lang].'</option>');
+	$html->menu('</select>&nbsp;<select name="time2_end" style="text-align: center;"><option value="">'.$time_range_to[$lang].'</option>');
 
 	for ($t=$r;$t>=1;$t--) {
 
@@ -427,7 +427,7 @@ if ($search_loc==1) {
 
 }
 
-$html->menu('<input class="red" type="submit" value="'.$search_box[$lang].'">
+$html->menu('<input type="submit" value="'.$search_box[$lang].'">
 		</form></td>
 		</tr>
 		<tr style="background-image: url(img/bell-bak.png); height: 24;">

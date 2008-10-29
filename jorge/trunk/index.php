@@ -403,7 +403,7 @@ $html->set_body('</td></tr>
 
 		}
 
-		$html->set_body('<tr><td colspan="2" align="right"><input class="red" type="submit" name="sublogin" value="'.$login_act[$lang].'"></td></tr>
+		$html->set_body('<tr><td colspan="2" align="right"><input type="submit" name="sublogin" value="'.$login_act[$lang].'"></td></tr>
 		</table></form></center>	
 		');
 

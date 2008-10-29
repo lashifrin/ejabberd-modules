@@ -67,8 +67,8 @@ $login_w[eng] = "Login";
 $passwd_w[pol] = "Hasło";
 $passwd_w[eng] = "Password";
 
-$login_act[pol] = "Zaloguj";
-$login_act[eng] = "Login";
+$login_act[pol] = "Zaloguj się";
+$login_act[eng] = "Sign in";
 
 $devel_info[pol] = "Wersja BETA";
 $devel_info[eng] = "Development version";
@@ -167,7 +167,7 @@ $arch_off[pol] = "Wyłącz archiwizacje";
 $arch_off[eng] = "Turn off archivization";
 
 $log_out_b[pol] = "Wyloguj";
-$log_out_b[eng] = "Logout";
+$log_out_b[eng] = "Sign out";
 
 $archives_t[pol] = "Przeglądarka archiwum";
 $archives_t[eng] = "Archive browser";
