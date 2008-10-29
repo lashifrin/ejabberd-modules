@@ -120,7 +120,7 @@ if ($start) {
 	
 }
 
-$db->get_user_stats_drop_down();
+$db->get_user_stats_drop_down($spec_ignore);
 $result = $db->result;
 
 if (count($result) !=0) {
@@ -158,7 +158,7 @@ if (count($result) !=0) {
 			} 
 		
 			$html->set_body('<li>'.$bop.$cl_entry.$bcl.'<ul rel="'.$rel.'">'); 
-			$db->get_folder_content($entry[at_send]);
+			$db->get_folder_content($entry[at_send],$spec_ignore);
 			$result2 = $db->result;
 			foreach($result2 as $ent) {
 				
@@ -252,11 +252,27 @@ if ($display_conversations === true) {
 
         // sort list
         asort($sorted_list);
-	if ($sorted_spec) {
 
-		$sorted_list = array_merge($sorted_list,$sorted_spec);
-	
-	}
+        if (!$show_spec) {
+
+                $show_spec="1";
+
+        }
+
+        if ($sorted_spec AND $show_spec === "1") {
+
+                if ($sorted_list) {
+
+                                $sorted_list = array_merge($sorted_list,$sorted_spec);
+
+                        }
+                        else{
+
+                                $sorted_list = $sorted_spec;
+
+                }
+
+        }
 
 	$html->set_body('<td valign="top" style="padding-top: 15px;">
 			<table class="ff">');

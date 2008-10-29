@@ -64,9 +64,6 @@ $pref_value=$_GET['v'];
 // save preferences
 if ($_GET['set_pref']) {
 
-	//validate
-	if (!ctype_digit($pref_id)) { unset($pref_id); }
-	if (!ctype_digit($pref_value)) { unset($pref_value); }
 	// what to set
 	// view and language preferences are stored for now.
 	if ($pref_id==="1" OR $pref_id==="2") 
@@ -75,8 +72,18 @@ if ($_GET['set_pref']) {
 				{ 
 					if ($db->set_jorge_pref($pref_id,$pref_value) === false) {
 
-						$html->alert_message($oper_fail[$lang],"message");
+							$html->alert_message($oper_fail[$lang],"message");
 						
+						}
+						else{
+
+							// Display status message only if setting via control panel
+							if ($_GET['ref'] === "settings") {
+
+								$html->status_message($con_saved[$lang]);
+
+							}
+
 					}
 					if ($pref_id==="1") {
 
@@ -290,8 +297,24 @@ if ($start) {
 
 }
 
+// Show special contact?
+$db->get_jorge_pref("3");
+$show_spec = $db->result->pref_value;
+
+// Display special contacts?
+if ($show_spec === "2") {
+
+                $spec_ignore = true;
+
+        }
+        else {
+
+                $spec_ignore = false;
+
+}
+
 //Generate quick jump
-$db->get_last_day();
+$db->get_last_day($spec_ignore);
 $ql_date = $db->result->at;
 $quick_link = $enc->crypt_url("tslice=$ql_date");
 

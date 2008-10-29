@@ -654,7 +654,7 @@ $sel_client[pol] = "Uruchom Slimster";
 $sel_client[eng] = "Launch Slimster";
 
 $sel_yes[pol] = "Tak";
-$sel_no[eng] = "Yes";
+$sel_yes[eng] = "Yes";
 
 $sel_no[pol] = "Nie";
 $sel_no[eng] = "No";
@@ -821,6 +821,12 @@ $message_type_headline[eng] = "Headline";
 
 $muc_message[pol] = "Wiadomość systemowa:";
 $muc_message[eng] = "System message:";
+
+$spec_contact_enable[pol] = "Wyświetlać kontakty specjalne:";
+$spec_contact_enable[eng] = "Display special contact:";
+
+$spec_contact_desc[pol] = "Pozwala zdecydować czy w liście rozmów mają pojawiać się rozmowy z kontaktami specjalnymi np.: bramkami, tranposrtami. Większość użytkowników może spokojnie tą opcje wyłączyć";
+$spec_contact_desc[eng] = "This option let you decide if conversations with special contacts like gateways, transports are displayed in your chat list. Most users can say <i>No</i> here.";
 
 $donate[pol] = "<small>Pomóż rozwijać Projekt Jorge.<a href=\"http://www.jabster.pl/index.php?q=node/43\" target=\"_blank\"><u>Przeczytaj więcej...</u></a></small>";
 $donate[eng] = "<small>Help develop Project Jorge.<a href=\"http://www.planeta.toliman.pl/2008/10/donate-project-jorge.html\" target=\"_blank\"><u>Read More...</u></a></small>";

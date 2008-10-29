@@ -22,9 +22,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 require_once("headers.php");
 
-$tgle=$_POST['toggle'];
-$del_a=$_POST['del_all'];
-$close=$_POST['close_acc'];
+$tgle = $_POST['toggle'];
+$del_a = $_POST['del_all'];
+$close = $_POST['close_acc'];
+$vspec = $_POST['v_spec'];
 
 require_once("upper.php");
 
@@ -64,6 +65,22 @@ if ($tgle) {
 					}
 
 		}
+}
+
+// Control diplaying of special contacs
+if ($vspec) {
+
+	if ($db->set_jorge_pref("3",$vspec) === true) {
+
+			$html->status_message($con_saved[$lang]);
+
+		}
+		else{
+
+			$html->alert_message($oper_fail[$lang]);
+
+	}
+
 }
 
 // delete entire archive
@@ -143,7 +160,7 @@ if ($close === $close_commit[$lang])	{
 
 $html->set_overview('<h2>'.$settings_desc[$lang].'</h2><small>'.$settings_desc_detail[$lang].'</small>');
 $html->set_body('<center><table><form action="settings.php" method="post">
-		<tr style="font-size: x-small;"><td>'.$setting_d1[$lang].'</td><td><input class="btn_set" type="submit" name="toggle" value="');
+		<tr style="font-size: x-small;"><td>'.$setting_d1[$lang].'</td><td><input class="settings" type="submit" name="toggle" value="');
 $db->is_log_enabled();
 if ($db->result->is_enabled === false) { 
 		
@@ -156,13 +173,46 @@ if ($db->result->is_enabled === false) {
 		
 	}
 
-$html->set_body('"></td></tr></form>
-	<form action="settings.php" method="post">
+$html->set_body('"></td></tr></form>');
+
+$html->set_body('<form action="settings.php" method="post">
 	<tr style="font-size: x-small;"><td>'.$setting_d2[$lang].'</td>
-	<td><input class="btn_set" type="submit" name="del_all" value="'.$settings_del[$lang].'" onClick="if (!confirm(\''.$del_all_conf[$lang].'\')) return false;"></form></td></tr>
-	<form action="settings.php" method="get" name="save_pref">
+	<td><input class="settings" type="submit" name="del_all" value="'.$settings_del[$lang].'" onClick="if (!confirm(\''.$del_all_conf[$lang].'\')) return false;"></form></td></tr>');
+
+if ($db->get_jorge_pref("3") === false) {
+
+	$html->alert_message($oper_fail[$lang]);
+
+}
+
+$special_select = $db->result->pref_value;
+
+if ($special_select === "2") {
+
+		$n_is_sel = "selected";
+
+	}
+	else{
+
+		$y_is_sel = "selected";
+
+}
+
+$html->set_body('
+
+	<form action="settings.php" method="post" name="tggle_special">
+	<tr style="font-size: x-small;"><td>'.$spec_contact_enable[$lang].'(<a href="#" title="'.$spec_contact_desc[$lang].'">?</a>)</td>
+	<td><select class="settings" name="v_spec" size="0" onchange="javascript:document.tggle_special.submit();">
+	<option '.$y_is_sel.' value="1">'.$sel_yes[$lang].'</option>
+	<option '.$n_is_sel.' value="2">'.$sel_no[$lang].'</optin>
+	</select>
+	</td></tr></form>
+
+');
+
+$html->set_body('<form action="settings.php" method="get" name="save_pref">
 	<tr style="font-size: x-small;"><td>'.$select_view[$lang].'</td>
-	<td><select style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="v" size="0" onchange="javascript:document.save_pref.submit();">
+	<td><select class="settings" name="v" onchange="javascript:document.save_pref.submit();">
 ');
 
 if ($sess->get('view_type') == "1") { 
@@ -180,11 +230,14 @@ $html->set_body('
 	<option '.$cal.' value="2">'.$view_calendar[$lang].'</optin>
 	</select>
 	<input name="set_pref" type="hidden" value="1">
+	<input name="ref" type="hidden" value="settings">
 	</td></tr>
 	</form>
-	<form action="settings.php" method="get" name="save_pref_lang">
+');
+
+$html->set_body('<form action="settings.php" method="get" name="save_pref_lang">
 	<tr style="font-size: x-small;"><td>'.$sel_language[$lang].'</td>
-	<td><select style="text-align: center; border: 0px; background-color: #6daae7; color:#fff; font-size: x-small;" name="v" size="0" onchange="javascript:document.save_pref_lang.submit();">
+	<td><select class="settings" name="v" onchange="javascript:document.save_pref_lang.submit();">
 ');
 
 if ($sess->get('language') == "pol") { 
@@ -204,12 +257,15 @@ $html->set_body('
 	</select>
 	<input name="set_pref" type="hidden" value="2">
 	<input name="sw_lang" type="hidden" value="t">
+	<input name="ref" type="hidden" value="settings">
 	</td></tr></form>
-	<form action="settings.php" method="post" name="close_account">
+');
+
+$html->set_body('<form action="settings.php" method="post" name="close_account">
 	<tr><td colspan="2" height="40"><hr size="1"/></td></tr>
 	<tr>
 	<td style="font-size: x-small;">'.$close_account[$lang].'</td>
-	<td><input name="close_acc" class="btn_set" type="submit" value="'.$close_commit[$lang].'" onClick="if (!confirm(\''.$close_warn[$lang].'\')) return false;"></td>
+	<td><input name="close_acc" class="settings" type="submit" value="'.$close_commit[$lang].'" onClick="if (!confirm(\''.$close_warn[$lang].'\')) return false;"></td>
 	</tr></form>
 ');
 

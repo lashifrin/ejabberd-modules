@@ -205,7 +205,6 @@ if ($talker) {
 		
 }
 
-
 // select list
 $db->get_user_stats_drop_down();
 $ch_mo = $db->result;
@@ -240,8 +239,8 @@ if (count($ch_mo)!=0) {
 
 		$html->set_body('</select></form>');
 
-		// now generate calendar, the peer_name_id is hard-coded - this avoids of displaying chats with no-username
-		$db->get_user_stats_calendar($mo);
+		// now generate calendar
+		$db->get_user_stats_calendar($mo,$spec_ignore);
 		$result_for_days = $db->result;
 
 		$i=0;
@@ -291,41 +290,56 @@ if ($display_conversations === true) {
 		
 		$roster_name = query_nick_name($ejabberd_roster,$sort_me[username],$sort_me[server_name]);
 		$arr_key++;
+
 		if (!$roster_name) {
-
-			// split contact into 2 arrays: one with full jids, second without names - transports, agents..
-			$sorted_spec[$arr_key] = array(
-					"roster_name"=>$roster_name,
-					"username"=>$sort_me[username],
-					"server_name"=>$sort_me[server_name],
-					"todaytalk"=>$sort_me[todaytalk],
-					"server"=>$sort_me[server],
-					"lcount"=>$sort_me[lcount]
-					);
-
+			
+				// split contact into 2 arrays: one with full jids, second without names - transports, agents..
+                        	$sorted_spec[$arr_key] = array(
+                                        "roster_name"=>$roster_name,
+                                        "username"=>$sort_me[username],
+                                        "server_name"=>$sort_me[server_name],
+                                        "todaytalk"=>$sort_me[todaytalk],
+                                        "server"=>$sort_me[server],
+                                        "lcount"=>$sort_me[lcount]
+                                        );
 			}
 			else {
 
-				$sorted_list[$arr_key] = array(
-					"roster_name"=>$roster_name,
-					"username"=>$sort_me[username],
-					"server_name"=>$sort_me[server_name],
-					"todaytalk"=>$sort_me[todaytalk],
-					"server"=>$sort_me[server],
-					"lcount"=>$sort_me[lcount]
-					);
-
+                		$sorted_list[$arr_key] = array(
+                                	"roster_name"=>$roster_name,
+                                	"username"=>$sort_me[username],
+                                	"server_name"=>$sort_me[server_name],
+                                	"todaytalk"=>$sort_me[todaytalk],
+                                	"server"=>$sort_me[server],
+                                	"lcount"=>$sort_me[lcount]
+                                	);
 		}
-	
-	}
-	
+
+	}	
 	// sort and split two lists: normal contacts and special contacts.
 	asort($sorted_list);
-	if ($sorted_spec) {
+	
+	if (!$show_spec) {
 
-		$sorted_list = array_merge($sorted_list,$sorted_spec);
+		$show_spec="1";
 
 	}
+
+	if ($sorted_spec AND $show_spec === "1") {
+
+		if ($sorted_list) {
+		
+				$sorted_list = array_merge($sorted_list,$sorted_spec);
+
+			}
+			else{
+
+				$sorted_list = $sorted_spec;
+			
+		}
+
+	}
+
 	$html->set_body('<td valign="top" style="padding-top: 15px;">
         		<table width="200" border="0" cellpadding="0" cellspacing="0" class="calbck_con">
       			<tr>
