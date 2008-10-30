@@ -53,9 +53,6 @@ commands_global() ->
      %% ejd2odbc
      {"export2odbc server output", "export Mnesia tables on server to files on output directory"},
 
-     %% mod_offline
-     {"delete-older-messages days", "delete offline messages older than 'days'"},
-
      %% mod_shared_roster
      {"srg-create group host name description display", "create the group with options"},
      {"srg-delete group host", "delete the group"},
@@ -113,10 +110,6 @@ commands_host() ->
 %%-------------
 %% Commands global
 %%-------------
-
-ctl_process(_Val, ["delete-older-messages", Days]) ->
-    mod_offline:remove_old_messages(list_to_integer(Days)),
-    ?STATUS_SUCCESS;
 
 ctl_process(_Val, ["delete-older-users", Days]) ->
     {removed, N, UR} = delete_older_users(list_to_integer(Days)),

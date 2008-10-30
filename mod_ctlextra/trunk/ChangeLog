@@ -1,3 +1,8 @@
+2008-10-31  Badlop  <badlop@process-one.net>
+
+	* src/mod_ctlextra.erl: Remove duplicated command
+	delete-older-messages (EJAB-789)
+
 2008-10-12  Badlop  <badlop@process-one.net>
 
 	* README.txt: Explain that the new mod_admin_extra provides the
