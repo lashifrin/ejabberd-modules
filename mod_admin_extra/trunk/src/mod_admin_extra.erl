@@ -39,6 +39,7 @@
 	 %% Accounts
 	 set_password/3,
 	 delete_older_users/1,
+	 delete_older_users_vhost/2,
 	 delete_older_messages/1,
 	 ban_account/3,
 	 num_active_users/2,
@@ -157,6 +158,11 @@ commands() ->
 			desc = "Delete users that didn't log in last days",
 			module = ?MODULE, function = delete_older_users,
 			args = [{days, integer}],
+			result = {res, restuple}},
+     #ejabberd_commands{name = delete_older_users_vhost, tags = [accounts, purge],
+			desc = "Delete users that didn't log in last days in vhost",
+			module = ?MODULE, function = delete_older_users_vhost,
+			args = [{host, string}, {days, integer}],
 			result = {res, restuple}},
      #ejabberd_commands{name = delete_older_messages, tags = [purge],
 			desc = "Delete offline messages older than days",
@@ -506,19 +512,26 @@ histogram([], _Integral, _Current, Count, Hist) ->
 -record(last_activity, {us, timestamp, status}).
 
 delete_older_users(Days) ->
-    {removed, N, UR} = delete_older_users2(Days),
+    %% Get the list of registered users
+    Users = ejabberd_auth:dirty_get_registered_users(),
+
+    {removed, N, UR} = delete_older_users(Days, Users),
     {ok, io_lib:format("Deleted ~p users: ~p", [N, UR])}.
 
-delete_older_users2(Days) ->
+delete_older_users_vhost(Host, Days) ->
+    %% Get the list of registered users
+    Users = ejabberd_auth:get_vh_registered_users(Host),
+
+    {removed, N, UR} = delete_older_users(Days, Users),
+    {ok, io_lib:format("Deleted ~p users: ~p", [N, UR])}.
+
+delete_older_users(Days, Users) ->
     %% Convert older time
     SecOlder = Days*24*60*60,
 
     %% Get current time
     {MegaSecs, Secs, _MicroSecs} = now(),
     TimeStamp_now = MegaSecs * 1000000 + Secs,
-
-    %% Get the list of registered users
-    Users = ejabberd_auth:dirty_get_registered_users(),
 
     %% For a user, remove if required and answer true
     F = fun({LUser, LServer}) ->
