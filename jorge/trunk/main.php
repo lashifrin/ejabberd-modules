@@ -120,7 +120,7 @@ if ($start) {
 	
 }
 
-$db->get_user_stats_drop_down($spec_ignore);
+$db->get_user_stats_drop_down();
 $result = $db->result;
 
 if (count($result) !=0) {
@@ -158,7 +158,7 @@ if (count($result) !=0) {
 			} 
 		
 			$html->set_body('<li>'.$bop.$cl_entry.$bcl.'<ul rel="'.$rel.'">'); 
-			$db->get_folder_content($entry[at_send],$spec_ignore);
+			$db->get_folder_content($entry[at_send]);
 			$result2 = $db->result;
 			foreach($result2 as $ent) {
 				

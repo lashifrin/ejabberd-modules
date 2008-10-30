@@ -304,17 +304,17 @@ $show_spec = $db->result->pref_value;
 // Display special contacts?
 if ($show_spec === "2") {
 
-                $spec_ignore = true;
+		$db->spec_ignore(true);
 
         }
         else {
 
-                $spec_ignore = false;
+		$db->spec_ignore(false);
 
 }
 
 //Generate quick jump
-$db->get_last_day($spec_ignore);
+$db->get_last_day();
 $ql_date = $db->result->at;
 $quick_link = $enc->crypt_url("tslice=$ql_date");
 

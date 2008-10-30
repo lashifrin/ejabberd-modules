@@ -49,6 +49,7 @@ class db_manager {
 	private $time_result = null;
 	private $user_query = null;
 	private $ignore_id = null;
+	private $spec_ignore = false;
 	public $result;
 
 	public function __construct($db_host,$db_name,$db_user,$db_password,$db_driver,$xmpp_host = null) {
@@ -712,11 +713,11 @@ class db_manager {
 		return $this->insert($query);
 	}
 
-	public function get_user_stats_drop_down($spec_ignore = false) {
+	public function get_user_stats_drop_down() {
 
 		$this->id_query = "Q022";
 		$this->vital_check();
-		if ($spec_ignore === true) {
+		if ($this->spec_ignore === true) {
 
 			$sql = "AND peer_name_id != '".$this->ignore_id."'";
 
@@ -741,12 +742,12 @@ class db_manager {
 		return $this->commit_select(array("at_send","at"));
 	}
 
-	public function get_user_stats_calendar($mo,$spec_ignore = false) {
+	public function get_user_stats_calendar($mo) {
 
 		$this->id_query = "Q023";
 		$this->vital_check();
 		$mo = $this->sql_validate($mo,"string");
-		if ($spec_ignore === true) {
+		if ($this->spec_ignore === true) {
 
 			$sql = "AND peer_name_id != '".$this->ignore_id."'";
 
@@ -1856,12 +1857,12 @@ class db_manager {
 
 	}
 
-	public function get_folder_content($at,$spec_ignore = false) {
+	public function get_folder_content($at) {
 
 		$this->id_query = "Q058";
 		$this->vital_check();
 		$at = $this->sql_validate($at,"string");
-                if ($spec_ignore === true) {
+                if ($this->spec_ignore === true) {
 
                         $sql = "AND peer_name_id != '".$this->ignore_id."'";
 
@@ -2438,11 +2439,11 @@ class db_manager {
 
 	}
 
-	public function get_last_day($spec_ignore = false) {
+	public function get_last_day() {
 
 		$this->id_query = "Q087";
 		$this->vital_check();
-		if ($spec_ignore === true) {
+		if ($this->spec_ignore === true) {
 
 			$sql = "AND peer_name_id != '".$this->ignore_id."'";
 
@@ -2676,9 +2677,39 @@ class db_manager {
 
 	public function set_debug($bool) {
 
-		if($bool === true) { $this->is_debug = true; }
-		if($bool === false) { $this->is_debug = false; }
-		return true;
+		if($bool === true) { 
+		
+				$this->is_debug = true; 
+				return true;
+				
+			}
+			elseif($bool === false) {
+
+				$this->is_debug = false;
+				return true;
+
+		}
+
+		return false;
+
+	}
+
+	public function spec_ignore($bool) {
+
+		if($bool === true) {
+
+				$this->spec_ignore = true;
+				return true;
+
+			}
+			elseif($bool === false) {
+
+				$this->spec_ignore = false;
+				return true;
+
+		}
+
+		return false;
 
 	}
 

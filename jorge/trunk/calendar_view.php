@@ -240,7 +240,7 @@ if (count($ch_mo)!=0) {
 		$html->set_body('</select></form>');
 
 		// now generate calendar
-		$db->get_user_stats_calendar($mo,$spec_ignore);
+		$db->get_user_stats_calendar($mo);
 		$result_for_days = $db->result;
 
 		$i=0;
