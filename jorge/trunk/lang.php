@@ -831,4 +831,7 @@ $spec_contact_desc[eng] = "This option let you decide if conversations with spec
 $donate[pol] = "<small>Pomóż rozwijać Projekt Jorge.<a href=\"http://www.jabster.pl/index.php?q=node/43\" target=\"_blank\"><u>Przeczytaj więcej...</u></a></small>";
 $donate[eng] = "<small>Help develop Project Jorge.<a href=\"http://www.planeta.toliman.pl/2008/10/donate-project-jorge.html\" target=\"_blank\"><u>Read More...</u></a></small>";
 
+$donate_dont[pol] = "<small>Nie pokazuj tej informacji więcej...</small>";
+$donate_dont[eng] = "<small>Don't show this information anymore...</small>";
+
 ?>

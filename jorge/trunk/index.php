@@ -41,10 +41,10 @@ if ($sess->get('uid_l')) {
 }
 
 // get post data
-$inpLogin = $_POST[inpLogin];
-$inpPass = $_POST[inpPass];
+$inpLogin = strtolower($_POST['inpLogin']);
+$inpPass = $_POST['inpPass'];
 $lng_sw = $_GET['lng_sw'];
-$inpLogin = strtolower($inpLogin);
+$disable_donate = $_GET['donate'];
 
 // language selection
 if ($lng_sw=="pol") {
@@ -75,6 +75,14 @@ if (!$sess->get('language')) {
 	}
 	
 }
+
+// disable donate button on user request
+if ($disable_donate === "false") {
+
+	setcookie("jorge_donate","false",time()+2592000);
+
+}
+
 
 $lang=$sess->get('language');
 
