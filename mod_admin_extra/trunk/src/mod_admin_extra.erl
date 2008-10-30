@@ -503,10 +503,63 @@ histogram([], _Integral, _Current, Count, Hist) ->
     end.
 
 
+-record(last_activity, {us, timestamp, status}).
 
 delete_older_users(Days) ->
-    {removed, N, UR} = delete_older_users(Days),
+    {removed, N, UR} = delete_older_users2(Days),
     {ok, io_lib:format("Deleted ~p users: ~p", [N, UR])}.
+
+delete_older_users2(Days) ->
+    %% Convert older time
+    SecOlder = Days*24*60*60,
+
+    %% Get current time
+    {MegaSecs, Secs, _MicroSecs} = now(),
+    TimeStamp_now = MegaSecs * 1000000 + Secs,
+
+    %% Get the list of registered users
+    Users = ejabberd_auth:dirty_get_registered_users(),
+
+    %% For a user, remove if required and answer true
+    F = fun({LUser, LServer}) ->
+		%% Check if the user is logged
+		case ejabberd_sm:get_user_resources(LUser, LServer) of
+		    %% If it isnt
+		    [] ->
+			%% Look for his last_activity
+			case mnesia:dirty_read(last_activity, {LUser, LServer}) of
+			    %% If it is
+			    %% existent:
+			    [#last_activity{timestamp = TimeStamp}] ->
+				%% get his age
+				Sec = TimeStamp_now - TimeStamp,
+				%% If he is
+				if
+				    %% younger than SecOlder:
+				    Sec < SecOlder ->
+					%% do nothing
+					false;
+				    %% older:
+				    true ->
+					%% remove the user
+					ejabberd_auth:remove_user(LUser, LServer),
+					true
+				end;
+			    %% nonexistent:
+			    [] ->
+				%% remove the user
+				ejabberd_auth:remove_user(LUser, LServer),
+				true
+			end;
+		    %% Else
+		    _ ->
+			%% do nothing
+			false
+		end
+	end,
+    %% Apply the function to every user in the list
+    Users_removed = lists:filter(F, Users),
+    {removed, length(Users_removed), Users_removed}.
 
 delete_older_messages(Days) ->
     mod_offline:remove_old_messages(list_to_integer(Days)),
