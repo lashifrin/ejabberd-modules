@@ -47,6 +47,7 @@ commands_global() ->
 
      %% ejabberd_auth
      {"delete-older-users days", "delete users that have not logged in the last 'days'"},
+     {"delete-older-users-vhost host days", "delete users that not logged in last 'days' in 'host'"},
      {"set-password user server password", "set password to user@server"},
 
      %% ejd2odbc
@@ -119,6 +120,11 @@ ctl_process(_Val, ["delete-older-messages", Days]) ->
 
 ctl_process(_Val, ["delete-older-users", Days]) ->
     {removed, N, UR} = delete_older_users(list_to_integer(Days)),
+    io:format("Deleted ~p users: ~p~n", [N, UR]),
+    ?STATUS_SUCCESS;
+
+ctl_process(_Val, ["delete-older-users-vhost", Host, Days]) ->
+    {removed, N, UR} = delete_older_users_vhost(Host, list_to_integer(Days)),
     io:format("Deleted ~p users: ~p~n", [N, UR]),
     ?STATUS_SUCCESS;
 
@@ -752,15 +758,22 @@ update_vcard_els(Data, Content, Els1) ->
 -record(last_activity, {us, timestamp, status}).
 
 delete_older_users(Days) ->
+    %% Get the list of registered users
+    Users = ejabberd_auth:dirty_get_registered_users(),
+    delete_older_users(Days, Users).
+
+delete_older_users_vhost(Host, Days) ->
+    %% Get the list of registered users
+    Users = ejabberd_auth:get_vh_registered_users(Host),
+    delete_older_users(Days, Users).
+
+delete_older_users(Days, Users) ->
     %% Convert older time
     SecOlder = Days*24*60*60,
 
     %% Get current time
     {MegaSecs, Secs, _MicroSecs} = now(),
     TimeStamp_now = MegaSecs * 1000000 + Secs,
-
-    %% Get the list of registered users
-    Users = ejabberd_auth:dirty_get_registered_users(),
 
     %% For a user, remove if required and answer true
     F = fun({LUser, LServer}) ->
