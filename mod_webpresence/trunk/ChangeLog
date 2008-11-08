@@ -1,3 +1,8 @@
+2008-11-08  Badlop  <badlop@process-one.net>
+
+	* src/mod_webpresence.erl (escape): Escape also newlines (thanks
+	to Florian Zeitz)
+
 2008-09-10  Badlop  <badlop@process-one.net>
 
 	* src/mod_webpresence.erl (get_presences): Return only sessions

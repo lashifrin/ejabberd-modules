@@ -674,7 +674,8 @@ long_show(_, Lang) -> ?T("unavailable").
 
 escape(S1) ->
     {ok, S2, _} = regexp:gsub(S1, "\'", "\\'"),
-    S2.
+    {ok, S3, _} = regexp:gsub(S2, "\n", "\\n"),
+    S3.
 
 get_baseurl(Host) ->
     Proc = gen_mod:get_module_proc(Host, ?PROCNAME),
