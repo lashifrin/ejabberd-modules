@@ -1,3 +1,9 @@
+2008-11-10  Badlop  <badlop@process-one.net>
+
+	* src/mod_admin_extra.erl: Renamed command send_message to
+	send_message_headline. New command send_message_chat. (thanks to
+	Xyu)
+
 2008-10-31  Badlop  <badlop@process-one.net>
 
 	* src/mod_admin_extra.erl: Deleted the duplicated command

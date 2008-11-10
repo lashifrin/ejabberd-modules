@@ -71,7 +71,8 @@
 	 srg_user_add/4,
 	 srg_user_del/4,
 	 %% Stanza
-	 send_message/4,
+	 send_message_headline/4,
+	 send_message_chat/3,
 	 %% Stats
 	 stats/1, stats/2
 	]).
@@ -380,9 +381,14 @@ commands() ->
 			args = [{user, string}, {host, string}, {group, string}, {grouphost, string}],
 			result = {res, rescode}},
 
-     #ejabberd_commands{name = send_message, tags = [stanza],
+     #ejabberd_commands{name = send_message_chat, tags = [stanza],
+			desc = "Send a chat message to a local or remote bare of full JID",
+			module = ?MODULE, function = send_message_chat,
+			args = [{from, string}, {to, string}, {body, string}],
+			result = {res, rescode}},
+     #ejabberd_commands{name = send_message_headline, tags = [stanza],
 			desc = "Send a headline message to a local or remote bare of full JID",
-			module = ?MODULE, function = send_message,
+			module = ?MODULE, function = send_message_headline,
 			args = [{from, string}, {to, string},
 				{subject, string}, {body, string}],
 			result = {res, rescode}},
@@ -1007,51 +1013,68 @@ srg_user_del(User, Host, Group, GroupHost) ->
 %%% Stanza
 %%%
 
-%% @doc Send a message to a Jabber account.
+%% @doc Send a chat message to a Jabber account.
+%% @spec (From::string(), To::string(), Body::string()) -> ok
+send_message_chat(From, To, Body) ->
+    Packet = build_packet(message_chat, [Body]),
+    send_packet_all_resources(From, To, Packet).
+
+%% @doc Send a headline message to a Jabber account.
+%% @spec (From::string(), To::string(), Subject::string(), Body::string()) -> ok
+send_message_headline(From, To, Subject, Body) ->
+    Packet = build_packet(message_headline, [Subject, Body]),
+    send_packet_all_resources(From, To, Packet).
+
+%% @doc Send a packet to a Jabber account.
 %% If a resource was specified in the JID,
-%% the message is sent only to that specific resource.
+%% the packet is sent only to that specific resource.
 %% If no resource was specified in the JID,
 %% and the user is remote or local but offline,
-%% the message is sent to the bare JID.
+%% the packet is sent to the bare JID.
 %% If the user is local and is online in several resources,
-%% the message is sent to all its resources.
-send_message(FromJIDString, ToJIDString, Subject, Body) ->
+%% the packet is sent to all its resources.
+send_packet_all_resources(FromJIDString, ToJIDString, Packet) ->
     FromJID = jlib:string_to_jid(FromJIDString),
     ToJID = jlib:string_to_jid(ToJIDString),
     ToUser = ToJID#jid.user,
     ToServer = ToJID#jid.server,
     case ToJID#jid.resource of
 	"" ->
-	    send_message(FromJID, ToUser, ToServer, Subject, Body);
-	Resource ->
-	    send_message(FromJID, ToUser, ToServer, Resource, Subject, Body)
+	    send_packet_all_resources(FromJID, ToUser, ToServer, Packet);
+	Res ->
+	    send_packet_all_resources(FromJID, ToUser, ToServer, Res, Packet)
     end.
 
-send_message(FromJID, ToUser, ToServer, Subject, Body) ->
+send_packet_all_resources(FromJID, ToUser, ToServer, Packet) ->
     case ejabberd_sm:get_user_resources(ToUser, ToServer) of
 	[] ->
-	    send_message(FromJID, ToUser, ToServer, "", Subject, Body);
+	    send_packet_all_resources(FromJID, ToUser, ToServer, "", Packet);
 	ToResources ->
 	    lists:foreach(
 	      fun(ToResource) ->
-		      send_message(FromJID, ToUser, ToServer, ToResource, Subject, Body)
+		      send_packet_all_resources(FromJID, ToUser, ToServer,
+						ToResource, Packet)
 	      end,
 	      ToResources)
     end.
 
-send_message(FromJID, ToU, ToS, ToR, Subject, Body) ->
-    MPacket = build_send_message(Subject, Body),
+send_packet_all_resources(FromJID, ToU, ToS, ToR, Packet) ->
     ToJID = jlib:make_jid(ToU, ToS, ToR),
-    ejabberd_router:route(FromJID, ToJID, MPacket).
+    ejabberd_router:route(FromJID, ToJID, Packet).
 
-build_send_message(Subject, Body) ->
+
+build_packet(message_chat, [Body]) ->
+    {xmlelement, "message",
+     [{"type", "chat"}],
+     [{xmlelement, "body", [], [{xmlcdata, Body}]}]
+    };
+build_packet(message_headline, [Subject, Body]) ->
     {xmlelement, "message",
      [{"type", "headline"}],
      [{xmlelement, "subject", [], [{xmlcdata, Subject}]},
       {xmlelement, "body", [], [{xmlcdata, Body}]}
      ]
     }.
-
 
 %%%
 %%% Stats
