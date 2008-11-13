@@ -39,9 +39,34 @@ if ($enc->decrypt_url($_GET[a]) === true) {
 	
 }
 
+if ($_GET['idx']) {
+
+	$idx = $_GET['idx'];
+
+	if ($enc->decrypt_url($idx) === true) {
+
+			if($db->set_ext_index($enc->single) !== true) {
+
+				unset($idx);
+				unset($action);
+
+			}
+
+			$idx = $enc->single;
+
+		}
+		else{
+
+			unset($idx);
+			unset($action);
+
+	}
+
+}
+
 if ($action=="undelete") {
 
-		if ($db->move_chat_from_trash($talker,$server,$tslice,$lnk) === true) {
+		if ($db->move_chat_from_trash($talker,$server,$tslice,$lnk,$idx) === true) {
 
 				$back_link = $enc->crypt_url("tslice=$tslice&peer_name_id=$talker&peer_server_id=$server");
                 		$html->status_message($undo_info[$lang].'<br><a href="'.$view_type.'?a='.$back_link.'" style="color: blue;">'.$trash_vit[$lang].'</a>');
@@ -63,7 +88,7 @@ if ($action=="undelete") {
 
 }
 
-if ($action=="delete") {
+if ($action==="delete") {
 
 		if ($db->remove_messages_from_trash($talker,$server,$tslice) === true) {
 
@@ -120,13 +145,14 @@ if ($tr_n < 1) {
 			$reconstruct_link = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$entry[peer_server_id]");
 			$undelete_link = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$entry[peer_server_id]&lnk=$reconstruct_link&action=undelete");
 			$delete_link = $enc->crypt_url("tslice=$tslice&peer_name_id=$entry[peer_name_id]&peer_server_id=$entry[peer_server_id]&lnk=$reconstruct_link&action=delete");
+			$idx = $enc->crypt_url("single=".$entry[idx]."");
 
 			$html->set_body('
 					<tr><td style="padding-left: 10px; padding-right: 10px;"><b>'.$nickname.'</b> (<i>'.htmlspecialchars($talker).$malpa.htmlspecialchars($server_name).'</i>)</td>
 					<td style="text-align: center;">'.$tslice.'</td>
 					<td style="padding-left: 5px; padding-right: 5px; font-size: x-small;">'.$entry[timeframe].'</td>
-					<td style="padding-left: 10px;"><a href="trash.php?a='.$undelete_link.'">'.$trash_undel[$lang].'</a></td>
-					<td style="padding-left: 10px;"><a href="trash.php?a='.$delete_link.'" onClick="if (!confirm(\''.$del_conf[$lang].'\')) return false;">'.$trash_del[$lang].'</a></td></tr>
+					<td style="padding-left: 10px;"><a href="trash.php?a='.$undelete_link.'&amp;idx='.$idx.'">'.$trash_undel[$lang].'</a></td>
+					<td style="padding-left: 10px;"><a href="trash.php?a='.$delete_link.'&amp;idx='.$idx.'" onClick="if (!confirm(\''.$del_conf[$lang].'\')) return false;">'.$trash_del[$lang].'</a></td></tr>
 					
 				');
 

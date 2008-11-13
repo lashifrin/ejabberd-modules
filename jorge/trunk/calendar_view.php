@@ -112,21 +112,47 @@ if ($start) {
 	
 }
 
-// undo delete
-if ($action=="undelete") {
+// set idx
+if ($_GET['idx']) {
 
-		if ($db->move_chat_from_trash($talker,$server,$tslice,$lnk) === true) {
+	$idx = $_GET['idx'];
 
-				$html->status_message($undo_info[$lang],"message");
+	if ($enc->decrypt_url($idx) === true) {
+
+			if($db->set_ext_index($enc->single) !== true) {
+
+				echo $enc->single;exit;
+				unset($idx);
+				unset($action);
 
 			}
 
-			else {
-
-				unset($talker);
-				$html->alert_message($oper_fail[$lang],"message");
+			$idx = $enc->single;
 
 		}
+		else{
+
+			unset($idx);
+			unset($action);
+
+	}
+
+}
+
+// undo delete
+if ($action=="undelete") {
+
+	if ($db->move_chat_from_trash($talker,$server,$tslice,$lnk,$idx) === true) {
+
+			$html->status_message($undo_info[$lang],"message");
+
+		}
+		else {
+
+			unset($talker);
+			$html->alert_message($oper_fail[$lang],"message");
+
+	}
 
 }
 
@@ -136,8 +162,9 @@ if ($action === "delete") {
 
 				$undo = $enc->crypt_url("tslice=$tslice&peer_name_id=$talker&peer_server_id=$server&lnk=$lnk&action=undelete");
 				unset($talker);
+				$idx = $enc->crypt_url("single=".$db->get_last_idx()."");
 				$html->status_message('<center><div style="background-color: #fad163; text-align: center; width: 240pt;">'.$del_moved[$lang]
-						.'<a href="'.$view_type.'?a='.$undo.'"> <span style="color: blue; font-weight: bold;"><u>Undo</u></span></a></div></center>');
+						.'<a href="'.$view_type.'?a='.$undo.'&amp;idx='.$idx.'"> <span style="color: blue; font-weight: bold;"><u>Undo</u></span></a></div></center>');
 
 			}
 

@@ -89,14 +89,42 @@ if ($action === "undelete") {
 
 }
 
+// set idx
+if ($_GET['idx']) {
+
+	$idx = $_GET['idx'];
+
+	if ($enc->decrypt_url($idx) === true) {
+
+			if($db->set_ext_index($enc->single) !== true) {
+
+				echo $enc->single;exit;
+				unset($idx);
+				unset($action);
+
+			}
+
+			$idx = $enc->single;
+
+		}
+		else{
+
+			unset($idx);
+			unset($action);
+
+	}
+
+}
+
 if ($action === "delete") {
 
 		if ($db->move_chat_to_trash($talker,$server,$tslice,$lnk) === true) {
 
 				$undo = $enc->crypt_url("tslice=$tslice&peer_name_id=$talker&peer_server_id=$server&lnk=$lnk&action=undelete");
 				unset($talker);
+				$idx = $enc->crypt_url("single=".$db->get_last_idx()."");
 				$html->set_body('<center><div style="background-color: #fad163; text-align: center; width: 240pt;">'.$del_moved[$lang]
-						.'<a href="'.$view_type.'?a='.$undo.'"> <span style="color: blue; font-weight: bold;"><u>Undo</u></span></a></div></center>');
+						.'<a href="'.$view_type.'?a='.$undo.'&amp;idx='.$idx.'"> <span style="color: blue; font-weight: bold;"><u>Undo</u></span></a></div></center>');
 
 			}
 
