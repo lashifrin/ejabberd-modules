@@ -534,7 +534,7 @@ function debug($debug=false,$string) {
 
 }
 
-function message_processor($tslice,$server_name,$start,$nickname,$result_messages,$db,$html,$enc,$token,$split_line,$lang_pack,$lang,$spec_mark,$e_string) {
+function message_processor($tslice,$server_name,$start,$nickname,$result_messages,$db,$html,$enc,$token,$split_line,$lang_pack,$lang,$spec_mark,$e_string,$to_base_prev,$to_base_next) {
 
 	/* 
 		This function perform message processing for message archives
@@ -842,8 +842,21 @@ function message_processor($tslice,$server_name,$start,$nickname,$result_message
 			$html->set_body('</tr>');
 
 		}
+
 	}
+
 	
+	$html->set_body('</tbody>');
+
+	// Check thread. ToDo: Run code only on last page
+	if (substr($ts, 0 , strpos($ts, ":")) == 23) {
+
+		if ( check_thread($db,$talker,$server,$tslice,$xmpp_host,1) === true) {
+		
+			$html->set_body('<tr><td colspan="6" style="text-align: right; padding-right: 5px;" class="message"><a href="calendar_view.php?a='.$to_base_next.'">'.$lang_pack[9].'</a></td></tr>');
+		}
+	}
+
 	return true;
 
 }

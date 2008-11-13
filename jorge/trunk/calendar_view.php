@@ -444,7 +444,7 @@ if ($display_conversations === true) {
 
 		$html->set_body('<a class="'.$calday_class.'" id="pretty" href="?a='.$to_base2.'" title="JabberID:;'.htmlspecialchars($user_name).$malpa.htmlspecialchars($server_name).';---;
 			<b>'.$chat_lines[$lang].$entry[lcount].'</b>">'.$bold_b.cut_nick($nickname).$bold_e.'</a>');
-				
+
 		if ($mrk==1 AND $next_t != NULL) { 
 						
 			$html->set_body('<a class="nav_np" id="pretty" title="'.$jump_to_next[$lang].': '.$next_t.'" href="calendar_view.php?a='.$to_base_next.'"> >>></a>');
@@ -613,26 +613,16 @@ if ($talker) {
 				$muc_message[$lang],
 				$my_links_save[$lang],
 				$verb_h[$lang],
-				$in_min[$lang]
+				$in_min[$lang],
+				$cont_chat[$lang]
 			);
 
 	// Sent all data to parsing function (message processor)
-	if (message_processor($tslice,$server_name,$start,$nickname,$result,$db,$html,$enc,TOKEN,$split_line,$lang_pack,$lang,$spec_mark,$e_string) !== true) {
+	if (message_processor($tslice,$server_name,$start,$nickname,$result,$db,$html,$enc,TOKEN,$split_line,$lang_pack,$lang,$spec_mark,$e_string,$to_base_prev,$to_base_next) !== true) {
 
 			$html->alert_message($oper_fail[$lang]);
 			$html->destroy_content();
 
-	}
-
-	$html->set_body('</tbody>');
-
-	// Check thread. ToDo: Run code only on last page
-	if (substr($ts, 0 , strpos($ts, ":")) == 23) {
-
-		if ( check_thread($db,$talker,$server,$tslice,$xmpp_host,1) === true) {
-		
-			$html->set_body('<tr><td colspan="6" style="text-align: right; padding-right: 5px;" class="message"><a href="calendar_view.php?a='.$to_base_next.'">'.$cont_chat[$lang].'</a></td></tr>');
-		}
 	}
 
 	// limiting code
