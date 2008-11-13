@@ -50,6 +50,7 @@ class db_manager {
 	private $user_query = null;
 	private $ignore_id = null;
 	private $spec_ignore = false;
+	private $ext_idx;
 	public $result;
 
 	public function __construct($db_host,$db_name,$db_user,$db_password,$db_driver,$xmpp_host = null) {
@@ -1196,7 +1197,8 @@ class db_manager {
 				peer_server_id,
 				date,
 				timeframe,
-				type
+				type,
+				idx
 			FROM 
 				pending_del 
 			WHERE 
@@ -1209,7 +1211,7 @@ class db_manager {
 		";
 
 		$this->select($query,"raw");
-		return $this->commit_select(array("peer_name_id","peer_server_id","date","timeframe","type"));
+		return $this->commit_select(array("peer_name_id","peer_server_id","date","timeframe","type","idx"));
 
 	}
 
@@ -1219,6 +1221,26 @@ class db_manager {
 		$this->prepare($peer_name_id,$peer_server_id,$tslice);
 		$xmpp_host = $this->xmpp_host;
 		$table = $this->construct_table($this->tslice);
+
+		if ($this->get_ext_index($table) !== true) {
+
+				return false;
+
+			}
+			else{
+
+				if (!$this->result->idx) {
+
+						$this->ext_idx = "1";
+
+					}
+					else{
+
+						$this->ext_idx = $this->result->idx;
+
+				}
+
+		}
 
 		$this->begin();
 		if ($this->set_undo_table($this->peer_name_id,$this->peer_server_id,$this->tslice,"chat") === false) {
@@ -1249,16 +1271,19 @@ class db_manager {
 
 		}
 
+		$this->id_query = "Q037a";
 		$query="UPDATE 
 				`$table` 
 			SET 
-				ext = '1' 
+				ext = '".$this->ext_idx."' 
 			WHERE 
 				owner_id='".$this->user_id."' 
 			AND 
 				peer_name_id='".$this->peer_name_id."' 
 			AND 
 				peer_server_id='".$this->peer_server_id."'
+			AND
+				ext is NULL
 				
 		";
 		
@@ -1304,7 +1329,7 @@ class db_manager {
 		$query="UPDATE 
 				jorge_mylinks 
 			SET 
-				ext='1' 
+				ext='".$this->ext_idx."' 
 			WHERE 
 				owner_id ='".$this->user_id."' 
 			AND
@@ -1313,6 +1338,8 @@ class db_manager {
 				peer_name_id='$peer_name_id' 
 			AND 
 				link like '$lnk%'
+			AND
+				ext is NULL
 		";
 
 		return $this->update($query);
@@ -1326,7 +1353,7 @@ class db_manager {
 		$query="UPDATE 
 				jorge_favorites 
 			SET 
-				ext='1' 
+				ext='".$this->ext_idx."' 
 			WHERE 
 				owner_id='".$this->user_id."' 
 			AND 
@@ -1337,6 +1364,8 @@ class db_manager {
 				tslice='".$this->tslice."'
 			AND
 				vhost='".$this->vhost."'
+			AND
+				ext is NULL
 		";
 	
 		return $this->update($query);
@@ -1347,18 +1376,19 @@ class db_manager {
 
 		$this->id_query = "Q041";
 		$query="INSERT INTO 
-				pending_del(owner_id,peer_name_id,date,peer_server_id,type,vhost) 
+				pending_del(owner_id,peer_name_id,date,peer_server_id,type,idx,vhost) 
 			VALUES (
 				'".$this->user_id."', 
 				'$peer_name_id',
 				'$tslice',
 				'$peer_server_id',
 				'$type',
+				'".$this->ext_idx."',
 				'".$this->vhost."'
 				)
 				
 		";
-
+		
 		return $this->insert($query);
 
 	}
@@ -1377,18 +1407,38 @@ class db_manager {
 			AND 
 				peer_server_id='$peer_server_id'
 			AND
+				idx = '".$this->ext_idx."'
+			AND
 				vhost='".$this->vhost."'
 		";
-		
+
 		return $this->delete($query);
 	}
 
-	public function move_chat_from_trash($peer_name_id,$peer_server_id,$tslice,$link) {
+	public function move_chat_from_trash($peer_name_id,$peer_server_id,$tslice,$link,$idx = null) {
 
 		$this->id_query = "Q043";
 		$this->prepare($peer_name_id,$peer_server_id,$tslice);
 		$xmpp_host = $this->xmpp_host;
 		$table = $this->construct_table($this->tslice);
+		if (!$idx) {
+
+				$this->ext_idx = "1";
+			}
+			else{
+
+				if (ctype_digit($idx)) {
+
+						$this->ext_idx = $idx;
+
+					}
+					else{
+
+						return false;
+
+				}
+
+		}
 
 		// Message tables are not transactional, so this make some trouble for us to control all error conditions :/
 		$query="UPDATE 
@@ -1401,6 +1451,8 @@ class db_manager {
 				peer_name_id='".$this->peer_name_id."' 
 			AND 
 				peer_server_id='".$this->peer_server_id."'
+			AND
+				ext = '".$this->ext_idx."'
 		";
 
 		if ($this->update($query) === false) {
@@ -1574,6 +1626,8 @@ class db_manager {
 				vhost='".$this->vhost."'
 			AND 
 				peer_name_id='$peer_name_id' 
+			AND
+				ext = '".$this->ext_idx."'
 			AND 
 				link like '$link%'
 		";
@@ -1598,6 +1652,8 @@ class db_manager {
 			AND 
 				tslice='$tslice'
 			AND
+				ext = '".$this->ext_idx."'
+			AND
 				vhost='".$this->vhost."'
 		";
 	
@@ -1619,7 +1675,7 @@ class db_manager {
 			AND 
 				peer_server_id='".$this->peer_server_id."' 
 			AND 
-				ext = '1'
+				ext = '".$this->ext_idx."'
 				
 		";
 
@@ -1638,7 +1694,7 @@ class db_manager {
 			AND
 				vhost='".$this->vhost."'
 			AND 
-				ext='1' 
+				ext='".$this->ext_idx."' 
 			AND 
 				peer_name_id = '".$this->peer_name_id."' 
 			AND 
@@ -1666,6 +1722,8 @@ class db_manager {
 				peer_server_id='".$this->peer_server_id."' 
 			AND 
 				tslice='".$this->tslice."'
+			AND
+				ext = '".$this->ext_idx."'
 			AND
 				vhost='".$this->vhost."'
 		";
@@ -2491,6 +2549,61 @@ class db_manager {
 				return true;
 				
 		}
+
+	}
+
+	private function get_ext_index($table) {
+
+		$this->id_query = "Q089";
+		$query="SELECT
+				ext+1 as idx 
+			FROM 
+				`".$table."` 
+			WHERE
+				owner_id = '".$this->user_id."'
+			AND
+				peer_name_id = '".$this->peer_name_id."'
+			AND
+				peer_server_id = '".$this->peer_server_id."'
+			AND
+				ext is not NULL
+			ORDER BY
+				ext
+			DESC LIMIT 1
+			";
+
+		return $this->select($query);
+
+	}
+
+	public function set_ext_index($idx) {
+
+		/*
+			This is bit messy as we use ctype_digit() to check if string is an integer,
+			so any number need to be set as type string and then pass to sql_validate() for validation.
+			This should be changed in sql_validate() function to take care of all data that it gets...
+		*/
+
+		settype($idx,"string");
+		if ($this->sql_validate($idx,"integer") === false) {
+
+				return false;
+
+			}
+			else{
+
+				$this->ext_idx = $idx;
+				return true;
+
+		}
+
+		return false;
+
+	}
+
+	public function get_last_idx() {
+
+		return $this->ext_idx;
 
 	}
 
