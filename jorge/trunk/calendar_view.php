@@ -310,8 +310,6 @@ if ($tslice) {
 
 if ($display_conversations === true) {
 	
-	$db->get_user_chats($tslice);
-	$result = $db->result;
 	// we need to sort list by nickname so we need to combine 2 results: roster and mod_logdb chatlist:
 	foreach($result as $sort_me) {
 		
