@@ -629,15 +629,19 @@ function message_processor($tslice,$server_name,$start,$nickname,$result_message
 						');
 		}
 
-		// check if chat is continuation from previous day
-		if ($ts_mark!="1" AND substr($ts, 0 , strpos($ts, ":")) == 00 ) {
+		// check if chat is continuation from previous day (work only for calendar view)
+		if ($to_base_prev !== NULL) {
 
-			if ( check_thread($db,$talker,$server,$tslice,$xmpp_host,2) === true) {
+			if ($ts_mark!="1" AND substr($ts, 0 , strpos($ts, ":")) == 00 ) {
+
+				if ( check_thread($db,$talker,$server,$tslice,$xmpp_host,2) === true) {
 				
-					$html->set_body('<tr><td colspan="6" style="text-align: left; padding-left: 5px;" class="message"><a href="calendar_view.php?a='.$to_base_prev.'">'.$lang_pack[0].'</a></td></tr>');
+						$html->set_body('<tr><td colspan="6" style="text-align: left; padding-left: 5px;" class="message"><a href="calendar_view.php?a='.$to_base_prev.'">'.$lang_pack[0].'</a></td></tr>');
+				}
+				// check only first line
+				$ts_mark="1";
 			}
-			// check only first line
-			$ts_mark="1";
+
 		}
 
 		// run code only if type is not groupchat
@@ -848,13 +852,17 @@ function message_processor($tslice,$server_name,$start,$nickname,$result_message
 	
 	$html->set_body('</tbody>');
 
-	// Check thread. ToDo: Run code only on last page
-	if (substr($ts, 0 , strpos($ts, ":")) == 23) {
+	// Check thread. Work only for calendar view.
+	if ($to_base_next !== NULL) {
 
-		if ( check_thread($db,$talker,$server,$tslice,$xmpp_host,1) === true) {
+		if (substr($ts, 0 , strpos($ts, ":")) == 23) {
+
+			if ( check_thread($db,$talker,$server,$tslice,$xmpp_host,1) === true) {
 		
-			$html->set_body('<tr><td colspan="6" style="text-align: right; padding-right: 5px;" class="message"><a href="calendar_view.php?a='.$to_base_next.'">'.$lang_pack[9].'</a></td></tr>');
+				$html->set_body('<tr><td colspan="6" style="text-align: right; padding-right: 5px;" class="message"><a href="calendar_view.php?a='.$to_base_next.'">'.$lang_pack[9].'</a></td></tr>');
+			}
 		}
+
 	}
 
 	return true;
