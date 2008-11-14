@@ -2570,8 +2570,26 @@ class db_manager {
 			ORDER BY
 				ext
 			DESC LIMIT 1
-			";
+		";
 
+		return $this->select($query);
+
+	}
+
+	public function get_last_attempt($user_id) {
+
+		$this->id_query = "Q090";
+		$user_id = $this->sql_validate($user_id,"integer");
+		$query="SELECT
+				count(id_user) AS cnt
+			FROM
+				jorge_logger 
+			WHERE
+				id_user = '$user_id' 
+			AND
+				log_time > date_sub(now(),interval 1 minute)
+		";
+		
 		return $this->select($query);
 
 	}

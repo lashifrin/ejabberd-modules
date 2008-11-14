@@ -283,19 +283,18 @@ if ($_GET[act]==="logout") {
 		}
 		$db->get_user_id($inpLogin);
 		$ui_fail = $db->result->user_id;
-		$query = "select count(id_user) as log_number from jorge_logger where id_user = '$ui_fail' and log_time > date_sub(now(),interval 1 minute)";
-		$result = mysql_query($query);
-		$row=mysql_fetch_row($result);
+		$db->get_last_attempt($ui_fail);
+		$row = $db->result->cnt;
 
 		// bump log_level if more then 3 log attempts in one minute
-		if ($row[0]>"3") { 
+		if ($row > "3") { 
 
-				$log_level="3"; 
+				$log_level = "3"; 
 		
 		} 
 		else { 
 
-			$log_level="2";
+			$log_level = "2";
 		
 		} 
 
