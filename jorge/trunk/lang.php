@@ -825,7 +825,7 @@ $muc_message[eng] = "System message:";
 $spec_contact_enable[pol] = "Wyświetlać kontakty specjalne:";
 $spec_contact_enable[eng] = "Display special contact:";
 
-$spec_contact_desc[pol] = "Pozwala zdecydować czy w liście rozmów mają pojawiać się rozmowy z kontaktami specjalnymi np.: bramkami, tranposrtami. Większość użytkowników może spokojnie tą opcje wyłączyć";
+$spec_contact_desc[pol] = "Pozwala zdecydować czy w liście rozmów mają pojawiać się rozmowy z kontaktami specjalnymi np.: bramkami lub transportami. Większość użytkowników może spokojnie tą opcje wyłączyć";
 $spec_contact_desc[eng] = "This option let you decide if conversations with special contacts like gateways, transports are displayed in your chat list. Most users can say <i>No</i> here.";
 
 $donate[pol] = "<small>Pomóż rozwijać Projekt Jorge.<a href=\"http://www.jabster.pl/index.php?q=node/43\" target=\"_blank\"><u>Przeczytaj więcej...</u></a></small>";
