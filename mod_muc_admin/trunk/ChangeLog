@@ -1,3 +1,7 @@
+2008-11-17  Badlop  <badlop@process-one.net>
+
+	* src/mod_muc_admin.erl: Fix include of web hrl (thanks to Johnny)
+
 2008-10-12  Badlop  <badlop@process-one.net>
 
 	* src/mod_muc_admin.erl: Update from ctl to commands (EJAB-694)
