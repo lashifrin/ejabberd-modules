@@ -4,7 +4,7 @@
 
 	Homepage: http://www.ejabberd.im/mod_muc_admin
 	Author: Badlop
-	Requirements: ejabberd trunk SVN 1635 or newer
+	Requirements: ejabberd trunk SVN 1699 or newer
 
 
 This module implements several ejabberd commands that can be

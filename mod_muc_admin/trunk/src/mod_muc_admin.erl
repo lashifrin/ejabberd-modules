@@ -26,50 +26,13 @@
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
+-include("mod_muc_room.hrl").
 -include("ejabberd_http.hrl").
 -include("ejabberd_web_admin.hrl").
 -include("ejabberd_commands.hrl").
 
-%% Copied from mod_muc/mod_muc*.erl
--define(MAX_USERS_DEFAULT, 200).
--define(MAX_USERS_DEFAULT_LIST,
-	[5, 10, 20, 30, 50, 100, 200, 500, 1000, 2000, 5000]).
--define(DICT, dict).
+%% Copied from mod_muc/mod_muc.erl
 -record(muc_online_room, {name_host, pid}).
--record(lqueue, {queue, len, max}).
--record(config, {title = "",
-		 description = "",
-		 allow_change_subj = true,
-		 allow_query_users = true,
-		 allow_private_messages = true,
-		 public = true,
-		 public_list = true,
-		 persistent = false,
-		 moderated = false, % TODO
-		 members_by_default = true,
-		 members_only = false,
-		 allow_user_invites = false,
-		 password_protected = false,
-		 password = "",
-		 anonymous = true,
-		 max_users = ?MAX_USERS_DEFAULT,
-		 logging = false
-		}).
--record(state, {room,
-		host,
-		server_host,
-		access,
-		jid,
-		config = #config{},
-		users = ?DICT:new(),
-		affiliations = ?DICT:new(),
-		history,
-		subject = "",
-		subject_author = "",
-		just_created = false,
-		activity = ?DICT:new(),
-		room_shaper,
-		room_queue = queue:new()}).
 
 %%----------------------------
 %% gen_mod

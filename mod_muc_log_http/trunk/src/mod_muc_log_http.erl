@@ -33,6 +33,7 @@
 %  - If chatroom is password protected, ask password
 %  - If chatroom is only for members, ask for username and password
 
+%% TODO: Since ejabberd trunk SVN r1699 the file mod_muc_room.hrl can be included
 %% Copied from mod_muc/mod_muc.erl
 -record(muc_online_room, {name_host, pid}).
 %% Copied from mod_muc/mod_muc_room.erl
