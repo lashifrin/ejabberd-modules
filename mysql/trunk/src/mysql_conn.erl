@@ -67,7 +67,8 @@
 	 start_link/6,
 	 fetch/3,
 	 fetch/4,
-	 squery/4
+	 squery/4,
+	 stop/1
 	]).
 
 %%--------------------------------------------------------------------
@@ -136,12 +137,14 @@ post_start(Pid, _LogFun) ->
 	{mysql_conn, Pid, ok} ->
 	    {ok, Pid};
 	{mysql_conn, Pid, {error, Reason}} ->
+	    stop(Pid),
 	    {error, Reason}
 %	Unknown ->
 %	    mysql:log(_LogFun, error, "mysql_conn: Received unknown signal, exiting"),
 %	    mysql:log(_LogFun, debug, "mysql_conn: Unknown signal : ~p", [Unknown]),
 %	    {error, "unknown signal received"}
     after Timeout ->
+	    stop(Pid),
 	    {error, "timed out"}
     end.
 
@@ -184,12 +187,16 @@ squery(Pid, Query, From, Options) when is_pid(Pid), is_list(Query) ->
 		{fetch_result, Pid, Result} ->
 		    Result
 	    after Timeout ->
+		    stop(Pid),
 		    {error, "query timed out"}
 	    end;
 	_ ->
 	    %% From is gen_server From, Pid will do gen_server:reply() when it has an answer
 	    ok
     end.
+
+stop(Pid) ->
+    Pid ! close.
 
 %%--------------------------------------------------------------------
 %% Function: do_recv(LogFun, RecvPid, SeqNum)
@@ -301,9 +308,12 @@ loop(State) ->
 	    mysql:log(State#state.log_fun, error, "mysql_conn: Unexpected MySQL data (num ~p) :~n~p",
 		      [Num, Packet]),
 	    loop(State);
+	close ->
+	    close_connection(State);
         Unknown ->
 	    mysql:log(State#state.log_fun, error, "mysql_conn: Received unknown signal, exiting"),
 	    mysql:log(State#state.log_fun, debug, "mysql_conn: Unknown signal : ~p", [Unknown]),
+	    close_connection(State),
 	    error
     end.
 
@@ -539,6 +549,12 @@ get_with_length(<<254:8, Length:64/little, Rest/binary>>) ->
     split_binary(Rest, Length);
 get_with_length(<<Length:8, Rest/binary>>) when Length < 251 ->
     split_binary(Rest, Length).
+
+close_connection(State) ->
+    Result = gen_tcp:close(State#state.socket),
+    mysql:log(State#state.log_fun,  normal, "Closing connection ~p: ~p~n", [State#state.socket, Result]),
+    Result.
+
 
 %%--------------------------------------------------------------------
 %% Function: do_query(State, Query)

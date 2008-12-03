@@ -49,7 +49,7 @@
 %%%     - on error:
 %%%          Reason    = mysql:get_result_reason(MysqlRes)
 %%%         with Reason    = string()
-%%% 
+%%%
 %%% If you just want a single MySQL connection, or want to manage your
 %%% connections yourself, you can use the mysql_conn module as a
 %%% stand-alone single MySQL connection. See the comment at the top of
@@ -78,7 +78,8 @@
 	 quote/1,
 	 asciz_binary/2,
 
-	 connect/7
+	 connect/7,
+	 stop/0
 	]).
 
 %%--------------------------------------------------------------------
@@ -166,6 +167,10 @@ start_link(Id, Host, Port, User, Password, Database, LogFun) when is_list(Host),
     crypto:start(),
     gen_server:start_link({local, ?SERVER}, ?MODULE, [Id, Host, Port, User, Password, Database, LogFun], []).
 
+stop() ->
+    gen_server:call(?SERVER, stop).
+
+
 %%--------------------------------------------------------------------
 %% Function: fetch(Id, Query)
 %%           fetch(Id, Query, Timeout)
@@ -174,7 +179,7 @@ start_link(Id, Host, Port, User, Password, Database, LogFun) when is_list(Host),
 %%           Timeout = integer() | infinity, gen_server timeout value
 %% Descrip.: Send a query and wait for the result.
 %% Returns : {data, MySQLRes}    |
-%%           {updated, MySQLRes} | 
+%%           {updated, MySQLRes} |
 %%           {error, MySQLRes}
 %%           MySQLRes = term()
 %%--------------------------------------------------------------------
@@ -458,6 +463,9 @@ handle_call({add_mysql_connection, Conn}, _From, State) when is_record(Conn, mys
 handle_call(get_logfun, _From, State) ->
     {reply, {ok, State#state.log_fun}, State};
 
+handle_call(stop, _From, State) ->
+    {stop, normal, State};
+
 handle_call(Unknown, _From, State) ->
     log(State#state.log_fun, error, "mysql: Received unknown gen_server call : ~p", [Unknown]),
     {reply, {error, "unknown gen_server call in mysql client"}, State}.
@@ -520,7 +528,7 @@ handle_info({'DOWN', _MonitorRef, process, Pid, Info}, State) ->
 	    log(LogFun, error, "mysql: Received 'DOWN' signal from pid ~p not in my list", [Pid]),
 	    {noreply, State}
     end;
-    
+
 handle_info(Info, State) ->
     log(State#state.log_fun, error, "mysql: Received unknown signal : ~p", [Info]),
     {noreply, State}.
@@ -537,6 +545,9 @@ terminate(Reason, State) ->
 		   _ -> error
 	       end,
     log(LogFun, LogLevel, "mysql: Terminating with reason : ~p", [Reason]),
+    lists:foreach(fun(MysqlConn) ->
+			  MysqlConn#mysql_connection.conn_pid ! close
+		  end, State#state.conn_list),
     Reason.
 
 %%--------------------------------------------------------------------
