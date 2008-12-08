@@ -406,8 +406,7 @@ iq_get_vcard(Lang) ->
     [{xmlelement, "FN", [],
       [{xmlcdata, "ejabberd/mod_irc"}]},                  
      {xmlelement, "URL", [],
-      [{xmlcdata,
-        "http://ejabberd.jabberstudio.org/"}]},
+      [{xmlcdata, ?EJABBERD_URI}]},
      {xmlelement, "DESC", [],
       [{xmlcdata, translate:translate(Lang, "ejabberd IRC module\n"
         "Copyright (c) 2003-2006 Alexey Shchepin")}]}].
