@@ -379,14 +379,11 @@ iq_disco([], _Lang) ->
       [{"category", "conference"},
        {"type", "irc"},
        {"name", "IRC Transport"}], []},
-     {xmlelement, "feature",
-      [{"var", ?NS_MUC}], []},
-     {xmlelement, "feature",
-      [{"var", ?NS_REGISTER}], []},
-     {xmlelement, "feature",
-      [{"var", ?NS_VCARD}], []},
-     {xmlelement, "feature",
-      [{"var", ?NS_COMMANDS}], []}];
+     {xmlelement, "feature", [{"var", ?NS_DISCO_INFO}], []},
+     {xmlelement, "feature", [{"var", ?NS_MUC}], []},
+     {xmlelement, "feature", [{"var", ?NS_REGISTER}], []},
+     {xmlelement, "feature", [{"var", ?NS_VCARD}], []},
+     {xmlelement, "feature", [{"var", ?NS_COMMANDS}], []}];
 iq_disco(Node, Lang) ->
     case lists:keysearch(Node, 1, commands()) of
 	{value, {_, Name, _}} ->
