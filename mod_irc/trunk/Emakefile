@@ -1,0 +1,4 @@
+{'../../ejabberd-dev/trunk/src/gen_mod', [{outdir, "../../ejabberd-dev/trunk/ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
+{'src/iconv',     [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
+{'src/mod_irc',     [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
+{'src/mod_irc_connection',     [{outdir, "ebin"},{i,"../../ejabberd-dev/trunk/include"}]}.
