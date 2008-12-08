@@ -405,8 +405,8 @@ iq_get_vcard(Lang) ->
      {xmlelement, "URL", [],
       [{xmlcdata, ?EJABBERD_URI}]},
      {xmlelement, "DESC", [],
-      [{xmlcdata, translate:translate(Lang, "ejabberd IRC module\n"
-        "Copyright (c) 2003-2006 Alexey Shchepin")}]}].
+      [{xmlcdata, translate:translate(Lang, "ejabberd IRC module") ++ 
+        "\nCopyright (c) 2003-2008 Alexey Shchepin"}]}].
 
 command_items(Host, Lang) ->
     lists:map(fun({Node, Name, _Function})
