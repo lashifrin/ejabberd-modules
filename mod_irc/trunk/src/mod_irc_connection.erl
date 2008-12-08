@@ -198,7 +198,7 @@ code_change(_OldVsn, StateName, StateData, _Extra) ->
 %%          {stop, Reason, NewStateData}                         
 %%----------------------------------------------------------------------
 handle_info({route_chan, Channel, Resource,
-	     {xmlelement, "presence", Attrs, Els}},
+	     {xmlelement, "presence", Attrs, _Els}},
 	    StateName, StateData) ->
     NewStateData =
 	case xml:get_attr_s("type", Attrs) of
@@ -250,7 +250,7 @@ handle_info({route_chan, Channel, Resource,
     end;
 
 handle_info({route_chan, Channel, Resource,
-	     {xmlelement, "message", Attrs, Els} = El},
+	     {xmlelement, "message", Attrs, _Els} = El},
 	    StateName, StateData) ->
     NewStateData =
 	case xml:get_attr_s("type", Attrs) of
@@ -372,7 +372,7 @@ handle_info({route_chan, Channel, Resource,
 
 
 handle_info({route_chan, Channel, Resource,
-	     {xmlelement, "iq", Attrs, Els} = El},
+	     {xmlelement, "iq", Attrs, _Els} = El},
 	    StateName, StateData) ->
     From = StateData#state.user,
     To = jlib:make_jid(lists:concat([Channel, "%", StateData#state.server]),
@@ -410,12 +410,12 @@ handle_info({route_chan, Channel, Resource,
     end,
     {next_state, StateName, StateData};
 
-handle_info({route_chan, Channel, Resource, Packet}, StateName, StateData) ->
+handle_info({route_chan, _Channel, _Resource, _Packet}, StateName, StateData) ->
     {next_state, StateName, StateData};
 
 
 handle_info({route_nick, Nick,
-	     {xmlelement, "message", Attrs, Els} = El},
+	     {xmlelement, "message", Attrs, _Els} = El},
 	    StateName, StateData) ->
     NewStateData =
 	case xml:get_attr_s("type", Attrs) of
@@ -470,7 +470,7 @@ handle_info({route_nick, Nick,
 	    {next_state, StateName, NewStateData}
     end;
 
-handle_info({route_nick, Nick, Packet}, StateName, StateData) ->
+handle_info({route_nick, _Nick, _Packet}, StateName, StateData) ->
     {next_state, StateName, StateData};
 
 
@@ -507,25 +507,25 @@ handle_info({ircstring, [$: | String]}, wait_for_registration, StateData) ->
 	    {next_state, NewState, NewStateData}
     end;
 
-handle_info({ircstring, [$: | String]}, StateName, StateData) ->
+handle_info({ircstring, [$: | String]}, _StateName, StateData) ->
     Words = string:tokens(String, " "),
     NewStateData =
 	case Words of
 	    [_, "353" | Items] ->
 		process_channel_list(StateData, Items);
-	    [_, "332", Nick, [$# | Chan] | _] ->
+	    [_, "332", _Nick, [$# | Chan] | _] ->
 		process_channel_topic(StateData, Chan, String),
 		StateData;
-	    [_, "333", Nick, [$# | Chan] | _] ->
+	    [_, "333", _Nick, [$# | Chan] | _] ->
 		process_channel_topic_who(StateData, Chan, String),
 		StateData;
 	    [_, "318", _, Nick | _] ->
 		process_endofwhois(StateData, String, Nick),
 		StateData;
-	    [_, "311", _, Nick, Ident, Irchost | _ ] ->
+	    [_, "311", _, _Nick, Ident, Irchost | _ ] ->
 		process_whois311(StateData, String, Nick, Ident, Irchost),
 		StateData;
-	    [_, "312", _, Nick, Ircserver  | _ ] ->
+	    [_, "312", _, _Nick, Ircserver  | _ ] ->
 		process_whois312(StateData, String, Nick, Ircserver),
 		StateData;
 	    [_, "319", _, Nick | _ ] ->
@@ -608,16 +608,16 @@ handle_info({ircstring, String}, StateName, StateData) ->
 handle_info({send_text, Text}, StateName, StateData) ->
     send_text(StateData, Text),
     {next_state, StateName, StateData};
-handle_info({tcp, Socket, Data}, StateName, StateData) ->
+handle_info({tcp, _Socket, Data}, StateName, StateData) ->
     Buf = StateData#state.inbuf ++ binary_to_list(Data),
     {ok, Strings} = regexp:split([C || C <- Buf, C /= $\r], "\n"),
     ?DEBUG("strings=~p~n", [Strings]),
     NewBuf = process_lines(StateData#state.encoding, Strings),
     {next_state, StateName, StateData#state{inbuf = NewBuf}};
-handle_info({tcp_closed, Socket}, StateName, StateData) ->
+handle_info({tcp_closed, _Socket}, StateName, StateData) ->
     gen_fsm:send_event(self(), closed),
     {next_state, StateName, StateData};
-handle_info({tcp_error, Socket, Reason}, StateName, StateData) ->
+handle_info({tcp_error, _Socket, _Reason}, StateName, StateData) ->
     gen_fsm:send_event(self(), closed),
     {next_state, StateName, StateData}.
 
@@ -626,7 +626,7 @@ handle_info({tcp_error, Socket, Reason}, StateName, StateData) ->
 %% Purpose: Shutdown the fsm
 %% Returns: any
 %%----------------------------------------------------------------------
-terminate(Reason, StateName, FullStateData) ->
+terminate(_Reason, _StateName, FullStateData) ->
     % Extract error message if there was one.
     {Error, StateData} = case FullStateData of
 	{error, SError, SStateData} ->
@@ -680,7 +680,7 @@ send_text(#state{socket = Socket, encoding = Encoding}, Text) ->
 bounce_messages(Reason) ->
     receive
 	{send_element, El} ->
-	    {xmlelement, Name, Attrs, SubTags} = El,
+	    {xmlelement, _Name, Attrs, _SubTags} = El,
 	    case xml:get_attr_s("type", Attrs) of
 	        "error" ->
 	            ok;
@@ -720,7 +720,7 @@ process_channel_list_find_chan(StateData, [[$# | Chan] | Items]) ->
 process_channel_list_find_chan(StateData, [_ | Items]) ->
     process_channel_list_find_chan(StateData, Items).
 
-process_channel_list_users(StateData, Chan, []) ->
+process_channel_list_users(StateData, _Chan, []) ->
     StateData;
 process_channel_list_users(StateData, Chan, [User | Items]) ->
     NewStateData = process_channel_list_user(StateData, Chan, User),
@@ -779,7 +779,7 @@ process_channel_topic_who(StateData, Chan, String) ->
     Msg1 = case Words of
 	       [_, "333", _, _Chan, Whoset , Timeset] ->
 		   case string:to_integer(Timeset) of
-		       {Unixtimeset, Rest} -> 
+		       {Unixtimeset, _Rest} -> 
 			   "Topic for #" ++ Chan ++ " set by " ++ Whoset ++
 			       " at " ++ unixtime2string(Unixtimeset);
 		       _->
@@ -839,7 +839,7 @@ process_num_error(StateData, String) ->
       end, dict:fetch_keys(StateData#state.channels)),
       StateData.
 
-process_endofwhois(StateData, String, Nick) ->
+process_endofwhois(StateData, _String, Nick) ->
     ejabberd_router:route(
       jlib:make_jid(lists:concat([Nick, "!", StateData#state.server]),
 		    StateData#state.host, ""),
@@ -922,7 +922,7 @@ process_channotice(StateData, Chan, From, String) ->
 
 
 
-process_privmsg(StateData, Nick, From, String) ->
+process_privmsg(StateData, _Nick, From, String) ->
     [FromUser | _] = string:tokens(From, "!"),
     {ok, Msg, _} = regexp:sub(String, ".*PRIVMSG[^:]*:", ""),
     Msg1 = case Msg of
@@ -940,7 +940,7 @@ process_privmsg(StateData, Nick, From, String) ->
        [{xmlelement, "body", [], [{xmlcdata, Msg2}]}]}).
 
 
-process_notice(StateData, Nick, From, String) ->
+process_notice(StateData, _Nick, From, String) ->
     [FromUser | _] = string:tokens(From, "!"),
     {ok, Msg, _} = regexp:sub(String, ".*NOTICE[^:]*:", ""),
     Msg1 = case Msg of
@@ -958,7 +958,7 @@ process_notice(StateData, Nick, From, String) ->
        [{xmlelement, "body", [], [{xmlcdata, Msg2}]}]}).
 
 
-process_version(StateData, Nick, From) ->
+process_version(StateData, _Nick, From) ->
     [FromUser | _] = string:tokens(From, "!"),
     send_text(
       StateData,
@@ -972,7 +972,7 @@ process_version(StateData, Nick, From) ->
 		    [FromUser])).
 
 
-process_userinfo(StateData, Nick, From) ->
+process_userinfo(StateData, _Nick, From) ->
     [FromUser | _] = string:tokens(From, "!"),
     send_text(
       StateData,
@@ -1057,7 +1057,7 @@ process_quit(StateData, From, String) ->
     StateData.
 
 
-process_join(StateData, Channel, From, String) ->
+process_join(StateData, Channel, From, _String) ->
     [FromUser | FromIdent] = string:tokens(From, "!"),
     Chan = lists:subtract(Channel, ":#"),
     ejabberd_router:route(
@@ -1085,7 +1085,7 @@ process_join(StateData, Channel, From, String) ->
 
 
 
-process_mode_o(StateData, Chan, From, Nick, Affiliation, Role) ->
+process_mode_o(StateData, Chan, _From, Nick, Affiliation, Role) ->
     %Msg = lists:last(string:tokens(String, ":")),
     ejabberd_router:route(
       jlib:make_jid(lists:concat([Chan, "%", StateData#state.server]),
@@ -1241,15 +1241,15 @@ process_iq_admin(StateData, Channel, set, SubEl) ->
 	    Reason = xml:get_path_s(ItemEl, [{elem, "reason"}, cdata]),
 	    process_admin(StateData, Channel, Nick, Affiliation, Role, Reason)
     end;
-process_iq_admin(StateData, Channel, get, SubEl) ->
+process_iq_admin(_StateData, _Channel, get, _SubEl) ->
     {error, ?ERR_FEATURE_NOT_IMPLEMENTED}.
 
 
 
-process_admin(StateData, Channel, "", Affiliation, Role, Reason) ->
+process_admin(_StateData, _Channel, "", _Affiliation, _Role, _Reason) ->
     {error, ?ERR_FEATURE_NOT_IMPLEMENTED};
 
-process_admin(StateData, Channel, Nick, Affiliation, "none", Reason) ->
+process_admin(StateData, Channel, Nick, _Affiliation, "none", Reason) ->
     case Reason of
 	"" ->
 	    send_text(StateData,
@@ -1264,7 +1264,7 @@ process_admin(StateData, Channel, Nick, Affiliation, "none", Reason) ->
 
 
 
-process_admin(StateData, Channel, Nick, Affiliation, Role, Reason) ->
+process_admin(_StateData, _Channel, _Nick, _Affiliation, _Role, _Reason) ->
     {error, ?ERR_FEATURE_NOT_IMPLEMENTED}.
 
 
