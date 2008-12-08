@@ -378,7 +378,7 @@ iq_disco([], _Lang) ->
     [{xmlelement, "identity",
       [{"category", "conference"},
        {"type", "irc"},
-       {"name", "IRC Transport"}], []},
+       {"name", translate:translate(Lang, "IRC Transport")}], []},
      {xmlelement, "feature", [{"var", ?NS_DISCO_INFO}], []},
      {xmlelement, "feature", [{"var", ?NS_MUC}], []},
      {xmlelement, "feature", [{"var", ?NS_REGISTER}], []},
