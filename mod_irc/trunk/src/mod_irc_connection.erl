@@ -372,7 +372,7 @@ handle_info({route_chan, Channel, Resource,
 
 
 handle_info({route_chan, Channel, Resource,
-	     {xmlelement, "iq", Attrs, _Els} = El},
+	     {xmlelement, "iq", _Attrs, _Els} = El},
 	    StateName, StateData) ->
     From = StateData#state.user,
     To = jlib:make_jid(lists:concat([Channel, "%", StateData#state.server]),
@@ -522,10 +522,10 @@ handle_info({ircstring, [$: | String]}, _StateName, StateData) ->
 	    [_, "318", _, Nick | _] ->
 		process_endofwhois(StateData, String, Nick),
 		StateData;
-	    [_, "311", _, _Nick, Ident, Irchost | _ ] ->
+	    [_, "311", _, Nick, Ident, Irchost | _ ] ->
 		process_whois311(StateData, String, Nick, Ident, Irchost),
 		StateData;
-	    [_, "312", _, _Nick, Ircserver  | _ ] ->
+	    [_, "312", _, Nick, Ircserver  | _ ] ->
 		process_whois312(StateData, String, Nick, Ircserver),
 		StateData;
 	    [_, "319", _, Nick | _ ] ->
@@ -704,7 +704,7 @@ route_nick(Pid, Nick, Packet) ->
     Pid ! {route_nick, Nick, Packet}.
 
 
-process_lines(Encoding, [S]) ->
+process_lines(_Encoding, [S]) ->
     S;
 process_lines(Encoding, [S | Ss]) ->
     self() ! {ircstring, iconv:convert(Encoding, "utf-8", S)},
@@ -799,7 +799,7 @@ process_channel_topic_who(StateData, Chan, String) ->
        [{xmlelement, "body", [], [{xmlcdata, Msg2}]}]}).
 
 
-error_nick_in_use(StateData, String) ->
+error_nick_in_use(_StateData, String) ->
     {ok, Msg, _} = regexp:sub(String, ".*433 +[^ ]* +", ""),
     Msg1 = filter_message(Msg),
     {xmlelement, "error", [{"code", "409"}, {"type", "cancel"}],
@@ -1030,7 +1030,7 @@ process_quit(StateData, From, String) ->
     
     {ok, Msg, _} = regexp:sub(String, ".*QUIT[^:]*:", ""),
     Msg1 = filter_message(Msg),
-    NewChans =
+    %%NewChans =
 	dict:map(
 	  fun(Chan, Ps) ->
 		  case ?SETS:is_member(FromUser, Ps) of
@@ -1183,7 +1183,7 @@ process_error(StateData, String) ->
 		   [{xmlcdata, String}]}]})
       end, dict:fetch_keys(StateData#state.channels)).
 
-error_unknown_num(StateData, String, Type) ->
+error_unknown_num(_StateData, String, Type) ->
     {ok, Msg, _} = regexp:sub(String, ".*[45][0-9][0-9] +[^ ]* +", ""),
     Msg1 = filter_message(Msg),
     {xmlelement, "error", [{"code", "500"}, {"type", Type}],

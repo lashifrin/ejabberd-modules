@@ -212,7 +212,7 @@ do_route1(Host, ServerHost, From, To, Packet) ->
 		"" ->
 		    case jlib:iq_query_info(Packet) of
 			#iq{type = get, xmlns = ?NS_DISCO_INFO = XMLNS,
-			    sub_el = _SubEl, lang = Lang} = IQ ->
+			    sub_el = SubEl, lang = Lang} = IQ ->
 			    Node = xml:get_tag_attr_s("node", SubEl),
 			    case iq_disco(Node, Lang) of
 				[] ->
@@ -374,7 +374,7 @@ closed_connection(Host, From, Server) ->
     ets:delete(irc_connection, {From, Server, Host}).
 
 
-iq_disco([], _Lang) ->
+iq_disco([], Lang) ->
     [{xmlelement, "identity",
       [{"category", "conference"},
        {"type", "irc"},
