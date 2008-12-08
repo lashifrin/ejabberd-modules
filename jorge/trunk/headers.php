@@ -289,7 +289,7 @@ $html->headers('
 
 	function smackzk()  {
 
-		window.open(\'https://gps.autocom.pl/ZKJab/\',\'\',
+		window.open(\'https://gps.autocom.pl/ZKJabDEVJorgate/\',\'\',
 			\'location=no,toolbar=no,menubar=no,scrollbars=no,resizable, height=375,width=715\');
 
 		}
