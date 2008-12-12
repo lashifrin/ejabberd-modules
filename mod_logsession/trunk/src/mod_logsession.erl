@@ -35,13 +35,12 @@
 	 stop/1,
 	 loop/2,
 	 reopen_log/1,
-	 forbidden/1,
-	 ctl_process/3
+	 forbidden/1
 	]).
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
--include("ejabberd_ctl.hrl").
+-include("ejabberd_commands.hrl").
 
 -define(PROCNAME, ejabberd_logsession).
 
@@ -52,11 +51,7 @@
 start(Host, Opts) ->
     ejabberd_hooks:add(reopen_log_hook, Host, ?MODULE, reopen_log, 50),
     ejabberd_hooks:add(forbidden_session_hook, Host, ?MODULE, forbidden, 50),
-    ejabberd_ctl:register_commands(
-      Host, 
-      [{"reopen-seslog", "reopen mod_logsession log file"}],
-      ?MODULE, 
-      ctl_process),
+    ejabberd_commands:register_commands(commands()),
     Filename1 = gen_mod:get_opt(
 		  sessionlog, 
 		  Opts, 
@@ -68,11 +63,7 @@ start(Host, Opts) ->
 stop(Host) ->
     ejabberd_hooks:delete(reopen_log_hook, Host, ?MODULE, reopen_log, 50),
     ejabberd_hooks:delete(forbidden_session_hook, Host, ?MODULE, forbidden, 50),
-    ejabberd_ctl:unregister_commands(
-      Host, 
-      [{"reopen-seslog", "reopen mod_logsession log file"}],
-      ?MODULE, 
-      ctl_process),
+    ejabberd_commands:unregister_commands(commands()),
     Proc = get_process_name(Host),
     exit(whereis(Proc), stop),
     {wait, Proc}.
@@ -88,11 +79,12 @@ forbidden(JID) ->
     Host = JID#jid.lserver,
     get_process_name(Host) ! {log, forbidden, JID}.
 
-ctl_process(_Val, Host, ["reopen-seslog"]) ->
-    get_process_name(Host) ! reopenlog,
-    ?STATUS_SUCCESS;
-ctl_process(Val, _, _) ->
-    Val.
+commands() ->
+    [#ejabberd_commands{name = reopen_seslog, tags = [logs, server],
+			desc = "Reopen mod_logsession log file",
+			module = ?MODULE, function = reopen_log,
+			args = [{host, string}],
+			result = {res, rescode}}].
 
 %%%----------------------------------------------------------------------
 %%% LOOP

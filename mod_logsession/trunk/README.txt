@@ -3,7 +3,7 @@
 
 	Homepage: http://www.ejabberd.im/mod_logsession
 	Author: Badlop
-	Module for ejabberd trunk SVN r1301 or newer
+	Requirements: ejabberd trunk SVN 1635 or newer
 
 
 	DESCRIPTION
@@ -67,11 +67,10 @@ For example:
 	REOPEN LOG FILES
 	----------------
 
-This module also provides a new ejabberdctl command for each vhost:
-  reopen-seslog
+This module provides an ejabberd command to reopen the log file
+of a host where the module is enabled.
 
 Example usage:
-  $ sudo ejabberdctl vhost localhost reopen-seslog
-  $ sudo ejabberdctl vhost example.org reopen-seslog
-  $ sudo ejabberdctl vhost example.net reopen-seslog
+  ejabberdctl reopen-seslog localhost
+  ejabberdctl reopen-seslog jabber.example.org
 
