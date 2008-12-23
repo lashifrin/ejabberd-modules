@@ -2594,6 +2594,24 @@ class db_manager {
 
 	}
 
+	public function is_left_or_right($date) {
+
+		$this->id_query = "Q091";
+		$query="SELECT
+				at 
+			FROM
+				`logdb_stats_".$this->xmpp_host."` 
+			WHERE
+				owner_id='".$this->user_id."' 
+			AND
+				at like '$date%' 
+			LIMIT 1
+		";
+
+		return $this->row_count($query);
+
+	}
+
 	public function set_ext_index($idx) {
 
 		/*

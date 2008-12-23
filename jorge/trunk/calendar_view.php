@@ -280,7 +280,7 @@ if (count($ch_mo)!=0) {
 		}
 
 		list($y,$m) = split("-", $mo);
-		$html->set_body(calendar($user_id,$xmpp_host,$y,$m,$days,TOKEN,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,1,$null_a=0,$null_b=0,$cal_days,$enc));
+		$html->set_body(calendar($db,$user_id,$xmpp_host,$y,$m,$days,TOKEN,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,1,$null_a=0,$null_b=0,$cal_days,$enc));
 		unset($days);
 
 	}

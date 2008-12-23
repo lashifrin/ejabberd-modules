@@ -248,7 +248,7 @@ function new_parse_url($text) {
 }
 
 
-function calendar($user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,$c_type,$name_peer=0,$server_peer=0,$cal_days=0,$enc=null) {
+function calendar($db,$user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,$c_type,$name_peer=0,$server_peer=0,$cal_days=0,$enc=null) {
 	
 	$days=$days;
 	$month = $m;
@@ -318,16 +318,17 @@ function calendar($user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_name_e
 //Build the calendar with css
 //links to next and previous month only for browser
 if ($c_type=="1") {
-	// encode links
-	$link_left = $enc->crypt_url("tslice=$y-$prev");
-	$link_right = $enc->crypt_url("tslice=$x-$next");
 
-	// check if we have chats in prev and next mo
-	$is_left="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' and at like '$y-$prev%' limit 1";
-	$is_right="select at from `logdb_stats_$xmpp_host` where owner_id='$user_id' and at like '$x-$next%' limit 1";
+		// encode links
+		$link_left = $enc->crypt_url("tslice=$y-$prev");
+		$link_right = $enc->crypt_url("tslice=$x-$next");
 
-	$i_left=mysql_num_rows(mysql_query($is_left));
-	$i_right=mysql_num_rows(mysql_query($is_right));
+		// check if we have chats in prev and next mo
+		$db->is_left_or_right("$y-$prev");
+		$i_left = $db->result;
+		$db->is_left_or_right("$x-$next");
+		$i_right = $db->result;
+
 
 	}
 	else {
