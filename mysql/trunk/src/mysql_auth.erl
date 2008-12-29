@@ -7,7 +7,7 @@
 %%% Note    : All MySQL code was written by Magnus Ahltorp, originally
 %%%           in the file mysql.erl - I just moved it here.
 %%%
-%%% Copyright (c) 2001-2004 Kungliga Tekniska Högskolan
+%%% Copyright (c) 2001-2004 Kungliga Tekniska HÃ¶gskolan
 %%% See the file COPYING
 %%%
 %%%-------------------------------------------------------------------
@@ -25,6 +25,7 @@
 %% Macros
 %%--------------------------------------------------------------------
 -define(LONG_PASSWORD, 1).
+-define(FOUND_ROWS, 2).
 -define(LONG_FLAG, 4).
 -define(PROTOCOL_41, 512).
 -define(TRANSACTIONS, 8192).
@@ -105,7 +106,8 @@ password_old(Password, Salt) ->
 
 %% part of do_old_auth/4, which is part of mysql_init/4
 make_auth(User, Password) ->
-    Caps = ?LONG_PASSWORD bor ?LONG_FLAG bor ?TRANSACTIONS,
+    Caps = ?LONG_PASSWORD bor ?LONG_FLAG
+	bor ?TRANSACTIONS bor ?FOUND_ROWS,
     Maxsize = 0,
     UserB = list_to_binary(User),
     PasswordB = Password,
@@ -121,7 +123,8 @@ make_new_auth(User, Password, Database) ->
 		     ?CONNECT_WITH_DB
 	     end,
     Caps = ?LONG_PASSWORD bor ?LONG_FLAG bor ?TRANSACTIONS bor
-	?PROTOCOL_41 bor ?SECURE_CONNECTION bor DBCaps,
+	?PROTOCOL_41 bor ?SECURE_CONNECTION bor DBCaps
+	bor ?FOUND_ROWS,
     Maxsize = ?MAX_PACKET_SIZE,
     UserB = list_to_binary(User),
     PasswordL = size(Password),
