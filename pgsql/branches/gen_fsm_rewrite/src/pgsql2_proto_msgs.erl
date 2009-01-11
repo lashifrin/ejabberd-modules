@@ -5,7 +5,8 @@
 
 
 -export([startup_msg/2,plain_text_password_msg/1,md5_password_msg/3,
-         simple_query/1,extended_query/3,execute_batch/2,terminate/0]).
+         simple_query/1,extended_query/3,execute_batch/2, prepare/2,
+         prepared_query/2, terminate/0]).
 
 %%% Version 3.0 of the protocol.
 %%% Supported in postgres from version 7.4
@@ -49,7 +50,16 @@ simple_query(Query) ->
 	  encode($Q, string(Query)).
 
 
+prepare(Name, Query) ->
+    [parse(Name, Query, []),
+     sync([])].
 
+prepared_query(Name, Params) ->
+    BindP =     bind("", Name, Params, []), 
+    DescribeP = describe(prepared_statement, Name),
+    ExecuteP =  execute("", 0),
+    SyncP =     sync([]),
+    [BindP,DescribeP,ExecuteP,SyncP].
 
 extended_query(Query,Params,ResponseFormat) ->
     ParseP =    parse("", Query, []),

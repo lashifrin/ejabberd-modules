@@ -22,6 +22,8 @@
 
 -export([connect/4,
     stop/1,
+    prepare/3,
+    pq/3,
     q/2,
     q/3,
     q/4,
@@ -65,6 +67,28 @@ connect(User,Password,Database,Options) ->
 	
 stop(Pid) ->
 	gen_fsm:sync_send_event(Pid,stop).
+
+% @spec prepare(Pid, Name , QueryString) -> ok | {error, Reason}
+% @type Name = atom()
+% @type QueryString = iolist()
+% @doc  Register the given statement under the given name. Later, that
+%       name can be used to refer to this query. 
+%       The statment could have placeholders, denoted by $1..$N. 
+%
+%       The intended implementation is to prepare the statment at the 
+%       database level.
+% @see pq/3
+prepare(Pid, Name, QueryString) ->
+    gen_fsm:sync_send_event(Pid, {prepare, Name, QueryString}, ?Q_TIMEOUT).
+
+% @spec pq(Pid, Name, Parameters) -> {ok,[Row]} | {error, Reason}
+% @type Row = list()
+% @doc  Execute the named prepared statement, using the supplied
+%       parameters. The parameter list (could be empty) must have the 
+%       same number of elements as the number of placeholders in the 
+%       corresponding statment.
+pq(Pid, Name, Params) ->
+    gen_fsm:sync_send_event(Pid, {pq, Name, Params}, ?Q_TIMEOUT).
 
 % @spec q(Pid,Query) -> {ok,[Row]} | {error,Reason}
 % @type Query = iolist()

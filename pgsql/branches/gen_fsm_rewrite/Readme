@@ -9,3 +9,10 @@ Sample session:
 {ok,P}=pgsql2:connect(...).
 pgsql2:execute_many(P,"insert into test(a,b) values ($1,$2)",[["romeo","Montague"],["juliet","capulet"]]).
 pgsql2:q(P,"select a,b from test where a=$1 or b=$2",["romeo","capulet"]).
+
+New, prepared statments:
+{ok,P}=pgsql2:connect(...).
+pgsql2:prepare(P,"q1", "select * from T where col1 = $1 or col2 = $2 ").
+pgsql2:pq(P,"q1",["value1","value2"]).
+...
+pgsql2:pq(P,"q1",["valueX","valueY"]).

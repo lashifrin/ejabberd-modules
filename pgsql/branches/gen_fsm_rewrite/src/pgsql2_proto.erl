@@ -27,6 +27,7 @@
 		wait_for_auth_response/3,
 		wait_for_server_settings/3,
 		wait_for_types_info/3,
+        wait_for_prepare_response/3,
 		ready_for_query/3,
 		wait_for_equery_response/3,
 		wait_for_execute_batch_response/3,
@@ -51,7 +52,8 @@
 			state_data,   %track state-specific data, such as rows in a result set 
 			decode_response,  %boolean() wether the driver must decode the response fields or let them intact
 			decoders,      %ets map with decoders from know postgres types
-			response_format %binary | text . Format that Postgres must use to return data. 
+			response_format, %binary | text . Format that Postgres must use to return data. 
+            prepared
 			}). 
 
 
@@ -103,7 +105,7 @@ setup_connection(User,Password,Database,Socket,Client,Options) ->
 	ResponseFormat = proplists:get_value(protocol_response_format,Options,binary),
 	DecodeResponse = proplists:get_value(decode_response,Options,true),
 	Table = ets:new(decoders,[set]),
-	{ok,wait_for_auth_request,
+    {ok,wait_for_auth_request,
 		#pgsql2{
 		socket=Socket,
 		listener=Listener,
@@ -209,6 +211,17 @@ wait_for_types_info(X,_Listener,St) ->
 	{reply,ok,wait_for_types_info,St}.
 	
 
+ready_for_query({prepare, Name, Query}, Client, St) ->
+    Msg = pgsql2_proto_msgs:prepare(Name, Query),
+    ok = gen_tcp:send(St#pgsql2.socket, Msg),
+    {next_state, wait_for_prepare_response, St#pgsql2{client_pid = Client}};
+
+ready_for_query({pq, Name, Params}, Client, St) ->
+	DecodeResponse = St#pgsql2.decode_response,
+    Msg = pgsql2_proto_msgs:prepared_query(Name, Params),
+    ok = gen_tcp:send(St#pgsql2.socket, Msg),
+	{next_state,wait_for_equery_response,
+		St#pgsql2{client_pid=Client,state_data=#equery_r{decode_response=DecodeResponse,rows=[]}}};
 
 
 ready_for_query({q,Query},Client,St) ->
@@ -243,7 +256,13 @@ ready_for_query(stop,_Client,StateData)	->
 	{stop,normal,ok,StateData}.
 
 	
-
+wait_for_prepare_response(#pg_parse_complete{}, _Listener, St) ->
+    {reply,ok, wait_for_prepare_response, St};
+wait_for_prepare_response(#pg_ready_for_query{status=_Status},_Listener,St)->
+	gen_fsm:reply(St#pgsql2.client_pid,ok),
+	{reply,ok,ready_for_query,St#pgsql2{state_data=none}};
+wait_for_prepare_response(#pg_error{msg=Error},_Listener,St) ->	 
+	{reply,ok,error,St#pgsql2{state_data=Error}}.
 
 wait_for_equery_response(#pg_bind_complete{},_Listener,St) ->
 	 {reply,ok,wait_for_equery_response,St};
@@ -251,7 +270,8 @@ wait_for_equery_response(#pg_command_complete{},_Listener,St) ->
 	 {reply,ok,wait_for_equery_response,St};
 wait_for_equery_response(#pg_parse_complete{},_Listener,St) ->
 	 {reply,ok,wait_for_equery_response,St};
-	 
+wait_for_equery_response(#pg_parameters_descriptions{}, _Listener, St) ->
+    {reply,ok, wait_for_equery_response, St};
 
 wait_for_equery_response(N=#pg_notice_response{},_Listener,St) ->
 	 io:format("Notice: ~p ~n",[N]),

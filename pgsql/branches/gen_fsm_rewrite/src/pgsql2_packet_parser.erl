@@ -27,6 +27,8 @@
 -define(PG_CLOSE_COMPLETE, $3).
 -define(PG_PORTAL_SUSPENDED, $s).
 -define(PG_NO_DATA, $n).
+-define(PG_PARAMETER_DESCRIPTION, $t).
+
 %% With a message type Code and the payload Packet apropriate
 %% decoding procedure can proceed.
 decode_packet(?PG_AUTHENTICATE, Packet) ->
@@ -78,11 +80,21 @@ decode_packet(?PG_PARSE_COMPLETE,_Packet) ->
 		
 decode_packet(?PG_BIND_COMPLETE,_Packet) ->
 	#pg_bind_complete{};
-	 	 
+
+decode_packet(?PG_PARAMETER_DESCRIPTION, <<NPar:16/integer,Parameters/binary>>) ->
+    ParametersTypes = parse_parameters_description(Parameters,NPar),
+    #pg_parameters_descriptions{parameters_types = ParametersTypes};
+
 decode_packet(X,_Packet) ->
 	throw({unknown_msg_code,X}).
 	
-	
+parse_parameters_description(Bin, N) ->
+    parse_parameters_description(Bin, N, []).
+parse_parameters_description(<<>>,0,P) ->
+    lists:reverse(P);
+parse_parameters_description(<<P:32/integer, R/binary>>, N, Ps) when N > 0 ->
+    parse_parameters_description(R, N - 1 , [P|Ps]).
+    
 	
 errordesc(Bin) ->
     errordesc(Bin, []).

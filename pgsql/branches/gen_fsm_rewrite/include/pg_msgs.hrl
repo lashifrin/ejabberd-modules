@@ -51,4 +51,6 @@
 		format_code
 	}).
 	
-	
+-record(pg_parameters_descriptions, {
+        parameters_types
+        }).
