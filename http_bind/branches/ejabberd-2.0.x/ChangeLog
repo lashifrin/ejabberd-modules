@@ -1,3 +1,8 @@
+2009-01-13  Badlop  <badlop@process-one.net>
+
+	* src/web/ejabberd_http_bind.erl: Include condition in http-bind
+	terminate body when service stops (EJAB-792)
+
 2008-09-17  Mickael Remond  <mickael.remond@process-one.net>
 
 	* src/web/ejabberd_http_bind.erl: Implement packets reordering
