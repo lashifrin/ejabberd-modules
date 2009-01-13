@@ -893,6 +893,8 @@ prepare_response(#http_bind{id=Sid, wait=Wait, hold=Hold}=Sess,
 				] ++ BOSH_attribs,OutEls})}
 		    end
 	    end;
+	{'EXIT', {shutdown, _}} ->
+            {200, ?HEADER, "<body type='terminate' condition='system-shutdown' xmlns='"++?NS_HTTP_BIND++"'/>"};
 	{'EXIT', _Reason} ->
             {200, ?HEADER, "<body type='terminate' xmlns='"++?NS_HTTP_BIND++"'/>"}
     end.
