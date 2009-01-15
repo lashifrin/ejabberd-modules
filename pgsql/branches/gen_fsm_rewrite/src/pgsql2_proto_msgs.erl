@@ -6,7 +6,7 @@
 
 -export([startup_msg/2,plain_text_password_msg/1,md5_password_msg/3,
          simple_query/1,extended_query/3,execute_batch/2, prepare/2,
-         prepared_query/2, terminate/0]).
+         prepared_query/2, close_prepared/1, terminate/0]).
 
 %%% Version 3.0 of the protocol.
 %%% Supported in postgres from version 7.4
@@ -52,14 +52,19 @@ simple_query(Query) ->
 
 prepare(Name, Query) ->
     [parse(Name, Query, []),
+     describe(prepared_statement,Name),
+     sync([])].
+
+close_prepared(Name) ->
+    [close(prepared_statement, Name), 
      sync([])].
 
 prepared_query(Name, Params) ->
     BindP =     bind("", Name, Params, []), 
-    DescribeP = describe(prepared_statement, Name),
+    %DescribeP = describe(prepared_statement, Name),
     ExecuteP =  execute("", 0),
     SyncP =     sync([]),
-    [BindP,DescribeP,ExecuteP,SyncP].
+    [BindP,ExecuteP,SyncP].
 
 extended_query(Query,Params,ResponseFormat) ->
     ParseP =    parse("", Query, []),
@@ -144,7 +149,11 @@ describe(portal, Name) ->
 describe(prepared_statement,Name) ->
 	 NameP = string(Name),
 	 encode($D, <<$S:8/integer, NameP/binary>>).
-	 
+
+close(prepared_statement, Name) ->
+    NameP = string(Name),
+    encode($C, <<$S:8/integer, NameP/binary>>).
+
 execute(Portal, Limit) ->
     String = string(Portal),
     encode($E, <<String/binary, Limit:32/integer>>).

@@ -60,8 +60,15 @@
 -record(equery_r, {
 	decode_response,
 	cols_description,
+    cols,
 	rows
 	}).
+
+-record(prepare, {
+    name,
+    cols,
+    cols_description
+    }).
 
 % Options documentation in pgsql2:connect/1
 % @see pgsql2:connect/1
@@ -104,7 +111,8 @@ setup_connection(User,Password,Database,Socket,Client,Options) ->
 	ok = gen_tcp:controlling_process(Socket,Listener),
 	ResponseFormat = proplists:get_value(protocol_response_format,Options,binary),
 	DecodeResponse = proplists:get_value(decode_response,Options,true),
-	Table = ets:new(decoders,[set]),
+	DecodersTable = ets:new(decoders,[set]),
+    PreparedTable = ets:new(prepared,[set]),
     {ok,wait_for_auth_request,
 		#pgsql2{
 		socket=Socket,
@@ -112,7 +120,8 @@ setup_connection(User,Password,Database,Socket,Client,Options) ->
 		parameters=[],
 		state_data={User,Password},%next state will need this for authentication
 		decode_response = DecodeResponse,
-		decoders=Table,
+		decoders = DecodersTable,
+        prepared = PreparedTable,
 		client_pid = Client,
 		response_format=ResponseFormat},5000}.
 
@@ -212,16 +221,31 @@ wait_for_types_info(X,_Listener,St) ->
 	
 
 ready_for_query({prepare, Name, Query}, Client, St) ->
-    Msg = pgsql2_proto_msgs:prepare(Name, Query),
+    Msg = pgsql2_proto_msgs:prepare(atom_to_list(Name), Query),
     ok = gen_tcp:send(St#pgsql2.socket, Msg),
-    {next_state, wait_for_prepare_response, St#pgsql2{client_pid = Client}};
+    {next_state, wait_for_prepare_response, 
+            St#pgsql2{client_pid = Client,state_data=#prepare{name=Name}}};
+
+ready_for_query({close_prepared, Name}, Client, St) ->
+    Msg = pgsql2_proto_msgs:close_prepared(Name),
+    ok = gen_tcp:send(St#pgsql2.socket, Msg),
+    {next_state, wait_for_free_prepared_response, St#pgsql2{client_pid = Client}};
 
 ready_for_query({pq, Name, Params}, Client, St) ->
-	DecodeResponse = St#pgsql2.decode_response,
-    Msg = pgsql2_proto_msgs:prepared_query(Name, Params),
-    ok = gen_tcp:send(St#pgsql2.socket, Msg),
-	{next_state,wait_for_equery_response,
-		St#pgsql2{client_pid=Client,state_data=#equery_r{decode_response=DecodeResponse,rows=[]}}};
+    case ets:lookup(St#pgsql2.prepared,Name) of
+		[] -> 
+           {reply, {error,'not-found'}, error, St};
+		[{Name, NameBin, Cols, Descr}] -> 
+	        DecodeResponse = false, %St#pgsql2.decode_response,
+            Msg = pgsql2_proto_msgs:prepared_query(NameBin, Params),
+            ok = gen_tcp:send(St#pgsql2.socket, Msg),
+            {next_state,wait_for_equery_response,
+		        St#pgsql2{client_pid=Client,
+                          state_data=#equery_r{decode_response = DecodeResponse,
+                                               cols_description = Descr, 
+                                               cols = Cols,
+                                               rows = []}}}
+	end;
 
 
 ready_for_query({q,Query},Client,St) ->
@@ -258,21 +282,38 @@ ready_for_query(stop,_Client,StateData)	->
 	
 wait_for_prepare_response(#pg_parse_complete{}, _Listener, St) ->
     {reply,ok, wait_for_prepare_response, St};
+wait_for_prepare_response(#pg_row_description{} = Descr , _Listener,St) ->
+    {Decoders, Cols} = parse_row_description(Descr, false, St),
+    Prepare = St#pgsql2.state_data,
+	{reply,ok,wait_for_prepare_response,St#pgsql2{state_data=Prepare#prepare{cols = Cols,
+                                                                             cols_description = Decoders}}};
+wait_for_prepare_response(#pg_nodata{}, _Listener,St) ->
+    Prepare = St#pgsql2.state_data,
+	{reply,ok,wait_for_prepare_response,St#pgsql2{state_data=Prepare#prepare{cols = [], 
+                                                                             cols_description = []}}};
+wait_for_prepare_response(#pg_parameters_descriptions{}, _Listener, St) ->
+    {reply,ok, wait_for_prepare_response, St};
 wait_for_prepare_response(#pg_ready_for_query{status=_Status},_Listener,St)->
+    #prepare{name = Name, cols = Cols, cols_description = Descr} = St#pgsql2.state_data,
+    ets:insert(St#pgsql2.prepared, {Name, list_to_binary(atom_to_list(Name)), Cols, Descr}),
 	gen_fsm:reply(St#pgsql2.client_pid,ok),
 	{reply,ok,ready_for_query,St#pgsql2{state_data=none}};
 wait_for_prepare_response(#pg_error{msg=Error},_Listener,St) ->	 
 	{reply,ok,error,St#pgsql2{state_data=Error}}.
 
+wait_for_equery_response(#pg_parameters_descriptions{}, _Listener, St) ->
+    {reply,ok, wait_for_equery_response, St};
 wait_for_equery_response(#pg_bind_complete{},_Listener,St) ->
 	 {reply,ok,wait_for_equery_response,St};
 wait_for_equery_response(#pg_command_complete{},_Listener,St) ->
 	 {reply,ok,wait_for_equery_response,St};
 wait_for_equery_response(#pg_parse_complete{},_Listener,St) ->
 	 {reply,ok,wait_for_equery_response,St};
-wait_for_equery_response(#pg_parameters_descriptions{}, _Listener, St) ->
-    {reply,ok, wait_for_equery_response, St};
 
+wait_for_equery_response(#pg_nodata{}, _Listener,St) ->
+    Prepare = St#pgsql2.state_data,
+	{reply,ok,wait_for_equery_response,St#pgsql2{state_data=Prepare#prepare{cols = [], 
+                                                                            cols_description = []}}};
 wait_for_equery_response(N=#pg_notice_response{},_Listener,St) ->
 	 io:format("Notice: ~p ~n",[N]),
 	 {reply,ok,wait_for_equery_response,St};
@@ -281,8 +322,8 @@ wait_for_equery_response(#pg_error{msg=Error},_Listener,St) ->
 	{reply,ok,error,St#pgsql2{state_data=Error}};
 	
 wait_for_equery_response(#pg_ready_for_query{status=_Status},_Listener,St)->
-	#equery_r{rows=Rows} = St#pgsql2.state_data,
-	gen_fsm:reply(St#pgsql2.client_pid,{ok,lists:reverse(Rows)}),
+	#equery_r{rows=Rows, cols = Cols} = St#pgsql2.state_data,
+	gen_fsm:reply(St#pgsql2.client_pid,{ok,Cols,lists:reverse(Rows)}),
 	{reply,ok,ready_for_query,St#pgsql2{state_data=none}};
 		
 wait_for_equery_response(#pg_data_row{row=Row},_Listener,St=#pgsql2{state_data=EqueryData})->
@@ -296,20 +337,10 @@ wait_for_equery_response(#pg_data_row{row=Row},_Listener,St=#pgsql2{state_data=E
 	{reply,ok,wait_for_equery_response,
 		St#pgsql2{state_data=EqueryData#equery_r{rows=[DecodedRow|Rows]}}};
 	
-wait_for_equery_response(#pg_row_description{cols=Cols}, _Listener,St) ->
-	#pgsql2{decoders=DecodersTable,state_data=StateData} = St,
-	#equery_r{decode_response=DecodeResponse} = StateData,
-	RowDecoders = if 
-		DecodeResponse ->
-			 lists:map(fun(#pg_col_description{type=Type,format_code=Format}) -> 
-				case ets:lookup(DecodersTable,Type) of
-					[] -> {pgsql2_types:default_decoder(),Format};
-					[{Type,Decoder}] -> {Decoder,Format}
-				end
-			end, Cols);
-		not DecodeResponse -> none
-	end,
-	EqueryData = StateData#equery_r{cols_description = RowDecoders,rows=[]},
+wait_for_equery_response(#pg_row_description{} = Descr , _Listener,St) ->
+	#equery_r{ decode_response=DecodeResp} = StateData = St#pgsql2.state_data,
+    {Decoders, Cols} = parse_row_description(Descr, DecodeResp, St),
+	EqueryData = StateData#equery_r{cols = Cols, cols_description = Decoders},
 	{reply,ok,wait_for_equery_response,St#pgsql2{state_data=EqueryData}};
 
 wait_for_equery_response(X,_Listener,St) ->	
@@ -398,7 +429,19 @@ check_options(Options) ->
 %%TODO: a *required* option?.. shouldn't it be a normal parameter?
 
 
-
+parse_row_description(#pg_row_description{cols=Cols}, DecodeResp, St) ->
+	#pgsql2{decoders=DecodersTable} = St,
+	RowDecoders = if 
+		DecodeResp->
+			 lists:map(fun(#pg_col_description{type=Type,format_code=Format}) -> 
+				case ets:lookup(DecodersTable,Type) of
+					[] -> {pgsql2_types:default_decoder(), Format};
+					[{Type,Decoder}] -> {Decoder, Format}
+				end
+			end, Cols);
+		not DecodeResp-> none
+	end,
+    {RowDecoders, [Name || #pg_col_description{name = Name} <- Cols]}.
 	
 
 

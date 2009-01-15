@@ -39,6 +39,7 @@
 		cols %[#pg_col_description{}]
 		}).
 -record(pg_empty_response,{}).
+-record(pg_nodata,{}).
 	
 	
 -record(pg_col_description,{

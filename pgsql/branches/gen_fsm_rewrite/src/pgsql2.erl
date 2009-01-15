@@ -23,6 +23,7 @@
 -export([connect/4,
     stop/1,
     prepare/3,
+    close_prepared/2,
     pq/3,
     q/2,
     q/3,
@@ -78,8 +79,14 @@ stop(Pid) ->
 %       The intended implementation is to prepare the statment at the 
 %       database level.
 % @see pq/3
-prepare(Pid, Name, QueryString) ->
+prepare(Pid, Name, QueryString) when is_atom(Name) ->
     gen_fsm:sync_send_event(Pid, {prepare, Name, QueryString}, ?Q_TIMEOUT).
+
+% @spec close_prepare(Pid, Name) -> ok | {error, Reason}
+% @type Name = atom()
+% @doc  Free resources associated with a prepared statement.$N. 
+close_prepared(Pid, Name) when is_atom(Name) ->
+    gen_fsm:sync_send_event(Pid, {close_prepared, Name}, ?Q_TIMEOUT).
 
 % @spec pq(Pid, Name, Parameters) -> {ok,[Row]} | {error, Reason}
 % @type Row = list()

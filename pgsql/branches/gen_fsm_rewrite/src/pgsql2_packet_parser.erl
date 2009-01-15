@@ -85,6 +85,9 @@ decode_packet(?PG_PARAMETER_DESCRIPTION, <<NPar:16/integer,Parameters/binary>>) 
     ParametersTypes = parse_parameters_description(Parameters,NPar),
     #pg_parameters_descriptions{parameters_types = ParametersTypes};
 
+decode_packet(?PG_NO_DATA, _Packet) ->
+    #pg_nodata{};
+
 decode_packet(X,_Packet) ->
 	throw({unknown_msg_code,X}).
 	
