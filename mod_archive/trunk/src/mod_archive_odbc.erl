@@ -30,7 +30,7 @@
 %%
 %%  replication_expire -> time in seconds before 'removed' replication
 %%      information if wiped out or infinity atom to disable.
-%%  
+%%
 %%  session_duration -> time in secondes before the timeout of a session.
 %%
 %%  wipeout_interval -> time in seconds between wipeout runs or infinity atom
@@ -543,7 +543,7 @@ find_storage(LUser, LServer, JID, Thread, Sessions, Timeout, Type) ->
 			    updated_dict_answer(Key1, Val2, TS, Thread,
 						Resource, Sessions, Timeout)
 		    end;
-	       true -> 
+	       true ->
 		    if Resource /= "" ->
 			    case dict:find({no_thread, Resource}, Val1) of
 				{ok, Val2} ->
@@ -611,13 +611,13 @@ new_dict_answer({LUser, LServer, JID} = Key1, TS, Thread, Resource, Sessions) ->
 process_local_iq_pref(From, _To, #iq{type = Type, sub_el = SubEl} = IQ) ->
     Result = case Type of
 		 set ->
-		     {xmlelement, _Name, _Attrs, Els} = SubEl, 
+		     {xmlelement, _Name, _Attrs, Els} = SubEl,
 		     process_save_set(From#jid.luser, From#jid.lserver, Els);
 		 get ->
 		     process_save_get(From#jid.luser, From#jid.lserver)
 	     end,
     case Result of
-        ok -> 
+        ok ->
             broadcast_iq(From, IQ#iq{type = set, sub_el=[SubEl]}),
             {result, []};
         R -> R
@@ -635,7 +635,7 @@ process_save_get(LUser, LServer) ->
 		      end, get_all_jids_prefs({LUser, LServer})),
 		GPrefs = get_global_prefs({LUser, LServer}),
 		DGPrefs = default_global_prefs({LUser, LServer}),
-		UnSet = 
+		UnSet =
 		    if (GPrefs#archive_global_prefs.save /= undefined) or
 		       (GPrefs#archive_global_prefs.expire /= undefined) or
 		       (GPrefs#archive_global_prefs.otr /= undefined) -> "false";
@@ -797,7 +797,7 @@ get_main_prefs_from_attrs(Attrs) ->
                      _ -> throw({eror, ?ERR_BAD_REQUEST})
                  end
         end,
-    OTR = 
+    OTR =
         case xml:get_attr_s("otr", Attrs) of
             "" -> undefined;
             V -> list_to_atom(V)
@@ -1500,7 +1500,7 @@ validate_common_prefs(LServer, Save, Expire) ->
     DefAutoSave = gen_mod:get_module_opt(LServer, ?MODULE, default_auto_save, false),
     EnforceDefAutoSave = gen_mod:get_module_opt(LServer, ?MODULE, enforce_default_auto_save, false),
     %% Should we enforce our default auto save policy?
-    if EnforceDefAutoSave and 
+    if EnforceDefAutoSave and
        %% auto-save=true is enforced but user is trying to put "save" element to smth other
        %% than body (thus effectively turning saving off).
        (DefAutoSave and (Save /= body) and (Save /= undefined)) ->
@@ -1563,7 +1563,7 @@ combine_names_vals(Names, Vals) ->
 %% This function should return the last inserted auto-generated ID,
 %% if supported by database. If not - second lookup will be performed
 %% to fetch new ID. Typically this should be safe, although, probably,
-%% slightly slower. 
+%% slightly slower.
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 get_last_inserted_id(LServer, Table) ->
@@ -2429,7 +2429,7 @@ run_sql_transaction(LServer, F) ->
             {error, ?ERR_INTERNAL_SERVER_ERROR}
     end.
 
-%% return either  {error, Err}  or {LUser, LServer, Jid, Start}   
+%% return either  {error, Err}  or {LUser, LServer, Jid, Start}
 link_from_argument(LUser, LServer,  Elem) ->
     case parse_root_argument(Elem) of
         {error, E} ->  {error, E};
@@ -2454,7 +2454,7 @@ parse_root_argument({xmlelement, _, Attrs, _}) ->
 %%  Result Set Management (JEP-0059)
 %%
 %%
--define(NS_RSM, "http://jabber.org/protocol/rsm").
+-define(MY_NS_RSM, "http://jabber.org/protocol/rsm").
 
 
 %% If "index" is specified, returns {{index, Index}, Max},
@@ -2468,12 +2468,12 @@ parse_rsm([A | Tail]) ->
     case A of
         {xmlelement, _,  Attrs1, _} ->
             case xml:get_attr_s("xmlns", Attrs1) of
-                ?NS_RSM ->
+                ?MY_NS_RSM ->
                     parse_rsm(A);
                 _ ->
                     parse_rsm(Tail)
             end;
-        _ -> 
+        _ ->
             parse_rsm(Tail)
     end;
 parse_rsm([]) ->
@@ -2503,7 +2503,7 @@ parse_rsm_aux([{xmlelement, "index", _Attrs, Contents} | Tail], Acc) ->
         P when is_integer(P) ->
             case Acc of
                 {{range, {0, undefined}, {infinity, undefined}, normal}, Max} ->
-                    parse_rsm_aux(Tail, {{index, P}, Max}); 
+                    parse_rsm_aux(Tail, {{index, P}, Max});
                 _ ->
                     throw({error, ?ERR_BAD_REQUEST})
             end;
@@ -2514,10 +2514,10 @@ parse_rsm_aux([{xmlelement, "index", _Attrs, Contents} | Tail], Acc) ->
 parse_rsm_aux([{xmlelement, "after", _Attrs, Contents} | Tail], Acc) ->
     case Acc of
         {{range, {0, undefined}, {infinity, undefined}, normal}, Max} ->
-            parse_rsm_aux(Tail, {{range, parse_rsm_range_item(xml:get_cdata(Contents)), {infinity, undefined}, normal}, Max}); 
+            parse_rsm_aux(Tail, {{range, parse_rsm_range_item(xml:get_cdata(Contents)), {infinity, undefined}, normal}, Max});
         _ ->
             throw({error, ?ERR_BAD_REQUEST})
-    end;    
+    end;
 
 parse_rsm_aux([{xmlelement, "before", _Attrs, Contents} | Tail], Acc) ->
     case Acc of
@@ -2537,22 +2537,22 @@ parse_rsm_aux([], Acc) ->
     Acc.
 
 make_rsm(undefined, undefined, undefined, Changed, Count) ->
-    [{xmlelement, "set", [{"xmlns", ?NS_RSM}], [
+    [{xmlelement, "set", [{"xmlns", ?MY_NS_RSM}], [
 					       {xmlelement, "changed", [], [{xmlcdata,  Changed}]},
 					       {xmlelement, "count", [], [{xmlcdata, integer_to_list(Count)}]}]}];
 
 make_rsm(FirstIndex, FirstId, LastId, Changed, Count) ->
-    [{xmlelement, "set", [{"xmlns", ?NS_RSM}], [
+    [{xmlelement, "set", [{"xmlns", ?MY_NS_RSM}], [
 						{xmlelement, "first", [{"index", integer_to_list(FirstIndex)}], [{xmlcdata,  FirstId}]},
 						{xmlelement, "last", [], [{xmlcdata,  LastId}]},
 						{xmlelement, "changed", [], [{xmlcdata,  Changed}]},
 						{xmlelement, "count", [], [{xmlcdata,  integer_to_list(Count)}]}]}].
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%        
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 %% Utility functions for RSM
 %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%        
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 parse_rsm_range_item(Item) ->
     Len = string:len(Item),
     Pos = string:chr(Item, $@),
@@ -2568,4 +2568,3 @@ parse_rsm_range_item(Item) ->
 
 make_rsm_range_item(UTC, ID) ->
     integer_to_list(UTC) ++ "@" ++ integer_to_list(ID).
-

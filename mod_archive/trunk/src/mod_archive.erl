@@ -52,7 +52,7 @@
 		  [calendar:local_time(), ?MODULE, ?LINE] ++ Args)).
 
 
-%NOTE  i was not sure what format to adopt for archive_option.    otr_list  is unused 
+%NOTE  i was not sure what format to adopt for archive_option.    otr_list  is unused
 -record(archive_options,
 	{us,
 	 default = unset,
@@ -285,13 +285,13 @@ send_packet(From, To, P) ->
     Proc = gen_mod:get_module_proc(Host, ?PROCNAME),
     gen_server:cast(Proc, {addlog, to, From#jid.luser, Host, To, P}).
 
-receive_packet(_JID, From, To, P) -> 
+receive_packet(_JID, From, To, P) ->
     Host = To#jid.lserver,
     Proc = gen_mod:get_module_proc(Host, ?PROCNAME),
     gen_server:cast(Proc, {addlog, from, To#jid.luser, Host, From, P}).
 
 
-% parce a message and return the body string if sicessfull,  return  ignore if the message should not be stored 
+% parce a message and return the body string if sicessfull,  return  ignore if the message should not be stored
 parse_message({xmlelement, "message", _, _} = Packet) ->
     case xml:get_subtag(Packet, "body") of
          false ->  ignore;
@@ -315,7 +315,7 @@ do_log(Storages, LUser, LServer, Jid, Direction, Body, Session_Duration) ->
     mnesia:transaction(fun() ->
         NE = case mnesia:read({archive_message, Key}) of
                 [] ->
-                    #archive_message{usjs= Key, 
+                    #archive_message{usjs= Key,
                                       us = {LUser, LServer},
                                       jid = jlib:jid_tolower(jlib:jid_remove_resource(Jid)),
                                       start = Tm,
@@ -330,12 +330,12 @@ do_log(Storages, LUser, LServer, Jid, Direction, Body, Session_Duration) ->
 smart_find_storage(LUser, LServer, Jid, [C | Tail], TimeStampLimit) ->
     NGid=jlib:jid_remove_resource(jlib:jid_tolower(Jid)),
     case C of
-        {_, {LUser, LServer, NGid, _} = St} -> 
+        {_, {LUser, LServer, NGid, _} = St} ->
                 [{get_timestamp(), St} | Tail];
         {Tm, _}  ->
-            if  Tm > TimeStampLimit -> 
+            if  Tm > TimeStampLimit ->
                     smart_find_storage(LUser, LServer, Jid, [], TimeStampLimit);
-                true -> 
+                true ->
                     [UJ | NT] = smart_find_storage(LUser, LServer, Jid, Tail, TimeStampLimit),
                     [UJ | [C | NT]]
             end
@@ -354,7 +354,7 @@ smart_find_storage(LUser, LServer, Jid, [], _Limit) ->
 process_local_iq_save(From, _To, #iq{type = Type, sub_el = SubEl} = IQ) ->
     Result = case Type of
         set ->
-            {xmlelement, _Name, _Attrs, Els} = SubEl, 
+            {xmlelement, _Name, _Attrs, Els} = SubEl,
             process_save_set(From#jid.luser, From#jid.lserver, Els);
         get ->
             process_save_get(From#jid.luser, From#jid.lserver)
@@ -362,7 +362,7 @@ process_local_iq_save(From, _To, #iq{type = Type, sub_el = SubEl} = IQ) ->
     case Result of
         {result, R} ->
             IQ#iq{type = result, sub_el = [R]};
-        ok -> 
+        ok ->
             broadcast_iq(From, IQ#iq{type = set, sub_el=[SubEl]}),
             IQ#iq{type = result, sub_el = []};
         {error, E} ->
@@ -382,7 +382,7 @@ process_save_get(LUser, LServer) ->
         [] ->
             {result,
 	     {xmlelement, "pref", [{"xmlns", ?NS_ARCHIVE}],
-	      default_element(LServer)}}; 
+	      default_element(LServer)}};
         [#archive_options{default = Default,
 			  save_list = SaveList,
 			  nosave_list = NoSaveList}] ->
@@ -404,7 +404,7 @@ process_save_get(LUser, LServer) ->
                             [{xmlelement, "default", [{"save", "body"}], []}];
                         false ->
                             [{xmlelement, "default", [{"save", "false"}], []}];
-                        _ -> 
+                        _ ->
                             default_element(LServer)
                     end,
             {result, {xmlelement, "save", [{"xmlns", ?NS_ARCHIVE}], DItem ++ LItems}}
@@ -463,22 +463,22 @@ transaction_parse_save_elem(Options, [{xmlelement, "item", Attrs, _}  | Tail]) -
         #jid{luser = LUser, lserver = LServer, lresource = LResource} ->
             JID = {LUser, LServer, LResource},
             case xml:get_attr_s("save", Attrs) of
-                "body" -> 
+                "body" ->
                     transaction_parse_save_elem(
 		      Options#archive_options{
-			save_list = [JID | lists:delete(JID, Options#archive_options.save_list)], 
-			nosave_list = lists:delete(JID, Options#archive_options.nosave_list) 
+			save_list = [JID | lists:delete(JID, Options#archive_options.save_list)],
+			nosave_list = lists:delete(JID, Options#archive_options.nosave_list)
 		       }, Tail);
                 "false" ->
                     transaction_parse_save_elem(
 		      Options#archive_options{
-			save_list = lists:delete(JID, Options#archive_options.save_list), 
+			save_list = lists:delete(JID, Options#archive_options.save_list),
 			nosave_list = [JID | lists:delete(JID, Options#archive_options.nosave_list)]
 		       }, Tail);
-                _ -> 
+                _ ->
                     transaction_parse_save_elem(
 		      Options#archive_options{
-			save_list = lists:delete(JID, Options#archive_options.save_list), 
+			save_list = lists:delete(JID, Options#archive_options.save_list),
 			nosave_list = lists:delete(JID, Options#archive_options.nosave_list)
 		       }, Tail)
 	    end
@@ -497,7 +497,7 @@ broadcast_iq(#jid{luser = User, lserver = Server}, IQ) ->
                     jlib:iq_to_xml(IQ#iq{id="push"}))
         end,
     lists:foreach(Fun, ejabberd_sm:get_user_resources(User,Server)).
-    
+
 
 
 process_local_iq_auto(From, _To, #iq{type = Type, sub_el = SubEl} = IQ) ->
@@ -613,12 +613,12 @@ parse_store_element(LUser, LServer,
 		{error, E} -> {error, E};
 		{LUser, LServer, Jid, Start} = Index ->
 		    Messages = parse_store_element_sub(SubEls),
-		    #archive_message{usjs = Index, 
-				     us = {LUser, LServer}, 
+		    #archive_message{usjs = Index,
+				     us = {LUser, LServer},
 				     jid = Jid,
 				     start = Start,
 				     subject = xml:get_attr_s("subject", Attrs),
-				     message_list = Messages}  
+				     message_list = Messages}
 	    end;
 	_ ->
 	    {error, ?ERR_BAD_REQUEST}
@@ -651,7 +651,7 @@ process_local_iq_list(From, _To, #iq{type = Type, sub_el = SubEl} = IQ) ->
             {xmlelement, _, Attrs, SubEls} = SubEl,
             RSM = parse_rsm(SubEls),
             ?MYDEBUG("RSM Results: ~p ~n", [RSM]),
-            Result = case parse_root_argument(Attrs) of 
+            Result = case parse_root_argument(Attrs) of
 			 {error, E} -> {error, E};
 			 {interval, Start, Stop} ->
 			     get_list(LUser, LServer, Start, Stop, '_');
@@ -664,8 +664,8 @@ process_local_iq_list(From, _To, #iq{type = Type, sub_el = SubEl} = IQ) ->
             case Result of
                 {ok, Items} ->
                     FunId = fun(El) -> ?MYDEBUG("FunId  ~p  ~n", [El]),  integer_to_list(element(5,El)) end,
-                    FunCompare = fun(Id, El) -> 
-					 Id2 = list_to_integer(FunId(El)), 
+                    FunCompare = fun(Id, El) ->
+					 Id2 = list_to_integer(FunId(El)),
 					 Id1 = list_to_integer(Id),
 					 if Id1 == Id2 -> equal;
 					    Id1 > Id2 -> greater;
@@ -711,7 +711,7 @@ process_local_iq_retrieve(From, _To, #iq{type = Type, sub_el = SubEl} = IQ) ->
             case index_from_argument(LUser, LServer, Attrs)  of
                 {error, E} ->
 		    IQ#iq{type = error, sub_el = [SubEl, E]};
-                Index -> 
+                Index ->
                     case retrieve_collection(Index, RSM) of
 			{error, Err} ->
 			    IQ#iq{type = error, sub_el = [SubEl, Err]};
@@ -743,15 +743,15 @@ retrieve_collection(Index, RSM) ->
                 {RSM_Elem, Items} ->
                     Format_Fun =
 			fun(Elem) ->
-				{xmlelement,  atom_to_list(Elem#msg.direction), 
+				{xmlelement,  atom_to_list(Elem#msg.direction),
 				 [{"secs", integer_to_list(Elem#msg.secs)}],
 				 [{xmlelement, "body", [], [{xmlcdata,  Elem#msg.body}]}]}
 			end,
                     {xmlelement, "chat", Args, lists:append(lists:map(Format_Fun, Items), [RSM_Elem])}
             end
     end.
-        
-            
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   5.3 Removing a Collection
 %%
@@ -775,56 +775,56 @@ process_local_iq_remove(From, _To, #iq{type = Type, sub_el = SubEl} = IQ) ->
                 ok -> IQ#iq{type = result, sub_el=[]}
             end
         end.
-        
+
 process_remove_index(Index) ->
     case mnesia:transaction(fun() -> mnesia:delete({archive_message, Index})  end) of
          {atomic, _} ->
-            ok; 
-         {aborted, _} ->   
+            ok;
+         {aborted, _} ->
            {error, ?ERR_ITEM_NOT_FOUND}
     end.
 
 process_remove_interval(LUser, LServer, Start, End, With) ->
     Fun = fun() ->
-                Pat = #archive_message{usjs= '_',  us = {LUser, LServer}, jid= With,   
+                Pat = #archive_message{usjs= '_',  us = {LUser, LServer}, jid= With,
                                     start='$1', message_list='_', subject = '_'},
                 Guard = [{'>=', '$1', Start},{'<', '$1', End}],
 
                 lists:foreach(fun(R) ->  mnesia:delete_object(R)    end,
                      mnesia:select(archive_message, [{Pat, Guard, ['$_']}]))
             end,
-            
+
     case mnesia:transaction(Fun) of
         {atomic, _} ->
-            ok; 
-        {aborted, _} ->   
+            ok;
+        {aborted, _} ->
             {error, ?ERR_INTERNAL_SERVER_ERROR}
     end.
-    
+
 
 
 % return {ok, [{#archive_message}]} or {error, xmlelement}
 % With is a tuple Jid,  or '_'
 get_list(LUser, LServer, Start, End, With) ->
     case mnesia:transaction(fun() ->
-                               Pat = #archive_message{usjs= '_',  us = {LUser, LServer}, jid= With,   
+                               Pat = #archive_message{usjs= '_',  us = {LUser, LServer}, jid= With,
                                                         start='$1', message_list='_', subject = '_'},
                                Guard = [{'>=', '$1', Start},{'<', '$1', End}],
-                                mnesia:select(archive_message, [{Pat, Guard, ['$_']}]) 
+                                mnesia:select(archive_message, [{Pat, Guard, ['$_']}])
                             end) of
-         {atomic, Result} -> 
+         {atomic, Result} ->
                   {ok, Result};
-         {aborted, _} ->   
+         {aborted, _} ->
            {error, ?ERRT_INTERNAL_SERVER_ERROR("",  "plop")}
     end.
 
 
-% Index is  {LUser, LServer, With, Start} 
+% Index is  {LUser, LServer, With, Start}
 get_collection(Index) ->
     case catch mnesia:dirty_read(archive_message, Index) of
         {'EXIT', _Reason} ->
             {error, ?ERR_INTERNAL_SERVER_ERROR};
-        [] ->  
+        [] ->
             {error, ?ERR_ITEM_NOT_FOUND};
         [C] -> C
     end.
@@ -836,7 +836,7 @@ get_collection(Index) ->
 % Utility
 
 
-% return either  {error, Err}  or {LUser, LServer, Jid, Start}   
+% return either  {error, Err}  or {LUser, LServer, Jid, Start}
 index_from_argument(LUser, LServer,  Attrs) ->
     case parse_root_argument(Attrs) of
         {error, E} ->  {error, E};
@@ -859,7 +859,7 @@ parse_root_argument(Attrs) ->
 parse_root_argument_aux([{"with", JidStr} | Tail], {_, AS, AE}) ->
     case jlib:string_to_jid(JidStr) of
         error -> {error, ?ERR_JID_MALFORMED};
-        JidS -> 
+        JidS ->
             Jid = jlib:jid_tolower(JidS),
             parse_root_argument_aux(Tail, {{ok, Jid}, AS, AE})
     end;
@@ -895,11 +895,11 @@ get_timestamp() ->
 %   case execute_rsm(RSM, List,  GetIdFun, IdCompareFun) of
 %      {error, E} -> ....;
 %      {RSMElement, Items} ->
-%           SubElements = lists:append(lists:map(Format_Fun, Items), [RSMElement]), 
+%           SubElements = lists:append(lists:map(Format_Fun, Items), [RSMElement]),
 %           ...;
 %   end
 
--define(NS_RSM, "http://jabber.org/protocol/rsm").
+-define(MY_NS_RSM, "http://jabber.org/protocol/rsm").
 
 
 
@@ -911,13 +911,13 @@ parse_rsm([A | Tail]) ->
     case A of
         {xmlelement, _,  Attrs1, _} ->
             case xml:get_attr_s("xmlns", Attrs1) of
-                ?NS_RSM ->
+                ?MY_NS_RSM ->
                     parse_rsm(A);
                 HEPO ->
                     ?MYDEBUG("HEPO ~p ", [HEPO]),
                     parse_rsm(Tail)
             end;
-        _ -> 
+        _ ->
             parse_rsm(Tail)
     end;
 parse_rsm([]) ->
@@ -925,10 +925,10 @@ parse_rsm([]) ->
 
 % parse_rsm({xmlelement, "count", _, _}) ->
 %     count;
-    
+
 parse_rsm({xmlelement, "set", _, SubEls}) ->
     parse_rsm_aux(SubEls, {0, infinity, normal});
-    
+
 parse_rsm(_) ->
     error.
 
@@ -945,28 +945,28 @@ parse_rsm_aux([{xmlelement, "max", _Attrs, Contents} | Tail], Acc) ->
             ?MYDEBUG("<max> Not an INTEGER ~p ", [HEPO]),
             error
     end;
-    
+
 parse_rsm_aux([{xmlelement, "index", _Attrs, Contents} | Tail], Acc) ->
     case catch list_to_integer(xml:get_cdata(Contents)) of
         P when is_integer(P) ->
             case Acc of
                 {0, Max, normal} ->
-                    parse_rsm_aux(Tail, {P, Max, normal}); 
+                    parse_rsm_aux(Tail, {P, Max, normal});
                 _ ->
                     error
             end;
         _ ->
             error
     end;
-    
+
 parse_rsm_aux([{xmlelement, "after", _Attrs, Contents} | Tail], Acc) ->
     case Acc of
         {0, Max, normal} ->
-            parse_rsm_aux(Tail, {{id, xml:get_cdata(Contents)}, Max, normal}); 
+            parse_rsm_aux(Tail, {{id, xml:get_cdata(Contents)}, Max, normal});
         _ ->
             error
     end;
-    
+
 
 parse_rsm_aux([{xmlelement, "before", _Attrs, Contents} | Tail], Acc) ->
     case Acc of
@@ -980,13 +980,13 @@ parse_rsm_aux([{xmlelement, "before", _Attrs, Contents} | Tail], Acc) ->
         _ ->
             error
     end;
-    
+
 parse_rsm_aux([_ | Tail], Acc) ->
     parse_rsm_aux(Tail, Acc);
 parse_rsm_aux([], Acc) ->
     Acc.
 
-%  RSM = {Start, Max, Order}  
+%  RSM = {Start, Max, Order}
 %  GetId = fun(Elem) -> Id
 %  IdCompare = fun(Id, Elem) -> equal | greater | smaller
 %
@@ -998,11 +998,11 @@ execute_rsm(RSM, List, GetId, IdCompare) ->
         none ->
             {{xmlcdata, ""}, List};
 %         count ->
-%             {{xmlelement, "count", [{"xmlns", ?NS_RSM}], [{xmlcdata,  integer_to_list(length(List))}]}, []};
+%             {{xmlelement, "count", [{"xmlns", ?MY_NS_RSM}], [{xmlcdata,  integer_to_list(length(List))}]}, []};
         {error, E} ->
             {error, E};
         {_, []} ->
-              {{xmlelement, "set", [{"xmlns", ?NS_RSM}], [{xmlelement, "count", [], [{xmlcdata,  integer_to_list(length(List))}]}]}, []};
+              {{xmlelement, "set", [{"xmlns", ?MY_NS_RSM}], [{xmlelement, "count", [], [{xmlcdata,  integer_to_list(length(List))}]}]}, []};
         {Index, L} ->
             case GetId of
                 index ->
@@ -1025,24 +1025,24 @@ execute_rsm_aux(error, _List, _, _) ->
 execute_rsm_aux({S, M, reversed}, List, IdFun, Acc) ->
     {NewFun,NewS} = case IdFun of
         index ->
-            {index, 
-                case S of 
+            {index,
+                case S of
                     {id, IdentIndex} ->
                         integer_to_list(length(List) - list_to_integer(IdentIndex));
                     _ -> S
                 end};
         _ ->
-            {fun(Index, Elem) ->  
+            {fun(Index, Elem) ->
                     case IdFun(Index, Elem) of
                         equal -> equal;
                         greater -> smaller;
                         smaller -> greater;
-                        O -> O 
+                        O -> O
                     end
                 end,
                S}
         end,
-    {Index, L2} =  execute_rsm_aux({NewS,M,normal}, lists:reverse(List), NewFun, 0), 
+    {Index, L2} =  execute_rsm_aux({NewS,M,normal}, lists:reverse(List), NewFun, 0),
     {Acc + length(List) - Index - length(L2), lists:reverse(L2)};
 
 execute_rsm_aux({{id,I}, M, normal}, List,  index,  Acc) ->
@@ -1058,10 +1058,10 @@ execute_rsm_aux({{id,I}, M, normal} = RSM, [E | Tail],  IdFun,  Acc) ->
 
 execute_rsm_aux({{id,_}, _, normal}, [], _, Acc) ->
     {Acc, []};
-    
+
 execute_rsm_aux({0, infinity, normal}, List, _, Acc) ->
     {Acc, List};
-    
+
 execute_rsm_aux({_, 0, _}, _, _, Acc) ->
     {Acc, []};
 
@@ -1070,10 +1070,7 @@ execute_rsm_aux({S, M, _}, List, _, Acc)  when  is_integer(S) and is_integer(M) 
     {Acc + S, lists:sublist(List, S+1,M)}.
 
 make_rsm(FirstIndex, FirstId, LastId, Count) ->
-    {xmlelement, "set", [{"xmlns", ?NS_RSM}], [
+    {xmlelement, "set", [{"xmlns", ?MY_NS_RSM}], [
         {xmlelement, "first", [{"index", integer_to_list(FirstIndex)}], [{xmlcdata,  FirstId}]},
         {xmlelement, "last", [], [{xmlcdata,  LastId}]},
         {xmlelement, "count", [], [{xmlcdata,  integer_to_list(Count)}]}]}.
-        
-
-
