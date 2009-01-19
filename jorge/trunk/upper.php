@@ -427,8 +427,15 @@ if ($search_loc==1) {
 
 }
 
-$html->menu('<input type="submit" value="'.$search_box[$lang].'">
-		</form></td>
+$html->menu('<input type="submit" value="'.$search_box[$lang].'"></form></td>');
+
+if ($mac_user === true) {
+
+	$html->menu('<td align="right"><a href="#"><img border="0" alt="Hello Mac user!" width="16" height="16" src="img/apple-logo.png" /></a></td>');
+
+}
+
+$html->menu('
 		</tr>
 		<tr style="background-image: url(img/bell-bak.png); height: 24;">
 			<td colspan="11" width="100%" style="text-align: left; padding-left: 30px; color: white;">

@@ -27,6 +27,22 @@ if (__FILE__==$_SERVER['SCRIPT_FILENAME']) {
 
 }
 
+function get_user_agent($_SERVER) {
+	
+	if (preg_match("/Macintosh/i",$_SERVER['HTTP_USER_AGENT'])) {
+
+			return true;
+
+		}
+		else{
+
+			return false;
+
+	}
+	return false;
+
+}
+
 
 function getmicrotime(){
 

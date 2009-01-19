@@ -47,6 +47,9 @@ require_once("lang.php"); // language pack
 // get client addr
 $rem_adre = $_SERVER['REMOTE_ADDR'];
 
+// something for mac users
+$mac_user = get_user_agent($_SERVER);
+
 // location
 $location=$_SERVER['PHP_SELF'];
 
