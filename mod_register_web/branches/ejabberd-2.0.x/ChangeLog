@@ -1,3 +1,8 @@
+2009-01-27  Badlop  <badlop@process-one.net>
+
+	* Emakefile: Fix to compile correctly using 2.0.x branch
+	* README.txt: Detailed description of ejabberd requirement
+
 2008-05-31  Badlop  <badlop@process-one.net>
 
 	* README.txt: Require ejabberd 2.0.2. Add explanation about last
