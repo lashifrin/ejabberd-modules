@@ -1,3 +1,10 @@
+2009-01-27  Badlop  <badlop@process-one.net>
+
+	* src/mod_admin_extra.erl: In the srg_create command, allow to
+	separate group identifiers in the Display argument with escaped
+	newline character. Explain this possibility in the command long
+	description.
+
 2008-11-10  Badlop  <badlop@process-one.net>
 
 	* src/mod_admin_extra.erl: Renamed command send_message to

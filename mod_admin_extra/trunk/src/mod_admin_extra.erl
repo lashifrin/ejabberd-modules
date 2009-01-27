@@ -346,6 +346,13 @@ commands() ->
 
      #ejabberd_commands{name = srg_create, tags = [shared_roster_group],
 			desc = "Create a Shared Roster Group",
+			longdesc = "If you want to specify several group "
+			"identifiers in the Display argument,\n"
+			"put  \\ \" around the argument and\nseparate the "
+			"identifiers with \\ \\ n\n"
+			"For example:\n"
+			"  ejabberdctl srg_create group3 localhost "
+			"name desc \\\"group1\\\\ngroup2\\\"",
 			module = ?MODULE, function = srg_create,
 			args = [{group, string}, {host, string},
 				{name, string}, {description, string}, {display, string}],
@@ -979,7 +986,10 @@ build_iq_roster_push(Item) ->
 %%%
 
 srg_create(Group, Host, Name, Description, Display) ->
-    Opts = [{name, Name}, {displayed_groups, [Display]}, {description, Description}],
+    {ok, DisplayList} = regexp:split(Display, "\\\\n"),
+    Opts = [{name, Name},
+	    {displayed_groups, DisplayList},
+	    {description, Description}],
     {atomic, ok} = mod_shared_roster:create_group(Host, Group, Opts),
     ok.
 
