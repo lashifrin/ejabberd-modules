@@ -1,0 +1,10 @@
+2008-05-31  Badlop  <badlop@process-one.net>
+
+	* README.txt: Require ejabberd 2.0.2. Add explanation about last
+	character / in URL
+
+2008-05-18  Badlop  <badlop@process-one.net>
+
+	* mod_register_web: New module that provides web pages to register
+	account and other related tasks
+
