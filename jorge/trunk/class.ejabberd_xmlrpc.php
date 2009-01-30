@@ -102,7 +102,7 @@ class rpc_connector {
 			)));
 
 		$file = file_get_contents("http://$this->rpc_server".":"."$this->rpc_port", false, $context);
-		$response = xmlrpc_decode($file);
+		$response = xmlrpc_decode($file,"utf8");
 			if (xmlrpc_is_fault($response)) {
 
 				throw new Exception("XML-RPC Call Failed. Unrecoverable condition",0);
