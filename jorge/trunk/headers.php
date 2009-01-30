@@ -201,6 +201,7 @@ $html->headers('
 		<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 		<html>
 		<head>
+			<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 			<meta http-equiv="cache-control" content="no-cache">
 			<meta http-equiv="pragma" content="no-cache">
 			<meta name="Author" content="Zbyszek Zolkiewski at jabster.pl">
