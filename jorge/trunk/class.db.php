@@ -585,7 +585,14 @@ class db_manager {
 	public function is_log_enabled() {
 
 		$this->id_query = "Q016";
-		$this->vital_check();
+
+		// Return false on non-digit characters, workaround for user not being in sql dictionary.
+		if (!ctype_digit($this->user_id)) {
+
+			return false;
+
+		}
+
 		$query="SELECT 
 				dolog_default as is_enabled
 			FROM 
