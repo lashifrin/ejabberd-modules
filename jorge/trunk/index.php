@@ -283,8 +283,19 @@ if ($_GET[act]==="logout") {
 		}
 		$db->get_user_id($inpLogin);
 		$ui_fail = $db->result->user_id;
-		$db->get_last_attempt($ui_fail);
-		$row = $db->result->cnt;
+
+		// Workaround, if user_id is not know, do not alter login attempts
+		if ($ui_fail) {
+
+				$db->get_last_attempt($ui_fail);
+				$row = $db->result->cnt;
+
+			}
+			else{
+
+				$row="0";
+
+		}
 
 		// bump log_level if more then 3 log attempts in one minute
 		if ($row > "3") { 

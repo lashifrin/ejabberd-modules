@@ -2589,7 +2589,7 @@ class db_manager {
 			AND
 				log_time > date_sub(now(),interval 1 minute)
 		";
-		
+
 		return $this->select($query);
 
 	}
@@ -2700,6 +2700,9 @@ class db_manager {
 		if($this->db_driver === "mysql") {
 
 			if ($type==="integer") {
+
+				// Default - all this "integer" strings are really characters with should be numeric. Need Test!
+				settype($val,"string");
 
 				if(ctype_digit($val)) {
 					
