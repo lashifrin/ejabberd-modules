@@ -346,6 +346,25 @@ get(_, ["localtime", title]) -> "Local time";
 get(N, ["localtime"]) ->
     localtime_to_string(rpc:call(N, erlang, localtime, []));
 
+get(_, ["memory_total", title]) -> "Memory total allocated: processes and system";
+get(N, ["memory_total"]) -> rpc:call(N, erlang, memory, [total]);
+get(_, ["memory_processes", title]) -> "Memory allocated by Erlang processes";
+get(N, ["memory_processes"]) -> rpc:call(N, erlang, memory, [processes]);
+get(_, ["memory_processes_used", title]) -> "Memory used by Erlang processes";
+get(N, ["memory_processes_used"]) -> rpc:call(N, erlang, memory, [processes_used]);
+get(_, ["memory_system", title]) -> "Memory allocated by Erlang emulator but not associated to processes";
+get(N, ["memory_system"]) -> rpc:call(N, erlang, memory, [system]);
+get(_, ["memory_atom", title]) -> "Memory allocated for atoms";
+get(N, ["memory_atom"]) -> rpc:call(N, erlang, memory, [atom]);
+get(_, ["memory_atom_used", title]) -> "Memory used for atoms";
+get(N, ["memory_atom_used"]) -> rpc:call(N, erlang, memory, [atom_used]);
+get(_, ["memory_binary", title]) -> "Memory allocated for binaries";
+get(N, ["memory_binary"]) -> rpc:call(N, erlang, memory, [binary]);
+get(_, ["memory_code", title]) -> "Memory allocated for Erlang code";
+get(N, ["memory_code"]) -> rpc:call(N, erlang, memory, [code]);
+get(_, ["memory_ets", title]) -> "Memory allocated for ETS tables";
+get(N, ["memory_ets"]) -> rpc:call(N, erlang, memory, [ets]);
+
 get(_, ["vhost", title]) -> "Virtual host";
 get(_, ["vhost", Host]) -> Host;
 
@@ -1131,6 +1150,20 @@ web_page_node(_, Node, ["statsdx"], _Query, Lang) ->
 	 %%  do_stat(Node, Lang, "reductions")
 	 %%])
 	 %%]),
+	 ?XC("h3", "Memory (bytes)"),
+	 ?XAE("table", [],
+	      [?XE("tbody", [
+			     do_stat(Node, Lang, "memory_total"),
+			     do_stat(Node, Lang, "memory_processes"),
+			     do_stat(Node, Lang, "memory_processes_used"),
+			     do_stat(Node, Lang, "memory_system"),
+			     do_stat(Node, Lang, "memory_atom"),
+			     do_stat(Node, Lang, "memory_atom_used"),
+			     do_stat(Node, Lang, "memory_binary"),
+			     do_stat(Node, Lang, "memory_code"),
+			     do_stat(Node, Lang, "memory_ets")
+			    ])
+	      ]),
 	 ?XC("h3", "Database"),
 	 ?XAE("table", [],
 	      [?XE("tbody",
@@ -1367,5 +1400,19 @@ get_stat_n(Stat) ->
 get_stat_v(Node, Stat) -> get_stat_v2(mod_statsdx:get_statistic(Node, Stat)).
 get_stat_v2(Value) when is_list(Value) -> Value;
 get_stat_v2(Value) when is_float(Value) -> io_lib:format("~.4f", [Value]);
+get_stat_v2(Value) when is_integer(Value) ->
+    [Str] = io_lib:format("~p", [Value]),
+    pretty_string_int(Str);
 get_stat_v2(Value) -> io_lib:format("~p", [Value]).
 
+%% Transform "1234567890" into "1,234,567,890"
+pretty_string_int(String) ->
+    {_, Result} = lists:foldl(
+		    fun(NewNumber, {3, Result}) ->
+			    {1, [NewNumber, $, | Result]};
+		       (NewNumber, {CountAcc, Result}) ->
+			    {CountAcc+1, [NewNumber | Result]}
+		    end,
+		    {0, ""},
+		    lists:reverse(String)),
+    Result.
