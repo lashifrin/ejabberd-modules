@@ -1,3 +1,10 @@
+2009-02-03  Badlop  <badlop@process-one.net>
+
+	* src/mod_statsdx.erl: New configuration {hooks, traffic}. In
+	addition to hooks for client versions, in this case also tracks
+	stanza traffic. Show in WebAdmin of the virtual host.
+	* README.txt: Document traffic hooks
+
 2009-02-02  Badlop  <badlop@process-one.net>
 
 	* src/mod_statsdx.erl: New stats for erlang memory. Show new stats

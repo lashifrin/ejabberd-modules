@@ -15,7 +15,8 @@
 	 web_menu_main/2, web_page_main/2,
 	 web_menu_node/3, web_page_node/5,
 	 web_menu_host/3, web_page_host/3,
-	 remove_user/2, user_send_packet/3, user_receive_packet/4,
+	 remove_user/2, user_send_packet/3,
+         user_send_packet_traffic/3, user_receive_packet_traffic/4,
 	 user_login/1, user_logout/4, user_logout_sm/3]).
 
 -include("ejabberd.hrl").
@@ -29,9 +30,6 @@
 %% Copied from ejabberd_s2s.erl Used in function get_s2sconnections/1
 -record(s2s, {fromto, pid, key}).
 
-%% TODO: It's implemented (but commented) the code to measure traffic stats,
-%% because it isn't yet implemented the code in web admin to view this data.
-
 
 %% -------------------
 %% Module control
@@ -42,6 +40,7 @@ start(Host, Opts) ->
     %% Default value for the counters
     CD = case Hooks of
 	     true -> 0;
+	     traffic -> 0;
 	     false -> "disabled"
 	 end,
 
@@ -153,7 +152,13 @@ prepare_stats_host(Host, Hooks, CD) ->
 	    ejabberd_hooks:add(user_available_hook, Host, ?MODULE, user_login, 90),
 	    %%ejabberd_hooks:add(unset_presence_hook, Host, ?MODULE, user_logout, 90),
 	    ejabberd_hooks:add(sm_remove_connection_hook, Host, ?MODULE, user_logout_sm, 90),
-	    %%ejabberd_hooks:add(user_receive_packet, Host, ?MODULE, user_receive_packet, 90), %% Only required for traffic stats
+	    ejabberd_hooks:add(user_send_packet, Host, ?MODULE, user_send_packet, 90);
+	traffic ->
+	    ejabberd_hooks:add(user_receive_packet, Host, ?MODULE, user_receive_packet_traffic, 92),
+	    ejabberd_hooks:add(user_send_packet, Host, ?MODULE, user_send_packet_traffic, 92),
+	    ejabberd_hooks:add(remove_user, Host, ?MODULE, remove_user, 90),
+	    ejabberd_hooks:add(user_available_hook, Host, ?MODULE, user_login, 90),
+	    ejabberd_hooks:add(sm_remove_connection_hook, Host, ?MODULE, user_logout_sm, 90),
 	    ejabberd_hooks:add(user_send_packet, Host, ?MODULE, user_send_packet, 90);
 	false ->
 	    ok
@@ -174,7 +179,8 @@ finish_stats(Host) ->
     %%ejabberd_hooks:delete(unset_presence_hook, Host, ?MODULE, user_logout, 90),
     ejabberd_hooks:delete(sm_remove_connection_hook, Host, ?MODULE, user_logout_sm, 90),
     ejabberd_hooks:delete(user_send_packet, Host, ?MODULE, user_send_packet, 90),
-    ejabberd_hooks:delete(user_receive_packet, Host, ?MODULE, user_receive_packet, 90),
+    ejabberd_hooks:delete(user_send_packet, Host, ?MODULE, user_send_packet_traffic, 92),
+    ejabberd_hooks:delete(user_receive_packet, Host, ?MODULE, user_receive_packet_traffic, 92),
     ejabberd_hooks:delete(remove_user, Host, ?MODULE, remove_user, 90),
     ejabberd_hooks:delete(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
     ejabberd_hooks:delete(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
@@ -192,30 +198,31 @@ remove_user(_User, Server) ->
     ets:update_counter(Table, {remove_user, server}, 1).
 
 user_send_packet(FromJID, ToJID, NewEl) ->
-    %% Only required for traffic stats
-    %%Host = FromJID#jid.lserver,
-    %%HostTo = ToJID#jid.lserver,
-    %%{xmlelement, Type, _, _} = NewEl,
-    %%Type2 = case Type of
-    %%		"iq" -> iq;
-    %%		"message" -> message;
-    %%		"presence" -> presence
-    %%	    end,
-    %%Dest = case is_host(HostTo, Host) of
-    %%	       true -> in;
-    %%	       false -> out
-    %%	   end,
-    %%Table = table_name(Server),
-    %%ets:update_counter(Table, {send, Host, Type2, Dest}, 1),
-
     %% Registrarse para tramitar Host/mod_stats2file
     case list_to_atom(ToJID#jid.lresource) of
 	?MODULE -> received_response(FromJID, ToJID, NewEl);
 	_ -> ok
     end.
 
+user_send_packet_traffic(FromJID, ToJID, NewEl) ->
+    %% Only required for traffic stats
+    Host = FromJID#jid.lserver,
+    HostTo = ToJID#jid.lserver,
+    {xmlelement, Type, _, _} = NewEl,
+    Type2 = case Type of
+    		"iq" -> iq;
+    		"message" -> message;
+    		"presence" -> presence
+    	    end,
+    Dest = case is_host(HostTo, Host) of
+    	       true -> in;
+    	       false -> out
+    	   end,
+    Table = table_name(Host),
+    ets:update_counter(Table, {send, Host, Type2, Dest}, 1).
+
 %% Only required for traffic stats
-user_receive_packet(_JID, From, To, FixedPacket) ->
+user_receive_packet_traffic(_JID, From, To, FixedPacket) ->
     HostFrom = From#jid.lserver,
     Host = To#jid.lserver,
     {xmlelement, Type, _, _} = FixedPacket,
@@ -341,6 +348,15 @@ get(_, [{"remove_user", _}, title]) -> "Accounts deleted (per minute)";
 get(_, [{"remove_user", I}, Host]) -> get_stat({remove_user, Host}, I);
 get(_, [{Table, Type, Dest, _}, title]) -> filename:flatten([Table, Type, Dest]);
 get(_, [{Table, Type, Dest, I}, Host]) -> get_stat({Table, Host, Type, Dest}, I);
+
+get(_, ["user_login", title]) -> "Logins";
+get(_, ["user_login", Host]) -> get_stat({user_login, Host});
+get(_, ["user_logout", title]) -> "Logouts";
+get(_, ["user_logout", Host]) -> get_stat({user_logout, Host});
+get(_, ["remove_user", title]) -> "Accounts deleted";
+get(_, ["remove_user", Host]) -> get_stat({remove_user, Host});
+get(_, [{Table, Type, Dest}, title]) -> filename:flatten([Table, Type, Dest]);
+get(_, [{Table, Type, Dest}, Host]) -> get_stat({Table, Host, Type, Dest});
 
 get(_, ["localtime", title]) -> "Local time";
 get(N, ["localtime"]) ->
@@ -640,6 +656,16 @@ get_regmucrooms(Host) ->
 	end,
     {atomic, {Host, Res}} = mnesia:transaction(F),
     Res.
+
+get_stat(Stat) ->
+    Host = case Stat of
+	       {_, H} -> H;
+	       {_, H, _, _} -> H
+	   end,
+    Table = table_name(Host),
+    Res = ets:lookup(Table, Stat),
+    [{_, C}] = Res,
+    C.
 
 get_stat(Stat, Ims) ->
     Host = case Stat of
@@ -1237,11 +1263,6 @@ web_page_host(_, Host,
 	   %%  do_stat(global, Lang, "regpubsubnodes", Host)
 	   %% ])
 	   %%]),
-	   %%?XC("h3", "Ratios"),
-	   %%?XAE("table", [],
-	   %%	[?XE("tbody", [
-	   %%		      ])
-	   %%	]),
 	   ?XC("h3", "Sessions: " ++ get_stat_n("client")),
 	   ?XAE("table", [],
 		[?XE("tbody",
@@ -1277,7 +1298,27 @@ web_page_host(_, Host,
 		[?XE("tbody",
 		     do_stat_table(global, Lang, "languages", Host)
 		    )
-		])
+		]),
+	   ?XC("h3", "Ratios"),
+	   ?XAE("table", [],
+	   	[?XE("tbody", [
+			       do_stat(global, Lang, "user_login", Host),
+			       do_stat(global, Lang, "user_logout", Host),
+			       do_stat(global, Lang, "remove_user", Host),
+			       do_stat(global, Lang, {send, iq, in}, Host),
+			       do_stat(global, Lang, {send, iq, out}, Host),
+			       do_stat(global, Lang, {send, message, in}, Host),
+			       do_stat(global, Lang, {send, message, out}, Host),
+			       do_stat(global, Lang, {send, presence, in}, Host),
+			       do_stat(global, Lang, {send, presence, out}, Host),
+			       do_stat(global, Lang, {recv, iq, in}, Host),
+			       do_stat(global, Lang, {recv, iq, out}, Host),
+			       do_stat(global, Lang, {recv, message, in}, Host),
+			       do_stat(global, Lang, {recv, message, out}, Host),
+			       do_stat(global, Lang, {recv, presence, in}, Host),
+			       do_stat(global, Lang, {recv, presence, out}, Host)
+	   		      ])
+	   	])
 	  ],
     {stop, Res};
 web_page_host(_, Host, #request{path=["statsdx" | FilterURL], q = Q,

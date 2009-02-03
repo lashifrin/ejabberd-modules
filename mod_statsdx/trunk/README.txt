@@ -26,6 +26,7 @@ Configurable options:
   hooks: Set to 'true' to enable hooks and related statistics.
          This option by default 'false' because it is expected to
 	 consume many resources in very populated servers.
+	 If set to 'traffic', it will also keep counters of traffic stanzas.
 
 
 	EXAMPLE CONFIGURATION
