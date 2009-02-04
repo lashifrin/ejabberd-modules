@@ -1,3 +1,7 @@
+2009-02-04  Badlop  <badlop@process-one.net>
+
+	* src/mod_statsdx.erl: Fix a few stats
+
 2009-02-03  Badlop  <badlop@process-one.net>
 
 	* src/mod_statsdx.erl: New configuration {hooks, traffic}. In

@@ -278,19 +278,11 @@ get(_, [{"cpu_util_nice_user", _}, title]) -> "CPU utilization - nice_user";
 get(_, [{"cpu_util_kernel", _}, title]) -> "CPU utilization - kernel";
 get(_, [{"cpu_util_wait", _}, title]) -> "CPU utilization - wait";
 get(_, [{"cpu_util_idle", _}, title]) -> "CPU utilization - idle";
-get(_, [{"cpu_util_user", U}]) -> [{user, Us}, _, _] = element(2, U), Us;
-get(_, [{"cpu_util_nice_user", U}]) -> [_, {nice_user, NU}, _] = element(2, U), NU;
-get(_, [{"cpu_util_kernel", U}]) -> [_, _, {kernel, K}] = element(2, U), K;
-get(_, [{"cpu_util_wait", U}]) ->
-    case element(3, U) of
-	[{wait, W}, {idle, _}] -> W;  % Solaris
-	[{idle, _}] -> 0
-    end;
-get(_, [{"cpu_util_idle", U}]) ->
-    case element(3, U) of
-	[{wait, _}, {idle, I}] -> I;  % Solaris
-	[{idle, I}] -> I
-    end;
+get(_, [{"cpu_util_user", U}]) -> proplists:get_value(user, element(2, U), -1);
+get(_, [{"cpu_util_nice_user", U}]) -> proplists:get_value(nice_user, element(2, U), -1);
+get(_, [{"cpu_util_kernel", U}]) -> proplists:get_value(kernel, element(2, U), -1);
+get(_, [{"cpu_util_wait", U}]) -> proplists:get_value(wait, element(3, U), -1);
+get(_, [{"cpu_util_idle", U}]) -> proplists:get_value(idle, element(3, U), -1);
 
 get(_, [{"client", Id}, title]) -> atom_to_list(Id);
 get(_, [{"client", Id}, Host]) ->
@@ -336,9 +328,9 @@ get(N, ["conntype", Host]) ->
      );
 
 get(_, [{"memsup_system", _}, title]) -> "Memory physical (bytes)";
-get(_, [{"memsup_system", M}]) -> [_, _, {system_total_memory, R}] = M, R;
+get(_, [{"memsup_system", M}]) -> proplists:get_value(system_total_memory, M, -1);
 get(_, [{"memsup_free", _}, title]) -> "Memory free (bytes)";
-get(_, [{"memsup_free", M}]) -> [_, {free_memory, R}, _] = M, R;
+get(_, [{"memsup_free", M}]) -> proplists:get_value(free_memory, M, -1);
 
 get(_, [{"user_login", _}, title]) -> "Logins (per minute)";
 get(_, [{"user_login", I}, Host]) -> get_stat({user_login, Host}, I);
