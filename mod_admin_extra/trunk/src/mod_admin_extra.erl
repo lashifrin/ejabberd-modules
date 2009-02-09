@@ -1093,7 +1093,7 @@ build_packet(message_headline, [Subject, Body]) ->
 stats(Name) ->
     case Name of
 	"uptimeseconds" -> trunc(element(1, erlang:statistics(wall_clock))/1000);
-	"registeredusers" -> mnesia:table_info(passwd, size);
+	"registeredusers" -> length(ejabberd_auth:dirty_get_registered_users());
 	"onlineusersnode" -> length(ejabberd_sm:dirty_get_my_sessions_list());
 	"onlineusers" -> length(ejabberd_sm:dirty_get_sessions_list())
     end.

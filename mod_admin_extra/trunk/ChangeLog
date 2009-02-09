@@ -1,3 +1,9 @@
+2009-02-09  Badlop  <badlop@process-one.net>
+
+	* src/mod_admin_extra.erl: Calculation of 'stats registeredusers'
+	works also with non-internal authentication methods (thanks to
+	Francois de Metz)(EJAB-864)
+
 2009-01-27  Badlop  <badlop@process-one.net>
 
 	* README.txt: Explicitely mention that this module does not work

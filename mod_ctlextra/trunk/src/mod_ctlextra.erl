@@ -356,7 +356,7 @@ ctl_process(_Val, ["load-config", Path]) ->
 ctl_process(_Val, ["stats", Stat]) ->
     Res = case Stat of
 	      "uptime-seconds" -> uptime_seconds();
-	      "registeredusers" -> mnesia:table_info(passwd, size);
+	      "registeredusers" -> length(ejabberd_auth:dirty_get_registered_users());
 	      "onlineusersnode" -> length(ejabberd_sm:dirty_get_my_sessions_list());
 	      "onlineusers" -> length(ejabberd_sm:dirty_get_sessions_list())
 	  end,

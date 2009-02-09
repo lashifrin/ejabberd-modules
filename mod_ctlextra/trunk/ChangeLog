@@ -1,3 +1,9 @@
+2009-02-09  Badlop  <badlop@process-one.net>
+
+	* src/mod_ctlextra.erl: Calculation of 'stats registeredusers'
+	works also with non-internal authentication methods (thanks to
+	Francois de Metz)(EJAB-864)
+
 2008-10-31  Badlop  <badlop@process-one.net>
 
 	* src/mod_ctlextra.erl: Remove duplicated command
