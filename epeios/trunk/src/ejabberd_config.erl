@@ -17,6 +17,8 @@ start() ->
 %% What to return when ask for Virtual host names
 get_global_option(hosts) ->
     [epeios_config:server_host()];
+get_global_option({shaper, _Name, _Host}) ->
+    undefined;
 get_global_option(Opt) ->
     get_option(Opt).
 
