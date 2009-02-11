@@ -1,0 +1,20 @@
+{application, epeios,
+  [{description,
+    "epeios is an ejabberd module container. It allows to run an
+    ejabberd module as a an external Jabber component, compliant with any
+    Jabber server."},
+   {vsn,          "&epeios&"},
+   {modules,      [ejabberd, ejabberd_config, ejabberd_router, xmpp_component,
+                   epeios_app, epeios_config, epeios_services, epeios_sup]},
+   {registered,   [ejabberd_sup]},
+   {applications, [kernel, stdlib, sasl, crypto]},
+   {mod,          {epeios_app, []}},
+   {env, [{epeios, [{epeios_name, "pubsub.localhost"},
+                    {epeios_server_host, "localhost"},
+                    {epeios_server_port, 8888},
+                    {epeios_secret, "secret"},
+                    {epeios_module, "mod_pubsub"},
+		    {epeios_host_config, []},
+		    {epeios_db_path, "database"},
+	            {epeios_lib_path, "lib"}]}]}
+  ]}.

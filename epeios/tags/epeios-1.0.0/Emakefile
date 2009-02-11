@@ -1,0 +1,9 @@
+{'src/ejabberd.erl',             [{outdir, "ebin"}]}.
+{'src/ejabberd_config.erl',      [{outdir, "ebin"}]}.
+{'src/ejabberd_router.erl',      [{outdir, "ebin"}]}.
+{'src/epeios_app.erl',           [{outdir, "ebin"}]}.
+{'src/epeios_config.erl',        [{outdir, "ebin"}]}.
+{'src/epeios_services.erl',      [{outdir, "ebin"}]}.
+{'src/epeios_sup.erl',           [{outdir, "ebin"}]}.
+{'src/xmpp_component.erl',       [{outdir, "ebin"}]}.
+

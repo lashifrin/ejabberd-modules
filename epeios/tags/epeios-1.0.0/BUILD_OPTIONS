@@ -1,0 +1,2 @@
+[{report, verbose},
+ {config, {file,"sys.config.mk"}}].
