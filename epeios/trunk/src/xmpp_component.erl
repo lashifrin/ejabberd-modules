@@ -94,7 +94,8 @@ wait_handshake({xmlstreamelement,{xmlelement,"handshake",_,[]}}, State) ->
     %					[{host,ComponentName}]]},
     %		  permanent,5000,worker,[Module]},
     %{ok, ModulePid} = supervisor:start_child(ejabberd_sup, ModuleSpec),
-    {ok, ModulePid} = Module:start(server_host(ComponentName),[{host,ComponentName}]),
+    Opts = [{host,ComponentName} | epeios_config:module_config()],
+    {ok, ModulePid} = Module:start(server_host(ComponentName), Opts),
     {next_state, connected, State#state{mod_pid=ModulePid}};
 wait_handshake(Event, State) ->
     io:format("EV: ~p~n",[Event]),
@@ -188,10 +189,17 @@ code_change(_OldVsn, StateName, State, _Extra) ->
 
 %% Connect to the Jabber / XMPP server using the component protocol.
 connect(_ComponentName, Server, Port) ->
-    Socket = case gen_tcp:connect(Server, Port, [binary,{active, false},{packet, 0}], 10000) of
-		 {ok, Sock}      -> Sock;
-		 {error, Reason} -> io:format("Connection error: [~p]~n", [Reason]),
-				    exit(Reason)
+    Socket = case gen_tcp:connect(Server, Port, [binary,{active, false},
+						 {packet, 0}], 10000) of
+		 {ok, Sock} ->
+		     Sock;
+		 {error, econnrefused = Reason} ->
+		     io:format("Error: server ~s:~p refused the connection.~n~n",
+			       [Server, Port]),
+		     exit(Reason);
+		 {error, Reason} ->
+		     io:format("Connection error: [~p]~n~n", [Reason]),
+		     exit(Reason)
 	     end,
     Socket.
 
