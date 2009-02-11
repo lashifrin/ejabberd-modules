@@ -15,6 +15,7 @@
 	 secret/0,
 	 module/0,
 	 host_config/0,
+	 module_config/0,
 	 db_path/0,
 	 lib_path/0]).
 
@@ -50,6 +51,14 @@ lib_path() ->
     LibPath.
 
 host_config() ->
-    {ok, HostConfig} = application:get_env(epeios_host_config),
+    %% Explicitely say the application because sometimes this function
+    %% is called outside of the context of the application
+    {ok, HostConfig} = application:get_env(epeios, epeios_host_config),
     HostConfig.
+    
+module_config() ->
+    %% Explicitely say the application because sometimes this function
+    %% is called outside of the context of the application
+    {ok, ModuleConfig} = application:get_env(epeios, epeios_module_config),
+    ModuleConfig.
     
