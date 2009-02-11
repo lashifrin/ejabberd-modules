@@ -37,8 +37,11 @@ start() ->
     %% Start the stringprep service
     stringprep:start(),
 
-    %% Load the expat driver:   
-    erl_ddll:load_driver(ejabberd:get_so_path(), expat_erl),
+    %% Load the expat driver:
+    %% Note: the path and options must be the same here and in xmpp_component
+    %%LibPath = ejabberd:get_so_path(),
+    LibPath = epeios_config:lib_path(),
+    erl_ddll:load_driver(LibPath, expat_erl),
  
     %% Start configuration service
     %% We start a fake config service:
