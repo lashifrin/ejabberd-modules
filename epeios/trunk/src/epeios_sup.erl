@@ -39,7 +39,14 @@ init([ComponentName, Server, Port, Secret, Module]) ->
 		     {xmpp_component, start_link,
 		      [ComponentName, Server, Port, Secret, Module]},
 		     permanent,5000,worker,[xmpp_component]},
-    {ok, {{one_for_all,2,5}, [ComponentSpec]}}.
+    %% Required by mod_muc:
+    Hooks = {ejabberd_hooks,
+	     {ejabberd_hooks, start_link, []},
+	     permanent,
+	     brutal_kill,
+	     worker,
+	     [ejabberd_hooks]},
+    {ok, {{one_for_all,2,5}, [ComponentSpec, Hooks]}}.
 
 %% Return the PID of the ejabberd module
 get_module_pid() ->
