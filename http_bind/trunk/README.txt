@@ -7,6 +7,11 @@ as outlined by XEP-0206[1].
 It extends ejabberd's built in HTTP service with a configurable
 resource at which this service will be hosted.
 
+This module is included in ejabbed releases since ejabberd 2.0.0
+If you downloaded ejabberd from SVN, this module is not included,
+so you can install it here.
+This module requires ejabberd 2.1.0 or newer.
+
 [1]http://www.xmpp.org/extensions/xep-0206.html
 
 INSTALLATION
