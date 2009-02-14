@@ -1,3 +1,10 @@
+2009-02-14  Badlop  <badlop@process-one.net>
+
+	* src/web/ejabberd_http_bind.erl: Allow configuration of maximum
+	inactivity period using the new option max_inactivity of
+	mod_http_bind (EJAB-512)
+	* doc/mod_http_bind.tex: Document new option
+
 2009-01-13  Badlop  <badlop@process-one.net>
 
 	* src/web/ejabberd_http_bind.erl: Include condition in http-bind
