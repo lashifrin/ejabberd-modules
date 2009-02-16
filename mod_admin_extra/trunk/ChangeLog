@@ -1,3 +1,7 @@
+2009-02-16  Badlop  <badlop@process-one.net>
+
+	* src/mod_admin_extra.erl: Fix srg_user_add arguments
+
 2009-02-09  Badlop  <badlop@process-one.net>
 
 	* src/mod_admin_extra.erl: Calculation of 'stats registeredusers'

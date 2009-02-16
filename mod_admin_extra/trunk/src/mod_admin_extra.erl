@@ -380,7 +380,7 @@ commands() ->
      #ejabberd_commands{name = srg_user_add, tags = [shared_roster_group],
 			desc = "Add the JID user@server to the Shared Roster Group",
 			module = ?MODULE, function = srg_user_add,
-			args = [{user, string}, {host, string}, {group, string}, {host, string}],
+			args = [{user, string}, {host, string}, {group, string}, {grouphost, string}],
 			result = {res, rescode}},
      #ejabberd_commands{name = srg_user_del, tags = [shared_roster_group],
 			desc = "Delete this JID user@host from the Shared Roster Group",
@@ -1010,8 +1010,8 @@ srg_get_members(Group, Host) ->
     [jlib:jid_to_string(jlib:make_jid(MUser, MServer, ""))
      || {MUser, MServer} <- Members].
 
-srg_user_add(User, Server, Group, Host) ->
-    {atomic, ok} = mod_shared_roster:add_user_to_group(Host, {User, Server}, Group),
+srg_user_add(User, Host, Group, GroupHost) ->
+    {atomic, ok} = mod_shared_roster:add_user_to_group(GroupHost, {User, Host}, Group),
     ok.
 
 srg_user_del(User, Host, Group, GroupHost) ->
