@@ -378,7 +378,7 @@ commands() ->
 			args = [{group, string}, {host, string}],
 			result = {members, {list, {member, string}}}},
      #ejabberd_commands{name = srg_user_add, tags = [shared_roster_group],
-			desc = "Add the JID user@server to the Shared Roster Group",
+			desc = "Add the JID user@host to the Shared Roster Group",
 			module = ?MODULE, function = srg_user_add,
 			args = [{user, string}, {host, string}, {group, string}, {grouphost, string}],
 			result = {res, rescode}},
