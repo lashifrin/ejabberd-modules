@@ -179,20 +179,37 @@ fetch(Pid, Query, From, Timeout) ->
 squery(Pid, Query, From, Options) when is_pid(Pid), is_list(Query) ->
     Self = self(),
     Timeout = get_option(timeout, Options, ?DEFAULT_STANDALONE_TIMEOUT),
-    Pid ! {fetch, Query, From, Options},
+    TRef = erlang:start_timer(Timeout, self(), timeout),
+    Pid ! {fetch, TRef, Query, From, Options},
     case From of
 	Self ->
 	    %% We are not using a mysql_dispatcher, await the response
-	    receive
-		{fetch_result, Pid, Result} ->
-		    Result
-	    after Timeout ->
-		    stop(Pid),
-		    {error, "query timed out"}
-	    end;
+	    wait_fetch_result(TRef, Pid);
 	_ ->
 	    %% From is gen_server From, Pid will do gen_server:reply() when it has an answer
 	    ok
+    end.
+
+wait_fetch_result(TRef, Pid) ->
+    receive
+	{fetch_result, TRef, Pid, Result} ->
+	    case erlang:cancel_timer(TRef) of
+		false ->
+		    receive
+			{timeout, TRef, _} ->
+			    ok
+		    after 0 ->
+			    ok
+		    end;
+		_ ->
+		    ok
+	    end,
+	    Result;
+	{fetch_result, _BadRef, Pid, _Result} ->
+	    wait_fetch_result(TRef, Pid);
+	{timeout, TRef, _} ->
+	    stop(Pid),
+	    {error, "query timed out"}
     end.
 
 stop(Pid) ->
@@ -290,14 +307,14 @@ init(Host, Port, User, Password, Database, LogFun, Parent) ->
 loop(State) ->
     RecvPid = State#state.recv_pid,
     receive
-	{fetch, Query, GenSrvFrom, Options} ->
+	{fetch, Ref, Query, GenSrvFrom, Options} ->
 	    %% GenSrvFrom is either a gen_server:call/3 From term(), or a pid if no
 	    %% gen_server was used to make the query
 	    Res = do_query(State, Query, Options),
 	    case is_pid(GenSrvFrom) of
 		true ->
 		    %% The query was not sent using gen_server mechanisms
-		    GenSrvFrom ! {fetch_result, self(), Res};
+		    GenSrvFrom ! {fetch_result, Ref, self(), Res};
 		false ->
 		    gen_server:reply(GenSrvFrom, Res)
 	    end,
