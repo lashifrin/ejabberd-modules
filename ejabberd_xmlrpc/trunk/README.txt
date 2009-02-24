@@ -13,7 +13,7 @@ and waits for external calls.
 
 ejabberd_xmlrpc implements some example calls that can be used to test
 during the development of a new XML-RPC client.  But most
-imporntantly, ejabberd_xmlrpc is also a frontend to execute ejabberd
+importantly, ejabberd_xmlrpc is also a frontend to execute ejabberd
 commands.  This way a XML-RPC client can execute any ejabberd command.
 
 This allows external programs written in any language like websites or
@@ -31,7 +31,7 @@ of modifying directly the database are:
 	REQUIREMENTS
 	------------
 
-    ejabberd trunk SVN 1635 or newer
+    ejabberd trunk SVN 1635 or newer (ejabberd 2.1.0 and newer, once released)
     XMLRPC-Erlang 1.13 with IP, Ruby and Xmerl 1.x patches
     Optional: mod_admin_extra implements many ejabberd commands for general server administration
     Optional: mod_muc_admin implements ejabberd commands for MUC administration
@@ -72,13 +72,7 @@ tcp        0      0 0.0.0.0:4560            0.0.0.0:*               LISTEN
 	CONFIGURE
 	---------
 
-You can configure the port where the XML-RPC server will listen.
-
 The listener allow several configurable options:
-    {ip, IPValue}
-    IP address to listen, in Erlang format, for example: {ip, {127, 0, 0, 1}}
-    Set to 'all' to listen on all IP address: {ip, all}
-    Default: all
 
     {maxsessions, Integer}
     Number of concurrent connections allowed.
@@ -101,7 +95,13 @@ In this example configuration, only the Jabber account xmlrpc-robot@jabber.examp
 {acl, xmlrpcbot, {user, "xmlrpc-robot", "jabber.example.org"}}.
 {access, xmlrpcaccess, [{allow, xmlrpcbot}]}.
 {listen, [
-    {4560, ejabberd_xmlrpc, [{ip, {71, 202, 202, 79}}, {maxsessions, 10}, {timeout, 5000}, {access, xmlrpcaccess}]},
+    {4560, ejabberd_xmlrpc, [{maxsessions, 10}, {timeout, 5000}, {access, xmlrpcaccess}]},
+   ...
+ ]}.
+
+In this example the listener will only listen in the IPv4 address 123.4.5.67:
+{listen, [
+    {{4560, "123.4.5.67"}, ejabberd_xmlrpc, [{maxsessions, 10}, {timeout, 5000}, {access, xmlrpcaccess}]},
    ...
  ]}.
 

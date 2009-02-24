@@ -190,9 +190,8 @@
 %% Listener interface
 %% -----------------------------
 
-start_listener(Port, Opts) ->
+start_listener({Port, Ip}, Opts) ->
     %% get options
-    Ip = gen_mod:get_opt(ip, Opts, all),
     MaxSessions = gen_mod:get_opt(maxsessions, Opts, 10),
     Timeout = gen_mod:get_opt(timeout, Opts, 5000),
     Access = gen_mod:get_opt(access, Opts, all),

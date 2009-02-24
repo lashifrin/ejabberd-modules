@@ -1,3 +1,9 @@
+2009-02-24  Badlop  <badlop@process-one.net>
+
+	* src/ejabberd_xmlrpc.erl: Update to work with recent ejabberd
+	trunk SVN (thanks to Artem Yurov)
+	* README.txt: Likewise
+
 2008-10-21  Badlop  <badlop@process-one.net>
 
 	* README.txt: Updated PHP example
