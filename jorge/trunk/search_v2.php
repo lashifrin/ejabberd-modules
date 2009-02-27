@@ -551,7 +551,7 @@ if ($search_phase!="") {
 	else {
 
 		// if user input is empty:
-		$html->set_body('<br><br><center><b>'.$search1[$lang].'</b></center><br><br><br><br>"');
+		$html->set_body('<br><br><center><b>'.$search1[$lang].'</b></center><br><br><br><br>');
 
 }
 
