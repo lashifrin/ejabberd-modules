@@ -2,7 +2,7 @@
 /*
 Jorge - frontend for mod_logdb - ejabberd server-side message archive module.
 
-Copyright (C) 2008 Zbigniew Zolkiewski
+Copyright (C) 2009 Zbigniew Zolkiewski
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,7 +24,6 @@ require_once("headers.php");
 
 $tgle = $_POST['toggle'];
 $del_a = $_POST['del_all'];
-$close = $_POST['close_acc'];
 $vspec = $_POST['v_spec'];
 
 require_once("upper.php");
@@ -84,76 +83,23 @@ if ($vspec) {
 }
 
 // delete entire archive
-if ($del_a === $settings_del[$lang]) {
+if ($del_a) {
 
-	if ($db->erase_all() === true) {
 
-			$html->status_message($deleted_all[$lang]);
-			$db->set_logger("9","2");
+	if ($del_a === $settings_del[$lang]) {
+
+		if ($db->erase_all() === true) {
+
+				$html->status_message($deleted_all[$lang]);
+				$db->set_logger("9","2");
+
+			}
+			else{
+	
+				$html->alert_message($delete_error[$lang]);
 
 		}
-		else{
-	
-			$html->alert_message($delete_error[$lang]);
 
-	}
-
-}
-
-// close account
-if ($close === $close_commit[$lang])	{
-
-	if ($ejabberd_rpc->delete_account() === false) { 
-
-			$html->alert_message($close_failed[$lang]);
-		
-		}
-		else{
-
-			// Temporary hack for jabster.pl as of 2.0 Gapps support will be removed from jorge
-			if(GAPPS === true AND XMPP_HOST === 'jabster.pl') {
-
-				set_include_path('lib');
-	        		require_once 'lib/Zend/Loader.php';
-        			Zend_Loader::loadClass('Zend_Gdata');
-        			Zend_Loader::loadClass('Zend_Gdata_ClientLogin');
-        			Zend_Loader::loadClass('Zend_Gdata_Gapps');
-
-	        		try {
-        	        		$client = Zend_Gdata_ClientLogin::getHttpClient(GAPPS_ACCOUNT, GAPPS_PASSWORD, Zend_Gdata_Gapps::AUTH_SERVICE_NAME);
-                			$service = new Zend_Gdata_Gapps($client, GAPPS_DOMAIN);
-
-        			} catch (Zend_Gdata_App_HttpException $e) {
-                		
-					$html->alert_message('Removal of Google Apps account failed. Please report it to admin!');
-					exit;
-
-        			}
-
-				$user = $service->retrieveUser(TOKEN);
-                                $gapps_token = $user->login->username;
-	
-				if ($gapps_token === TOKEN) {
-						
-						debug(DEBUG,"Deleting user: $gapps_token");
-						$service->deleteUser(TOKEN);
-				
-					}
-			}
-
-			if($db->jorge_cleanup() === false) {
-
-				$html->alert_message($oper_fail[$lang]);
-			
-			}
-			if($db->jorge_cleanup_soft() === false) {
-
-				$html->alert_message($oper_fail[$lang]);
-			}
-
-			$sess->finish();
-			header("Location: index.php?act=logout");
-			exit;
 	}
 
 }
@@ -240,40 +186,31 @@ $html->set_body('<form action="settings.php" method="get" name="save_pref_lang">
 	<td><select class="settings" name="v" onchange="javascript:document.save_pref_lang.submit();">
 ');
 
-if ($sess->get('language') == "pol") { 
+while (array_keys($language_support)) {
 
-		$pol_sel="selected"; 
-	
-	} 
-	else { 
-	
-		$eng_sel="selected"; 
+	$lang_key = key($language_support);
+	if ($sess->get('language') === $language_support[$lang_key][0]) {
+
+			$pol_sel="selected";
 		
+		}
+		else{
+
+			unset($pol_sel);
+
+	}
+	$html->set_body('<option '.$pol_sel.' value="'.$language_support[$lang_key][1].'">'.$lang_key.'</option>');
+	array_shift($language_support);
+
 }
 
 $html->set_body('
-	<option '.$pol_sel.' value="1">'.$lang_sw[eng].'</option>
-	<option '.$eng_sel.' value="2">'.$lang_sw[pol].'</optin>
 	</select>
 	<input name="set_pref" type="hidden" value="2">
-	<input name="sw_lang" type="hidden" value="t">
+	<input name="lng_sw" type="hidden" value="t">
 	<input name="ref" type="hidden" value="settings">
 	</td></tr></form>
 ');
-
-$html->set_body('<form action="settings.php" method="post" name="close_account">
-	<tr><td colspan="2" height="40"><hr size="1"/></td></tr>
-	<tr>
-	<td style="font-size: x-small;">'.$close_account[$lang].'</td>
-	<td><input name="close_acc" class="settings" type="submit" value="'.$close_commit[$lang].'" onClick="if (!confirm(\''.$close_warn[$lang].'\')) return false;"></td>
-	</tr></form>
-');
-
-if (GAPPS === true) {
-
-		$html->set_body('<tr><td colspan="2" style="color: red; font-size: xx-small; text-align: center;">'.$close_info[$lang].'</small></td></tr>');
-	
-	}
 
 $html->set_body('</table><hr size="1" noshade="noshade" style="color: #c9d7f1;"><br><small><b>'.$stats_personal_d[$lang].'</b></small>');
 

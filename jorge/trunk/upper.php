@@ -2,7 +2,7 @@
 /*
 Jorge - frontend for mod_logdb - ejabberd server-side message archive module.
 
-Copyright (C) 2008 Zbigniew Zolkiewski
+Copyright (C) 2009 Zbigniew Zolkiewski
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -64,48 +64,62 @@ $pref_value=$_GET['v'];
 // save preferences
 if ($_GET['set_pref']) {
 
-	// what to set
-	// view and language preferences are stored for now.
-	if ($pref_id==="1" OR $pref_id==="2") 
-		{ 
-			if($pref_value==="1" OR $pref_value==="2") 
-				{ 
-					if ($db->set_jorge_pref($pref_id,$pref_value) === false) {
+	// Language selection
+	if ($pref_id === "2") {
 
-							$html->alert_message($oper_fail[$lang],"message");
-						
-						}
-						else{
+		//Rewrite array for late reuse
+		$language_change = $language_support;
+		while(array_keys($language_change)) {
 
-							// Display status message only if setting via control panel
-							if ($_GET['ref'] === "settings") {
+			$lang_key = key($language_change);
+			if (in_array($pref_value,$language_change[$lang_key])) {
 
-								$html->status_message($con_saved[$lang]);
+				if ($db->set_jorge_pref($pref_id,$pref_value) === false) {
 
-							}
+						$html->alert_message($oper_fail[$lang],"message");
 
 					}
-					if ($pref_id==="1") {
+					else{
 
-							$sess->set('view_type',$pref_value);
-					
-					}
-					if ($pref_id==="2") {
+						$sess->set('language',$language_support[$lang_key][0]);
+						$html->status_message($con_saved[$lang]);
 
-						if ($pref_value=="1") { 
-						
-								$s_lang="pol"; 
-							} 
-							else { 
-							
-								$s_lang="eng"; 
-						}
+				}
 
-						$sess->set('language',$s_lang);
-					
-					}
-				} 
+				break 1;
+
+			}
+
+			array_shift($language_change);
+
 		}
+	}
+
+	// default view type
+	if ($pref_id ==="1") { 
+
+		if($pref_value === "1" OR $pref_value === "2") { 
+
+				if ($db->set_jorge_pref($pref_id,$pref_value) === false) {
+
+						$html->alert_message($oper_fail[$lang],"message");
+						
+					}
+					else{
+
+						// Display status message only if setting via control panel
+						if ($_GET['ref'] === "settings") {
+
+							$html->status_message($con_saved[$lang]);
+
+						}
+
+				}
+
+			$sess->set('view_type',$pref_value);
+
+		} 
+	}
 
 }
 

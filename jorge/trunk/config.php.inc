@@ -56,12 +56,6 @@ define("MYSQL_PASS", ""); // password
 define("MYSQL_NAME",""); // db name
 define("MYSQL_HOST", ""); // host ip
 
-// Optional Google Apps support
-define("GAPPS", false);
-define("GAPPS_ACCOUNT","");
-define("GAPPS_PASSWORD","");
-define("GAPPS_DOMAIN","");
-
 // Since version 1.5 Jorge is using reCAPTCHA code. Before running Jorge please go to: http://recaptcha.net/ and setup your account and get private key and public key:
 define("CAPTCHA_PRIVATE","");
 define("CAPTCHA_PUBLIC","");

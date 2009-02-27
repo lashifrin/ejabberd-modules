@@ -42,7 +42,58 @@ require_once("class.db.php"); // db_manager
 require_once("class.roster.php"); // roster
 require_once("class.helper.php"); // helper
 require_once("config.php"); // read configuration
-require_once("lang.php"); // language pack
+
+$sess = new session;
+// Language support. Well thats the hard way...
+define(language_found,false);
+if ($_GET['lng_sw']) {
+
+	$lng_sw = $_GET['lng_sw'];
+	if ($lng_sw === "t") {
+
+		echo "tttt";
+
+	}
+	$langauge_rewr = $language_support;
+	while(array_keys($langauge_rewr)) {
+
+		$lang_key = key($langauge_rewr);
+		if (in_array($lng_sw,$langauge_rewr[$lang_key])) {
+
+			// If value found, setup language env
+			$lang_file = $langauge_rewr[$lang_key][0].".php";
+			setcookie("jorge_language","$langauge_rewr[$lang_key][0]",time()+2592000);
+			$sess->set('language',$langauge_rewr[$lang_key][0]);
+			define(language_found,true);
+			require("lang/$lang_file");
+			break 1;
+
+		}
+
+		array_shift($langauge_rewr);
+
+	}
+
+	// If lang not found in config, fallback to default
+	if (language_found !== true) {
+
+		require('lang/'.$language_support[default_language][0].'.php');
+
+	}
+
+}
+
+// If language is setup in sess, reuse it..
+if ($sess->get('language')) {
+
+		require('lang/'.$sess->get('language').'.php');	
+
+	}
+	else{
+
+		require('lang/'.$language_support[default_language][0].'.php');
+
+}
 
 // get client addr
 $rem_adre = $_SERVER['REMOTE_ADDR'];
@@ -52,9 +103,6 @@ $mac_user = get_user_agent($_SERVER);
 
 // location
 $location=$_SERVER['PHP_SELF'];
-
-// session
-$sess = new session;
 
 // init html helper
 $html = new render_html();
@@ -180,6 +228,8 @@ if (TOKEN===ADMIN_NAME) {
 
 }
 
+
+//????
 $sw_lang_t=$_GET[sw_lang];
 if ($sw_lang_t=="t") {
 

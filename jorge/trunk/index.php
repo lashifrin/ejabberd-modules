@@ -43,7 +43,6 @@ if ($sess->get('uid_l')) {
 // get post data
 $inpLogin = strtolower($_POST['inpLogin']);
 $inpPass = $_POST['inpPass'];
-$lng_sw = $_GET['lng_sw'];
 $disable_donate = $_GET['donate'];
 
 // language selection
@@ -210,37 +209,18 @@ if ($_GET[act]==="logout") {
 								if ($res_pref[pref_value] == "1") {
 					
 									$s_lang="pol";
+									setcookie("jorge_language",$s_lang,time()+2592000);
+									$sess->set('language',$s_lang);
 							
 								}
 								elseif($res_pref[pref_value] == "2") {
 					
 									$s_lang="eng";
+									setcookie("jorge_language",$s_lang,time()+2592000);
+									$sess->set('language',$s_lang);
 							
 								}
 
-							// If user is logging with different language interface as saved in profile, set new preference
-							if ($s_lang !== $_COOKIE["jorge_language"] AND ($_COOKIE["jorge_language"] === "eng" OR $_COOKIE["jorge_language"] === "pol")) {
-
-									$sess->set('language',$_COOKIE["jorge_language"]);
-									if ($_COOKIE["jorge_language"] === "pol") {
-
-											$db->set_jorge_pref("2",$_COOKIE["jorge_language"]);
-
-										}
-										elseif($_COOKIE["jorge_language"] === "eng") {
-
-											$db->set_jorge_pref("2",$_COOKIE["jorge_language"]);
-
-									}
-
-								}
-								else{
-
-									$sess->set('language',$s_lang);
-									// Update cookie
-									setcookie("jorge_language",$s_lang,time()+2592000);
-
-							}
 						}
 					}
 
@@ -330,23 +310,42 @@ $html->set_body('
 
 	');
 
-if ($lang=="eng") { 
-
-		$lang_o="pol"; 
-	} 
-	elseif($lang=="pol") { 
-	
-		$lang_o="eng"; 
-		
-}
-
 $html->set_body('
 		<br><div align="center" style="height: 110;"><br><a href="index.php"><img border="0" alt="Branding logo" src="img/'.$brand_logo.'"></a></div>
 		<table class="ff" cellspacing="0" width="100%">
 		<tr style="background-image: url(img/bell-bak.png); height: 24;">
-		<td style="text-align: left; padding-left: 10px; color: white;">'.$welcome_1[$lang].'</td><td style="text-align: right;">
-		<a class="mmenu" href="index.php?lng_sw='.$lang_o.'">'.$ch_lan2[$lang].$lang_sw[$lang].'</a></td>
-		</tr></table>
+		<td style="text-align: left; padding-left: 10px; color: white;">'.$welcome_1[$lang].'</td>
+		</tr>
+		<tr>
+			<td style="text-align: right;">
+				<form name="language_selector" action="index.php" method="get">
+					<select class="cc" name="lng_sw" onchange="javascript:document.language_selector.submit();">
+');
+
+// Get supported languages.
+while (array_keys($language_support)) {
+
+	$lang_key = key($language_support);
+	if ($sess->get('language') === $language_support[$lang_key][0]) {
+
+			$pol_sel="selected";
+		
+		}
+		else{
+
+			unset($pol_sel);
+
+	}
+	$html->set_body('<option '.$pol_sel.' value="'.$language_support[$lang_key][0].'">'.$lang_key.'</option>');
+	array_shift($language_support);
+
+}
+
+$html->set_body('</select>
+		</form>
+		</td>
+		</tr>
+		</table>
 		<center>
 		<form action="index.php" method="post">
 		<br><br>
