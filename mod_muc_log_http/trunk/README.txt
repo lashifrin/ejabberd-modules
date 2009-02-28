@@ -4,7 +4,7 @@
 
 	Homepage: http://ejabberd.jabber.ru/mod_muc_log_http
 	Author: Badlop
-	Requirement: ejabberd 2.0.0 or newer
+	Requirement: ejabberd SVN r1561, or ejabbed 2.1.0 when released
 
 
 	DESCRIPTION

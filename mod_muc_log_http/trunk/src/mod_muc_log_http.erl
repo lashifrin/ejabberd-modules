@@ -19,6 +19,7 @@
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
+-include("ejabberd_http.hrl").
 -include_lib("kernel/include/file.hrl").
 
 -define(PROCNAME, mod_muc_log_http).
@@ -67,8 +68,9 @@
 process(LocalPath, Request) ->
 	serve(LocalPath, Request).
 
-serve(LocalPath, Request) ->
-	?PROCNAME ! {get_docroot, self()},
+serve(LocalPath, #request{host = Host} = Request) ->
+	Proc = gen_mod:get_module_proc(Host, ?PROCNAME),
+	Proc ! {get_docroot, self()},
 	receive DocRoot -> ok end,
 	FileName = filename:join(filename:split(DocRoot) ++ LocalPath),
 	case file:read_file(FileName) of
@@ -266,9 +268,11 @@ loop(DocRoot) ->
 
 start(Host, _Opts) -> 
 	DocRoot = gen_mod:get_module_opt(Host, mod_muc_log, outdir, "www/muc"),
-	catch register(?PROCNAME, spawn(?MODULE, loop, [DocRoot])),
+	Proc = gen_mod:get_module_proc(Host, ?PROCNAME),
+	catch register(Proc, spawn(?MODULE, loop, [DocRoot])),
 	ok.
 
-stop(_Host) ->
-    exit(whereis(?PROCNAME), stop),
-    {wait, ?PROCNAME}.
+stop(Host) ->
+    Proc = gen_mod:get_module_proc(Host, ?PROCNAME),
+    exit(whereis(Proc), stop),
+    {wait, Proc}.
