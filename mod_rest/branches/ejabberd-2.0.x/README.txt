@@ -4,7 +4,7 @@
 	Author: Nolan Eakins <sneakin@semanticgap.com>
 	Copyright (C) 2008 Nolan Eakins
 
-	Requirements: ejabberd trunk SVN
+	Requirements: Any ejabberd 2.0.x version
 
 
 
