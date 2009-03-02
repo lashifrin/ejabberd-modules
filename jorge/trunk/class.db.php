@@ -142,7 +142,7 @@ class db_manager {
 
 								return $result;
 							}
-						elseif($this->query_type === "update" OR $this->query_type === "insert") {
+						elseif($this->query_type === "update" OR $this->query_type === "insert" OR $this->query_type === "replace") {
 
 								return mysql_affected_rows();
 						}
@@ -324,6 +324,38 @@ class db_manager {
 			}
 
 			if ($this->is_error===false) {
+
+					return true;
+
+				}
+				else {
+
+					return false;
+
+				}
+
+		}
+		else {
+
+			return false;
+
+		}
+	}
+
+	private function replace_q($query) {
+
+		$this->query_type = "replace";
+		if (strpos(strtolower($query),"replace") === 0) {
+
+			try{
+				$this->result = $this->db_query($query);
+			}
+			catch(Exception $e) {
+				echo "Exception: ".$e->getMessage();
+				echo ", Code: ".$e->getCode();
+			}
+
+			if ($this->is_error === false) {
 
 					return true;
 
@@ -2269,7 +2301,7 @@ class db_manager {
 		$this->id_query = "Q072";
 		$date_start = $this->sql_validate($date_start,"date");
 		$date_end = $this->sql_validate($date_end,"date");
-		$query="select 
+		$query="SELECT 
 				hour,
 				value 
 			FROM 
@@ -2616,6 +2648,43 @@ class db_manager {
 		";
 
 		return $this->row_count($query);
+
+	}
+
+	public function set_own_name($own_name) {
+
+		$this->id_query = "Q092";
+		$this->vital_check();
+		$own_name = $this->sql_validate($own_name,"string");
+		$query="REPLACE INTO 
+				jorge_self_names (owner_id, own_name, vhost) 
+			VALUES
+				(
+				'".$this->user_id."',
+				'".$own_name."',
+				'".$this->vhost."'
+				)
+		";
+
+		return $this->replace_q($query);
+
+	}
+
+	public function get_own_name() {
+
+		$this->id_query = "Q093";
+		$this->vital_check();
+		$query="SELECT
+				own_name 
+			FROM
+				jorge_self_names 
+			WHERE
+				owner_id='".$this->user_id."' 
+			AND
+				vhost='".$this->vhost."'
+		";
+
+		return $this->select($query);
 
 	}
 
