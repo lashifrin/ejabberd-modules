@@ -1,3 +1,11 @@
+2009-03-02  Badlop  <badlop@process-one.net>
+
+	* src/ejabberd_xmlrpc.erl: Replace the listener option 'access'
+	with the much more powerful 'access_commands', that allows to
+	grant selective permission to execute commands with certain
+	arguments
+	* README.txt: Likewise
+
 2009-02-24  Badlop  <badlop@process-one.net>
 
 	* src/ejabberd_xmlrpc.erl: Update to work with recent ejabberd

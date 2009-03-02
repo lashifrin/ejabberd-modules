@@ -9,31 +9,9 @@
 %%% TODO: Implement a command in ejabberdctl 'help COMMAND LANGUAGE' that shows
 %%% a coding example to call that command in a specific language (python, php).
 
-%%% Arguments in XML-RPC calls can be provided in any order;
-%%% This module will sort the arguments before calling the ejabberd command.
-
-%%%  {4560, ejabberd_xmlrpc, [
-%%%    {access_commands, [
-%%%      %% This bot can execute any command
-%%%      {xmlrpc_bot, all},
-%%%      %% This bot can only execute the command 'dump'. No argument restriction
-%%%      {xmlrpc_bot_backups, dump, []}
-%%%      %% This bot can only execute the command 'register' with the argument host=example.org
-%%%      {xmlrpc_bot_reg_example, register, [{host, "example.org"}]},
-%%%      %% This bot can only execute the commands 'register' and 'unregister' with the argument host=test.org
-%%%      {xmlrpc_bot_reg_test, register, [{host, "test.org"}]},
-%%%      {xmlrpc_bot_reg_test, unregister, [{host, "test.org"}]},
-%%%    ]},
-%%%    {ip, {127, 0, 0, 1}}
-%%%  ]},
-
-%%% TODO: If access is not required, but it is provided in the call, this module will complain with a strange error
-
-%%% TODO: If access is required, allow to restrict which calls is a certain {user, host} allowed to perform
-
 %%% TODO: Remove support for plaintext password
 
-%%% TODO: commmands strings should be strings without ~n
+%%% TODO: commands strings should be strings without ~n
 
 -module(ejabberd_xmlrpc).
 -author('badlop@process-one.net').
@@ -48,7 +26,7 @@
 -include("mod_roster.hrl").
 -include("jlib.hrl").
 
--record(state, {access}).
+-record(state, {access_commands}).
 
 
 %% Test:
@@ -194,11 +172,11 @@ start_listener({Port, Ip}, Opts) ->
     %% get options
     MaxSessions = gen_mod:get_opt(maxsessions, Opts, 10),
     Timeout = gen_mod:get_opt(timeout, Opts, 5000),
-    Access = gen_mod:get_opt(access, Opts, all),
+    AccessCommands = gen_mod:get_opt(access_commands, Opts, all),
 
     %% start the XML-RPC server
     Handler = {?MODULE, handler},
-    State = #state{access = Access},
+    State = #state{access_commands = AccessCommands},
     xmlrpc:start_link(Ip, Port, MaxSessions, Timeout, Handler, State).
 
 socket_type() ->
@@ -209,7 +187,27 @@ socket_type() ->
 %% Access verification
 %% -----------------------------
 
-check_access(Access, AuthList) ->
+%% At least one AccessCommand must be satisfied
+check_access_commands(AccessCommands, AuthList, Method, [{struct,Arguments}]) ->
+    {ok, User, Server} = check_auth(AuthList),
+    AccessCommandsAllowed =
+	lists:filter(
+	  fun({Access, Commands, ArgumentRestrictions}) ->
+		  case check_access(Access, User, Server) of
+		      true ->
+			  check_access_command(Commands, ArgumentRestrictions,
+					       Method, Arguments);
+		      false ->
+			  false
+		  end
+	  end,
+	  AccessCommands),
+    case AccessCommandsAllowed of
+	[] -> throw({error, account_unprivileged});
+	L when is_list(L) -> ok
+    end.
+
+check_auth(AuthList) ->
     %% Check AuthList contains all the required data
     [User, Server, Password] =
 	try get_attrs([user, server, password], AuthList) of
@@ -223,22 +221,37 @@ check_access(Access, AuthList) ->
     AccountPass = ejabberd_auth:get_password_s(User, Server),
     AccountPassMD5 = get_md5(AccountPass),
     case Password of
-	AccountPass -> ok;
-	AccountPassMD5 -> ok;
+	AccountPass -> {ok, User, Server};
+	AccountPassMD5 -> {ok, User, Server};
 	_ -> throw({error, invalid_account_data})
-    end,
-
-    %% Check this user has access permission
-    case acl:match_rule(global, Access, jlib:make_jid(User, Server, "")) of
-	allow -> ok;
-	deny -> throw({error, account_unprivileged})
-    end,
-
-    ok.
+    end.
 
 get_md5(AccountPass) ->
     lists:flatten([io_lib:format("~.16B", [X])
 		   || X <- binary_to_list(crypto:md5(AccountPass))]).
+
+check_access(Access, User, Server) ->
+    %% Check this user has access permission
+    case acl:match_rule(global, Access, jlib:make_jid(User, Server, "")) of
+	allow -> true;
+	deny -> false
+    end.
+
+check_access_command(Commands, ArgumentRestrictions, Method, Arguments) ->
+    case Commands==all orelse lists:member(Method, Commands) of
+	true -> check_access_arguments(ArgumentRestrictions, Arguments);
+	false -> false
+    end.
+
+check_access_arguments(ArgumentRestrictions, Arguments) ->
+    lists:all(
+      fun({ArgName, ArgAllowedValue}) ->
+	      %% If the call uses the argument, check the value is acceptable
+	      case lists:keysearch(ArgName, 1, Arguments) of
+		  {value, {ArgName, ArgValue}} -> ArgValue == ArgAllowedValue;
+		  false -> true
+	      end
+      end, ArgumentRestrictions).
 
 
 %% -----------------------------
@@ -266,11 +279,11 @@ get_md5(AccountPass) ->
 %% xmlrpc:call({127, 0, 0, 1}, 4560, "/", {call, echothis, [{struct, [{user, "badlop"}, {server, "localhost"}, {password, "79C1574A43BC995F2B145A299EF97277"}]}, 152]}).
 %% {ok,{response,[152]}}
 
-handler(#state{access = Access}, {call, Method, [{struct, AuthList} | Arguments]})
-  when Access /= all ->
-    try check_access(Access, AuthList) of
+handler(#state{access_commands = AccessCommands} = State, {call, Method, [{struct, AuthList} | Arguments]})
+  when AccessCommands /= all ->
+    try check_access_commands(AccessCommands, AuthList, Method, Arguments) of
 	ok ->
-	    handler(#state{access = all}, {call, Method, Arguments})
+	    handler(State#state{access_commands = all}, {call, Method, Arguments})
     catch
 	{error, missing_auth_arguments, Attr} ->
 	    build_fault_response(-101, "Information of account not provided: " ++ atom_to_list(Attr), []);
@@ -280,8 +293,8 @@ handler(#state{access = Access}, {call, Method, [{struct, AuthList} | Arguments]
 	    build_fault_response(-103, "Account does not have access privilege", [])
     end;
 
-handler(#state{access = Access}, _Payload)
-  when Access /= all ->
+handler(#state{access_commands = AccessCommands}, _Payload)
+  when AccessCommands /= all ->
     build_fault_response(-100, "Required authentication!", []);
 
 

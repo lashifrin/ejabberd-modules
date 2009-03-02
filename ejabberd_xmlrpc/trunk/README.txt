@@ -82,28 +82,76 @@ The listener allow several configurable options:
     Timeout of the connections, expressed in milliseconds.
     Default: 5000
 
-    {access, AccessRule}
-    This option defines access to the port.
-    If this value is different than 'all', then the first argument of each XML-RPC call
-    must be a struct with a user, server and password of an account in ejabberd
-    that has privileges in AccessRule.
-    If this value is 'all', then such struct must not be provided.
-    Default: all
+    {access_commands, [ {Access, CommandNames, Arguments} ]}
+    where Access = atom()
+          CommandNames = all | [CommandName]
+          CommandName = atom()
+          Arguments = [{ArgumentName, ArgumentValue}]
+          ArgumentName = atom()
+          ArgumentValue = any()
+    This option allows to define a list of access restrictions.
+    If this option is present, then XML-RPC calls must include as
+    first argument a struct with a user, server and password of an
+    account in ejabberd that has privileges in Access.
+    If the option is not present, such struct must not be provided.
+    The default calue is to not define any restriction: []
+    When one or several access restrictions are defined and the
+    XML-RPC call provides authentication for an account, each
+    restriction is verified until one matches completely:
+    the account matches the Access rule,
+    the command name is listed in CommandNames,
+    and the provided arguments do not contradict Arguments.
 
-In this example configuration, only the Jabber account xmlrpc-robot@jabber.example.org can use the XML-RPC service:
+Example configuration: XML-RPC calls can execute any command, with any
+argument, and no authentication information must be provided:
+{listen, [
+  {4560, ejabberd_xmlrpc, [{maxsessions, 10}, {timeout, 5000}]},
+  ...
+ ]}.
 
+In this case authentication information must be provided, but it is
+enough that the account exists and the password is valid to execute
+any command:
+{listen, [
+  {4560, ejabberd_xmlrpc, [{maxsessions, 10}, {timeout, 5000},
+                           {access_commands, [{all, all, []}]}]},
+  ...
+ ]}.
+
+In this example the local Jabber account xmlrpc-robot@jabber.example.org
+can execute any command with no argument restriction:
 {acl, xmlrpcbot, {user, "xmlrpc-robot", "jabber.example.org"}}.
 {access, xmlrpcaccess, [{allow, xmlrpcbot}]}.
 {listen, [
-    {4560, ejabberd_xmlrpc, [{maxsessions, 10}, {timeout, 5000}, {access, xmlrpcaccess}]},
-   ...
+  {4560, ejabberd_xmlrpc, [{maxsessions, 10}, {timeout, 5000},
+                           {access_commands, [{xmlrpcaccess, all, []}]}]},
+  ...
  ]}.
 
-In this example the listener will only listen in the IPv4 address 123.4.5.67:
+Finally, in this complex example the listener only listens in port
+4560 of IP address 127.0.0.1, and several access restrictions are
+defined (the corresponding ACL and ACCESS are not shown):
 {listen, [
-    {{4560, "123.4.5.67"}, ejabberd_xmlrpc, [{maxsessions, 10}, {timeout, 5000}, {access, xmlrpcaccess}]},
-   ...
+  {{4560, "127.0.0.1"}, ejabberd_xmlrpc, [
+    {access_commands, [
+      %% This bot can execute any command:
+      {xmlrpc_bot, all, []},
+      %% This bot can execute any command,
+      %% but if a 'host' argument is provided, it must be "example.org":
+      {xmlrpc_bot_all_example, all, [{host, "example.org"}]},
+      %% This bot can only execute the command 'dump'. No argument restriction:
+      {xmlrpc_bot_backups, [dump], []}
+      %% This bot can only execute the command 'register',
+      %% and if argument 'host' is provided, it must be "example.org":
+      {xmlrpc_bot_reg_example, [register], [{host, "example.org"}]},
+      %% This bot can execute the commands 'register' and 'unregister',
+      %% if argument host is provided, it must be "test.org":
+      {xmlrpc_bot_reg_test, [register, unregister], [{host, "test.org"}]}
+    ]}
+  ]},
+  ...
  ]}.
+
 
 
 	USAGE
@@ -111,18 +159,18 @@ In this example the listener will only listen in the IPv4 address 123.4.5.67:
 
 You can send calls to http://host:4560/
 
-Call:           Arguments:                                                 Returns:
+Call:           Arguments:                                             Returns:
 
  -- debug
-echothis        String                                                       String
-echothisnew     struct[{sentence, String}]               struct[{repeated, String}]
-multhis         struct[{a, Integer}, {b, Integer}]                          Integer
-multhisnew      struct[{a, Integer}, {b, Integer}]            struct[{mu, Integer}]
+echothis        String                                                   String
+echothisnew     struct[{sentence, String}]           struct[{repeated, String}]
+multhis         struct[{a, Integer}, {b, Integer}]                      Integer
+multhisnew      struct[{a, Integer}, {b, Integer}]        struct[{mu, Integer}]
 
  -- statistics
-tellme_title    String                                                       String
-tellme_value    String                                                       String
-tellme          String                     struct[{title, String}, {value. String}]
+tellme_title    String                                                   String
+tellme_value    String                                                   String
+tellme          String                 struct[{title, String}, {value. String}]
 
 
 With ejabberd_xmlrpc you can execute any ejabberd command with a XML-RPC call.
@@ -167,13 +215,20 @@ $ erl
 {ok,{response,[{struct,[{resources,{array,[{struct,[{resource,"Home"}]},
                                            {struct,[{resource,"Psi"}]}]}}]}]}}
 
-5. Note: if ejabberd_xmlrpc has an 'access' configured, as the example
-   configuration provided above, the XML-RPC must include first an
+5. Note: if ejabberd_xmlrpc has the option 'access_commands' configured, as the example
+   configurations provided above, the XML-RPC must include first an
    argument providing information of a valid account. For example:
 1> xmlrpc:call({127, 0, 0, 1}, 4560, "/", {call, user_resources, [
-  {struct, [{user, "xmlrpc-robot"}, {server, "jabber.example.org"}, {password, "mYXMLrpcBotPasSword"}]},
-  {struct, [{user, "testuser"}, {host, "localhost"}]}
-]}).
+   {struct, [{user, "testuser"}, {server, "localhost"}, {password, "aeiou"}]},
+   {struct, [{user, "testuser"}, {host, "localhost"}]} ]}).
+
+
+Arguments in XML-RPC calls can be provided in any order;
+This module will sort the arguments before calling the ejabberd command.
+
+If auth is provided in the call when ejabberd_xmlrpc does not require it,
+the call will return the error: -112 Unknown call
+
 
 
 	EXAMPLE IN PHP
