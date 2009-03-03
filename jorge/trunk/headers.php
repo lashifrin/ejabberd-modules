@@ -59,7 +59,7 @@ if ($_GET['lng_sw']) {
 
 				// If value found, setup language env
 				$lang_file = $langauge_rewr[$lang_key][0].".php";
-				setcookie("jorge_language","$langauge_rewr[$lang_key][0]",time()+2592000);
+				setcookie("jorge_language",$langauge_rewr[$lang_key][0],time()+2592000);
 				$sess->set('language',$langauge_rewr[$lang_key][0]);
 				$language_found = true;
 				debug(DEBUG,"Language found, loading file: $lang_file");
@@ -77,6 +77,7 @@ if ($_GET['lng_sw']) {
 
 			debug(DEBUG,"Language not found in selection, using defaults");
 			require('lang/'.$language_support[default_language][0].'.php');
+			setcookie("jorge_language",$language_support[default_language][0],time()+2592000);
 			$sess->set('language',$language_support[default_language][0]);
 
 		}
@@ -242,9 +243,21 @@ if (preg_match("/index.php/i",$location) OR preg_match("/not_enabled.php/i",$loc
 		// Set defaults only if language was not selected
 		if ($language_found !== true) {
 
-			debug(DEBUG,"Setting default language from config file.(".$language_support[default_language][0].")");
-			require('lang/'.$language_support[default_language][0].'.php');
-			$sess->set('language',$language_support[default_language][0]);
+			if (is_language_supported($_COOKIE["jorge_language"],$language_support) === true) {
+
+					debug(DEBUG,"Setting language according to cookie");
+					require('lang/'.$_COOKIE["jorge_language"].'.php');
+					$sess->set('language',$_COOKIE["jorge_language"]);
+
+				}
+				else {
+
+					debug(DEBUG,"Language cookie not found, using defaults");
+					require('lang/'.$language_support[default_language][0].'.php');
+					$sess->set('language',$language_support[default_language][0]);
+
+			}
+
 
 		}
 

@@ -2,7 +2,7 @@
 /*
 Jorge - frontend for mod_logdb - ejabberd server-side message archive module.
 
-Copyright (C) 2008 Zbigniew Zolkiewski
+Copyright (C) 2009 Zbigniew Zolkiewski
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -20,7 +20,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 */
 require("func.php");
-require("lang.php");
 require("class.sessions.php");
 require("class.ejabberd_xmlrpc.php");
 require("class.db.php");
@@ -32,6 +31,31 @@ ob_start();
 
 // init session
 $sess = new session;
+
+// Select language
+if ($sess->get('language')) {
+
+			// Validate language setting in session
+			if (is_language_supported($sess->get('language'),$language_support) === true) {
+
+					require('lang/'.$sess->get('language').'.php');
+
+				}
+				else{
+
+					// In case of invalid session, overwrite value
+					require('lang/'.$language_support[default_language][0].'.php');
+					$sess->set('language',$language_support[default_language][0]);
+
+			}
+	}
+	else{
+
+			// If no lang in sess, set it anyway...
+			require('lang/'.$language_support[default_language][0].'.php');
+			$sess->set('language',$language_support[default_language][0]);
+
+}
 
 // language
 $lang = $sess->get('language');
