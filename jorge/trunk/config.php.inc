@@ -24,8 +24,16 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 define("DEBUG", false);
 define("SQL_DEBUG",false); // sql debug
 
-// Default language (currently Polish and English translations are available):
-$lang_def = "eng"; // eng for English, pol for Polish
+// Language support. Add your language below. DO NOT change IDs after jorge usage as this IDs are held in jorge_pref table.
+$language_support = array(
+
+	"Polski"=> array ("pol","1"),
+	"English"=> array("eng", "2")
+
+	);
+
+// Define default language. Should be the name from language_support array.
+define(default_language, "English");
 
 // vhost and RPC settings
 // RPC port:

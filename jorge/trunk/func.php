@@ -2,7 +2,7 @@
 /*
 Jorge - frontend for mod_logdb - ejabberd server-side message archive module.
 
-Copyright (C) 2008 Zbigniew Zolkiewski
+Copyright (C) 2009 Zbigniew Zolkiewski
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -885,5 +885,25 @@ function message_processor($tslice,$server_name,$start,$nickname,$result_message
 	return true;
 
 }
+
+function is_language_supported($l_query,$language_support) {
+
+	while (array_keys($language_support)) {
+
+		$lang_key = key($language_support);
+		if ($l_query === $language_support[$lang_key][0]) {
+
+				return true;
+		
+		}
+
+		array_shift($language_support);
+
+	}
+
+	return false;
+
+}
+
 
 ?>

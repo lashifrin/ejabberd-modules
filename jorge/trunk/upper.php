@@ -27,14 +27,6 @@ if (__FILE__==$_SERVER['SCRIPT_FILENAME']) {
 
 }
 
-
-// well if we dont know in what language to talk, we cant show anything, so bye bye...
-if ($lang!="pol" && $lang!="eng") { 
-
-	header("Location: index.php?act=logout"); 
-	exit; 
-}
-
 // If user have profile
 if ($sess->get('log_status') === null) { 
 
@@ -42,8 +34,6 @@ if ($sess->get('log_status') === null) {
 	exit;
 	
 }
-
-$link_sw = $_GET['a'];
 
 // number of my links saved...
 $db->get_mylinks_count();
@@ -61,7 +51,7 @@ $favorites_count = $db->result->cnt;
 $pref_id=$_GET['set_pref'];
 $pref_value=$_GET['v'];
 
-// save preferences
+// save preferences ONLY. Setting language in session is done in headers, here we only save that preferences.
 if ($_GET['set_pref']) {
 
 	// Language selection
@@ -69,20 +59,24 @@ if ($_GET['set_pref']) {
 
 		//Rewrite array for late reuse
 		$language_change = $language_support;
+		// Here the $pref_value is actually $lng_sw
+		$pref_value = $_GET['lng_sw'];
 		while(array_keys($language_change)) {
 
 			$lang_key = key($language_change);
 			if (in_array($pref_value,$language_change[$lang_key])) {
 
+				debug(DEBUG,"Saving language preferences into database...");
 				if ($db->set_jorge_pref($pref_id,$pref_value) === false) {
 
 						$html->alert_message($oper_fail[$lang],"message");
+						debug(DEBUG,"Preferences not saved due to error");
 
 					}
 					else{
 
-						$sess->set('language',$language_support[$lang_key][0]);
 						$html->status_message($con_saved[$lang]);
+						debug(DEBUG,"Preferences saved successfuly");
 
 				}
 
@@ -98,11 +92,13 @@ if ($_GET['set_pref']) {
 	// default view type
 	if ($pref_id ==="1") { 
 
+		debug(DEBUG,"Saving view selection into database");
 		if($pref_value === "1" OR $pref_value === "2") { 
 
 				if ($db->set_jorge_pref($pref_id,$pref_value) === false) {
 
 						$html->alert_message($oper_fail[$lang],"message");
+						debug(DEBUG,"Preferences not saved due to error");
 						
 					}
 					else{
@@ -111,6 +107,7 @@ if ($_GET['set_pref']) {
 						if ($_GET['ref'] === "settings") {
 
 							$html->status_message($con_saved[$lang]);
+							debug(DEBUG,"Preferences saved successfuly");
 
 						}
 

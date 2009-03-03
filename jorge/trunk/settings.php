@@ -183,7 +183,7 @@ $html->set_body('
 
 $html->set_body('<form action="settings.php" method="get" name="save_pref_lang">
 	<tr style="font-size: x-small;"><td>'.$sel_language[$lang].'</td>
-	<td><select class="settings" name="v" onchange="javascript:document.save_pref_lang.submit();">
+	<td><select class="settings" name="lng_sw" onchange="javascript:document.save_pref_lang.submit();">
 ');
 
 while (array_keys($language_support)) {
@@ -207,7 +207,6 @@ while (array_keys($language_support)) {
 $html->set_body('
 	</select>
 	<input name="set_pref" type="hidden" value="2">
-	<input name="lng_sw" type="hidden" value="t">
 	<input name="ref" type="hidden" value="settings">
 	</td></tr></form>
 ');

@@ -2,7 +2,7 @@
 /*
 Jorge - frontend for mod_logdb - ejabberd server-side message archive module.
 
-Copyright (C) 2008 Zbigniew Zolkiewski
+Copyright (C) 2009 Zbigniew Zolkiewski
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -45,45 +45,12 @@ $inpLogin = strtolower($_POST['inpLogin']);
 $inpPass = $_POST['inpPass'];
 $disable_donate = $_GET['donate'];
 
-// language selection
-if ($lng_sw=="pol") {
-
-		$sess->set('language','pol');
-		setcookie("jorge_language","pol",time()+2592000);
-		
-	}
-	elseif($lng_sw=="eng") { 
-		
-		$sess->set('language','eng'); 
-		setcookie("jorge_language","eng",time()+2592000);
-}
-
-// Set default language 
-if (!$sess->get('language')) { 
-
-	$cookie_lang = $_COOKIE["jorge_language"];
-	if ($cookie_lang === "eng" OR $cookie_lang === "pol") {
-
-			$sess->set('language',$cookie_lang);
-
-		}
-		else{
-
-			$sess->set('language',$lang_def); 
-
-	}
-	
-}
-
 // disable donate button on user request
 if ($disable_donate === "false") {
 
 	setcookie("jorge_donate","false",time()+2592000);
 
 }
-
-
-$lang=$sess->get('language');
 
 if ($wo_sess || $inpLogin || $inpPass) {
 
@@ -336,7 +303,7 @@ while (array_keys($language_support)) {
 			unset($pol_sel);
 
 	}
-	$html->set_body('<option '.$pol_sel.' value="'.$language_support[$lang_key][0].'">'.$lang_key.'</option>');
+	$html->set_body('<option '.$pol_sel.' value="'.$language_support[$lang_key][1].'">'.$lang_key.'</option>');
 	array_shift($language_support);
 
 }

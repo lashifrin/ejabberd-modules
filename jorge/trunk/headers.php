@@ -2,7 +2,7 @@
 /*
 Jorge - frontend for mod_logdb - ejabberd server-side message archive module.
 
-Copyright (C) 2008 Zbigniew Zolkiewski
+Copyright (C) 2009 Zbigniew Zolkiewski
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -45,53 +45,41 @@ require_once("config.php"); // read configuration
 
 $sess = new session;
 // Language support. Well thats the hard way...
-define(language_found,false);
+$language_found = false;
+
 if ($_GET['lng_sw']) {
 
-	$lng_sw = $_GET['lng_sw'];
-	if ($lng_sw === "t") {
+		debug(DEBUG,"Setting language");
+		$lng_sw = $_GET['lng_sw'];
+		$langauge_rewr = $language_support;
+		while(array_keys($langauge_rewr)) {
 
-		echo "tttt";
+			$lang_key = key($langauge_rewr);
+			if (in_array($lng_sw,$langauge_rewr[$lang_key])) {
 
-	}
-	$langauge_rewr = $language_support;
-	while(array_keys($langauge_rewr)) {
+				// If value found, setup language env
+				$lang_file = $langauge_rewr[$lang_key][0].".php";
+				setcookie("jorge_language","$langauge_rewr[$lang_key][0]",time()+2592000);
+				$sess->set('language',$langauge_rewr[$lang_key][0]);
+				$language_found = true;
+				debug(DEBUG,"Language found, loading file: $lang_file");
+				require("lang/$lang_file");
+				break 1;
 
-		$lang_key = key($langauge_rewr);
-		if (in_array($lng_sw,$langauge_rewr[$lang_key])) {
+			}
 
-			// If value found, setup language env
-			$lang_file = $langauge_rewr[$lang_key][0].".php";
-			setcookie("jorge_language","$langauge_rewr[$lang_key][0]",time()+2592000);
-			$sess->set('language',$langauge_rewr[$lang_key][0]);
-			define(language_found,true);
-			require("lang/$lang_file");
-			break 1;
+			array_shift($langauge_rewr);
 
 		}
 
-		array_shift($langauge_rewr);
+		// If language not found fallback to defaults
+		if ($language_found !== true) {
 
-	}
+			debug(DEBUG,"Language not found in selection, using defaults");
+			require('lang/'.$language_support[default_language][0].'.php');
+			$sess->set('language',$language_support[default_language][0]);
 
-	// If lang not found in config, fallback to default
-	if (language_found !== true) {
-
-		require('lang/'.$language_support[default_language][0].'.php');
-
-	}
-
-}
-
-// If language is setup in sess, reuse it..
-if ($sess->get('language')) {
-
-		require('lang/'.$sess->get('language').'.php');	
-
-	}
-	else{
-
-		require('lang/'.$language_support[default_language][0].'.php');
+		}
 
 }
 
@@ -203,6 +191,26 @@ if (!preg_match("/index.php/i",$location)) {
 			exit; 
 	}
 
+	// Load language file based on current session
+	debug(DEBUG,"Selecting initial language after authentication");
+	if ($sess->get('language')) {
+
+			// Validate language setting in session
+			if (is_language_supported($sess->get('language'),$language_support) === true) {
+
+					debug(DEBUG,"Language selection ok.");
+					require('lang/'.$sess->get('language').'.php');
+
+				}
+				else{
+
+					debug(DEBUG,"Language in session was altered! Overwritting value...");
+					require('lang/'.$language_support[default_language][0].'.php');
+					$sess->set('language',$language_support[default_language][0]);
+
+			}
+	}
+
 	// we need user_id but only if we are not in not_enabled mode:
 	if(!preg_match("/not_enabled.php/i",$_SERVER['PHP_SELF'])) {
 
@@ -222,29 +230,27 @@ if (in_array(TOKEN, $vhosts_admins[XMPP_HOST]) === true) {
 }
 
 // run only for admins
-if (TOKEN===ADMIN_NAME) {
+if (TOKEN === ADMIN_NAME) {
 
 		$time_start=getmicrotime();
 
 }
 
+// If language not set or not found in cookie, set default language
+if (preg_match("/index.php/i",$location) OR preg_match("/not_enabled.php/i",$location)) {
 
-//????
-$sw_lang_t=$_GET[sw_lang];
-if ($sw_lang_t=="t") {
+		// Set defaults only if language was not selected
+		if ($language_found !== true) {
 
-	if ($sess->get('language') == "pol") { 
-	
-			$sess->set('language', 'eng'); 
-			setcookie("jorge_language","eng",time()+2592000);
-		} 
-		elseif($sess->get('language') == "eng") { 
-		
-			$sess->set('language','pol'); 
-			setcookie("jorge_language","pol",time()+2592000);
-	} 
+			debug(DEBUG,"Setting default language from config file.(".$language_support[default_language][0].")");
+			require('lang/'.$language_support[default_language][0].'.php');
+			$sess->set('language',$language_support[default_language][0]);
+
+		}
+
 }
 
+// Get language from session
 $lang=$sess->get('language');
 
 $html->headers('
