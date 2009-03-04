@@ -83,7 +83,7 @@ if ($_GET['lng_sw']) {
 		}
 
 }
-
+								
 // get client addr
 $rem_adre = $_SERVER['REMOTE_ADDR'];
 

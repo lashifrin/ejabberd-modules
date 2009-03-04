@@ -173,30 +173,28 @@ if ($_GET[act]==="logout") {
 			
 						if ($res_pref[pref_id] == "2") {
 
-								if ($res_pref[pref_value] == "1") {
-					
-									$s_lang="pol";
-									setcookie("jorge_language",$s_lang,time()+2592000);
-									$sess->set('language',$s_lang);
-							
-								}
-								elseif($res_pref[pref_value] == "2") {
-					
-									$s_lang="eng";
-									setcookie("jorge_language",$s_lang,time()+2592000);
-									$sess->set('language',$s_lang);
-							
+								// Check if language is supported, return value if it is
+								$check_language = is_language_supported($res_pref[pref_value],$language_support,1,true);
+
+								// function can return true/false/value, in this case we need value and not false
+								if ($check_language !== false) {
+
+										// set language according to database setup
+										setcookie("jorge_language",$check_language,time()+2592000);
+										$sess->set('language',$check_language);
+
+									}
+									else{
+
+										// this is where language was not found in settings, so use default
+										setcookie("jorge_language",$language_support[default_language][1],time()+2592000);
+										$sess->set('language',$check_language);
+
 								}
 
 						}
 					}
 
-					// fall back to defaults
-					if ($s_lang=="") { 
-							
-							$sess->set('language',$lang); 
-							
-						}
 					if ($tmp_v=="") { 
 
 							$sess->set('view_type',2); 

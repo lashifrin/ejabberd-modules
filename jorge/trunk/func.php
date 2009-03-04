@@ -886,14 +886,23 @@ function message_processor($tslice,$server_name,$start,$nickname,$result_message
 
 }
 
-function is_language_supported($l_query,$language_support) {
+function is_language_supported($l_query,$language_support,$l_key = 0, $return_val = false) {
 
 	while (array_keys($language_support)) {
 
 		$lang_key = key($language_support);
-		if ($l_query === $language_support[$lang_key][0]) {
+		if ($l_query === $language_support[$lang_key][$l_key]) {
 
-				return true;
+			if ($return_val === true) {
+
+					return $language_support[$lang_key][0];
+
+				}
+				else {
+
+					return true;
+
+			}
 		
 		}
 
