@@ -887,7 +887,7 @@ function message_processor($tslice,$server_name,$start,$nickname,$result_message
 }
 
 function is_language_supported($l_query,$language_support,$l_key = 0, $return_val = false) {
-
+	
 	while (array_keys($language_support)) {
 
 		$lang_key = key($language_support);
