@@ -2,7 +2,7 @@
 /*
 Jorge - frontend for mod_logdb - ejabberd server-side message archive module.
 
-Copyright (C) 2008 Zbigniew Zolkiewski
+Copyright (C) 2009 Zbigniew Zolkiewski
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -88,7 +88,7 @@ $links='<a class="foot" href="http://www.jabster.pl" target="_blank">jabster.pl<
 	'; 
 
 // copyright
-$copy = "jabster.pl &copy; 2008";
+$copy = "jabster.pl &copy; 2009";
 
 // custom logo
 $brand_logo = "logo_jabster.png";

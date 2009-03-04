@@ -1,4 +1,4 @@
-Jorge by Zbyszek Zolkiewski (C) 2008 VERSION 1.5-pre_release
+Jorge by Zbyszek Zolkiewski (C) 2009 VERSION 1.5-svn
 
 About.
  Jorge is set of php scripts that are front-end for Oleg Palij mod_logdb.
@@ -19,7 +19,7 @@ Requirements:
 - any http server supporting PHP (5.2.x or higher) with gd, mcrypt and xmlrpc support
 
 Client Requirements:
-- Jorge is tested and compatibile with: Firefox 2.x, Firefox 3.x, Opera 9.x and Google Chrome (IE7 and IE8+ may work but it is not recomended due to IE standards violations, IE6 is not supported at all)
+- Jorge is tested and compatibile with: Firefox 2.x, Firefox 3.x, Opera 9.x, Apple Safri 3.x,4.x and Google Chrome (IE7 and IE8+ may work but it is not recomended due to IE standards violations, IE6 is not supported at all)
 - Web-browser _must_ have enabled javascript as Jorge strongly relay on jQuery and other js related scripts
 - Cookies must be enabled
 
