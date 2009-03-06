@@ -311,5 +311,9 @@ $spec_contact_enable[pol] = "Wyświetlać kontakty specjalne:";
 $spec_contact_desc[pol] = "Pozwala zdecydować czy w liście rozmów mają pojawiać się rozmowy z kontaktami specjalnymi np.: bramkami lub transportami. Większość użytkowników może spokojnie tą opcje wyłączyć";
 $donate[pol] = "<small>Pomóż rozwijać Projekt Jorge.<a href=\"http://www.jabster.pl/index.php?q=node/43\" target=\"_blank\"><u>Przeczytaj więcej...</u></a></small>";
 $donate_dont[pol] = "<small>Nie pokazuj tej informacji więcej...</small>";
+$own_name_desc[pol] = "Opcja ta umożliwia zmianę wyświetlanej nazwy użytkownika: np. <i>karol002a</i> na <i>Karol</i>";
+$own_name_enter[pol] = "Podaj swoją nazwę:";
+$own_name_commit[pol] = "Ustaw nazwę";
+$own_name_remove[pol] = "Jeśli nie chcesz korzystać z tej opcji, pozostaw pole puste";
 
 ?>

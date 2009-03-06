@@ -310,5 +310,10 @@ $spec_contact_enable[eng] = "Display special contact:";
 $spec_contact_desc[eng] = "This option let you decide if conversations with special contacts like gateways, transports are displayed in your chat list. Most users can say <i>No</i> here.";
 $donate[eng] = "<small>Help develop Project Jorge.<a href=\"http://www.planeta.toliman.pl/2008/10/donate-project-jorge.html\" target=\"_blank\"><u>Read More...</u></a></small>";
 $donate_dont[eng] = "<small>Don't show this information anymore...</small>";
+$own_name_desc[eng] = "This option allows to display your name as you wish: f.e. <i>james0021a</i> is replaced with <i>James</i>";
+$own_name_enter[eng] = "Enter your name:";
+$own_name_commit[eng] = "Set your name";
+$own_name_remove[eng] = "If you dont want to use this option, leave it unchanged";
+
 
 ?>
