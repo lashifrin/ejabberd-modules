@@ -559,6 +559,20 @@ function message_processor($tslice,$server_name,$start,$nickname,$result_message
 		e_string - url 
 	*/
 
+	// Check if user have set up OwnName
+	$db->get_own_name();
+	if ($db->result->own_name) {
+
+			$own_name = $db->result->own_name;
+
+		}
+		else{
+
+			$own_name = false;
+
+	}
+
+	// Main loop
 	foreach($result_messages as $entry) {
 
 		// always get resource_id if message is type of groupchat
@@ -749,7 +763,29 @@ function message_processor($tslice,$server_name,$start,$nickname,$result_message
                 
 				if ($aa<2 AND $tt<2) {
 
-                                		$html->set_body('<td style="padding-left: 5px; padding-right: 10px; nowrap="nowrap">'.cut_nick($out).'<a name="'.$licz.'"></a>');
+                                		$html->set_body('<td style="padding-left: 5px; padding-right: 10px; nowrap="nowrap">');
+						if ($out === TOKEN) {
+
+								// display of Own Name
+								if ($own_name !== false) {
+
+										$html->set_body(cut_nick(htmlspecialchars($own_name)));
+
+									}
+									else{
+
+										$html->set_body(cut_nick(htmlspecialchars($out)));
+
+								}
+
+							}
+							else{
+
+								$html->set_body(cut_nick(htmlspecialchars($out)));
+
+						}
+
+						$html->set_body('<a name="'.$licz.'"></a>');
 
                                 		if ($out !== $token) {
 

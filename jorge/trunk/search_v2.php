@@ -2,7 +2,7 @@
 /*
 Jorge - frontend for mod_logdb - ejabberd server-side message archive module.
 
-Copyright (C) 2008 Zbigniew Zolkiewski
+Copyright (C) 2009 Zbigniew Zolkiewski
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -77,6 +77,19 @@ require_once("upper.php");
 
 //need to initialize counter here
 $r=0;
+
+// Check if user have set up OwnName
+$db->get_own_name();
+if ($db->result->own_name) {
+
+		$own_name = $db->result->own_name;
+
+	}
+	else{
+
+		$own_name = false;
+
+}
 
 // we need to rewrite this part internaly...
 if ($search_phase!="") { 
@@ -288,7 +301,7 @@ if ($search_phase!="") {
 					
 								$in_minutes = round(($time_diff/60),0);
 								$html->set_body('<tr class="splitl">
-									<td colspan="5" style="font-size: 10px;">'.verbose_split_line($in_minutes,$lang,$verb_h,$in_min).'<hr size="1" noshade="noshade" style="color: #cccccc;"></td></tr>');
+									<td colspan="5" style="font-size: 10px;">'.verbose_split_line($in_minutes,$verb_h[$lang],$in_min[$lang]).'<hr size="1" noshade="noshade" style="color: #cccccc;"></td></tr>');
 							}
 
 							// talker and server names
@@ -333,7 +346,28 @@ if ($search_phase!="") {
 
 							if ($aa<2 AND $tt<2) { 
 
-									$html->set_body('<td style="text-align: left;">&nbsp;'.$out.'&nbsp;&nbsp;</td>');
+									$html->set_body('<td style="text-align: left;">&nbsp;');
+
+									if ($out === TOKEN) {
+
+											if ($own_name !== false) {
+
+													$html->set_body(cut_nick(htmlspecialchars($own_name)));
+
+												}
+												else{
+
+													$html->set_body(cut_nick(htmlspecialchars($out)));
+
+											}
+										}
+										else {
+
+											$html->set_body(cut_nick(htmlspecialchars($out))); 
+
+									}
+
+									$html->set_body('&nbsp;&nbsp;</td>');
 
 								}
 								else {

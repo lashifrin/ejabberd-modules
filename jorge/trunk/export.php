@@ -130,6 +130,17 @@ $user_name = $db->result->username;
 $db->get_server_name($server);
 $server_name = $db->result->server_name;
 $nickname = $sess->get('export_nickname');
+$db->get_own_name();
+if ($db->result->own_name) {
+
+		$own_name = $db->result->own_name;
+
+	}
+	else{
+
+		$own_name = false;
+
+}
 
 // get chat
 $db->get_user_chat($tslice,$talker,$server,$resource_id = null,$start = null,10000);
@@ -153,7 +164,15 @@ foreach ($result as $results) {
 				} 
 				else 
 				{ 
-					$out = TOKEN;
+					if ($own_name !== false) {
+
+							$out = $own_name;
+						}
+						else{
+
+							$out = TOKEN;
+
+					}
 					$aa=$aa+1;
 					$tt=0;
 				}
