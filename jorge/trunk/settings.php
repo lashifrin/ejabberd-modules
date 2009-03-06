@@ -104,6 +104,22 @@ if ($del_a) {
 
 }
 
+// set own name
+if ($_POST['own_name_value']) {
+
+		// Validation is done by class, so we pass values there...
+		if ($db->set_own_name($_POST['own_name_value']) === true) {
+
+				$html->status_message($con_saved[$lang]);
+
+			}else{
+
+				$html->alert_message($oper_fail[$lang]);
+
+		}
+
+}
+
 $html->set_overview('<h2>'.$settings_desc[$lang].'</h2><small>'.$settings_desc_detail[$lang].'</small>');
 $html->set_body('<center><table><form action="settings.php" method="post">
 		<tr style="font-size: x-small;"><td>'.$setting_d1[$lang].'</td><td><input class="settings" type="submit" name="toggle" value="');
@@ -210,6 +226,30 @@ $html->set_body('
 	<input name="ref" type="hidden" value="settings">
 	</td></tr></form>
 ');
+
+$html->set_body('<form action="settings.php" method="post" name="set_own_name">
+	<tr style="font-size: x-small;"><td>'.$own_name_enter[$lang].'(<a href="#" title="'.$own_name_desc[$lang].'">?</a>)</td>
+	<td>
+	<input name="own_name_value" class="settings" type="text" value="');
+
+// Check if own_name is set.
+$db->get_own_name();
+$own_name = $db->result->own_name;
+if (!$own_name) {
+
+		$html->set_body(TOKEN);
+
+	}
+	else{
+
+		$html->set_body(htmlspecialchars($own_name));
+
+}
+
+$html->set_body('" maxlength="60">
+	<input class="settings" type="submit" value="'.$own_name_commit[$lang].'">
+	</td>
+	</tr></form>');
 
 $html->set_body('</table><hr size="1" noshade="noshade" style="color: #c9d7f1;"><br><small><b>'.$stats_personal_d[$lang].'</b></small>');
 

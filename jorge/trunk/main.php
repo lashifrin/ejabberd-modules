@@ -2,7 +2,7 @@
 /*
 Jorge - frontend for mod_logdb - ejabberd server-side message archive module.
 
-Copyright (C) 2008 Zbigniew Zolkiewski
+Copyright (C) 2009 Zbigniew Zolkiewski
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -171,7 +171,6 @@ if (count($result) !=0) {
 
 		foreach ($result as $entry) {
 
-			$cl_entry = verbose_mo($entry[at],$lang);
 			if ($entry[at_send]==substr($tslice,0,7)) { 
 		
 					$rel="open"; $bop="<b>"; $bcl="</b>"; 
@@ -185,7 +184,7 @@ if (count($result) !=0) {
 				
 			} 
 		
-			$html->set_body('<li>'.$bop.$cl_entry.$bcl.'<ul rel="'.$rel.'">'); 
+			$html->set_body('<li>'.$bop.verbose_date($entry[at],$months_names,$weekdays,false,true).$bcl.'<ul rel="'.$rel.'">'); 
 			$db->get_folder_content($entry[at_send]);
 			$result2 = $db->result;
 			foreach($result2 as $ent) {
@@ -203,7 +202,7 @@ if (count($result) !=0) {
 					
 				}
 			
-				$html->set_body('<li><a href="?a='.$to_base.'">'.$bold_b.verbose_date($ent["at"],$lang,"m").$bold_e.'</a></li>');
+				$html->set_body('<li><a href="?a='.$to_base.'">'.$bold_b.verbose_date($ent["at"],$months_names,$weekdays,true).$bold_e.'</a></li>');
 
 			}
 

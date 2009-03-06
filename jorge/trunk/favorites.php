@@ -116,7 +116,7 @@ if (count($db->result)>0) {
 
 		$html->set_body('
                                 <center><table id="maincontent" class="ff" cellspacing="0">
-                                <tr class="header"><td>'.$fav_contact[$lang].'</td><td>'.$fav_when[$lang].'</td><td>'.$fav_comment[$lang].'</td></tr>
+                                <tr class="header"><td>'.$fav_when[$lang].'</td><td>'.$fav_contact[$lang].'</td><td>'.$fav_comment[$lang].'</td></tr>
                                 <tr class="spacer" height="1px"><td colspan="4"></td></tr>
                                 <tbody id="searchfield">	
 		');
@@ -154,10 +154,10 @@ if (count($db->result)>0) {
 			}
 			$html->set_body('
 				<tr style="cursor: pointer;" bgcolor="#e8eef7" onMouseOver="this.bgColor=\'c3d9ff\';" onMouseOut="this.bgColor=\'#e8eef7\';">
+				<td onclick="window.location=\''.$view_type.'?a='.$to_base.'&loc=3\';" style="padding-left: 10px; padding-right: 10px">'.verbose_date($row[tslice],$months_names,$weekdays).'</td>
 				<td onclick="window.location=\''.$view_type.'?a='.$to_base.'&loc=3\';" style="padding-left: 10px; padding-right: 10px">
 					<b>'.htmlspecialchars(cut_nick($nickname)).'</b> (<i>'.htmlspecialchars($user_name).$malpa.htmlspecialchars($server_name).'</i>)
 				</td>
-				<td onclick="window.location=\''.$view_type.'?a='.$to_base.'&loc=3\';" style="padding-left: 10px; padding-right: 10px">'.verbose_date($row[tslice],$lang).'</td>
 				<td onclick="window.location=\''.$view_type.'?a='.$to_base.'&loc=3\';" style="padding-left: 10px; padding-right: 10px;">'.$comment.'</td>
 				<td style="text-align: center;"><a href="favorites.php?del=t&link_id='.$row[link_id].'" onClick="if (!confirm(\''.$del_conf_my_link[$lang].'\')) return false;">&nbsp;'.$fav_remove[$lang].'&nbsp;</td>
 				</tr>

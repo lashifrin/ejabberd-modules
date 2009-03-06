@@ -2683,7 +2683,7 @@ class db_manager {
 			AND
 				vhost='".$this->vhost."'
 		";
-
+		
 		return $this->select($query);
 
 	}

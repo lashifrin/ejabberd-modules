@@ -230,8 +230,8 @@ $cal_head[pol] = "Kalendarz rozmów.";
 $cal_notice[pol] = "Kliknij na danym dniu aby zobaczyć rozmowy";
 $change_view[pol] = "Zmień na widok drzewa";
 $change_view_cal[pol] = "Przeglądaj archiwum za pomocą widoku kalendarza.";
-$months_name_pol = array("Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec",
-                             "Sierpień","Wrzesień","Październik","Listopad","Grudzień");
+$months_names = array("Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień");
+$weekdays = array("Poniedziałek","Wtorek","Środa","Czwartek","Piątek","Sobota","Niedziela");
 $jump_to_l[pol] = "Wybierz miesiąc";
 $chat_list_l[pol] = "Lista rozmów:";
 $select_view[pol] = "Wybierz rodzaj widoku przeglądarki:";

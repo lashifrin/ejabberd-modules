@@ -158,37 +158,29 @@ function is_query_from($query) {
 }
 
 
-function verbose_date($dd,$lang="",$t="") {
-	// this function need to be changed!
-	if ($t=="m") {
-		$dd=strftime("%e.%m (%A)",strtotime("$dd")); }
-		else {
-		$dd=strftime("%e.%m.%Y, %A", strtotime("$dd")); }
-	$ee = array("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday");
-	$ee_pol = array("Pon","Wto","Śro","Czw","Pią","Sob","Nie");
-	$ee_eng = array("Mon","Tue","Wed","Thu","Fri","Sat","Sun");
-	$ss_eng = array("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec");
-	$ss = array("January","February", "March", "April", "May","June","July","August","September","October", "November","December");
-	$ss_pol=array("Stycznia","Luty","Marca","Kwietnia","Maja","Czerwca","Lipca","Sierpnia","Wrzesnia","Pazdziernika","Listopada","Grudnia");
-	if ($lang=="pol") { $repl1=$ee_pol; } elseif($lang=="eng") { $repl1=$ee_eng; } elseif($lang=="") { $repl1=$ee_eng; }
-	$g=str_replace($ee,$repl1,$dd);
-	$ss_r="";
-	return str_replace($ss,$ss_r,$g);
+function verbose_date($raw_date,$months_names = null,$weekdays = null,$t = false,$y = false) {
+	
+	// English calendar arrays. Here we convert names from english calendar to other language. Make sure your locale in php work with default set to english.
+	$english_months = array("January","February", "March", "April", "May","June","July","August","September","October", "November","December");
+	$english_days = array("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday");
 
+	// Various formats
+	if ($t === true) {
+
+			return str_replace($english_days,$weekdays,strftime("%e.%m (%A)",strtotime("$raw_date")));
+		
+		}
+		elseif($y === true) {
+
+			return str_replace($english_months,$months_names,strftime("%B %Y", strtotime("$raw_date")));
+
+		}
+		else{
+
+			return str_replace($english_months,$months_names,strftime("%e %B %Y", strtotime("$raw_date")));
+	}
+	
 }
-
-
-function verbose_mo($dd,$lang) {
-	// this function need to be changed!
-	 $dd=strftime("%b %Y",strtotime($dd));
-	 $ss_eng = array("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"); // replace patern
-	 $ss = array("January","February", "March", "April", "May","June","July","August","September","October", "November","December"); // to verb eng
-	 $ss_pol=array("Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"); // to verb pol
-	 if ($lang=="pol") { $repl1=$ss_pol; } elseif($lang=="eng") { $repl1=$ss; } elseif($lang=="") { $repl1=$ss; }
-	 $g=str_replace($ss_eng,$repl1,$dd);
-	 return $g;
-}
-
 
 function validate_start($start) {
 
@@ -264,7 +256,7 @@ function new_parse_url($text) {
 }
 
 
-function calendar($db,$user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_name_eng,$left,$right,$selected,$lang,$view_type,$c_type,$name_peer=0,$server_peer=0,$cal_days=0,$enc=null) {
+function calendar($db,$user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$left,$right,$selected,$lang,$view_type,$c_type,$name_peer=0,$server_peer=0,$cal_days=0,$enc=null,$months_names,$weekdays) {
 	
 	$days=$days;
 	$month = $m;
@@ -293,10 +285,6 @@ function calendar($db,$user_id,$xmpp_host,$y,$m,$days,$token,$url_key,$months_na
 //find the days in the month
 
     $days_in_month = $months_days[$month];
-
-//And convert the month number to name
-
-    $month_name = $months_name_eng[$month];
 
 //$m is used to find month
 
@@ -377,7 +365,7 @@ $verb_date = "$year-$m-1";
 	    $calendar.='
 	    	
 		&nbsp;</td>
-            	<td colspan="5" align="center" class="calhead">'.verbose_mo($verb_date,$lang).'</td>
+            	<td colspan="5" align="center" class="calhead">'.verbose_date($verb_date,$months_names,$weekdays,false,true).'</td>
             	<td align="center" class="caldays">&nbsp;
 		
 		';

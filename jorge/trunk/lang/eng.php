@@ -229,8 +229,8 @@ $cal_head[eng] = "Chat calendar";
 $cal_notice[eng] = "Click on days to see chats";
 $change_view[eng] = "Switch to tree view";
 $change_view_cal[eng] = "Browse archives using calendar view.";
-$months_name_eng = array("January","February","March","April","May","June","July",
-                             "August","September","October","November","December");
+$months_names = array("January","February","March","April","May","June","July","August","September","October","November","December");
+$weekdays = array("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday");
 $jump_to_l[eng] = "Select month";
 $chat_list_l[eng] = "Conversation list:";
 $select_view[eng] = "Select prefered view for browser:";
