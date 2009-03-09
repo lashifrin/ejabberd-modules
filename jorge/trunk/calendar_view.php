@@ -63,14 +63,15 @@ if (isset($_GET['right'])) {
 $e_string = $_GET['a'];
 $resource_id = $_GET['b'];
 $start = $_GET['start'];
-$jump_to=$_POST['jump_box'];
+$jump_to = $_POST['jump_box'];
+
 if ($jump_to!="") { 
 
 		$mo=$jump_to; 
 
 	}
 
-if ($mo=="jump") { 
+if ($mo === "jump") { 
 
 		unset($mo); 
 	}
@@ -88,17 +89,27 @@ if ($enc->decrypt_url($e_string) === true) {
 
 }
 
-// validation
-if (validate_date($tslice) === false) { 
+// avoid unnessesary validation, actualy...
+if ($tslice) {
 
-	unset ($tslice); 
-	unset($e_string); 
-	unset($talker); 
-	unset($left); 
-	unset($right); 
-	unset($mo); 
-	unset($action); 
+	if (validate_date($tslice) === false) { 
+
+			debug(DEBUG,"Date validation failed: $tslice");
+			unset ($tslice); 
+			unset($e_string); 
+			unset($talker); 
+			unset($left); 
+			unset($right); 
+			unset($mo); 
+			unset($action); 
 	
+		}
+		else{
+
+			debug(DEBUG,"Date set to: $tslice");
+
+	}
+
 }
 
 // some validation things...

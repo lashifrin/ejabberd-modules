@@ -68,19 +68,8 @@ function query_nick_name($ejabberd_roster,$talker, $server="") {
 
 function validate_date($tslice) {
 
-	if ($tslice) {
-		list($ye, $mo, $da) = split("-", $tslice);
-		if (!ctype_digit($ye) || !ctype_digit($mo) || !ctype_digit($da)  ) { 
-	
-				return false;
-			} 
-			else { 
-			
-				return true;
-		}
-	}
-
-	return true;
+	list($ye, $mo, $da) = split("-", $tslice);
+	return checkdate($mo,$da,$ye);
 
 }
 
