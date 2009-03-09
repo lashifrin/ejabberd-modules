@@ -21,16 +21,39 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
 require_once("headers.php");
+require_once("upper.php");
 
 $tgle = $_POST['toggle'];
-$del_a = $_POST['del_all'];
 $vspec = $_POST['v_spec'];
 
-require_once("upper.php");
+// Check post data. Compare them to session info.
+if ($_POST['del_all'] OR $_POST['erase_confirm']) {
+
+	debug(DEBUG,"Processing archive removal:");
+	if ($sess->get('validate_number') !== $_POST['validate_form']) {
+
+			debug(DEBUG," - Invalid control number, destroying POST data. Control should be: ".$sess->get('validate_number'));
+			unset($_POST);
+			$html->alert_message($oper_fail[$lang]);
+		
+		}
+		else{
+
+			debug(DEBUG," - POST data seems to be ok.");
+
+	}
+
+}
+
+// Generate new control data for forms
+$set_control = md5(rand(10000,10000000));
+$sess->set("validate_number",$set_control);
+debug(DEBUG,"Setting new control data: $set_control");
 
 // toggle message saving
 if ($tgle) { 
-	
+
+	debug(DEBUG,"Trying to change archiving option");
 	if ($tgle === $arch_on[$lang]) {
 				
 				if($db->set_log(true) === true) {
@@ -83,20 +106,22 @@ if ($vspec) {
 }
 
 // delete entire archive
-if ($del_a) {
+if ($_POST['erase_confirm'] === "true") {
 
+	if ($_POST['del_all'] === $settings_del[$lang]) {
 
-	if ($del_a === $settings_del[$lang]) {
-
+		debug(DEBUG," - Trying to erase all message archives");
 		if ($db->erase_all() === true) {
 
 				$html->status_message($deleted_all[$lang]);
 				$db->set_logger("9","2");
+				debug(DEBUG," - DONE");
 
 			}
 			else{
 	
 				$html->alert_message($delete_error[$lang]);
+				debug(DEBUG," - FAILED");
 
 		}
 
@@ -139,7 +164,14 @@ $html->set_body('"></td></tr></form>');
 
 $html->set_body('<form action="settings.php" method="post">
 	<tr style="font-size: x-small;"><td>'.$setting_d2[$lang].'</td>
-	<td><input class="settings" type="submit" name="del_all" value="'.$settings_del[$lang].'" onClick="if (!confirm(\''.$del_all_conf[$lang].'\')) return false;"></form></td></tr>');
+	<td>
+		<input class="settings" type="submit" name="del_all" value="'.$settings_del[$lang].'" onClick="if (!confirm(\''.$del_all_conf[$lang].'\')) return false;">
+		<input type="hidden" name="erase_confirm" value="true">
+		<input type="hidden" name="validate_form" value="'.$set_control.'">
+	</td>
+	</tr>
+	</form>
+	');
 
 if ($db->get_jorge_pref("3") === false) {
 
