@@ -1,0 +1,42 @@
+2009-03-11  Badlop  <badlop@process-one.net>
+
+	* src/web/mod_http_fileserver.erl: Fix capitalization of HTTP
+	headers (thanks to Brian Cully)(EJAB-892)
+
+2008-07-28  Badlop  <badlop@process-one.net>
+
+	* doc/mod_http_fileserver.tex: Update LaTeX code for section title
+
+2008-05-16  Badlop  <badlop@process-one.net>
+
+	* src/web/mod_http_fileserver.erl: Use httpd_util:to_lower when
+	not compiling with Erlang R12 (EJAB-628)
+	* Emakefile: Assumes that Erlang/OTP R11B-4 or newer is used
+	* README.txt: Explain how to compile in older versions
+
+2008-05-05  Badlop  <badlop@process-one.net>
+
+	* src/web/mod_http_fileserver.erl: Added JavaScript content type
+
+2008-04-12  Badlop  <badlop@process-one.net>
+
+	* src/web/mod_http_fileserver.erl: Include Last-Modified HTTP
+	header in responses to allow caching (EJAB-546)
+
+2008-03-12  Badlop  <badlop@process-one.net>
+
+	* src/web/mod_http_fileserver.erl (start): Fix error creating ETS
+	table if enabled in several vhosts (EJAB-551)
+	(stop): Unregister the command when stopping the module
+
+2007-12-21  Badlop  <badlop@process-one.net>
+
+	* README.txt: Fixed example
+	* doc/mod_http_fileserver.tex: Likewise
+
+2007-12-18  Badlop  <badlop@process-one.net>
+
+	* doc/mod_http_fileserver.tex: Added documentation for the ejabberd
+	guide
+
+	* ChangeLog: Added
