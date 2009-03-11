@@ -1,3 +1,8 @@
+2009-03-11  Badlop  <badlop@process-one.net>
+
+	* src/web/mod_http_fileserver.erl: Fix capitalization of HTTP
+	headers (thanks to Brian Cully)(EJAB-892)
+
 2008-07-28  Badlop  <badlop@process-one.net>
 
 	* doc/mod_http_fileserver.tex: Update LaTeX code for section title

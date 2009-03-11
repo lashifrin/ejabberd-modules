@@ -1,3 +1,7 @@
+2009-03-11  Badlop  <badlop@process-one.net>
+
+	* src/mod_register_web.erl: Fix capitalization of HTTP headers
+
 2009-01-27  Badlop  <badlop@process-one.net>
 
 	* Emakefile: Fix to compile correctly using 2.0.x branch

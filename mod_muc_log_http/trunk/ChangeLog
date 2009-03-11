@@ -1,3 +1,7 @@
+2009-03-11  Badlop  <badlop@process-one.net>
+
+	* src/mod_muc_log_http.erl: Fix capitalization of HTTP headers
+
 2009-02-28  Badlop  <badlop@process-one.net>
 
 	* src/mod_muc_log_http.erl: Add support to run in several vhosts

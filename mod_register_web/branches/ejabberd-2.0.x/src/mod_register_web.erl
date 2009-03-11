@@ -148,7 +148,7 @@ index_page(Lang) ->
 	],
     {200,
      [{"Server", "ejabberd"},
-      {"Content-type", "text/html"}],
+      {"Content-Type", "text/html"}],
      ejabberd_web:make_xhtml(HeadEls, Els)}.
 
 
@@ -220,7 +220,7 @@ form_new_get(Lang) ->
 	],
     {200,
      [{"Server", "ejabberd"},
-      {"Content-type", "text/html"}],
+      {"Content-Type", "text/html"}],
      ejabberd_web:make_xhtml(HeadEls, Els)}.
 
 
@@ -294,7 +294,7 @@ form_changepass_get(Lang) ->
 	],
     {200,
      [{"Server", "ejabberd"},
-      {"Content-type", "text/html"}],
+      {"Content-Type", "text/html"}],
      ejabberd_web:make_xhtml(HeadEls, Els)}.
 
 
@@ -404,7 +404,7 @@ form_del_get(Lang) ->
 	],
     {200,
      [{"Server", "ejabberd"},
-      {"Content-type", "text/html"}],
+      {"Content-Type", "text/html"}],
      ejabberd_web:make_xhtml(HeadEls, Els)}.
 
 %% @spec(Username, Host, Password) -> {atomic, ok} |

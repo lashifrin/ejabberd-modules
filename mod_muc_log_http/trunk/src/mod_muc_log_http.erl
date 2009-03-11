@@ -79,7 +79,7 @@ serve(LocalPath, #request{host = Host} = Request) ->
 			{200,
 			 [{"Server", "ejabberd"},
 			  {"Last-Modified", last_modified(FileName)},
-			  {"Content-type", content_type(FileName)}],
+			  {"Content-Type", content_type(FileName)}],
 			 FileContents};
 		{error, eisdir} ->
 			FileNameIndex = FileName ++ "/index.html",
@@ -225,7 +225,7 @@ show_dir_listing(DirName, LocalPath) ->
 
 	{200,
 	 [{"Server", "ejabberd"},
-	  {"Content-type", "text/html"}],
+	  {"Content-Type", "text/html"}],
 	 Content}.
 
 
