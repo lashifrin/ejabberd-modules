@@ -976,8 +976,8 @@ send_outpacket(#http_bind{pid = FsmRef}, OutPacket) ->
 					case xml:get_subtag(El, "stream:error") of
 					    false ->
 						null;
-					    {xmlelement, _, _, Cond} ->
-						Cond
+					    {xmlelement, _, _, _Cond} = StreamErrorTag ->
+						[StreamErrorTag]
 					end;
                                     {error, _E} ->
                                         null
@@ -994,7 +994,8 @@ send_outpacket(#http_bind{pid = FsmRef}, OutPacket) ->
                                     {200, ?HEADER,
                                      "<body type='terminate' "
                                      "condition='remote-stream-error' "
-                                     "xmlns='"++?NS_HTTP_BIND++"'>" ++
+                                     "xmlns='"++?NS_HTTP_BIND++"' " ++
+                                     "xmlns:stream='"++?NS_STREAM++"'>" ++
                                      elements_to_string(StreamErrCond) ++
                                      "</body>"}
                             end;

@@ -1,3 +1,7 @@
+2009-03-13  Badlop  <badlop@process-one.net>
+
+	* src/web/ejabberd_http_bind.erl: Fix remote-stream-error stanzas
+
 2009-02-14  Badlop  <badlop@process-one.net>
 
 	* src/web/ejabberd_http_bind.erl: Allow configuration of maximum
