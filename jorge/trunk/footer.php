@@ -45,7 +45,7 @@ $html->foot('
 	<br><div style="background-image: url(img/bell-down.png); height: 3px; background-repeat:repeat-x;"></div>
 	<div align="center">'.$links.'</div><br>
 	<div align="center" style="color: gray;">'.$copy.'</div>
-	<p style="font-size: xx-small; text-align: right;">v1.5svn</p><br>
+	<p style="font-size: xx-small; text-align: right;">v1.5-RC1</p><br>
 	');
 
 // footer for admins...
