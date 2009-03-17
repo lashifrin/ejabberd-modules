@@ -1,12 +1,12 @@
---- mod_logdb.erl.orig	2008-09-25 10:22:50.000000000 +0300
-+++ mod_logdb.erl	2008-09-25 10:05:14.000000000 +0300
-@@ -0,0 +1,2067 @@
+--- mod_logdb.erl.orig	2009-02-05 19:21:29.000000000 +0200
++++ mod_logdb.erl	2009-02-05 19:19:51.000000000 +0200
+@@ -0,0 +1,2094 @@
 +%%%----------------------------------------------------------------------
 +%%% File    : mod_logdb.erl
-+%%% Author  : Oleg Palij (mailto:o.palij@gmail.com xmpp://malik@jabber.te.ua)
++%%% Author  : Oleg Palij (mailto,xmpp:o.palij@gmail.com)
 +%%% Purpose : Frontend for log user messages to db
 +%%% Version : trunk
-+%%% Id      : $Id: mod_logdb.erl 1171 2008-09-17 17:02:54Z malik $
++%%% Id      : $Id: mod_logdb.erl 1272 2009-02-05 17:16:20Z malik $
 +%%% Url     : http://www.dp.uz.gov.ua/o.palij/mod_logdb/
 +%%%----------------------------------------------------------------------
 +
@@ -64,6 +64,7 @@
 +
 +-include("mod_logdb.hrl").
 +-include("ejabberd.hrl").
++-include("mod_roster.hrl").
 +-include("jlib.hrl").
 +-include("ejabberd_ctl.hrl").
 +-include("adhoc.hrl").
@@ -98,7 +99,9 @@
 +% supervisor starts gen_server
 +start_link(VHost, Opts) ->
 +    Proc = gen_mod:get_module_proc(VHost, ?PROCNAME),
-+    gen_server:start_link({local, Proc}, ?MODULE, [VHost, Opts], []).
++    {ok, Pid} = gen_server:start_link({local, Proc}, ?MODULE, [VHost, Opts], []),
++    Pid ! start,
++    {ok, Pid}.
 +
 +init([VHost, Opts]) ->
 +    process_flag(trap_exit, true),
@@ -113,9 +116,6 @@
 +    ?MYDEBUG("Starting mod_logdb for ~p with ~p backend", [VHost, DBName]),
 +
 +    DBMod = list_to_atom(atom_to_list(?MODULE) ++ "_" ++ atom_to_list(DBName)),
-+
-+    % actually all work begin on receiving start signal
-+    timer:send_after(1000, start),
 +
 +    {ok, #state{vhost=VHost,
 +                dbmod=DBMod,
@@ -301,19 +301,14 @@
 +handle_cast({remove_user, User}, #state{dbmod=DBMod, vhost=VHost}=State) ->
 +    case State#state.drop_messages_on_user_removal of
 +         true ->
-+           case DBMod:drop_user(User, VHost) of
-+                ok ->
-+                    ?INFO_MSG("Removed ~s@~s", [User, VHost]);
-+                error ->
-+                    ?ERROR_MSG("Failed to remove ~s@~s", [User, VHost])
-+           end;
++           DBMod:drop_user(User, VHost),
++           ?INFO_MSG("Launched ~s@~s removal", [User, VHost]);
 +         false ->
 +           ?INFO_MSG("Message removing is disabled. Keeping messages for ~s@~s", [User, VHost])
 +    end,
 +    {noreply, State};
 +% ejabberdctl rebuild_stats/3
 +handle_cast({rebuild_stats}, #state{dbmod=DBMod, vhost=VHost}=State) ->
-+    % TODO: maybe spawn?
 +    DBMod:rebuild_stats(VHost),
 +    {noreply, State};
 +handle_cast({copy_messages, Backend}, State) ->
@@ -615,7 +610,7 @@
 +purge_old_records(VHost, Days) ->
 +    Proc = gen_mod:get_module_proc(VHost, ?PROCNAME),
 +
-+    Dates = gen_server:call(Proc, {get_dates, {VHost}}),
++    Dates = ?MODULE:get_dates(VHost),
 +    DateNow = calendar:datetime_to_gregorian_seconds({date(), {0,0,1}}),
 +    DateDiff = list_to_integer(Days)*24*60*60,
 +    ?MYDEBUG("Purging tables older than ~s days", [Days]),
@@ -1782,7 +1777,6 @@
 +    set_user_settings(User, Server, Sett#user_settings{dolog_default=false}),
 +    {stop, ok};
 +user_parse_query(Acc, _Action, _User, _Server, _Query) ->
-+    ?INFO_MSG("Returning ~p", [Acc]),
 +    Acc.
 +
 +%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1944,6 +1938,16 @@
 +              ])]
 +    end.
 +
++search_user_nick(User, List) ->
++    case lists:keysearch(User, 1, List) of
++         {value,{User, []}} ->
++           nothing;
++         {value,{User, Nick}} ->
++           Nick;
++         false ->
++           nothing
++    end.
++
 +user_messages_stats_at(User, Server, Query, Lang, Date) ->
 +   Jid = jlib:jid_to_string({User, Server, ""}),
 +
@@ -1969,10 +1973,17 @@
 +                       VResult -> VResult
 +                  end,
 +
++           UR = ejabberd_hooks:run_fold(roster_get, Server, [], [{User, Server}]),
++           UserRoster =
++                 lists:map(fun(Item) ->
++                              {jlib:jid_to_string(Item#roster.jid), Item#roster.name}
++                           end, UR),
++
 +           UniqUsers = lists:foldl(fun(#msg{peer_name=PName, peer_server=PServer}, List) ->
-+                                 case lists:member(PName++"@"++PServer, List) of
++                                 ToAdd = PName++"@"++PServer,
++                                 case lists:member(ToAdd, List) of
 +                                      true -> List;
-+                                      false -> lists:append([PName++"@"++PServer], List)
++                                      false -> lists:append([ToAdd], List)
 +                                 end
 +                               end, [], User_messages),
 +
@@ -1994,9 +2005,14 @@
 +                                         false when CheckedUsers == [] -> [?INPUTC("checkbox", "selected", ID)];
 +                                         false -> [?INPUT("checkbox", "selected", ID)]
 +                                        end,
++                                Nick =
++                                   case search_user_nick(UHUser, UserRoster) of
++                                        nothing -> "";
++                                        N -> " ("++ N ++")"
++                                   end,
 +                                ?XE("tr",
 +                                 [?XE("td", Input),
-+                                  ?XC("td", UHUser)])
++                                  ?XC("td", UHUser++Nick)])
 +                             end, lists:sort(UniqUsers)),
 +           % Messages to show (based on Users)
 +           User_messages_filtered = case CheckedUsers of
@@ -2010,6 +2026,7 @@
 +                               subject=Subject,
 +                               direction=Direction,
 +                               peer_name=PName, peer_server=PServer, peer_resource=PRes,
++                               type=Type,
 +                               body=Body}) ->
 +                      TextRaw = case Subject of
 +                                     "" -> Body;
@@ -2025,10 +2042,20 @@
 +                                      undefined -> [];
 +                                      R -> "/" ++ R
 +                                 end,
++                      UserNick =
++                         case search_user_nick(PName++"@"++PServer, UserRoster) of
++                              nothing when PServer == Server ->
++                                   PName;
++                              nothing when Type == "groupchat", Direction == from ->
++                                   PName++"@"++PServer++Resource;
++                              nothing ->
++                                   PName++"@"++PServer;
++                              N -> N
++                         end,
 +                      ?XE("tr",
 +                       [?XE("td", [?INPUT("checkbox", "selected", ID)]),
 +                        ?XC("td", convert_timestamp(Timestamp)),
-+                        ?XC("td", atom_to_list(Direction)++": "++PName++"@"++PServer++Resource),
++                        ?XC("td", atom_to_list(Direction)++": "++UserNick),
 +                        ?XC("td", Text)])
 +                 end,
 +           % Filtered user messages in html
@@ -2068,12 +2095,12 @@
 +             ]
 +            )]
 +    end.
---- mod_logdb.hrl.orig	2008-09-25 10:22:50.000000000 +0300
-+++ mod_logdb.hrl	2008-09-15 14:12:08.000000000 +0300
+--- mod_logdb.hrl.orig	2009-02-05 19:21:29.000000000 +0200
++++ mod_logdb.hrl	2009-02-05 19:21:02.000000000 +0200
 @@ -0,0 +1,35 @@
 +%%%----------------------------------------------------------------------
 +%%% File    : mod_logdb.hrl
-+%%% Author  : Oleg Palij (mailto:o.palij@gmail.com xmpp://malik@jabber.te.ua)
++%%% Author  : Oleg Palij (mailto,xmpp:o.palij@gmail.com)
 +%%% Purpose :
 +%%% Version : trunk
 +%%% Id      : $Id: mod_logdb.hrl 1163 2008-09-15 11:12:08Z malik $
@@ -2106,12 +2133,12 @@
 +                      {"name", Name},
 +                      {"value", Value},
 +                      {"checked", "true"}])).
---- mod_logdb_mnesia.erl.orig	2008-09-25 10:22:50.000000000 +0300
-+++ mod_logdb_mnesia.erl	2008-09-16 15:14:37.000000000 +0300
+--- mod_logdb_mnesia.erl.orig	2009-02-05 19:21:29.000000000 +0200
++++ mod_logdb_mnesia.erl	2009-02-05 19:19:59.000000000 +0200
 @@ -0,0 +1,546 @@
 +%%%----------------------------------------------------------------------
 +%%% File    : mod_logdb_mnesia.erl
-+%%% Author  : Oleg Palij (mailto:o.palij@gmail.com xmpp://malik@jabber.te.ua)
++%%% Author  : Oleg Palij (mailto,xmpp:o.palij@gmail.com)
 +%%% Purpose : mnesia backend for mod_logdb
 +%%% Version : trunk
 +%%% Id      : $Id: mod_logdb_mnesia.erl 1169 2008-09-16 12:14:36Z malik $
@@ -2655,15 +2682,15 @@
 +               {type, bag},
 +               {attributes, record_info(fields, msg)},
 +               {record_name, msg}]).
---- mod_logdb_mysql.erl.orig	2008-09-25 10:22:50.000000000 +0300
-+++ mod_logdb_mysql.erl	2008-09-16 15:14:37.000000000 +0300
-@@ -0,0 +1,999 @@
+--- mod_logdb_mysql.erl.orig	2009-02-05 19:21:29.000000000 +0200
++++ mod_logdb_mysql.erl	2009-02-05 19:20:23.000000000 +0200
+@@ -0,0 +1,1052 @@
 +%%%----------------------------------------------------------------------
 +%%% File    : mod_logdb_mysql.erl
-+%%% Author  : Oleg Palij (mailto:o.palij@gmail.com xmpp://malik@jabber.te.ua)
++%%% Author  : Oleg Palij (mailto,xmpp:o.palij@gmail.com)
 +%%% Purpose : MySQL backend for mod_logdb
 +%%% Version : trunk
-+%%% Id      : $Id: mod_logdb_mysql.erl 1169 2008-09-16 12:14:36Z malik $
++%%% Id      : $Id: mod_logdb_mysql.erl 1253 2009-02-02 11:10:03Z malik $
 +%%% Url     : http://www.dp.uz.gov.ua/o.palij/mod_logdb/
 +%%%----------------------------------------------------------------------
 +
@@ -2692,8 +2719,8 @@
 +         drop_user/2]).
 +
 +% gen_server call timeout
-+-define(CALL_TIMEOUT, 10000).
-+-define(TIMEOUT, 10000).
++-define(CALL_TIMEOUT, 30000).
++-define(MYSQL_TIMEOUT, 60000).
 +-define(INDEX_SIZE, integer_to_list(170)).
 +-define(PROCNAME, mod_logdb_mysql).
 +
@@ -2701,7 +2728,7 @@
 +                    list_to_string/1, string_to_list/1,
 +                    convert_timestamp_brief/1]).
 +
-+-record(state, {dbref, vhost}).
++-record(state, {dbref, vhost, server, port, db, user, password}).
 +
 +% replace "." with "_"
 +escape_vhost(VHost) -> lists:map(fun(46) -> 95;
@@ -2718,6 +2745,9 @@
 +
 +stats_table(VHost) ->
 +   prefix() ++ "stats" ++ suffix(VHost).
++
++temp_table(VHost) ->
++   prefix() ++ "temp" ++ suffix(VHost).
 +
 +settings_table(VHost) ->
 +   prefix() ++ "settings" ++ suffix(VHost).
@@ -2760,35 +2790,96 @@
 +   User = gen_mod:get_opt(user, Opts, "root"),
 +   Password = gen_mod:get_opt(password, Opts, ""),
 +
-+   LogFun = fun(debug, Format, Argument) ->
-+                 ?MYDEBUG(Format, Argument);
++   St = #state{vhost=VHost,
++               server=Server, port=Port, db=DB,
++               user=User, password=Password},
++
++   case open_mysql_connection(St) of
++       {ok, DBRef} ->
++           State = St#state{dbref=DBRef},
++           ok = create_stats_table(State),
++           ok = create_settings_table(State),
++           ok = create_users_table(State),
++           % clear ets cache every ...
++           timer:send_interval(timer:hours(12), clear_ets_tables),
++           ok = create_servers_table(State),
++           ok = create_resources_table(State),
++           erlang:monitor(process, DBRef),
++           {ok, State};
++       {error, Reason} ->
++           ?ERROR_MSG("MySQL connection failed: ~p~n", [Reason]),
++           {stop, db_connection_failed}
++   end.
++
++open_mysql_connection(#state{server=Server, port=Port, db=DB,
++                             user=DBUser, password=Password} = _State) ->
++   LogFun = fun(debug, _Format, _Argument) ->
++                 %?MYDEBUG(Format, Argument);
++                 ok;
 +               (error, Format, Argument) ->
 +                 ?ERROR_MSG(Format, Argument);
 +               (Level, Format, Argument) ->
 +                 ?MYDEBUG("MySQL (~p)~n", [Level]),
 +                 ?MYDEBUG(Format, Argument)
 +            end,
-+   case mysql_conn:start(Server, Port, User, Password, DB, LogFun) of
-+       {ok, DBRef} ->
-+           ok = create_stats_table(DBRef, VHost),
-+           ok = create_settings_table(DBRef, VHost),
-+           ok = create_users_table(DBRef, VHost),
-+           % clear ets cache every ...
-+           timer:send_interval(timer:hours(12), clear_ets_tables),
-+           ok = create_servers_table(DBRef, VHost),
-+           ok = create_resources_table(DBRef, VHost),
-+           erlang:monitor(process, DBRef),
-+           {ok, #state{dbref=DBRef, vhost=VHost}};
-+       {error, Reason} ->
-+           ?ERROR_MSG("MySQL connection failed: ~p~n", [Reason]),
-+           {stop, db_connection_failed}
-+   end.
++   mysql_conn:start(Server, Port, DBUser, Password, DB, LogFun).
++
++close_mysql_connection(DBRef) ->
++   ?MYDEBUG("Closing ~p mysql connection", [DBRef]),
++   mysql_conn:stop(DBRef).
 +
 +handle_call({log_message, Msg}, _From, #state{dbref=DBRef, vhost=VHost}=State) ->
-+    {reply, log_message_int(DBRef, VHost, Msg), State};
-+handle_call({rebuild_stats}, _From, #state{dbref=DBRef, vhost=VHost}=State) ->
-+    ok = delete_nonexistent_stats(DBRef, VHost),
-+    Reply = rebuild_all_stats_int(DBRef, VHost),
++    Date = convert_timestamp_brief(Msg#msg.timestamp),
++
++    Table = messages_table(VHost, Date),
++    Owner_id = get_user_id(DBRef, VHost, Msg#msg.owner_name),
++    Peer_name_id = get_user_id(DBRef, VHost, Msg#msg.peer_name),
++    Peer_server_id = get_server_id(DBRef, VHost, Msg#msg.peer_server),
++    Peer_resource_id = get_resource_id(DBRef, VHost, Msg#msg.peer_resource),
++
++    Query = ["INSERT INTO ",Table," ",
++               "(owner_id,",
++                "peer_name_id,",
++                "peer_server_id,",
++                "peer_resource_id,",
++                "direction,",
++                "type,",
++                "subject,",
++                "body,",
++                "timestamp) ",
++               "VALUES ",
++               "('", Owner_id, "',",
++                 "'", Peer_name_id, "',",
++                 "'", Peer_server_id, "',",
++                 "'", Peer_resource_id, "',",
++                 "'", atom_to_list(Msg#msg.direction), "',",
++                 "'", Msg#msg.type, "',",
++                 "'", ejabberd_odbc:escape(Msg#msg.subject), "',",
++                 "'", ejabberd_odbc:escape(Msg#msg.body), "',",
++                 "'", Msg#msg.timestamp, "');"],
++
++    Reply =
++       case sql_query_internal_silent(DBRef, Query) of
++            {updated, _} ->
++               ?MYDEBUG("Logged ok for ~p, peer: ~p", [Msg#msg.owner_name++"@"++VHost,
++                                                       Msg#msg.peer_name++"@"++Msg#msg.peer_server]),
++               increment_user_stats(DBRef, Msg#msg.owner_name, Owner_id, VHost, Peer_name_id, Peer_server_id, Date);
++            {error, Reason} ->
++               case regexp:match(Reason, "#42S02") of
++                    % Table doesn't exist
++                    {match, _, _} ->
++                       case create_msg_table(DBRef, VHost, Date) of
++                            error ->
++                               error;
++                            ok ->
++                               {updated, _} = sql_query_internal(DBRef, Query),
++                               increment_user_stats(DBRef, Msg#msg.owner_name, Owner_id, VHost, Peer_name_id, Peer_server_id, Date)
++                       end;
++                    _ ->
++                       ?ERROR_MSG("Failed to log message: ~p", [Reason]),
++                       error
++               end
++       end,
 +    {reply, Reply, State};
 +handle_call({rebuild_stats_at, Date}, _From, #state{dbref=DBRef, vhost=VHost}=State) ->
 +    Reply = rebuild_stats_at_int(DBRef, VHost, Date),
@@ -2815,7 +2906,9 @@
 +      end,
 +    {reply, Reply, State};
 +handle_call({delete_all_messages_by_user_at, User, Date}, _From, #state{dbref=DBRef, vhost=VHost}=State) ->
-+    {reply, delete_all_messages_by_user_at_int(DBRef, User, VHost, Date), State};
++    ok = delete_all_messages_by_user_at_int(DBRef, User, VHost, Date),
++    ok = delete_stats_by_user_at_int(DBRef, User, VHost, Date),
++    {reply, ok, State};
 +handle_call({delete_messages_at, Date}, _From, #state{dbref=DBRef, vhost=VHost}=State) ->
 +    Reply =
 +      case sql_query_internal(DBRef, ["DROP TABLE ",messages_table(VHost, Date),";"]) of
@@ -2997,24 +3090,6 @@
 +              error
 +      end,
 +    {reply, Reply, State};
-+handle_call({drop_user, User}, _From, #state{dbref=DBRef, vhost=VHost}=State) ->
-+    {ok, Dates} = get_user_stats_int(DBRef, User, VHost),
-+    MDResult = lists:map(fun({Date, _}) ->
-+                   delete_all_messages_by_user_at_int(DBRef, User, VHost, Date)
-+               end, Dates),
-+    SDResult = delete_user_settings_int(DBRef, User, VHost),
-+    Reply =
-+      case lists:all(fun(Result) when Result == ok ->
-+                          true;
-+                        (Result) when Result == error ->
-+                          false
-+                     end, lists:append(MDResult, [SDResult])) of
-+           true ->
-+             ok;
-+           false ->
-+             error
-+      end,
-+    {reply, Reply, State};
 +handle_call({stop}, _From, #state{vhost=VHost}=State) ->
 +   ets:delete(ets_users_table(VHost)),
 +   ets:delete(ets_servers_table(VHost)),
@@ -3024,6 +3099,32 @@
 +    ?INFO_MSG("Got call Msg: ~p, State: ~p", [Msg, State]),
 +    {noreply, State}.
 +
++handle_cast({rebuild_stats}, State) ->
++    rebuild_all_stats_int(State),
++    {noreply, State};
++handle_cast({drop_user, User}, #state{vhost=VHost} = State) ->
++    Fun = fun() ->
++            {ok, DBRef} = open_mysql_connection(State),
++            {ok, Dates} = get_user_stats_int(DBRef, User, VHost),
++            MDResult = lists:map(fun({Date, _}) ->
++                           delete_all_messages_by_user_at_int(DBRef, User, VHost, Date)
++                       end, Dates),
++            StDResult = delete_all_stats_by_user_int(DBRef, User, VHost),
++            SDResult = delete_user_settings_int(DBRef, User, VHost),
++            case lists:all(fun(Result) when Result == ok ->
++                                true;
++                              (Result) when Result == error ->
++                               false
++                           end, lists:append([MDResult, [StDResult], [SDResult]])) of
++                 true ->
++                   ?INFO_MSG("Removed ~s@~s", [User, VHost]);
++                 false ->
++                   ?ERROR_MSG("Failed to remove ~s@~s", [User, VHost])
++            end,
++            close_mysql_connection(DBRef)
++          end,
++    spawn(Fun),
++    {noreply, State};
 +handle_cast(Msg, State) ->
 +    ?INFO_MSG("Got cast Msg:~p, State:~p", [Msg, State]),
 +    {noreply, State}.
@@ -3038,7 +3139,8 @@
 +    ?INFO_MSG("Got Info:~p, State:~p", [Info, State]),
 +    {noreply, State}.
 +
-+terminate(_Reason, _State) ->
++terminate(_Reason, #state{dbref=DBRef}=_State) ->
++    close_mysql_connection(DBRef),
 +    ok.
 +
 +code_change(_OldVsn, State, _Extra) ->
@@ -3054,7 +3156,7 @@
 +   gen_server:call(Proc, {log_message, Msg}, ?CALL_TIMEOUT).
 +rebuild_stats(VHost) ->
 +   Proc = gen_mod:get_module_proc(VHost, ?PROCNAME),
-+   gen_server:call(Proc, {rebuild_stats}, ?CALL_TIMEOUT).
++   gen_server:cast(Proc, {rebuild_stats}).
 +rebuild_stats_at(VHost, Date) ->
 +   Proc = gen_mod:get_module_proc(VHost, ?PROCNAME),
 +   gen_server:call(Proc, {rebuild_stats_at, Date}, ?CALL_TIMEOUT).
@@ -3093,64 +3195,13 @@
 +   gen_server:call(Proc, {set_user_settings, User, Set}, ?CALL_TIMEOUT).
 +drop_user(User, VHost) ->
 +   Proc = gen_mod:get_module_proc(VHost, ?PROCNAME),
-+   gen_server:call(Proc, {drop_user, User}, ?CALL_TIMEOUT).
++   gen_server:cast(Proc, {drop_user, User}).
 +
 +%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 +%
 +% internals
 +%
 +%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-+log_message_int(DBRef, VHost, Msg) ->
-+    Date = convert_timestamp_brief(Msg#msg.timestamp),
-+
-+    Table = messages_table(VHost, Date),
-+    Owner_id = get_user_id(DBRef, VHost, Msg#msg.owner_name),
-+    Peer_name_id = get_user_id(DBRef, VHost, Msg#msg.peer_name),
-+    Peer_server_id = get_server_id(DBRef, VHost, Msg#msg.peer_server),
-+    Peer_resource_id = get_resource_id(DBRef, VHost, Msg#msg.peer_resource),
-+
-+    Query = ["INSERT INTO ",Table," ",
-+                "(owner_id,",
-+                 "peer_name_id,",
-+                 "peer_server_id,",
-+                 "peer_resource_id,",
-+                 "direction,",
-+                 "type,",
-+                 "subject,",
-+                 "body,",
-+                 "timestamp) ",
-+                "VALUES ",
-+                "('", Owner_id, "',",
-+                  "'", Peer_name_id, "',",
-+                  "'", Peer_server_id, "',",
-+                  "'", Peer_resource_id, "',",
-+                  "'", atom_to_list(Msg#msg.direction), "',",
-+                  "'", Msg#msg.type, "',",
-+                  "'", ejabberd_odbc:escape(Msg#msg.subject), "',",
-+                  "'", ejabberd_odbc:escape(Msg#msg.body), "',",
-+                  "'", Msg#msg.timestamp, "');"],
-+
-+    case sql_query_internal_silent(DBRef, Query) of
-+         {updated, _} ->
-+            ?MYDEBUG("Logged ok for ~p, peer: ~p", [Msg#msg.owner_name++"@"++VHost,
-+                                                    Msg#msg.peer_name++"@"++Msg#msg.peer_server]),
-+            increment_user_stats(DBRef, Msg#msg.owner_name, Owner_id, VHost, Peer_name_id, Peer_server_id, Date);
-+         {error, Reason} ->
-+            case regexp:match(Reason, "#42S02") of
-+                 % Table doesn't exist
-+                 {match, _, _} ->
-+                   case create_msg_table(DBRef, VHost, Date) of
-+                        error ->
-+                          error;
-+                        ok ->
-+                          log_message_int(DBRef, VHost, Msg)
-+                   end;
-+                 _ ->
-+                   ?ERROR_MSG("Failed to log message: ~p", [Reason]),
-+                   error
-+            end
-+    end.
-+
 +increment_user_stats(DBRef, User_name, User_id, VHost, PNameID, PServerID, Date) ->
 +    SName = stats_table(VHost),
 +    UQuery = ["UPDATE ",SName," ",
@@ -3200,58 +3251,82 @@
 +            []
 +     end.
 +
-+rebuild_all_stats_int(DBRef, VHost) ->
-+    case lists:filter(fun(Date) ->
-+                      case rebuild_stats_at_int(DBRef, VHost, Date) of
-+                           ok -> false;
-+                           error -> true
-+                      end
-+                    end, get_dates_int(DBRef, VHost)) of
-+         [] -> ok;
-+         FTables ->
-+            ?ERROR_MSG("Failed to rebuild stats for ~p dates", [FTables]),
-+            error
-+    end.
++rebuild_all_stats_int(#state{vhost=VHost}=State) ->
++    Fun = fun() ->
++             {ok, DBRef} = open_mysql_connection(State),
++             ok = delete_nonexistent_stats(DBRef, VHost),
++             case lists:filter(fun(Date) ->
++                                 case catch rebuild_stats_at_int(DBRef, VHost, Date) of
++                                      ok -> false;
++                                      error -> true;
++                                      {'EXIT', _} -> true
++                                 end
++                             end, get_dates_int(DBRef, VHost)) of
++                  [] -> ok;
++                  FTables ->
++                     ?ERROR_MSG("Failed to rebuild stats for ~p dates", [FTables]),
++                     error
++             end,
++             close_mysql_connection(DBRef)
++          end,
++    spawn(Fun).
 +
 +rebuild_stats_at_int(DBRef, VHost, Date) ->
-+    Table = messages_table(VHost, Date),
-+    STable = stats_table(VHost),
++    TempTable =  temp_table(VHost),
++    Fun = fun() ->
++           Table = messages_table(VHost, Date),
++           STable = stats_table(VHost),
 +
-+    case sql_query_internal(DBRef, ["LOCK TABLE ",Table," WRITE, ",
-+                                                  STable," WRITE;"]) of
-+         {updated, _} ->
-+             Fun = 
-+               fun() ->
-+                 DQuery = [ "DELETE FROM ",STable," ",
-+                               "WHERE at='",Date,"';"],
++           DQuery = [ "DELETE FROM ",STable," ",
++                          "WHERE at='",Date,"';"],
 +
-+                 {updated, _} = sql_query_internal(DBRef, DQuery),
++           ok = create_temp_table(DBRef, TempTable),
++           {updated, _} = sql_query_internal(DBRef, ["LOCK TABLE ",Table," WRITE, ",TempTable," WRITE;"]),
++           SQuery = ["INSERT INTO ",TempTable," ",
++                     "(owner_id,peer_name_id,peer_server_id,at,count) ",
++                         "SELECT owner_id,peer_name_id,peer_server_id,\"",Date,"\",count(*) ",
++                            "FROM ",Table," GROUP BY owner_id,peer_name_id,peer_server_id;"],
++           case sql_query_internal(DBRef, SQuery) of
++                  {updated, 0} ->
++                      Count = sql_query_internal(DBRef, ["SELECT count(*) FROM ",Table,";"]),
++                      case Count of
++                        {data, [["0"]]} ->
++                           {updated, _} = sql_query_internal(DBRef, ["DROP TABLE ",Table,";"]),
++                           {updated, _} = sql_query_internal(DBRef, ["LOCK TABLE ",STable," WRITE;"]),
++                           {updated, _} = sql_query_internal(DBRef, DQuery),
++                           ok;
++                        _ ->
++                           ?ERROR_MSG("Failed to calculate stats for ~s table! Count was ~p.", [Date, Count]),
++                           error
++                      end;
++                  {updated, _} ->
++                      {updated, _} = sql_query_internal(DBRef, ["LOCK TABLE ",STable," WRITE, ",TempTable," WRITE;"]),
++                      {updated, _} = sql_query_internal(DBRef, DQuery),
++                      SQuery1 = ["INSERT INTO ",STable," ",
++                                  "(owner_id,peer_name_id,peer_server_id,at,count) ",
++                                     "SELECT owner_id,peer_name_id,peer_server_id,at,count ",
++                                        "FROM ",TempTable,";"],
++                      case sql_query_internal(DBRef, SQuery1) of
++                           {updated, _} -> ok;
++                           {error, _} -> error
++                      end;
++                  {error, _} -> error
++           end
++       end,
 +
-+                 SQuery = ["INSERT INTO ",STable," ",
-+                            "(owner_id,peer_name_id,peer_server_id,at,count) ",
-+                               "SELECT owner_id,peer_name_id,peer_server_id,\"",Date,"\"",",count(*) ",
-+                                  "FROM ",Table," GROUP BY owner_id,peer_name_id,peer_server_id;"],
-+
-+                 case sql_query_internal(DBRef, SQuery) of
-+                      {updated, 0} ->
-+                          {updated, _} = sql_query_internal(DBRef, ["DROP TABLE ",Table,";"]),
-+                          ok;
-+                      {updated, _} -> ok;
-+                      {error, _} -> error
-+                 end
-+               end,
-+
-+             Res = case sql_transaction_internal(DBRef, Fun) of
-+                        {atomic, _} ->
-+                            ?INFO_MSG("Rebuilded stats for ~p at ~p", [VHost, Date]),
-+                            ok;
-+                        {aborted, _} ->
-+                            error
-+                   end,
-+             {updated, _} = sql_query_internal(DBRef, ["UNLOCK TABLES;"]),
-+             Res;
-+         {error, _Reason} -> error
-+    end.
++    case catch apply(Fun, []) of
++         ok ->
++           ?INFO_MSG("Rebuilded stats for ~p at ~p", [VHost, Date]),
++           ok;
++         error ->
++           error;
++         {'EXIT', Reason} ->
++           ?ERROR_MSG("Failed to rebuild stats for ~s table: ~p.", [Date, Reason]),
++           error
++    end,
++    sql_query_internal(DBRef, ["UNLOCK TABLES;"]),
++    sql_query_internal(DBRef, ["DROP TABLE ",TempTable,";"]),
++    ok.
 +
 +
 +delete_nonexistent_stats(DBRef, VHost) ->
@@ -3262,22 +3337,20 @@
 +                             ["\"",Date,"\"",","]
 +                         end, Dates),
 +
-+    Temp1 = case Temp of
-+                 [] ->
-+                   ["\"\""];
-+                 _ ->
-+                   % replace last "," with ");"
-+                   lists:append([lists:sublist(Temp, length(Temp)-1), ");"])
-+            end,
-+
-+    Query = ["DELETE FROM ",STable," ",
-+                 "WHERE at NOT IN (", Temp1],
-+
-+    case sql_query_internal(DBRef, Query) of
-+         {updated, _} ->
-+            ok;
-+         {error, _} ->
-+            error
++    case Temp of
++         [] ->
++           ok;
++         _ ->
++           % replace last "," with ");"
++           Temp1 = lists:append([lists:sublist(Temp, length(Temp)-1), ");"]),
++           Query = ["DELETE FROM ",STable," ",
++                       "WHERE at NOT IN (", Temp1],
++           case sql_query_internal(DBRef, Query) of
++                {updated, _} ->
++                    ok;
++                {error, _} ->
++                    error
++           end
 +    end.
 +
 +get_user_stats_int(DBRef, User, VHost) ->
@@ -3300,9 +3373,31 @@
 +                 "WHERE owner_id=(SELECT user_id FROM ",users_table(VHost)," WHERE username=\"",User,"\");"],
 +    case sql_query_internal(DBRef, DQuery) of
 +         {updated, _} ->
-+            rebuild_stats_at_int(DBRef, VHost, Date);
++            ?INFO_MSG("Dropped messages for ~s@~s at ~s", [User, VHost, Date]),
++            ok;
 +         {error, _} ->
 +            error
++    end.
++
++delete_all_stats_by_user_int(DBRef, User, VHost) ->
++    SQuery = ["DELETE FROM ",stats_table(VHost)," ",
++                "WHERE owner_id=(SELECT user_id FROM ",users_table(VHost)," WHERE username=\"",User,"\");"],
++    case sql_query_internal(DBRef, SQuery) of
++         {updated, _} ->
++             ?INFO_MSG("Dropped all stats for ~s@~s", [User, VHost]),
++             ok;
++         {error, _} -> error
++    end.
++
++delete_stats_by_user_at_int(DBRef, User, VHost, Date) ->
++    SQuery = ["DELETE FROM ",stats_table(VHost)," ",
++                "WHERE owner_id=(SELECT user_id FROM ",users_table(VHost)," WHERE username=\"",User,"\") ",
++                  "AND at=\"",Date,"\";"],
++   case sql_query_internal(DBRef, SQuery) of
++         {updated, _} ->
++             ?INFO_MSG("Dropped stats for ~s@~s at ~s", [User, VHost, Date]),
++             ok;
++         {error, _} -> error
 +    end.
 +
 +delete_user_settings_int(DBRef, User, VHost) ->
@@ -3310,9 +3405,10 @@
 +                 "WHERE owner_id=(SELECT user_id FROM ",users_table(VHost)," WHERE username=\"",User,"\");"],
 +    case sql_query_internal(DBRef, Query) of
 +         {updated, _} ->
++            ?INFO_MSG("Dropped ~s@~s settings", [User, VHost]),
 +            ok;
 +         {error, Reason} ->
-+            ?ERROR_MSG("Failed to delete user ~s@~s settings: ~p", [User, VHost, Reason]),
++            ?ERROR_MSG("Failed to drop ~s@~s settings: ~p", [User, VHost, Reason]),
 +            error
 +    end.
 +
@@ -3321,7 +3417,21 @@
 +% tables internals
 +%
 +%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-+create_stats_table(DBRef, VHost) ->
++create_temp_table(DBRef, Name) ->
++    Query = ["CREATE TABLE ",Name," (",
++                "owner_id MEDIUMINT UNSIGNED, ",
++                "peer_name_id MEDIUMINT UNSIGNED, ",
++                "peer_server_id MEDIUMINT UNSIGNED, ",
++                "at VARCHAR(11), ",
++                "count INT(11) ",
++             ") ENGINE=MyISAM CHARACTER SET utf8;"
++            ],
++    case sql_query_internal(DBRef, Query) of
++         {updated, _} -> ok;
++         {error, _Reason} -> error
++    end.
++
++create_stats_table(#state{dbref=DBRef, vhost=VHost}=State) ->
 +    SName = stats_table(VHost),
 +    Query = ["CREATE TABLE ",SName," (",
 +                "owner_id MEDIUMINT UNSIGNED, ",
@@ -3336,7 +3446,7 @@
 +    case sql_query_internal_silent(DBRef, Query) of
 +         {updated, _} ->
 +            ?INFO_MSG("Created stats table for ~p", [VHost]),
-+            rebuild_all_stats_int(DBRef, VHost),
++            rebuild_all_stats_int(State),
 +            ok;
 +         {error, Reason} ->
 +            case regexp:match(Reason, "#42S01") of
@@ -3363,7 +3473,7 @@
 +            end
 +    end.
 +
-+create_settings_table(DBRef, VHost) ->
++create_settings_table(#state{dbref=DBRef, vhost=VHost}) ->
 +    SName = settings_table(VHost),
 +    Query = ["CREATE TABLE IF NOT EXISTS ",SName," (",
 +                "owner_id MEDIUMINT UNSIGNED PRIMARY KEY, ",
@@ -3380,7 +3490,7 @@
 +            error
 +    end.
 +
-+create_users_table(DBRef, VHost) ->
++create_users_table(#state{dbref=DBRef, vhost=VHost}) ->
 +    SName = users_table(VHost),
 +    Query = ["CREATE TABLE IF NOT EXISTS ",SName," (",
 +                "username TEXT NOT NULL, ",
@@ -3398,7 +3508,7 @@
 +            error
 +    end.
 +
-+create_servers_table(DBRef, VHost) ->
++create_servers_table(#state{dbref=DBRef, vhost=VHost}) ->
 +    SName = servers_table(VHost),
 +    Query = ["CREATE TABLE IF NOT EXISTS ",SName," (",
 +                "server TEXT NOT NULL, ",
@@ -3416,7 +3526,7 @@
 +            error
 +    end.
 +
-+create_resources_table(DBRef, VHost) ->
++create_resources_table(#state{dbref=DBRef, vhost=VHost}) ->
 +    RName = resources_table(VHost),
 +    Query = ["CREATE TABLE IF NOT EXISTS ",RName," (",
 +                "resource TEXT NOT NULL, ",
@@ -3606,36 +3716,6 @@
 +% SQL internals 
 +%
 +%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-+% like do_transaction/2 in mysql_conn.erl (changeset by Yariv Sadan <yarivvv@gmail.com>)
-+sql_transaction_internal(DBRef, Fun) ->
-+    case sql_query_internal(DBRef, ["START TRANSACTION;"]) of
-+         {updated, _} ->
-+            case catch Fun() of
-+                 error = Err ->
-+                   rollback_internal(DBRef, Err);
-+                 {error, _} = Err ->
-+                   rollback_internal(DBRef, Err);
-+                 {'EXIT', _} = Err ->
-+                   rollback_internal(DBRef, Err);
-+                 Res ->
-+                   case sql_query_internal(DBRef, ["COMMIT;"]) of
-+                        {error, _} -> rollback_internal(DBRef, {commit_error});
-+                        {updated, _} ->
-+                           case Res of
-+                                {atomic, _} -> Res;
-+                                _ -> {atomic, Res}
-+                           end
-+                   end
-+            end;
-+         {error, _} ->
-+            {aborted, {begin_error}}
-+    end.
-+
-+% like rollback/2 in mysql_conn.erl (changeset by Yariv Sadan <yarivvv@gmail.com>)
-+rollback_internal(DBRef, Reason) ->
-+    Res = sql_query_internal(DBRef, ["ROLLBACK;"]),
-+    {aborted, {Reason, {rollback_result, Res}}}.
-+
 +sql_query_internal(DBRef, Query) ->
 +    case sql_query_internal_silent(DBRef, Query) of
 +         {error, Reason} ->
@@ -3646,7 +3726,7 @@
 +
 +sql_query_internal_silent(DBRef, Query) ->
 +    ?MYDEBUG("DOING: \"~s\"", [lists:append(Query)]),
-+    get_result(mysql_conn:fetch(DBRef, Query, self(), ?TIMEOUT)).
++    get_result(mysql_conn:fetch(DBRef, Query, self(), ?MYSQL_TIMEOUT)).
 +
 +get_result({updated, MySQLRes}) ->
 +    {updated, mysql:get_result_affected_rows(MySQLRes)};
@@ -3657,15 +3737,15 @@
 +get_result({error, MySQLRes}) ->
 +    Reason = mysql:get_result_reason(MySQLRes),
 +    {error, Reason}.
---- mod_logdb_mysql5.erl.orig	2008-09-25 10:22:50.000000000 +0300
-+++ mod_logdb_mysql5.erl	2008-09-25 10:09:34.000000000 +0300
-@@ -0,0 +1,924 @@
+--- mod_logdb_mysql5.erl.orig	2009-02-05 19:21:29.000000000 +0200
++++ mod_logdb_mysql5.erl	2009-02-05 19:20:14.000000000 +0200
+@@ -0,0 +1,978 @@
 +%%%----------------------------------------------------------------------
 +%%% File    : mod_logdb_mysql5.erl
-+%%% Author  : Oleg Palij (mailto:o.palij@gmail.com xmpp://malik@jabber.te.ua)
++%%% Author  : Oleg Palij (mailto,xmpp:o.palij@gmail.com)
 +%%% Purpose : MySQL 5 backend for mod_logdb
 +%%% Version : trunk
-+%%% Id      : $Id: mod_logdb_mysql5.erl 1169 2008-09-16 12:14:36Z malik $
++%%% Id      : $Id: mod_logdb_mysql5.erl 1253 2009-02-02 11:10:03Z malik $
 +%%% Url     : http://www.dp.uz.gov.ua/o.palij/mod_logdb/
 +%%%----------------------------------------------------------------------
 +
@@ -3694,8 +3774,8 @@
 +         drop_user/2]).
 +
 +% gen_server call timeout
-+-define(CALL_TIMEOUT, 10000).
-+-define(TIMEOUT, 10000).
++-define(CALL_TIMEOUT, 30000).
++-define(MYSQL_TIMEOUT, 60000).
 +-define(INDEX_SIZE, integer_to_list(170)).
 +-define(PROCNAME, mod_logdb_mysql5).
 +
@@ -3703,7 +3783,7 @@
 +                    list_to_string/1, string_to_list/1,
 +                    convert_timestamp_brief/1]).
 +
-+-record(state, {dbref, vhost}).
++-record(state, {dbref, vhost, server, port, db, user, password}).
 +
 +% replace "." with "_"
 +escape_vhost(VHost) -> lists:map(fun(46) -> 95;
@@ -3726,6 +3806,9 @@
 +
 +stats_table(VHost) ->
 +   prefix() ++ "stats" ++ suffix(VHost).
++
++temp_table(VHost) ->
++   prefix() ++ "temp" ++ suffix(VHost).
 +
 +settings_table(VHost) ->
 +   prefix() ++ "settings" ++ suffix(VHost).
@@ -3767,60 +3850,43 @@
 +   User = gen_mod:get_opt(user, Opts, "root"),
 +   Password = gen_mod:get_opt(password, Opts, ""),
 +
-+   LogFun = fun(debug, Format, Argument) ->
-+                 ?MYDEBUG(Format, Argument);
++   St = #state{vhost=VHost,
++               server=Server, port=Port, db=DB,
++               user=User, password=Password},
++
++   case open_mysql_connection(St) of
++       {ok, DBRef} ->
++           State = St#state{dbref=DBRef},
++           ok = create_internals(State),
++           ok = create_stats_table(State),
++           ok = create_settings_table(State),
++           ok = create_users_table(State),
++           ok = create_servers_table(State),
++           ok = create_resources_table(State),
++           erlang:monitor(process, DBRef),
++           {ok, State};
++       {error, Reason} ->
++           ?ERROR_MSG("MySQL connection failed: ~p~n", [Reason]),
++           {stop, db_connection_failed}
++   end.
++
++open_mysql_connection(#state{server=Server, port=Port, db=DB,
++                             user=DBUser, password=Password} = _State) ->
++   LogFun = fun(debug, _Format, _Argument) ->
++                 %?MYDEBUG(Format, Argument);
++                 ok;
 +               (error, Format, Argument) ->
 +                 ?ERROR_MSG(Format, Argument);
 +               (Level, Format, Argument) ->
 +                 ?MYDEBUG("MySQL (~p)~n", [Level]),
 +                 ?MYDEBUG(Format, Argument)
 +            end,
-+   case mysql_conn:start(Server, Port, User, Password, DB, [65536, 131072], LogFun) of
-+       {ok, DBRef} ->
-+           ok = create_internals(DBRef, VHost),
-+           ok = create_stats_table(DBRef, VHost),
-+           ok = create_settings_table(DBRef, VHost),
-+           ok = create_users_table(DBRef, VHost),
-+           ok = create_servers_table(DBRef, VHost),
-+           ok = create_resources_table(DBRef, VHost),
-+           erlang:monitor(process, DBRef),
-+           {ok, #state{dbref=DBRef, vhost=VHost}};
-+       {error, Reason} ->
-+           ?ERROR_MSG("MySQL connection failed: ~p~n", [Reason]),
-+           {stop, db_connection_failed}
-+   end.
++   mysql_conn:start(Server, Port, DBUser, Password, DB, [65536, 131072], LogFun).
 +
-+handle_call({log_message, Msg}, _From, #state{dbref=DBRef, vhost=VHost}=State) ->
-+    Date = convert_timestamp_brief(Msg#msg.timestamp),
-+    TableName = messages_table(VHost, Date),
++close_mysql_connection(DBRef) ->
++   ?MYDEBUG("Closing ~p mysql connection", [DBRef]),
++   mysql_conn:stop(DBRef).
 +
-+    Query = [ "CALL ",logmessage_name(VHost)," "
-+                 "('", TableName, "',",
-+                  "'", Date, "',",
-+                  "'", Msg#msg.owner_name, "',",
-+                  "'", Msg#msg.peer_name, "',",
-+                  "'", Msg#msg.peer_server, "',",
-+                  "'", ejabberd_odbc:escape(Msg#msg.peer_resource), "',",
-+                  "'", atom_to_list(Msg#msg.direction), "',",
-+                  "'", Msg#msg.type, "',",
-+                  "'", ejabberd_odbc:escape(Msg#msg.subject), "',",
-+                  "'", ejabberd_odbc:escape(Msg#msg.body), "',",
-+                  "'", Msg#msg.timestamp, "');"],
-+
-+    Reply =
-+       case sql_query_internal(DBRef, Query) of
-+            {updated, _} ->
-+               ?MYDEBUG("Logged ok for ~p, peer: ~p", [Msg#msg.owner_name++"@"++VHost,
-+                                                       Msg#msg.peer_name++"@"++Msg#msg.peer_server]),
-+               ok;
-+            {error, _Reason} ->
-+               error
-+       end,
-+    {reply, Reply, State};
-+handle_call({rebuild_stats}, _From, #state{dbref=DBRef, vhost=VHost}=State) ->
-+    ok = delete_nonexistent_stats(DBRef, VHost),
-+    Reply = rebuild_all_stats_int(DBRef, VHost),
-+    {reply, Reply, State};
 +handle_call({rebuild_stats_at, Date}, _From, #state{dbref=DBRef, vhost=VHost}=State) ->
 +    Reply = rebuild_stats_at_int(DBRef, VHost, Date),
 +    {reply, Reply, State};
@@ -3846,7 +3912,9 @@
 +      end,
 +    {reply, Reply, State};
 +handle_call({delete_all_messages_by_user_at, User, Date}, _From, #state{dbref=DBRef, vhost=VHost}=State) ->
-+    {reply, delete_all_messages_by_user_at_int(DBRef, User, VHost, Date), State};
++    ok = delete_all_messages_by_user_at_int(DBRef, User, VHost, Date),
++    ok = delete_stats_by_user_at_int(DBRef, User, VHost, Date),
++    {reply, ok, State};
 +handle_call({delete_messages_at, Date}, _From, #state{dbref=DBRef, vhost=VHost}=State) ->
 +    Fun = fun() ->
 +              {updated, _} = sql_query_internal(DBRef, ["DROP TABLE ",messages_table(VHost, Date),";"]),
@@ -3854,13 +3922,14 @@
 +                           "WHERE at=\"",Date,"\";"],
 +              {updated, _} = sql_query_internal(DBRef, TQuery),
 +              VQuery = ["DROP VIEW IF EXISTS ",view_table(VHost,Date),";"],
-+              {updated, _} = sql_query_internal(DBRef, VQuery)
++              {updated, _} = sql_query_internal(DBRef, VQuery),
++              ok
 +          end,
 +    Reply =
-+      case sql_transaction_internal(DBRef, Fun) of
-+           {atomic, _} ->
++      case catch apply(Fun, []) of
++           ok ->
 +              ok;
-+           {aborted, _} ->
++           {'EXIT', _} ->
 +              error
 +      end,
 +    {reply, Reply, State};
@@ -4017,24 +4086,6 @@
 +              error
 +      end,
 +    {reply, Reply, State};
-+handle_call({drop_user, User}, _From, #state{dbref=DBRef, vhost=VHost}=State) ->
-+    {ok, Dates} = get_user_stats_int(DBRef, User, VHost),
-+    MDResult = lists:map(fun({Date, _}) ->
-+                   delete_all_messages_by_user_at_int(DBRef, User, VHost, Date)
-+               end, Dates),
-+    SDResult = delete_user_settings_int(DBRef, User, VHost),
-+    Reply =
-+      case lists:all(fun(Result) when Result == ok ->
-+                          true;
-+                        (Result) when Result == error ->
-+                          false
-+                     end, lists:append(MDResult, [SDResult])) of
-+           true ->
-+             ok;
-+           false -> 
-+             error
-+      end,
-+    {reply, Reply, State};
 +handle_call({stop}, _From, #state{vhost=VHost}=State) ->
 +   ?MYDEBUG("Stoping mysql5 backend for ~p", [VHost]),
 +   {stop, normal, ok, State};
@@ -4042,6 +4093,61 @@
 +    ?INFO_MSG("Got call Msg: ~p, State: ~p", [Msg, State]),
 +    {noreply, State}.
 +
++handle_cast({log_message, Msg}, #state{dbref=DBRef, vhost=VHost}=State) ->
++    Fun = fun() ->
++            Date = convert_timestamp_brief(Msg#msg.timestamp),
++            TableName = messages_table(VHost, Date),
++
++            Query = [ "CALL ",logmessage_name(VHost)," "
++                         "('", TableName, "',",
++                         "'", Date, "',",
++                         "'", Msg#msg.owner_name, "',",
++                         "'", Msg#msg.peer_name, "',",
++                         "'", Msg#msg.peer_server, "',",
++                         "'", ejabberd_odbc:escape(Msg#msg.peer_resource), "',",
++                         "'", atom_to_list(Msg#msg.direction), "',",
++                         "'", Msg#msg.type, "',",
++                         "'", ejabberd_odbc:escape(Msg#msg.subject), "',",
++                         "'", ejabberd_odbc:escape(Msg#msg.body), "',",
++                         "'", Msg#msg.timestamp, "');"],
++
++            case sql_query_internal(DBRef, Query) of
++                 {updated, _} ->
++                    ?MYDEBUG("Logged ok for ~p, peer: ~p", [Msg#msg.owner_name++"@"++VHost,
++                                                            Msg#msg.peer_name++"@"++Msg#msg.peer_server]),
++                    ok;
++                 {error, _Reason} ->
++                    error
++            end
++          end,
++    spawn(Fun),
++    {noreply, State};
++handle_cast({rebuild_stats}, State) ->
++    rebuild_all_stats_int(State),
++    {noreply, State};
++handle_cast({drop_user, User}, #state{vhost=VHost} = State) ->
++    Fun = fun() ->
++            {ok, DBRef} = open_mysql_connection(State),
++            {ok, Dates} = get_user_stats_int(DBRef, User, VHost),
++            MDResult = lists:map(fun({Date, _}) ->
++                           delete_all_messages_by_user_at_int(DBRef, User, VHost, Date)
++                       end, Dates),
++            StDResult = delete_all_stats_by_user_int(DBRef, User, VHost),
++            SDResult = delete_user_settings_int(DBRef, User, VHost),
++            case lists:all(fun(Result) when Result == ok ->
++                                true;
++                              (Result) when Result == error ->
++                               false
++                           end, lists:append([MDResult, [StDResult], [SDResult]])) of
++                 true ->
++                   ?INFO_MSG("Removed ~s@~s", [User, VHost]);
++                 false ->
++                   ?ERROR_MSG("Failed to remove ~s@~s", [User, VHost])
++            end,
++            close_mysql_connection(DBRef)
++          end,
++    spawn(Fun),
++    {noreply, State};
 +handle_cast(Msg, State) ->
 +    ?INFO_MSG("Got cast Msg:~p, State:~p", [Msg, State]),
 +    {noreply, State}.
@@ -4052,7 +4158,8 @@
 +    ?INFO_MSG("Got Info:~p, State:~p", [Info, State]),
 +    {noreply, State}.
 +
-+terminate(_Reason, _State) ->
++terminate(_Reason, #state{dbref=DBRef}=_State) ->
++    close_mysql_connection(DBRef),
 +    ok.
 +
 +code_change(_OldVsn, State, _Extra) ->
@@ -4065,10 +4172,10 @@
 +%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 +log_message(VHost, Msg) ->
 +   Proc = gen_mod:get_module_proc(VHost, ?PROCNAME),
-+   gen_server:call(Proc, {log_message, Msg}, ?CALL_TIMEOUT).
++   gen_server:cast(Proc, {log_message, Msg}).
 +rebuild_stats(VHost) ->
 +   Proc = gen_mod:get_module_proc(VHost, ?PROCNAME),
-+   gen_server:call(Proc, {rebuild_stats}, ?CALL_TIMEOUT).
++   gen_server:cast(Proc, {rebuild_stats}).
 +rebuild_stats_at(VHost, Date) ->
 +   Proc = gen_mod:get_module_proc(VHost, ?PROCNAME),
 +   gen_server:call(Proc, {rebuild_stats_at, Date}, ?CALL_TIMEOUT).
@@ -4107,7 +4214,7 @@
 +   gen_server:call(Proc, {set_user_settings, User, Set}, ?CALL_TIMEOUT).
 +drop_user(User, VHost) ->
 +   Proc = gen_mod:get_module_proc(VHost, ?PROCNAME),
-+   gen_server:call(Proc, {drop_user, User}, ?CALL_TIMEOUT).
++   gen_server:cast(Proc, {drop_user, User}).
 +
 +%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 +%
@@ -4121,7 +4228,6 @@
 +                           Reg = lists:sublist(prefix(),2,length(prefix())) ++ ".*" ++ escape_vhost(VHost),
 +                           case regexp:match(Table, Reg) of
 +                                {match, 1, _} ->
-+                                   ?MYDEBUG("matched ~p against ~p", [Table, Reg]),
 +                                   case regexp:match(Table,"[0-9]+-[0-9]+-[0-9]+") of
 +                                        {match, S, E} ->
 +                                            lists:append(Dates, [lists:sublist(Table,S,E)]);
@@ -4136,58 +4242,83 @@
 +            []
 +    end.
 +
-+rebuild_all_stats_int(DBRef, VHost) ->
-+    case lists:filter(fun(Date) ->
-+                      case rebuild_stats_at_int(DBRef, VHost, Date) of
-+                           ok -> false;
-+                           error -> true
-+                      end
-+                    end, get_dates_int(DBRef, VHost)) of
-+         [] -> ok;
-+         FTables ->
-+            ?ERROR_MSG("Failed to rebuild stats for ~p dates", [FTables]),
-+            error
-+    end.
++rebuild_all_stats_int(#state{vhost=VHost}=State) ->
++    Fun = fun() ->
++             {ok, DBRef} = open_mysql_connection(State),
++             ok = delete_nonexistent_stats(DBRef, VHost),
++             case lists:filter(fun(Date) ->
++                                 case catch rebuild_stats_at_int(DBRef, VHost, Date) of
++                                      ok -> false;
++                                      error -> true;
++                                      {'EXIT', _} -> true
++                                 end
++                             end, get_dates_int(DBRef, VHost)) of
++                  [] -> ok;
++                  FTables ->
++                     ?ERROR_MSG("Failed to rebuild stats for ~p dates", [FTables]),
++                     error
++             end,
++             close_mysql_connection(DBRef)
++          end,
++    spawn(Fun).
 +
 +rebuild_stats_at_int(DBRef, VHost, Date) ->
-+    Table = messages_table(VHost, Date),
-+    STable = stats_table(VHost),
++    TempTable = temp_table(VHost),
++    Fun = fun() ->
++           Table = messages_table(VHost, Date),
++           STable = stats_table(VHost),
 +
-+    case sql_query_internal(DBRef, ["LOCK TABLE ",Table," WRITE, ", STable," WRITE;"]) of
-+         {updated, _} ->
-+            Fun = 
-+              fun() ->
-+                DQuery = [ "DELETE FROM ",STable," ",
-+                              "WHERE at='",Date,"';"],
++           DQuery = [ "DELETE FROM ",STable," ",
++                          "WHERE at='",Date,"';"],
 +
-+                {updated, _} = sql_query_internal(DBRef, DQuery),
-+
-+                SQuery = ["INSERT INTO ",STable," ",
-+                           "(owner_id,peer_name_id,peer_server_id,at,count) ",
-+                              "SELECT owner_id,peer_name_id,peer_server_id,\"",Date,"\",count(*) ",
-+                                 "FROM ",Table," GROUP BY owner_id,peer_name_id,peer_server_id;"],
-+
-+                case sql_query_internal(DBRef, SQuery) of
-+                     {updated, 0} ->
-+                         {updated, _} = sql_query_internal(DBRef, ["DROP TABLE ",Table,";"]),
-+                         {updated, _} = sql_query_internal(DBRef, ["DROP VIEW IF EXISTS ",view_table(VHost,Date),";"]),
-+                         ok;
-+                     {updated, _} -> ok;
-+                     {error, _} -> error
-+                end
-+              end,
-+
-+            Res = case sql_transaction_internal(DBRef, Fun) of
-+                       {atomic, _} ->
-+                           ?INFO_MSG("Rebuilded stats for ~p at ~p", [VHost, Date]),
++           ok = create_temp_table(DBRef, TempTable),
++           {updated, _} = sql_query_internal(DBRef, ["LOCK TABLE ",Table," WRITE, ",TempTable," WRITE;"]),
++           SQuery = ["INSERT INTO ",TempTable," ",
++                      "(owner_id,peer_name_id,peer_server_id,at,count) ",
++                         "SELECT owner_id,peer_name_id,peer_server_id,\"",Date,"\",count(*) ",
++                            "FROM ",Table," WHERE ext is NULL GROUP BY owner_id,peer_name_id,peer_server_id;"],
++           case sql_query_internal(DBRef, SQuery) of
++                  {updated, 0} ->
++                      Count = sql_query_internal(DBRef, ["SELECT count(*) FROM ",Table,";"]),
++                      case Count of
++                        {data, [["0"]]} ->
++                           {updated, _} = sql_query_internal(DBRef, ["DROP VIEW IF EXISTS ",view_table(VHost,Date),";"]),
++                           {updated, _} = sql_query_internal(DBRef, ["DROP TABLE ",Table,";"]),
++                           {updated, _} = sql_query_internal(DBRef, ["LOCK TABLE ",STable," WRITE;"]),
++                           {updated, _} = sql_query_internal(DBRef, DQuery),
 +                           ok;
-+                       {aborted, _} ->
++                        _ ->
++                           ?ERROR_MSG("Failed to calculate stats for ~s table! Count was ~p.", [Date, Count]),
 +                           error
-+                  end,
-+            {updated, _} = sql_query_internal(DBRef, ["UNLOCK TABLES;"]),
-+            Res;
-+         {error, _Reason} -> error 
-+    end.
++                      end;
++                  {updated, _} ->
++                      {updated, _} = sql_query_internal(DBRef, ["LOCK TABLE ",STable," WRITE, ",TempTable," WRITE;"]),
++                      {updated, _} = sql_query_internal(DBRef, DQuery),
++                      SQuery1 = ["INSERT INTO ",STable," ",
++                                  "(owner_id,peer_name_id,peer_server_id,at,count) ",
++                                     "SELECT owner_id,peer_name_id,peer_server_id,at,count ",
++                                        "FROM ",TempTable,";"],
++                      case sql_query_internal(DBRef, SQuery1) of
++                           {updated, _} -> ok;
++                           {error, _} -> error
++                      end;
++                  {error, _} -> error
++           end
++       end,
++
++    case catch apply(Fun, []) of
++         ok ->
++           ?INFO_MSG("Rebuilded stats for ~p at ~p", [VHost, Date]),
++           ok;
++         error ->
++           error;
++         {'EXIT', Reason} ->
++           ?ERROR_MSG("Failed to rebuild stats for ~s table: ~p.", [Date, Reason]),
++           error
++    end,
++    sql_query_internal(DBRef, ["UNLOCK TABLES;"]),
++    sql_query_internal(DBRef, ["DROP TABLE ",TempTable,";"]),
++    ok.
 +
 +delete_nonexistent_stats(DBRef, VHost) ->
 +    Dates = get_dates_int(DBRef, VHost),
@@ -4196,23 +4327,20 @@
 +    Temp = lists:flatmap(fun(Date) ->
 +                             ["\"",Date,"\"",","]
 +                         end, Dates),
-+
-+    Temp1 = case Temp of
-+                 [] ->
-+                   ["\"\""];
-+                 _ ->
-+                   % replace last "," with ");"
-+                   lists:append([lists:sublist(Temp, length(Temp)-1), ");"])
-+            end,
-+
-+    Query = ["DELETE FROM ",STable," ",
-+                 "WHERE at NOT IN (", Temp1],
-+
-+    case sql_query_internal(DBRef, Query) of
-+         {updated, _} ->
-+            ok;
-+         {error, _} ->
-+            error
++    case Temp of
++         [] ->
++           ok;
++         _ ->
++           % replace last "," with ");"
++           Temp1 = lists:append([lists:sublist(Temp, length(Temp)-1), ");"]),
++           Query = ["DELETE FROM ",STable," ",
++                       "WHERE at NOT IN (", Temp1],
++           case sql_query_internal(DBRef, Query) of
++                {updated, _} ->
++                    ok;
++                {error, _} ->
++                    error
++           end
 +    end.
 +
 +get_user_stats_int(DBRef, User, VHost) ->
@@ -4237,9 +4365,31 @@
 +                 "WHERE owner_id=(SELECT user_id FROM ",users_table(VHost)," WHERE username=\"",User,"\");"],
 +    case sql_query_internal(DBRef, DQuery) of
 +         {updated, _} ->
-+            rebuild_stats_at_int(DBRef, VHost, Date);
++            ?INFO_MSG("Dropped messages for ~s@~s at ~s", [User, VHost, Date]),
++            ok;
 +         {error, _} ->
 +            error
++    end.
++
++delete_all_stats_by_user_int(DBRef, User, VHost) ->
++    SQuery = ["DELETE FROM ",stats_table(VHost)," ",
++                "WHERE owner_id=(SELECT user_id FROM ",users_table(VHost)," WHERE username=\"",User,"\");"],
++    case sql_query_internal(DBRef, SQuery) of
++         {updated, _} ->
++             ?INFO_MSG("Dropped all stats for ~s@~s", [User, VHost]),
++             ok;
++         {error, _} -> error
++    end.
++
++delete_stats_by_user_at_int(DBRef, User, VHost, Date) ->
++    SQuery = ["DELETE FROM ",stats_table(VHost)," ",
++                "WHERE owner_id=(SELECT user_id FROM ",users_table(VHost)," WHERE username=\"",User,"\") ",
++                  "AND at=\"",Date,"\";"],
++    case sql_query_internal(DBRef, SQuery) of
++         {updated, _} ->
++             ?INFO_MSG("Dropped stats for ~s@~s at ~s", [User, VHost, Date]),
++             ok;
++         {error, _} -> error
 +    end.
 +
 +delete_user_settings_int(DBRef, User, VHost) ->
@@ -4247,9 +4397,10 @@
 +                 "WHERE owner_id=(SELECT user_id FROM ",users_table(VHost)," WHERE username=\"",User,"\");"],
 +    case sql_query_internal(DBRef, Query) of
 +         {updated, _} ->
++            ?INFO_MSG("Dropped ~s@~s settings", [User, VHost]),
 +            ok;
 +         {error, Reason} ->
-+            ?ERROR_MSG("Failed to delete user ~s@~s settings: ~p", [User, VHost, Reason]),
++            ?ERROR_MSG("Failed to drop ~s@~s settings: ~p", [User, VHost, Reason]),
 +            error
 +    end.
 +
@@ -4258,7 +4409,21 @@
 +% tables internals
 +%
 +%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-+create_stats_table(DBRef, VHost) ->
++create_temp_table(DBRef, Name) ->
++    Query = ["CREATE TABLE ",Name," (",
++                "owner_id MEDIUMINT UNSIGNED, ",
++                "peer_name_id MEDIUMINT UNSIGNED, ",
++                "peer_server_id MEDIUMINT UNSIGNED, ",
++                "at VARCHAR(11), ",
++                "count INT(11) ",
++             ") ENGINE=MyISAM CHARACTER SET utf8;"
++            ],
++    case sql_query_internal(DBRef, Query) of
++         {updated, _} -> ok;
++         {error, _Reason} -> error
++    end.
++
++create_stats_table(#state{dbref=DBRef, vhost=VHost}=State) ->
 +    SName = stats_table(VHost),
 +    Query = ["CREATE TABLE ",SName," (",
 +                "owner_id MEDIUMINT UNSIGNED, ",
@@ -4275,7 +4440,7 @@
 +    case sql_query_internal_silent(DBRef, Query) of
 +         {updated, _} ->
 +            ?MYDEBUG("Created stats table for ~p", [VHost]),
-+            rebuild_all_stats_int(DBRef, VHost),
++            rebuild_all_stats_int(State),
 +            ok;
 +         {error, Reason} ->
 +            case regexp:match(Reason, "#42S01") of
@@ -4302,7 +4467,7 @@
 +            end
 +    end.
 +
-+create_settings_table(DBRef, VHost) ->
++create_settings_table(#state{dbref=DBRef, vhost=VHost}) ->
 +    SName = settings_table(VHost),
 +    Query = ["CREATE TABLE IF NOT EXISTS ",SName," (",
 +                "owner_id MEDIUMINT UNSIGNED PRIMARY KEY, ",
@@ -4319,7 +4484,7 @@
 +            error
 +    end.
 +
-+create_users_table(DBRef, VHost) ->
++create_users_table(#state{dbref=DBRef, vhost=VHost}) ->
 +    SName = users_table(VHost),
 +    Query = ["CREATE TABLE IF NOT EXISTS ",SName," (",
 +                "username TEXT NOT NULL, ",
@@ -4335,7 +4500,7 @@
 +            error
 +    end.
 +
-+create_servers_table(DBRef, VHost) ->
++create_servers_table(#state{dbref=DBRef, vhost=VHost}) ->
 +    SName = servers_table(VHost),
 +    Query = ["CREATE TABLE IF NOT EXISTS ",SName," (",
 +                "server TEXT NOT NULL, ",
@@ -4351,7 +4516,7 @@
 +            error
 +    end.
 +
-+create_resources_table(DBRef, VHost) ->
++create_resources_table(#state{dbref=DBRef, vhost=VHost}) ->
 +    RName = resources_table(VHost),
 +    Query = ["CREATE TABLE IF NOT EXISTS ",RName," (",
 +                "resource TEXT NOT NULL, ",
@@ -4367,7 +4532,7 @@
 +            error
 +    end.
 +
-+create_internals(DBRef, VHost) ->
++create_internals(#state{dbref=DBRef, vhost=VHost}) ->
 +    sql_query_internal(DBRef, ["DROP PROCEDURE IF EXISTS ",logmessage_name(VHost),";"]),
 +    case sql_query_internal(DBRef, [get_logmessage(VHost)]) of
 +         {updated, _} ->
@@ -4382,37 +4547,6 @@
 +% SQL internals 
 +%
 +%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-+% like do_transaction/2 in mysql_conn.erl (changeset by Yariv Sadan <yarivvv@gmail.com>)
-+% TODO: Remove as MyISAM is not transactional
-+sql_transaction_internal(DBRef, Fun) ->
-+    case sql_query_internal(DBRef, ["START TRANSACTION;"]) of
-+         {updated, _} ->
-+            case catch Fun() of
-+                 error = Err ->
-+                   rollback_internal(DBRef, Err);
-+                 {error, _} = Err ->
-+                   rollback_internal(DBRef, Err);
-+                 {'EXIT', _} = Err ->
-+                   rollback_internal(DBRef, Err);
-+                 Res ->
-+                   case sql_query_internal(DBRef, ["COMMIT;"]) of
-+                        {error, _} -> rollback_internal(DBRef, {commit_error});
-+                        {updated, _} ->
-+                           case Res of
-+                                {atomic, _} -> Res;
-+                                _ -> {atomic, Res}
-+                           end
-+                   end
-+            end;
-+         {error, _} ->
-+            {aborted, {begin_error}}
-+    end.
-+
-+% like rollback/2 in mysql_conn.erl (changeset by Yariv Sadan <yarivvv@gmail.com>)
-+rollback_internal(DBRef, Reason) ->
-+    Res = sql_query_internal(DBRef, ["ROLLBACK;"]),
-+    {aborted, {Reason, {rollback_result, Res}}}.
-+
 +sql_query_internal(DBRef, Query) ->
 +    case sql_query_internal_silent(DBRef, Query) of
 +         {error, Reason} ->
@@ -4423,7 +4557,7 @@
 +
 +sql_query_internal_silent(DBRef, Query) ->
 +    ?MYDEBUG("DOING: \"~s\"", [lists:append(Query)]),
-+    get_result(mysql_conn:fetch(DBRef, Query, self(), ?TIMEOUT)).
++    get_result(mysql_conn:fetch(DBRef, Query, self(), ?MYSQL_TIMEOUT)).
 +
 +get_result({updated, MySQLRes}) ->
 +    {updated, mysql:get_result_affected_rows(MySQLRes)};
@@ -4584,15 +4718,15 @@
 +      END IF;
 +   END IF;
 +END;", [logmessage_name(VHost),UName,UName,UName,UName,SName,SName,RName,RName,UName,UName,SName,RName,StName,StName]).
---- mod_logdb_pgsql.erl.orig	2008-09-25 10:22:50.000000000 +0300
-+++ mod_logdb_pgsql.erl	2008-09-25 10:16:13.000000000 +0300
-@@ -0,0 +1,993 @@
+--- mod_logdb_pgsql.erl.orig	2009-02-05 19:21:29.000000000 +0200
++++ mod_logdb_pgsql.erl	2009-02-05 19:20:29.000000000 +0200
+@@ -0,0 +1,1078 @@
 +%%%----------------------------------------------------------------------
 +%%% File    : mod_logdb_pgsql.erl
-+%%% Author  : Oleg Palij (mailto:o.palij@gmail.com xmpp://malik@jabber.te.ua)
++%%% Author  : Oleg Palij (mailto,xmpp:o.palij@gmail.com)
 +%%% Purpose : Posgresql backend for mod_logdb
 +%%% Version : trunk
-+%%% Id      : $Id: mod_logdb_pgsql.erl 1169 2008-09-16 12:14:36Z malik $
++%%% Id      : $Id: mod_logdb_pgsql.erl 1253 2009-02-02 11:10:03Z malik $
 +%%% Url     : http://www.dp.uz.gov.ua/o.palij/mod_logdb/
 +%%%----------------------------------------------------------------------
 +
@@ -4620,16 +4754,18 @@
 +         get_users_settings/1, get_user_settings/2, set_user_settings/3,
 +         drop_user/2]).
 +
++-export([view_table/3]).
++
 +% gen_server call timeout
-+-define(CALL_TIMEOUT, 10000).
-+-define(TIMEOUT, 10000).
++-define(CALL_TIMEOUT, 30000).
++-define(PGSQL_TIMEOUT, 60000).
 +-define(PROCNAME, mod_logdb_pgsql).
 +
 +-import(mod_logdb, [list_to_bool/1, bool_to_list/1,
 +                    list_to_string/1, string_to_list/1,
 +                    convert_timestamp_brief/1]).
 +
-+-record(state, {dbref, vhost, schema}).
++-record(state, {dbref, vhost, server, port, db, user, password, schema}).
 +
 +% replace "." with "_"
 +escape_vhost(VHost) -> lists:map(fun(46) -> 95;
@@ -4645,7 +4781,6 @@
 +messages_table(VHost, Schema, Date) ->
 +   prefix(Schema) ++ "messages_" ++ Date ++ suffix(VHost).
 +
-+% TODO: this needs to be redone to unify view name in stored procedure and in delete_messages_at/2
 +view_table(VHost, Schema, Date) ->
 +   Table = messages_table(VHost, Schema, Date),
 +   TablewoS = lists:sublist(Table, length(Schema) + 3, length(Table) - length(Schema) - 3),
@@ -4653,6 +4788,9 @@
 +
 +stats_table(VHost, Schema) ->
 +   prefix(Schema) ++ "stats" ++ suffix(VHost).
++
++temp_table(VHost, Schema) ->
++   prefix(Schema) ++ "temp" ++ suffix(VHost).
 +
 +settings_table(VHost, Schema) ->
 +   prefix(Schema) ++ "settings" ++ suffix(VHost).
@@ -4678,13 +4816,7 @@
 +
 +stop(VHost) ->
 +   Proc = gen_mod:get_module_proc(VHost, ?PROCNAME),
-+   case catch gen_server:call(Proc, {stop}, ?CALL_TIMEOUT) of
-+              {'EXIT', {timeout, {gen_server, call, _}}} ->
-+                ?ERROR_MSG("Failed to stop pgsql correctly", []),
-+                erlang:unregister(Proc);
-+              Rez ->
-+                Rez
-+   end.
++   gen_server:call(Proc, {stop}, ?CALL_TIMEOUT).
 +
 +%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 +%
@@ -4701,17 +4833,22 @@
 +
 +   ?MYDEBUG("Starting pgsql backend for ~p", [VHost]),
 +
-+   case catch pgsql:connect(Server, DB, User, Password, Port) of
++   St = #state{vhost=VHost,
++               server=Server, port=Port, db=DB,
++               user=User, password=Password,
++               schema=Schema},
++
++   case open_pgsql_connection(St) of
 +       {ok, DBRef} ->
-+           {updated, _} = sql_query_internal(DBRef, ["SET SEARCH_PATH TO ",Schema,";"]),
-+           ok = create_internals(DBRef, VHost, Schema),
-+           ok = create_stats_table(DBRef, VHost, Schema),
-+           ok = create_settings_table(DBRef, VHost, Schema),
-+           ok = create_users_table(DBRef, VHost, Schema),
-+           ok = create_servers_table(DBRef, VHost, Schema),
-+           ok = create_resources_table(DBRef, VHost, Schema),
++           State = St#state{dbref=DBRef},
++           ok = create_internals(State),
++           ok = create_stats_table(State),
++           ok = create_settings_table(State),
++           ok = create_users_table(State),
++           ok = create_servers_table(State),
++           ok = create_resources_table(State),
 +           erlang:monitor(process, DBRef),
-+           {ok, #state{dbref=DBRef, vhost=VHost, schema=Schema}};
++           {ok, State};
 +       % this does not work
 +       {error, Reason} ->
 +           ?ERROR_MSG("PgSQL connection failed: ~p~n", [Reason]),
@@ -4722,12 +4859,24 @@
 +           {stop, db_connection_failed}
 +   end.
 +
++open_pgsql_connection(#state{server=Server, port=Port, db=DB, schema=Schema,
++                             user=User, password=Password} = _State) ->
++   {ok, DBRef} = pgsql:connect(Server, DB, User, Password, Port),
++   {updated, _} = sql_query_internal(DBRef, ["SET SEARCH_PATH TO ",Schema,";"]),
++   {ok, DBRef}.
++
++close_pgsql_connection(DBRef) ->
++   ?MYDEBUG("Closing ~p pgsql connection", [DBRef]),
++   pgsql:terminate(DBRef).
++
 +handle_call({log_message, Msg}, _From, #state{dbref=DBRef, vhost=VHost, schema=Schema}=State) ->
 +    Date = convert_timestamp_brief(Msg#msg.timestamp),
 +    TableName = messages_table(VHost, Schema, Date),
++    ViewName = view_table(VHost, Schema, Date),
 +
-+    Query = [ "SELECT ",logmessage_name(VHost, Schema)," "
++    Query = [ "SELECT ", logmessage_name(VHost, Schema)," "
 +                 "('", TableName, "',",
++                  "'", ViewName, "',",
 +                  "'", Date, "',",
 +                  "'", Msg#msg.owner_name, "',",
 +                  "'", Msg#msg.peer_name, "',",
@@ -4739,21 +4888,16 @@
 +                  "'", ejabberd_odbc:escape(Msg#msg.body), "',",
 +                  "'", Msg#msg.timestamp, "');"],
 +
-+    Reply =
-+       case sql_query_internal_silent(DBRef, Query) of
-+            % TODO: change this
-+            {data, [{"0"}]} ->
-+                ?MYDEBUG("Logged ok for ~p, peer: ~p", [Msg#msg.owner_name++"@"++VHost,
-+                                                        Msg#msg.peer_name++"@"++Msg#msg.peer_server]),
-+                ok;
-+            {error, _Reason} ->
-+                error
-+       end,
-+    {reply, Reply, State};
-+handle_call({rebuild_stats}, _From, #state{dbref=DBRef, vhost=VHost, schema=Schema}=State) ->
-+    ok = delete_nonexistent_stats(DBRef, VHost, Schema),
-+    Reply = rebuild_all_stats_int(DBRef, VHost, Schema),
-+    {reply, Reply, State};
++    case sql_query_internal_silent(DBRef, Query) of
++    % TODO: change this
++         {data, [{"0"}]} ->
++             ?MYDEBUG("Logged ok for ~p, peer: ~p", [Msg#msg.owner_name++"@"++VHost,
++                                                     Msg#msg.peer_name++"@"++Msg#msg.peer_server]),
++             ok;
++         {error, _Reason} ->
++             error
++    end,
++    {reply, ok, State};
 +handle_call({rebuild_stats_at, Date}, _From, #state{dbref=DBRef, vhost=VHost, schema=Schema}=State) ->
 +    Reply = rebuild_stats_at_int(DBRef, VHost, Schema, Date),
 +    {reply, Reply, State};
@@ -4778,9 +4922,10 @@
 +      end,
 +    {reply, Reply, State};
 +handle_call({delete_all_messages_by_user_at, User, Date}, _From, #state{dbref=DBRef, vhost=VHost, schema=Schema}=State) ->
-+    {reply, delete_all_messages_by_user_at_int(DBRef, Schema, User, VHost, Date), State};
++    ok = delete_all_messages_by_user_at_int(DBRef, Schema, User, VHost, Date),
++    ok = delete_stats_by_user_at_int(DBRef, Schema, User, VHost, Date),
++    {reply, ok, State};
 +handle_call({delete_messages_at, Date}, _From, #state{dbref=DBRef, vhost=VHost, schema=Schema}=State) ->
-+    % TODO
 +    {updated, _} = sql_query_internal(DBRef, ["DROP VIEW ",view_table(VHost, Schema, Date),";"]),
 +    Reply =
 +      case sql_query_internal(DBRef, ["DROP TABLE ",messages_table(VHost, Schema, Date)," CASCADE;"]) of
@@ -4947,24 +5092,6 @@
 +              error
 +      end,
 +    {reply, Reply, State};
-+handle_call({drop_user, User}, _From, #state{dbref=DBRef, schema=Schema, vhost=VHost}=State) ->
-+    {ok, Dates} = get_user_stats_int(DBRef, Schema, User, VHost),
-+    MDResult = lists:map(fun({Date, _}) ->
-+                   delete_all_messages_by_user_at_int(DBRef, Schema, User, VHost, Date)
-+               end, Dates),
-+    SDResult = delete_user_settings_int(DBRef, Schema, User, VHost),
-+    Reply =
-+      case lists:all(fun(Result) when Result == ok ->
-+                          true;
-+                        (Result) when Result == error ->
-+                          false
-+                     end, lists:append(MDResult, [SDResult])) of
-+           true ->
-+             ok;
-+           false ->
-+             error
-+      end,
-+    {reply, Reply, State};
 +handle_call({stop}, _From, State) ->
 +   ?MYDEBUG("Stoping pgsql backend for ~p", [State#state.vhost]),
 +   {stop, normal, ok, State};
@@ -4972,6 +5099,33 @@
 +    ?INFO_MSG("Got call Msg: ~p, State: ~p", [Msg, State]),
 +    {noreply, State}.
 +
++
++handle_cast({rebuild_stats}, State) ->
++    rebuild_all_stats_int(State),
++    {noreply, State};
++handle_cast({drop_user, User}, #state{vhost=VHost, schema=Schema}=State) ->
++    Fun = fun() ->
++            {ok, DBRef} = open_pgsql_connection(State),
++            {ok, Dates} = get_user_stats_int(DBRef, Schema, User, VHost),
++            MDResult = lists:map(fun({Date, _}) ->
++                           delete_all_messages_by_user_at_int(DBRef, Schema, User, VHost, Date)
++                       end, Dates),
++            StDResult = delete_all_stats_by_user_int(DBRef, Schema, User, VHost),
++            SDResult = delete_user_settings_int(DBRef, Schema, User, VHost),
++            case lists:all(fun(Result) when Result == ok ->
++                                true;
++                              (Result) when Result == error ->
++                               false
++                           end, lists:append([MDResult, [StDResult], [SDResult]])) of
++                 true ->
++                   ?INFO_MSG("Removed ~s@~s", [User, VHost]);
++                 false ->
++                   ?ERROR_MSG("Failed to remove ~s@~s", [User, VHost])
++            end,
++            close_pgsql_connection(DBRef)
++          end,
++    spawn(Fun),
++    {noreply, State};
 +handle_cast(Msg, State) ->
 +    ?INFO_MSG("Got cast Msg:~p, State:~p", [Msg, State]),
 +    {noreply, State}.
@@ -4982,7 +5136,8 @@
 +    ?INFO_MSG("Got Info:~p, State:~p", [Info, State]),
 +    {noreply, State}.
 +
-+terminate(_Reason, _State) ->
++terminate(_Reason, #state{dbref=DBRef}=_State) ->
++    close_pgsql_connection(DBRef),
 +    ok.
 +
 +code_change(_OldVsn, State, _Extra) ->
@@ -4998,7 +5153,7 @@
 +   gen_server:call(Proc, {log_message, Msg}, ?CALL_TIMEOUT).
 +rebuild_stats(VHost) ->
 +   Proc = gen_mod:get_module_proc(VHost, ?PROCNAME),
-+   gen_server:call(Proc, {rebuild_stats}, ?CALL_TIMEOUT).
++   gen_server:cast(Proc, {rebuild_stats}).
 +rebuild_stats_at(VHost, Date) ->
 +   Proc = gen_mod:get_module_proc(VHost, ?PROCNAME),
 +   gen_server:call(Proc, {rebuild_stats_at, Date}, ?CALL_TIMEOUT).
@@ -5037,7 +5192,7 @@
 +   gen_server:call(Proc, {set_user_settings, User, Set}, ?CALL_TIMEOUT).
 +drop_user(User, VHost) ->
 +   Proc = gen_mod:get_module_proc(VHost, ?PROCNAME),
-+   gen_server:call(Proc, {drop_user, User}, ?CALL_TIMEOUT).
++   gen_server:cast(Proc, {drop_user, User}).
 +
 +%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 +%
@@ -5071,57 +5226,85 @@
 +            []
 +    end.
 +
-+rebuild_all_stats_int(DBRef, VHost, Schema) ->
-+    case lists:filter(fun(Date) ->
-+                      case rebuild_stats_at_int(DBRef, VHost, Date, Schema) of
-+                           ok -> false;
-+                           error -> true
-+                      end
-+                    end, get_dates_int(DBRef, VHost)) of
-+         [] -> ok;
-+         FTables ->
-+            ?ERROR_MSG("Failed to rebuild stats for ~p dates", [FTables]),
-+            error
-+    end.
++rebuild_all_stats_int(#state{vhost=VHost, schema=Schema}=State) ->
++    Fun = fun() ->
++             {ok, DBRef} = open_pgsql_connection(State),
++             ok = delete_nonexistent_stats(DBRef, Schema, VHost),
++             case lists:filter(fun(Date) ->
++                                 case catch rebuild_stats_at_int(DBRef, VHost, Schema, Date) of
++                                      ok -> false;
++                                      error -> true;
++                                      {'EXIT', _} -> true
++                                 end
++                             end, get_dates_int(DBRef, VHost)) of
++                  [] -> ok;
++                  FTables ->
++                     ?ERROR_MSG("Failed to rebuild stats for ~p dates", [FTables]),
++                     error
++             end,
++             close_pgsql_connection(DBRef)
++          end,
++    spawn(Fun).
 +
 +rebuild_stats_at_int(DBRef, VHost, Schema, Date) ->
-+    Table = messages_table(VHost, Schema, Date),
-+    STable = stats_table(VHost, Schema),
-+
++    TempTable = temp_table(VHost, Schema),
 +    Fun =
 +      fun() ->
-+       {updated, _} = sql_query_internal(DBRef, ["LOCK TABLE ",Table," IN ACCESS EXCLUSIVE MODE;"]),
-+       {updated, _} = sql_query_internal(DBRef, ["LOCK TABLE ",STable," IN ACCESS EXCLUSIVE MODE;"]),
++       Table = messages_table(VHost, Schema, Date),
++       STable = stats_table(VHost, Schema),
 +
 +       DQuery = [ "DELETE FROM ",STable," ",
 +                     "WHERE at='",Date,"';"],
 +
-+       {updated, _} = sql_query_internal(DBRef, DQuery),
-+
-+       SQuery = ["INSERT INTO ",STable," ",
++       ok = create_temp_table(DBRef, VHost, Schema),
++       {updated, _} = sql_query_internal(DBRef, ["LOCK TABLE ",Table," IN ACCESS EXCLUSIVE MODE;"]),
++       {updated, _} = sql_query_internal(DBRef, ["LOCK TABLE ",TempTable," IN ACCESS EXCLUSIVE MODE;"]),
++       SQuery = ["INSERT INTO ",TempTable," ",
 +                  "(owner_id,peer_name_id,peer_server_id,at,count) ",
 +                     "SELECT owner_id,peer_name_id,peer_server_id,'",Date,"'",",count(*) ",
 +                        "FROM ",Table," GROUP BY owner_id,peer_name_id,peer_server_id;"],
-+
 +       case sql_query_internal(DBRef, SQuery) of
 +            {updated, 0} ->
-+                {updated, _} = sql_query_internal(DBRef, ["DROP TABLE ",Table," CASCADE;"]),
-+                {updated, _} = sql_query_internal(DBRef, ["DROP VIEW ",view_table(VHost, Schema, Date),";"]),
-+                ok;
-+            {updated, _} -> ok;
++                Count = sql_query_internal(DBRef, ["SELECT count(*) FROM ",Table,";"]),
++                case Count of
++                     {data, [{"0"}]} ->
++                        {updated, _} = sql_query_internal(DBRef, ["DROP VIEW ",view_table(VHost, Schema, Date),";"]),
++                        {updated, _} = sql_query_internal(DBRef, ["DROP TABLE ",Table," CASCADE;"]),
++                        {updated, _} = sql_query_internal(DBRef, ["LOCK TABLE ",STable," IN ACCESS EXCLUSIVE MODE;"]),
++                        {updated, _} = sql_query_internal(DBRef, DQuery),
++                        ok;
++                     _ ->
++                        ?ERROR_MSG("Failed to calculate stats for ~s table! Count was ~p.", [Date, Count]),
++                        error
++                end;
++            {updated, _} ->
++                {updated, _} = sql_query_internal(DBRef, ["LOCK TABLE ",STable," IN ACCESS EXCLUSIVE MODE;"]),
++                {updated, _} = sql_query_internal(DBRef, ["LOCK TABLE ",TempTable," IN ACCESS EXCLUSIVE MODE;"]),
++                {updated, _} = sql_query_internal(DBRef, DQuery),
++                SQuery1 = ["INSERT INTO ",STable," ",
++                            "(owner_id,peer_name_id,peer_server_id,at,count) ",
++                               "SELECT owner_id,peer_name_id,peer_server_id,at,count ",
++                                  "FROM ",TempTable,";"],
++                case sql_query_internal(DBRef, SQuery1) of
++                     {updated, _} -> ok;
++                     {error, _} -> error
++                end;
 +            {error, _} -> error
 +       end
-+      end,
++      end, % fun
 +
 +    case sql_transaction_internal(DBRef, Fun) of
 +         {atomic, _} ->
-+             ?INFO_MSG("Rebuilded stats for ~p at ~p", [VHost, Date]),
-+             ok;
-+         {aborted, _} ->
-+             error
-+    end.
++            ?INFO_MSG("Rebuilded stats for ~p at ~p", [VHost, Date]),
++            ok;
++         {aborted, Reason} ->
++            ?ERROR_MSG("Failed to rebuild stats for ~s table: ~p.", [Date, Reason]),
++            error
++    end,
++    sql_query_internal(DBRef, ["DROP TABLE ",TempTable,";"]),
++    ok.
 +
-+delete_nonexistent_stats(DBRef, VHost, Schema) ->
++delete_nonexistent_stats(DBRef, Schema, VHost) ->
 +    Dates = get_dates_int(DBRef, VHost),
 +    STable = stats_table(VHost, Schema),
 +
@@ -5129,22 +5312,20 @@
 +                             ["'",Date,"'",","]
 +                         end, Dates),
 +
-+    Temp1 = case Temp of
-+                 [] ->
-+                   ["''"];
-+                 _ ->
-+                   % replace last "," with ");"
-+                   lists:append([lists:sublist(Temp, length(Temp)-1), ");"])
-+            end,
-+
-+    Query = ["DELETE FROM ",STable," ",
-+                 "WHERE at NOT IN (", Temp1],
-+
-+    case sql_query_internal(DBRef, Query) of
-+         {updated, _} ->
-+            ok;
-+         {error, _} ->
-+            error
++    case Temp of
++         [] ->
++           ok;
++         _ ->
++           % replace last "," with ");"
++           Temp1 = lists:append([lists:sublist(Temp, length(Temp)-1), ");"]),
++           Query = ["DELETE FROM ",STable," ",
++                        "WHERE at NOT IN (", Temp1],
++           case sql_query_internal(DBRef, Query) of
++                {updated, _} ->
++                   ok;
++                {error, _} ->
++                   error
++           end
 +    end.
 +
 +get_user_stats_int(DBRef, Schema, User, VHost) ->
@@ -5169,9 +5350,31 @@
 +                 "WHERE owner_id=(SELECT user_id FROM ",users_table(VHost, Schema)," WHERE username='",User,"');"],
 +    case sql_query_internal(DBRef, DQuery) of
 +         {updated, _} ->
-+            rebuild_stats_at_int(DBRef, VHost, Schema, Date);
++            ?INFO_MSG("Dropped messages for ~s@~s at ~s", [User, VHost, Date]),
++            ok;
 +         {error, _} ->
 +            error
++    end.
++
++delete_all_stats_by_user_int(DBRef, Schema, User, VHost) ->
++    SQuery = ["DELETE FROM ",stats_table(VHost, Schema)," ",
++                "WHERE owner_id=(SELECT user_id FROM ",users_table(VHost, Schema)," WHERE username='",User,"');"],
++    case sql_query_internal(DBRef, SQuery) of
++         {updated, _} ->
++             ?INFO_MSG("Dropped all stats for ~s@~s", [User, VHost]),
++             ok;
++         {error, _} -> error
++    end.
++
++delete_stats_by_user_at_int(DBRef, Schema, User, VHost, Date) ->
++    SQuery = ["DELETE FROM ",stats_table(VHost, Schema)," ",
++                "WHERE owner_id=(SELECT user_id FROM ",users_table(VHost, Schema)," WHERE username='",User,"') ",
++                  "AND at='",Date,"';"],
++    case sql_query_internal(DBRef, SQuery) of
++         {updated, _} ->
++             ?INFO_MSG("Dropped stats for ~s@~s at ~s", [User, VHost, Date]),
++             ok;
++         {error, _} -> error
 +    end.
 +
 +delete_user_settings_int(DBRef, Schema, User, VHost) ->
@@ -5179,9 +5382,10 @@
 +                 "WHERE owner_id=(SELECT user_id FROM ",users_table(VHost, Schema)," WHERE username='",User,"');"],
 +    case sql_query_internal(DBRef, Query) of
 +         {updated, _} ->
++            ?INFO_MSG("Dropped ~s@~s settings", [User, VHost]),
 +            ok;
 +         {error, Reason} ->
-+            ?ERROR_MSG("Failed to delete user ~s@~s settings: ~p", [User, VHost, Reason]),
++            ?ERROR_MSG("Failed to drop ~s@~s settings: ~p", [User, VHost, Reason]),
 +            error
 +    end.
 +
@@ -5190,7 +5394,22 @@
 +% tables internals
 +%
 +%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-+create_stats_table(DBRef, VHost, Schema) ->
++create_temp_table(DBRef, VHost, Schema) ->
++    TName =  temp_table(VHost, Schema),
++    Query = ["CREATE TABLE ",TName," (",
++                "owner_id INTEGER, ",
++                "peer_name_id INTEGER, ",
++                "peer_server_id INTEGER, ",
++                "at VARCHAR(20), ",
++                "count INTEGER ",
++             ");"
++            ],
++    case sql_query_internal(DBRef, Query) of
++         {updated, _} -> ok;
++         {error, _Reason} -> error
++    end.
++
++create_stats_table(#state{dbref=DBRef, vhost=VHost, schema=Schema}=State) ->
 +    SName = stats_table(VHost, Schema),
 +
 +    Fun =
@@ -5221,9 +5440,8 @@
 +    case sql_transaction_internal(DBRef, Fun) of
 +         {atomic, created} ->
 +            ?MYDEBUG("Created stats table for ~p", [VHost]),
-+            lists:foreach(fun(Date) ->
-+                            rebuild_stats_at_int(DBRef, VHost, Schema, Date)
-+                          end, get_dates_int(DBRef, VHost));
++            rebuild_all_stats_int(State),
++            ok;
 +         {atomic, exists} ->
 +            ?MYDEBUG("Stats table for ~p already exists", [VHost]),
 +            {match, F, L} = regexp:match(SName, "\".*\""),
@@ -5248,7 +5466,7 @@
 +         {error, _} -> error
 +    end.
 +
-+create_settings_table(DBRef, VHost, Schema) ->
++create_settings_table(#state{dbref=DBRef, vhost=VHost, schema=Schema}) ->
 +    SName = settings_table(VHost, Schema),
 +    Query = ["CREATE TABLE ",SName," (",
 +                "owner_id INTEGER PRIMARY KEY, ",
@@ -5272,7 +5490,7 @@
 +            end
 +    end.
 +
-+create_users_table(DBRef, VHost, Schema) ->
++create_users_table(#state{dbref=DBRef, vhost=VHost, schema=Schema}) ->
 +    SName = users_table(VHost, Schema),
 +
 +    Fun =
@@ -5306,9 +5524,8 @@
 +         {aborted, _} -> error
 +    end.
 +
-+create_servers_table(DBRef, VHost, Schema) ->
++create_servers_table(#state{dbref=DBRef, vhost=VHost, schema=Schema}) ->
 +    SName = servers_table(VHost, Schema),
-+
 +    Fun =
 +      fun() ->
 +        Query = ["CREATE TABLE ",SName," (",
@@ -5340,7 +5557,7 @@
 +         {aborted, _} -> error
 +    end.
 +
-+create_resources_table(DBRef, VHost, Schema) ->
++create_resources_table(#state{dbref=DBRef, vhost=VHost, schema=Schema}) ->
 +    RName = resources_table(VHost, Schema),
 +    Fun = fun() ->
 +            Query = ["CREATE TABLE ",RName," (",
@@ -5372,7 +5589,8 @@
 +         {aborted, _} -> error
 +    end.
 +
-+create_internals(DBRef, VHost, Schema) ->
++create_internals(#state{dbref=DBRef, vhost=VHost, schema=Schema}) ->
++    sql_query_internal(DBRef, ["DROP FUNCTION IF EXISTS ",logmessage_name(VHost,Schema)," (tbname TEXT, atdt TEXT, owner TEXT, peer_name TEXT, peer_server TEXT, peer_resource TEXT, mdirection VARCHAR(4), mtype VARCHAR(9), msubj TEXT, mbody TEXT, mtimestamp DOUBLE PRECISION);"]),
 +    case sql_query_internal(DBRef, [get_logmessage(VHost, Schema)]) of
 +         {updated, _} ->
 +            ?MYDEBUG("Created logmessage for ~p", [VHost]),
@@ -5408,15 +5626,15 @@
 +    SName = servers_table(VHost,Schema),
 +    RName = resources_table(VHost,Schema),
 +    StName = stats_table(VHost,Schema),
-+    io_lib:format("CREATE OR REPLACE FUNCTION ~s (tbname TEXT, atdt TEXT, owner TEXT, peer_name TEXT, peer_server TEXT, peer_resource TEXT, mdirection VARCHAR(4), mtype VARCHAR(9), msubj TEXT, mbody TEXT, mtimestamp DOUBLE PRECISION) RETURNS INTEGER AS $$
++    io_lib:format("CREATE OR REPLACE FUNCTION ~s (tbname TEXT, vname TEXT, atdt TEXT, owner TEXT, peer_name TEXT, peer_server TEXT, peer_resource TEXT, mdirection VARCHAR(4), mtype VARCHAR(9), msubj TEXT, mbody TEXT, mtimestamp DOUBLE PRECISION) RETURNS INTEGER AS $$
 +DECLARE
 +   ownerID INTEGER;
 +   peer_nameID INTEGER;
 +   peer_serverID INTEGER;
 +   peer_resourceID INTEGER;
 +   tablename ALIAS for $1;
-+   atdate ALIAS for $2;
-+   viewname TEXT;
++   viewname ALIAS for $2;
++   atdate ALIAS for $3;
 +BEGIN
 +   SELECT INTO ownerID user_id FROM ~s WHERE username = owner;
 +   IF NOT FOUND THEN
@@ -5457,8 +5675,6 @@
 +                   'timestamp DOUBLE PRECISION)';
 +      EXECUTE 'CREATE INDEX \"search_i_' || '~s' || '_' || atdate || '_' || '~s' || '\"' || ' ON ' || tablename || ' (owner_id, peer_name_id, peer_server_id, peer_resource_id)';
 +
-+      viewname := '~s.\"v_' || trim(both '~s.\"' from tablename) || '\"';
-+
 +      EXECUTE 'CREATE OR REPLACE VIEW ' || viewname || ' AS ' ||
 +                   'SELECT owner.username AS owner_name, ' ||
 +                          'peer.username AS peer_name, ' ||
@@ -5492,7 +5708,7 @@
 +   RETURN 0;
 +END;
 +$$ LANGUAGE plpgsql;
-+", [logmessage_name(VHost,Schema),UName,UName,UName,UName,SName,SName,RName,RName,Schema,escape_vhost(VHost),Schema,Schema,UName,UName,SName,RName,StName,StName]).
++", [logmessage_name(VHost,Schema),UName,UName,UName,UName,SName,SName,RName,RName,Schema,escape_vhost(VHost),UName,UName,SName,RName,StName,StName]).
 +
 +%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 +%
@@ -5542,6 +5758,7 @@
 +
 +sql_query_internal_silent(DBRef, Query) ->
 +    ?MYDEBUG("DOING: \"~s\"", [lists:append(Query)]),
++    % TODO: use pquery?
 +    get_result(pgsql:squery(DBRef, Query)).
 +
 +get_result({ok, ["CREATE TABLE"]}) ->
@@ -5551,6 +5768,8 @@
 +get_result({ok, ["ALTER TABLE"]}) ->
 +    {updated, 1};
 +get_result({ok,["DROP VIEW"]}) ->
++    {updated, 1};
++get_result({ok,["DROP FUNCTION"]}) ->
 +    {updated, 1};
 +get_result({ok, ["CREATE INDEX"]}) ->
 +    {updated, 1};
@@ -5580,12 +5799,12 @@
 +get_result(Rez) ->
 +    {error, undefined, Rez}.
 +
---- mod_logdb_mnesia_old.erl.orig	2008-09-25 10:22:50.000000000 +0300
-+++ mod_logdb_mnesia_old.erl	2008-09-16 15:14:37.000000000 +0300
+--- mod_logdb_mnesia_old.erl.orig	2009-02-05 19:21:29.000000000 +0200
++++ mod_logdb_mnesia_old.erl	2009-02-05 19:20:07.000000000 +0200
 @@ -0,0 +1,258 @@
 +%%%----------------------------------------------------------------------
 +%%% File    : mod_logdb_mnesia_old.erl
-+%%% Author  : Oleg Palij (mailto:o.palij@gmail.com xmpp://malik@jabber.te.ua)
++%%% Author  : Oleg Palij (mailto,xmpp:o.palij@gmail.com)
 +%%% Purpose : mod_logmnesia backend for mod_logdb (should be used only for copy_tables functionality)
 +%%% Version : trunk
 +%%% Id      : $Id: mod_logdb_mnesia_old.erl 1169 2008-09-16 12:14:36Z malik $
@@ -5841,12 +6060,12 @@
 +             ?ERROR_MSG("Failed to create stats table: ~p", [Reason]),
 +             error
 +    end.
---- gen_logdb.erl.orig	2008-09-25 10:22:50.000000000 +0300
-+++ gen_logdb.erl	2008-09-16 15:14:37.000000000 +0300
+--- gen_logdb.erl.orig	2009-02-05 19:21:29.000000000 +0200
++++ gen_logdb.erl	2009-02-05 19:19:39.000000000 +0200
 @@ -0,0 +1,164 @@
 +%%%----------------------------------------------------------------------
 +%%% File    : gen_logdb.erl
-+%%% Author  : Oleg Palij (mailto:o.palij@gmail.com xmpp://malik@jabber.te.ua)
++%%% Author  : Oleg Palij (mailto,xmpp:o.palij@gmail.com)
 +%%% Purpose : Describes generic behaviour for mod_logdb backends.
 +%%% Version : trunk
 +%%% Id      : $Id: gen_logdb.erl 1169 2008-09-16 12:14:36Z malik $
@@ -6008,9 +6227,9 @@
 +   ];
 +behaviour_info(_) ->
 +   undefined.
---- web/ejabberd_web_admin-2.0.2.erl	2008-09-14 22:37:35.000000000 +0300
-+++ web/ejabberd_web_admin.erl	2008-09-15 22:37:35.000000000 +0300
-@@ -1515,25 +1515,31 @@
+--- web/ejabberd_web_admin-2.0.3.erl	2009-02-03 08:27:39.000000000 +0200
++++ web/ejabberd_web_admin.erl	2009-02-03 08:40:57.000000000 +0200
+@@ -1514,25 +1514,31 @@
  
  
  user_parse_query(User, Server, Query) ->
@@ -6061,8 +6280,8 @@
      end.
  
  
---- mod_muc/mod_muc_room-2.0.2.erl	2008-09-14 22:38:15.000000000 +0300
-+++ mod_muc/mod_muc_room.erl	2008-09-14 22:38:32.000000000 +0300
+--- mod_muc/mod_muc_room-2.0.3.erl	2009-02-03 08:27:59.000000000 +0200
++++ mod_muc/mod_muc_room.erl	2009-02-03 08:37:26.000000000 +0200
 @@ -695,6 +695,12 @@
  handle_sync_event({change_config, Config}, _From, StateName, StateData) ->
      {result, [], NSD} = change_config(Config, StateData),
@@ -6076,8 +6295,8 @@
  handle_sync_event(_Event, _From, StateName, StateData) ->
      Reply = ok,
      {reply, Reply, StateName, StateData}.
---- msgs/uk-2.0.2.msg	2008-09-17 20:00:52.000000000 +0300
-+++ msgs/uk.msg	2008-09-25 10:22:50.000000000 +0300
+--- msgs/uk-2.0.3.msg	2009-01-14 11:54:15.000000000 +0200
++++ msgs/uk.msg	2009-02-03 08:26:20.000000000 +0200
 @@ -388,6 +388,35 @@
  % mod_offline_odbc.erl
  {"Your contact offline message queue is full. The message has been discarded.", "Черга повідомлень, що не були доставлені, переповнена. Повідомлення не було збережено."}.
@@ -6114,8 +6333,8 @@
  % Local Variables:
  % mode: erlang
  % End:
---- msgs/ru-2.0.2.msg	2008-09-17 19:53:21.000000000 +0300
-+++ msgs/ru.msg	2008-09-25 10:22:50.000000000 +0300
+--- msgs/ru-2.0.3.msg	2009-01-14 11:54:15.000000000 +0200
++++ msgs/ru.msg	2009-02-03 08:25:31.000000000 +0200
 @@ -388,6 +388,35 @@
  % mod_offline_odbc.erl
  {"Your contact offline message queue is full. The message has been discarded.", "Очередь недоставленных сообщений Вашего адресата переполнена. Сообщение не было сохранено."}.
@@ -6152,8 +6371,8 @@
  % Local Variables:
  % mode: erlang
  % End:
---- msgs/pl-2.0.2.msg	2008-09-17 19:49:51.000000000 +0300
-+++ msgs/pl.msg	2008-09-17 19:50:46.000000000 +0300
+--- msgs/pl-2.0.3.msg	2009-01-14 11:54:15.000000000 +0200
++++ msgs/pl.msg	2009-02-03 08:24:33.000000000 +0200
 @@ -408,6 +408,31 @@
  % mod_offline.erl
  {"Your contact offline message queue is full. The message has been discarded.", "Twoja kolejka wiadomoci offline jest pełna. Wiadomoć została odrzucona."}.
@@ -6186,8 +6405,8 @@
  % Local Variables:
  % mode: erlang
  % End:
---- msgs/nl-2.0.2.msg	2008-09-17 19:51:40.000000000 +0300
-+++ msgs/nl.msg	2008-09-17 19:52:20.000000000 +0300
+--- msgs/nl-2.0.3.msg	2009-01-14 11:54:15.000000000 +0200
++++ msgs/nl.msg	1970-01-01 03:00:00.000000000 +0300
 @@ -379,6 +379,19 @@
  % mod_proxy65/mod_proxy65_service.erl
  {"ejabberd SOCKS5 Bytestreams module", "ejabberd SOCKS5 Bytestreams module"}.
@@ -6208,8 +6427,8 @@
  % Local Variables:
  % mode: erlang
  % End:
---- ./mod_roster-2.0.2.erl	2008-09-14 23:44:20.000000000 +0300
-+++ mod_roster.erl	2008-09-14 23:44:54.000000000 +0300
+--- ./mod_roster-2.0.3.erl	2009-02-03 08:28:12.000000000 +0200
++++ mod_roster.erl	2009-02-03 08:32:14.000000000 +0200
 @@ -48,7 +48,7 @@
  -include("mod_roster.hrl").
  -include("web/ejabberd_http.hrl").
@@ -6317,8 +6536,8 @@
        end, Items),
      nothing.
  
---- ./mod_roster_odbc-2.0.2.erl	2008-09-14 23:44:27.000000000 +0300
-+++ mod_roster_odbc.erl	2008-09-14 23:45:01.000000000 +0300
+--- ./mod_roster_odbc-2.0.3.erl	2009-02-03 08:28:26.000000000 +0200
++++ mod_roster_odbc.erl	2009-02-03 08:47:04.000000000 +0200
 @@ -48,7 +48,7 @@
  -include("mod_roster.hrl").
  -include("web/ejabberd_http.hrl").
@@ -6348,7 +6567,7 @@
  						       "remove" ++
  						       ejabberd_web_admin:term_to_id(R#roster.jid),
 -						       "Remove")])])
-+						       "Remove")]),
++                                                      "Remove")]),
 +                                         case gen_mod:is_loaded(Server, mod_logdb) of
 +                                              true ->
 +                                                 Peer = jlib:jid_to_string(R#roster.jid),

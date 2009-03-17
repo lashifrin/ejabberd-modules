@@ -2,17 +2,17 @@ mod_logdb by Oleg Palij
 -----------------------
 
 *NOTE* - Jorge is compatible only with the distributed mod_logdb. Please follow instruction below carefully. 
-Jorge try to always be up-to-date with the latest mod_logdb but there still can be some delays.
 
 Instalation instruction:
 
-1) Grab ejabberd SVN revision 861
-2) Patch sources of ejabberd using "patch" tool 
+1) Grab ejabberd from SVN (Tested with Revision: 1868, but probably will work with any newer) or ejabberd 2.x
+2) Patch mysql erlang driver with userflags patch
+3) Patch sources of ejabberd using "patch" tool 
    (f.e: patch -p0 < patch-src-mod_logdb_svn)
-2) Setup mysql5 database (dbname, username, etc...). 
+4) Setup mysql5 database (dbname, username, etc...). 
    Db schema will be automaticaly setup during mod_logdb startup.
-3) Edit config of your ejabberd server by adding following lines into modules section:
-4) If you are using mysql5 backend with procedural language *you must patch* mysql driver with provided patch: userflags.diff, and add user priviledges for creating views (CREATE VIEW)
+5) Edit config of your ejabberd server by adding following lines into modules section:
+6) If you are using mysql5 backend with procedural language *you must patch* mysql driver with provided patch: userflags.diff, and add user priviledges for creating views (CREATE VIEW)
 
 {modules, [
   ...
@@ -39,8 +39,8 @@ And for ad-hoc commands, add on the top of the config file:
 {access, mod_logdb, [{allow, all}]}.
 {access, mod_logdb_admin, [{allow, admin}]}.
 
-5) Restart the server
-6) Have fun
+7) Restart the server
+8) Have fun
 
 For further info consult mod_logdb manual.
 
