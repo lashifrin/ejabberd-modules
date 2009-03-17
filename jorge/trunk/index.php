@@ -43,14 +43,6 @@ if ($sess->get('uid_l')) {
 // get post data
 $inpLogin = strtolower($_POST['inpLogin']);
 $inpPass = $_POST['inpPass'];
-$disable_donate = $_GET['donate'];
-
-// disable donate button on user request
-if ($disable_donate === "false") {
-
-	setcookie("jorge_donate","false",time()+2592000);
-
-}
 
 if ($wo_sess || $inpLogin || $inpPass) {
 

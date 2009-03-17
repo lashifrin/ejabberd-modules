@@ -93,13 +93,4 @@ $copy = "jabster.pl &copy; 2009";
 // custom logo
 $brand_logo = "logo_jabster.png";
 
-/* 
-	Enable donate button
-	This is to show Donete(PayPal) button for Project Jorge author, you can disable it by setting this value to false,
-	this is optional, so you are free to remove it, but remember that i work hard to provide this project as good quality as possible.
-*/
-
-define(donate_button, true);
-
-
 ?>
