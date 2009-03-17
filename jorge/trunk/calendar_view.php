@@ -2,7 +2,7 @@
 /*
 Jorge - frontend for mod_logdb - ejabberd server-side message archive module.
 
-Copyright (C) 2008 Zbigniew Zolkiewski
+Copyright (C) 2009 Zbigniew Zolkiewski
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 require_once("headers.php");
 require_once("upper.php");
 
-if ($_GET[a]) {
+if ($_GET['a']) {
 
 	$jump_link = "&amp;a=".$_GET['a'];
 
@@ -67,25 +67,26 @@ $jump_to = $_POST['jump_box'];
 
 if ($jump_to!="") { 
 
-		$mo=$jump_to; 
+	$mo=$jump_to; 
 
-	}
+}
 
 if ($mo === "jump") { 
 
-		unset($mo); 
-	}
+	unset($mo); 
+
+}
 
 if ($enc->decrypt_url($e_string) === true) {
 
-		$tslice = $enc->tslice;
-		$talker = $enc->peer_name_id;
-		$server = $enc->peer_server_id;
-		$action = $enc->action;
-		$lnk = $enc->lnk;
+	$tslice = $enc->tslice;
+	$talker = $enc->peer_name_id;
+	$server = $enc->peer_server_id;
+	$action = $enc->action;
+	$lnk = $enc->lnk;
 		
-		// reencode string:
-		$e_string = $enc->crypt_url("tslice=$tslice&peer_name_id=$talker&peer_server_id=$server");
+	// reencode string:
+	$e_string = $enc->crypt_url("tslice=$tslice&peer_name_id=$talker&peer_server_id=$server");
 
 }
 
@@ -150,7 +151,7 @@ if ($_GET['idx']) {
 }
 
 // undo delete
-if ($action=="undelete") {
+if ($action === "undelete") {
 
 	if ($db->move_chat_from_trash($talker,$server,$tslice,$lnk,$idx) === true) {
 
