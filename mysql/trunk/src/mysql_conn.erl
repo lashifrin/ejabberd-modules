@@ -328,8 +328,7 @@ loop(State) ->
 	close ->
 	    close_connection(State);
         Unknown ->
-	    mysql:log(State#state.log_fun, error, "mysql_conn: Received unknown signal, exiting"),
-	    mysql:log(State#state.log_fun, debug, "mysql_conn: Unknown signal : ~p", [Unknown]),
+	    mysql:log(State#state.log_fun, error, "mysql_conn: Received unknown signal, exiting : ~p", [Unknown]),
 	    close_connection(State),
 	    error
     end.
