@@ -1,19 +1,4 @@
--- MySQL dump 10.11
---
--- Host: localhost    Database: jabster_logdb
--- ------------------------------------------------------
--- Server version	5.0.51b-log
-
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8 */;
-/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
-/*!40103 SET TIME_ZONE='+00:00' */;
-/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
-/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+-- MySQL schema for project Jorge
 
 --
 -- Table structure for table `jorge_favorites`
@@ -35,7 +20,7 @@ CREATE TABLE `jorge_favorites` (
   PRIMARY KEY  (`link_id`),
   KEY `jorge_favorites_ext_idx` (`owner_id`,`ext`),
   KEY `favorites_idx` (`owner_id`,`peer_name_id`,`peer_server_id`,`tslice`,`vhost`)
-) ENGINE=InnoDB AUTO_INCREMENT=100 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=100 DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -53,7 +38,7 @@ CREATE TABLE `jorge_logger` (
   `extra` text,
   `vhost` varchar(255) default NULL,
   KEY `logger_idx` (`id_user`,`id_log_detail`,`id_log_level`,`vhost`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -69,7 +54,7 @@ CREATE TABLE `jorge_logger_dict` (
   `lang` char(3) default NULL,
   PRIMARY KEY  (`id_event`),
   KEY `jorge_logger_dict_idx` (`id_event`,`lang`)
-) ENGINE=MyISAM AUTO_INCREMENT=10 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=10 DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -84,7 +69,7 @@ CREATE TABLE `jorge_logger_level_dict` (
   `level` varchar(20) default NULL,
   `lang` char(3) default NULL,
   PRIMARY KEY  (`id_level`)
-) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -107,7 +92,7 @@ CREATE TABLE `jorge_mylinks` (
   `vhost` varchar(255) default NULL,
   PRIMARY KEY  (`id_link`),
   KEY `mylinks_idx` (`owner_id`,`vhost`)
-) ENGINE=InnoDB AUTO_INCREMENT=454 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=454 DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -123,7 +108,7 @@ CREATE TABLE `jorge_pref` (
   `pref_value` int(11) default NULL,
   `vhost` varchar(255) default NULL,
   KEY `pref_idx` (`owner_id`,`vhost`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -138,8 +123,9 @@ CREATE TABLE `jorge_stats` (
   `hour` tinyint(4) default NULL,
   `value` int(11) default NULL,
   `vhost` varchar(255) default NULL,
-  KEY `stats_idx` (`day`,`vhost`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+  KEY `stats_idx` (`day`,`vhost`),
+  PRIMARY KEY  (`day`,`hour`,`vhost`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -156,10 +142,11 @@ CREATE TABLE `pending_del` (
   `peer_server_id` int(11) default NULL,
   `timeframe` timestamp NOT NULL default CURRENT_TIMESTAMP,
   `type` enum('chat','favorite','mylink','other') default NULL,
+  `idx` smallint(6) default NULL,
   `vhost` varchar(255) default NULL,
-  KEY `pending_idx` (`owner_id`,`peer_name_id`,`peer_server_id`,`date`,`type`,`vhost`),
+  KEY `pending_idx` (`owner_id`,`peer_name_id`,`peer_server_id`,`date`,`type`,`idx`,`vhost`),
   KEY `pending_time_idx` (`timeframe`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
@@ -177,14 +164,20 @@ CREATE TABLE `jorge_self_names` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+--
+-- Inserting logger dictionary
+--
 
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+LOCK TABLES `jorge_logger_dict` WRITE;
+/*!40000 ALTER TABLE `jorge_logger_dict` DISABLE KEYS */;
+INSERT INTO `jorge_logger_dict` VALUES (1,'Logged in','eng'),(2,'Logged out','eng'),(3,'Login failed','eng'),(4,'Deleted chat thread','eng'),(5,'Deleted whole archive','eng'),(6,'Turned off archivization','eng'),(7,'Turned on archivization','eng'),(8,'Chat exported','eng'),(9,'Deleted entire archive','eng');
+/*!40000 ALTER TABLE `jorge_logger_dict` ENABLE KEYS */;
+UNLOCK TABLES;
 
--- Dump completed on 2008-09-24 18:02:54
+LOCK TABLES `jorge_logger_level_dict` WRITE;
+/*!40000 ALTER TABLE `jorge_logger_level_dict` DISABLE KEYS */;
+INSERT INTO `jorge_logger_level_dict` VALUES (1,'normal','eng'),(2,'warn','eng'),(3,'alert','eng');
+/*!40000 ALTER TABLE `jorge_logger_level_dict` ENABLE KEYS */;
+UNLOCK TABLES;
+
+-- EOF
