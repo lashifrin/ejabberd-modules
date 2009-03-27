@@ -459,11 +459,10 @@ class db_manager {
 		
 		$this->id_query = "Q007";	
 		$user = $this->sql_validate($user,"string");
-		$table_name = "`logdb_users_".$this->xmpp_host."`";
 		$query="SELECT
 				user_id 
 			FROM 
-				$table_name 
+				`logdb_users_".$this->xmpp_host."`
 			WHERE 
 				username = '$user'
 				
@@ -473,20 +472,25 @@ class db_manager {
 
 	}
 
-	public function get_user_name($user_id) {
+	public function get_user_name($user_id,$vhost = null) {
 
 		$this->id_query = "Q008";
 		$user_id = $this->sql_validate($user_id,"integer");
-		if ($user_id === false) { 
-				
-				return false; 
-				
+		if ($vhost !== null) {
+
+				$vh = $this->vh($vhost,true);
+
 			}
-		$table_name = "`logdb_users_".$this->xmpp_host."`";
+			else{
+
+				$vh = $this->xmpp_host;
+
+		
+		}
 		$query="SELECT
 				username
 			FROM 
-				$table_name 
+				`logdb_users_".$vh."`
 			WHERE 
 				user_id = '$user_id'
 				
@@ -500,11 +504,10 @@ class db_manager {
 
 		$this->id_query = "Q009";
 		$server = $this->sql_validate($server,"string");
-		$table_name = "`logdb_servers_".$this->xmpp_host."`";
 		$query="SELECT
 				server_id 
 			FROM 
-				$table_name 
+				`logdb_servers_".$this->xmpp_host."`
 			WHERE 
 				server = '$server'
 				
@@ -514,15 +517,25 @@ class db_manager {
 
 	}
 
-	public function get_server_name($server_id) {
+	public function get_server_name($server_id,$vhost = null){
 
 		$this->id_query = "Q010";
 		$server_id = $this->sql_validate($server_id,"integer");
-		$table_name = "`logdb_servers_".$this->xmpp_host."`";
+		if ($vhost !== null) {
+
+				$vh = $this->vh($vhost,true);
+
+			}
+			else{
+
+				$vh = $this->xmpp_host;
+
+		
+		}
 		$query="SELECT
 				server as server_name
 			FROM 
-				$table_name 
+				`logdb_servers_".$vh."` 
 			WHERE 
 				server_id = '$server_id'
 				
@@ -536,11 +549,10 @@ class db_manager {
 
 		$this->id_query = "Q012";
 		$resource_id = $this->sql_validate($resource_id,"integer");
-		$table_name = "`logdb_resources_".$this->xmpp_host."`";
 		$query="SELECT
 				resource as resource_name
 			FROM 
-				$table_name 
+				`logdb_resources_".$this->xmpp_host."` 
 			WHERE 
 				resource_id = '$resource_id'
 				
@@ -553,11 +565,10 @@ class db_manager {
 	
 		$this->id_query = "Q013";
 		$resource = $this->sql_validate($resource,"string");
-		$table_name = "`logdb_resources_".$this->xmpp_host."`";
 		$query="SELECT
 				resource_id
 			FROM 
-				$table_name 
+				`logdb_resources_".$this->xmpp_host."`
 			WHERE 
 				resource = '$resource'
 				
@@ -571,11 +582,10 @@ class db_manager {
 
 		$this->id_query = "Q014";
 		$this->prepare($peer_name_id,$peer_server_id,$tslice);
-		$table = "`logdb_stats_".$this->xmpp_host."`";
 		$query="SELECT
 				at 
 			FROM 
-				$table
+				`logdb_stats_".$this->xmpp_host."`
 			WHERE 
 				owner_id='".$this->user_id."' 
 			AND 
@@ -662,15 +672,28 @@ class db_manager {
 	
 	}
 
-	public function total_messages() {
+	public function total_messages($vhost = null) {
 	
 		$this->id_query = "Q017";
+		if ($vhost === null) {
+
+				$vh = $this->xmpp_host;
+
+			}
+			else{
+				
+				$vh = $this->vh($vhost,true);
+
+		}
 		$query="SELECT 
-				sum(count) as total_messages
+				sum(count) as total_messages,
+				count(owner_id) as total_chats
 			FROM 
-				`logdb_stats_".$this->xmpp_host."`
+				`logdb_stats_".$vh."`
 		";
-		return $this->select($query);
+		
+		$this->select($query,"raw");
+		return $this->commit_select(array("total_messages","total_chats"));
 
 	}
 
@@ -2229,9 +2252,19 @@ class db_manager {
 
 	}
 
-	public function get_top_ten($date) {
+	public function get_top_ten($date,$vhost = null) {
 
 		$this->id_query = "Q069";
+		if ($vhost === null) {
+
+				$vh = $this->xmpp_host;
+
+			}
+			else{
+				
+				$vh = $this->vh($vhost,true);
+
+		}
 		$date = $this->sql_validate($date,"date");
 		$query="SELECT
 				at, 
@@ -2240,7 +2273,7 @@ class db_manager {
 				peer_server_id, 
 				count 
 			FROM 
-				`logdb_stats_".$this->xmpp_host."` 
+				`logdb_stats_".$vh."` 
 			WHERE 
 				at = '$date' 
 			ORDER BY 
@@ -2253,29 +2286,51 @@ class db_manager {
 
 	}
 
-	public function get_monthly_stats() {
+	public function get_monthly_stats($vhost = null) {
 
 		$this->id_query = "Q070";
+		if ($vhost === null) {
+
+				$vh = $this->xmpp_host;
+
+			}
+			else{
+				
+				$vh = $this->vh($vhost,true);
+
+		}
+		// This query need tweak to use ex.: where at between '2009-2' and '2009-3', it speeds up and corrects query, also forces to use index, instead full table scan
 		$query="SELECT 
 				count(distinct(owner_id)) AS users_total, 
-				unix_timestamp(at)*1000 AS time_unix, 
+				unix_timestamp(at)*10000 AS time_unix,
 				sum(count) AS messages 
 			FROM 
-				`logdb_stats_".$this->xmpp_host."` 
+				`logdb_stats_".$vh."` 
 			GROUP BY 
 				at 
 			ORDER BY 
 				str_to_date(at,'%Y-%m-%d') 
 			DESC LIMIT 30
 		";
+		
 		$this->select($query,"raw");
 		return $this->commit_select(array("users_total","time_unix","messages"));
 
 	}
 
-	public function get_hourly_stats($date) {
+	public function get_hourly_stats($date,$vhost = null) {
 
 		$this->id_query = "Q071";
+		if ($vhost === null) {
+
+				$vh = $this->vhost;
+
+			}
+			else{
+				
+				$vh = $this->vh($vhost);
+
+		}
 		$date = $this->sql_validate($date,"date");
 		$query="SELECT
 				hour,
@@ -2285,7 +2340,7 @@ class db_manager {
 			WHERE 
 				day='$date' 
 			AND 
-				vhost='".$this->vhost."' 
+				vhost='".$vh."' 
 			ORDER BY 
 				hour 
 			ASC
@@ -2296,9 +2351,19 @@ class db_manager {
 
 	}
 
-	public function get_weekly_stats($date_start,$date_end) {
+	public function get_weekly_stats($date_start,$date_end,$vhost = null) {
 
 		$this->id_query = "Q072";
+		if ($vhost === null) {
+
+				$vh = $this->vhost;
+
+			}
+			else{
+				
+				$vh = $this->sql_validate($vhost,"string");
+
+		}
 		$date_start = $this->sql_validate($date_start,"date");
 		$date_end = $this->sql_validate($date_end,"date");
 		$query="SELECT 
@@ -2311,7 +2376,7 @@ class db_manager {
 			AND 
 				day >= '$date_start' 
 			AND 
-				vhost='".$this->vhost."' 
+				vhost='".$vh."' 
 			ORDER BY 
 				day,hour 
 			ASC
@@ -2900,6 +2965,22 @@ class db_manager {
 				exit; // abort all, user_id MUST be set.
 		}
 		return true;
+
+	}
+
+	private function vh($vhost,$dash = null) {
+
+		if ($dash === true) {
+
+				return str_replace(".","_",$this->sql_validate($vhost,"string"));
+
+
+			}
+			else{
+				
+				return $this->sql_validate($vhost,"string");
+
+		}
 
 	}
 
