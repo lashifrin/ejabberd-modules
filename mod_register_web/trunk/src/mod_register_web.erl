@@ -49,14 +49,14 @@ process([], #request{method = 'GET', lang = Lang}) ->
 process(["register.css"], #request{method = 'GET'}) ->
     serve_css();
 
-process(["new"], #request{method = 'GET', lang = Lang}) ->
-    form_new_get(Lang);
+process(["new"], #request{method = 'GET', lang = Lang, host = Host}) ->
+    form_new_get(Host, Lang);
 
-process(["delete"], #request{method = 'GET', lang = Lang}) ->
-    form_del_get(Lang);
+process(["delete"], #request{method = 'GET', lang = Lang, host = Host}) ->
+    form_del_get(Host, Lang);
 
-process(["change_password"], #request{method = 'GET', lang = Lang}) ->
-    form_changepass_get(Lang);
+process(["change_password"], #request{method = 'GET', lang = Lang, host = Host}) ->
+    form_changepass_get(Host, Lang);
 
 %% TODO: Currently only the first vhost is usable. The web request record
 %% should include the host where the POST was sent.
@@ -156,7 +156,7 @@ index_page(Lang) ->
 %%% Formulary new account GET
 %%%----------------------------------------------------------------------
 
-form_new_get(Lang) ->
+form_new_get(Host, Lang) ->
     Id = randoms:get_string(),
     SID = "",
     From = #jid{user = "", server = "test", resource = ""},
@@ -195,9 +195,14 @@ form_new_get(Lang) ->
 					       ])
 				    ]),
 			  ?XE("li", [
+				     ?CT("Server:"),
+				     ?C(" "),
+				     ?C(Host)
+				    ]),
+			  ?XE("li", [
 				     ?CT("Password:"),
 				     ?C(" "),
-				     ?INPUTS("text", "password", "", "20"),
+				     ?INPUTS("password", "password", "", "20"),
 				     ?BR,
 				     ?XE("ul", [
 						?XC("li", "This password protects your Jabber account. "
@@ -214,7 +219,7 @@ form_new_get(Lang) ->
 			  ?XE("li", [
 				     ?CT("Password Verification:"),
 				     ?C(" "),
-				     ?INPUTS("text", "password2", "", "20")
+				     ?INPUTS("password", "password2", "", "20")
 				    ]),
 			  ?XE("li", [
 				     CText,
@@ -280,7 +285,7 @@ form_new_post(Username, Host, Password, Id, Key) ->
 %%% Formulary change password GET
 %%%----------------------------------------------------------------------
 
-form_changepass_get(Lang) ->
+form_changepass_get(Host, Lang) ->
     HeadEls = [
 	       ?XCT("title", "Change Password"),
 	       ?XA("link",
@@ -301,19 +306,24 @@ form_changepass_get(Lang) ->
 				     ?INPUTS("text", "username", "", "20")
 				    ]),
 			  ?XE("li", [
+				     ?CT("Server:"),
+				     ?C(" "),
+				     ?C(Host)
+				    ]),
+			  ?XE("li", [
 				     ?CT("Old Password:"),
 				     ?C(" "),
-				     ?INPUTS("text", "passwordold", "", "20")
+				     ?INPUTS("password", "passwordold", "", "20")
 				    ]),
 			  ?XE("li", [
 				     ?CT("New Password:"),
 				     ?C(" "),
-				     ?INPUTS("text", "password", "", "20")
+				     ?INPUTS("password", "password", "", "20")
 				    ]),
 			  ?XE("li", [
 				     ?CT("Password Verification:"),
 				     ?C(" "),
-				     ?INPUTS("text", "password2", "", "20")
+				     ?INPUTS("password", "password2", "", "20")
 				    ]),
 			  ?XE("li", [
 				     ?INPUTT("submit", "changepass", "Change Password")
@@ -371,7 +381,7 @@ change_password(Username, Host, PasswordOld, Password) ->
 
     %% This function always returns: ok
     %% Change the password
-    {atomic, ok} = ejabberd_auth:set_password(Username, Host, Password),
+    ok = ejabberd_auth:set_password(Username, Host, Password),
 
     %% Check the new password is correct
     case check_password(Username, Host, Password) of
@@ -398,7 +408,7 @@ check_password(Username, Host, Password) ->
 %%% Formulary delete account GET
 %%%----------------------------------------------------------------------
 
-form_del_get(Lang) ->
+form_del_get(Host, Lang) ->
     HeadEls = [
 	       ?XCT("title", "Unregister a Jabber account"),
 	       ?XA("link",
@@ -421,9 +431,14 @@ form_del_get(Lang) ->
 				     ?INPUTS("text", "username", "", "20")
 				    ]),
 			  ?XE("li", [
+				     ?CT("Server:"),
+				     ?C(" "),
+				     ?C(Host)
+				    ]),
+			  ?XE("li", [
 				     ?CT("Password:"),
 				     ?C(" "),
-				     ?INPUTS("text", "password", "", "20")
+				     ?INPUTS("password", "password", "", "20")
 				    ]),
 			  ?XE("li", [
 				     ?INPUTT("submit", "unregister", "Unregister")
