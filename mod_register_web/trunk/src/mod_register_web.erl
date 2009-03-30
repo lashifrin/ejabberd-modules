@@ -60,8 +60,7 @@ process(["change_password"], #request{method = 'GET', lang = Lang, host = Host})
 
 %% TODO: Currently only the first vhost is usable. The web request record
 %% should include the host where the POST was sent.
-process(["new"], #request{method = 'POST', q = Q, lang = Lang}) ->
-    Host = ?MYNAME,
+process(["new"], #request{method = 'POST', q = Q, lang = Lang, host = Host}) ->
     case form_new_post(Q, Host) of
     	{atomic, ok} ->
 	    Text = ?T("Your Jabber account was succesfully created."),
@@ -74,8 +73,7 @@ process(["new"], #request{method = 'POST', q = Q, lang = Lang}) ->
 
 %% TODO: Currently only the first vhost is usable. The web request record
 %% should include the host where the POST was sent.
-process(["delete"], #request{method = 'POST', q = Q, lang = Lang}) ->
-    Host = ?MYNAME,
+process(["delete"], #request{method = 'POST', q = Q, lang = Lang, host = Host}) ->
     case form_del_post(Q, Host) of
     	{atomic, ok} ->
 	    Text = ?T("Your Jabber account was succesfully deleted."),
@@ -88,8 +86,7 @@ process(["delete"], #request{method = 'POST', q = Q, lang = Lang}) ->
 
 %% TODO: Currently only the first vhost is usable. The web request record
 %% should include the host where the POST was sent.
-process(["change_password"], #request{method = 'POST', q = Q, lang = Lang}) ->
-    Host = ?MYNAME,
+process(["change_password"], #request{method = 'POST', q = Q, lang = Lang, host = Host}) ->
     case form_changepass_post(Q, Host) of
     	{atomic, ok} ->
 	    Text = ?T("The password of your Jabber account was succesfully changed."),

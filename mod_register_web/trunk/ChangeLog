@@ -3,7 +3,8 @@
 	* src/mod_register_web.erl: Use captcha in account registration
 	page, using ejabberd_captcha, requires recent ejabberd
 	version. Fix password change. Hide password text. Show host in
-	forms.
+	forms. Fix vhost support.
+
 	* README.txt: Require ejabberd trunk SVN r2001
 
 2009-03-11  Badlop  <badlop@process-one.net>
