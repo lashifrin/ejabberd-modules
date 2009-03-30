@@ -157,6 +157,13 @@ index_page(Lang) ->
 %%%----------------------------------------------------------------------
 
 form_new_get(Lang) ->
+    Id = randoms:get_string(),
+    SID = "",
+    From = #jid{user = "", server = "test", resource = ""},
+    To = #jid{user = "", server = "test", resource = ""},
+    Args = [],
+    ejabberd_captcha:create_captcha(Id, SID, From, To, Lang, Args),
+    {_, {CImg, CText, CId, CKey}} = ejabberd_captcha:build_captcha_html(Id, Lang),
     HeadEls = [
 	       ?XCT("title", "Register a Jabber account"),
 	       ?XA("link",
@@ -209,6 +216,15 @@ form_new_get(Lang) ->
 				     ?C(" "),
 				     ?INPUTS("text", "password2", "", "20")
 				    ]),
+			  ?XE("li", [
+				     CText,
+				     ?C(" "),
+				     CId,
+				     CKey,
+				     ?BR,
+				     CImg
+				    ]
+				    ),
 			  %% Nombre</b> (opcional)<b>:</b> <input type="text" size="20" name="name" maxlength="255"> <br /> <br /> -->
 			  %% 
 			  %% Direcci&oacute;n de correo</b> (opcional)<b>:</b> <input type="text" size="20" name="email" maxlength="255"> <br /> <br /> -->
@@ -230,9 +246,10 @@ form_new_get(Lang) ->
 
 form_new_post(Q, Host) ->
     case catch get_register_parameters(Q) of
-	[Username, Password, Password] ->
-	    register_account(Username, Host, Password);
-	[_Username, _Password, _Password2] ->
+	[Username, Password, Password, Id, Key] ->
+	    form_new_post(Username, Host, Password, Id, Key);
+	[_Username, _Password, _Password2, Id, Key] ->
+	    ejabberd_captcha:check_captcha(Id, Key), %% This deletes the captcha
 	    {error, passwords_not_identical};
 	_ ->
 	    {error, wrong_parameters}
@@ -244,7 +261,19 @@ get_register_parameters(Q) ->
 	      {value, {_Key, Value}} = lists:keysearch(Key, 1, Q),
 	      Value
       end,
-      ["username", "password", "password2"]).
+      ["username", "password", "password2", "id", "key"]).
+
+form_new_post(Username, Host, Password, Id, Key) ->
+    case ejabberd_captcha:check_captcha(Id, Key) of
+	captcha_valid ->
+	    register_account(Username, Host, Password);
+	captcha_non_valid ->
+	    {error, captcha_non_valid};
+	captcha_not_found ->
+	    {error, captcha_non_valid}
+    end.
+
+
 
 
 %%%----------------------------------------------------------------------
@@ -469,6 +498,8 @@ unregister_account(Username, Host, Password) ->
 %%% Error texts
 %%%----------------------------------------------------------------------
 
+get_error_text({error, captcha_non_valid}) ->
+    "The captcha you entered is wrong";
 get_error_text({atomic, exists}) ->
     "The account already exists";
 get_error_text({error, password_incorrect}) ->

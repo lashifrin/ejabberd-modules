@@ -3,7 +3,7 @@
 
 	Homepage: http://www.ejabberd.im/mod_register_web
 	Author: Badlop
-	Requirements: ejabberd trunk SVN r1561 or newer
+	Requirements: ejabberd trunk SVN r2001 or newer (future ejabberd 2.1.x)
 
 
 	DESCRIPTION
