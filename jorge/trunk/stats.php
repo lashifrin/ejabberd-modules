@@ -22,232 +22,262 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 require_once("headers.php");
 require_once("upper.php");
 
-if (ADMIN_NAME!==TOKEN) { 
+if (ADMIN_NAME !== TOKEN) { 
 
 	print 'no access'; 
 	exit; 
 
 }
 
-// get dates
-$today = date("Y-n-j");
-$yesterday = date("Y-n-j", strtotime("-1 day"));
-$last_week = date("Y-n-j", strtotime("-7 days"));
+// vhost stats
+$vhost_selected = $_POST['stats_vhost'];
+if (array_key_exists($vhost_selected, $vhosts) === true) {
 
-// global user stats and total messages - last 30 days
-$db->get_monthly_stats();
-$result = $db->result;
-
-if (count($result)<30) { 
-
-		$mark1="1"; 
-		
-	} 
-	else { 
-	
-		$mark1="0"; 
-	
-}
-
-foreach ($result as $entry) {
-
-	$i++;
-	$f[$i] = $entry[time_unix];
-	$d[$i] = $entry[messages];
-	$e[$i] = $entry[users_total];
-	
-}
-
-// hourly stats
-$db->get_hourly_stats($yesterday);
-$result = $db->result;
-foreach ($result as $entry) {
-
-	$hs[$entry[hour]] = $entry[value];
-}
-
-// weekly stats
-$db->get_weekly_stats($last_week,$yesterday);
-$result = $db->result;
-foreach ($result as $entry) {
-	
-	$idx++;
-	$hy[$idx] = $entry[value];
-
-}
-
-$db->total_messages();
-$total_messages = $db->result->total_messages;
-$db->total_chats();
-$total_chats = $db->result->total_chats;
-
-$html->set_overview('<h2><u>Stats for: '.XMPP_HOST.'</u></h2><p style="padding-left: 10px;">
-		Total <b>'.number_format($total_messages).'</b> messages logged by the server in <b>'.number_format($total_chats).'</b> conversations.</b></p>
-		<hr size="1" noshade="noshade" style="color: #cccccc;">
-		<table class="ff">');
-
-if ($mark1=="0") {
-		$html->set_body('<tr>
-			<td style="padding-left: 10px">
-			<div id="no_users" style="width:1000px;height:250px;"></div><br>
-			<div id="no_messages" style="width:1000px;height:250px;"></div><br>
-			<div id="hourly_yesterday" style="width:1000px;height:250px;"></div><br>
-			<div id="hourly_week" style="width:1000px;height:250px;"></div></td>
-			<td style="padding-left: 30px; vertical-align: top;">
-			<div><b>Top 10 talkers today:</b><br><br>
-			');
+		$vhost_valid = true;
+		$vhost_active = $vhost_selected;
 
 	}
 	else{
 
-		$html->status_message('Not enough data collected for graphs (<i>minimum required: 30 days</i>).');
-		$html->set_body('<tr><td><div><b>Top 10 talkers today:</b><br><br>');
+		$vhost_valid = false;
+		$vhost_active = null;
+
+}
+
+$html->set_body('<form name="stats_form" method="post"><b>'.$stats_vhost_select[$lang].' </b><select class="settings" name="stats_vhost" onchange="javascript:document.stats_form.submit();">
+		<option value="null">'.$vhost_select[$lang].'</option>
+	');
+
+while (array_keys($vhosts)) {
+
+	$vhost = key($vhosts);
+	if ($_POST['stats_vhost'] == $vhost) {
+
+			$marked_vhost="selected=\"selected\"";
+
+		}
+		else {
+
+			unset($marked_vhost);
+
+	}
+
+	$html->set_body('<option value="'.$vhost.'" '.$marked_vhost.'>'.$vhost.'</option>');
+	array_shift($vhosts);
+
+}
+
+$html->set_body('</select></form>');
+
+if ($vhost_valid === true) {
+
+
+		$db->total_messages($vhost_active);
+		$total_messages = $db->result;
+		$html->set_body('<h2><u>'.$stats_for[$lang].$vhost_active.'</u></h2><p style="padding-left: 10px;">
+			'.$stats_messages[$lang].' <b>'.number_format($total_messages[1][total_messages]).'</b> 
+				'.$stats_messages_b[$lang].'<b>'.number_format($total_messages[1][total_chats]).'</b>'.$stats_messages_c[$lang].'</b></p>
+			<hr size="1" noshade="noshade" style="color: #cccccc;">');
+
+		// get dates
+		$today = date("Y-n-j");
+		$yesterday = date("Y-n-j", strtotime("-1 day"));
+		$last_week = date("Y-n-j", strtotime("-7 days"));
+		for ($ds=0;$ds<=4;$ds++) {
+
+			$days[$ds] = date("Y-n-j", strtotime("-$ds day"));
+
+		}
+
+		// Top 10
+		$html->set_body('<table class="ff" cellpadding="0" cellspacing="0" style="display:inline;">
+					<tr><td><b>'.$stats_top[$lang].'</b></td></tr><tr><td style="width:420px; border: 0px; vertical-align: top;">');
+		foreach ($days as $current_day) {
+
+			$i=0;
+			$html->set_body('<b>'.verbose_date($current_day,$months_names,$weekdays,true).' :</b><br>');
+			$db->get_top_ten($current_day,$vhost_active);
+			$result = $db->result;
+			foreach ($result as $entry) {
+	
+				$i++;
+				$db->get_user_name($entry[owner_id],$vhost_active);
+				$local_user = $db->result->username;
+				$db->get_user_name($entry[peer_name_id],$vhost_active);
+				$peer_name = $db->result->username;
+				$db->get_server_name($entry[peer_server_id],$vhost_active);
+				$peer_server = $db->result->server_name;
+				$html->set_body('
+					&nbsp;<b>'.$i.'.</b> '.htmlspecialchars($local_user).'@'.$vhost_active.'<b> --> </b>
+					'.htmlspecialchars($peer_name).'@'.htmlspecialchars($peer_server).' (<i><b>'.$entry[count].'</b></i>)<br>
+					');
+
+			}
+			$html->set_body('<br>');
+
+		}
+		$html->set_body('</td></tr></table>');
+
+		// get data for graphs. We can now draw data only if we have full array. This is known issue.
+		$db->get_monthly_stats($vhost_active);
+		$result = $db->result;
+
+		if (count($result)<30) { 
+
+				$html->status_message($stats_not_eno[$lang]);
 		
+			} 
+		else { 
 	
-}
 
+				foreach ($result as $entry) {
 
-$i=0;
-$db->get_top_ten($today);
-$result = $db->result;
-foreach ($result as $entry) {
+					$i++;
+					$f[$i] = $entry[time_unix];
+					$d[$i] = $entry[messages];
+					$e[$i] = $entry[users_total];
 	
-	$i++;
-	$db->get_user_name($entry[owner_id]);
-	$local_user = $db->result->username;
-	$db->get_user_name($entry[peer_name_id]);
-	$peer_name = $db->result->username;
-	$db->get_server_name($entry[peer_server_id]);
-	$peer_server = $db->result->server_name;
-	$html->set_body('<b>'.$i.'.</b> '.htmlspecialchars($local_user).'@'.XMPP_HOST.'<b> --> </b>'.htmlspecialchars($peer_name).'@'.htmlspecialchars($peer_server).' (<i><b>'.$entry[count].'</b></i>)<br>');
+				}
 
-}
+				// hourly stats
+				$db->get_hourly_stats($yesterday,$vhost_active);
+				$result = $db->result;
+				foreach ($result as $entry) {
 
-$html->set_body('</div><br><hr size="1" noshade="noshade" style="color: #cccccc;"><br>');
+					$hs[$entry[hour]] = $entry[value];
+				}
 
-$html->set_body('<div><b>Top 10 talkers yesterday:</b><br><br>');
-$i=0;
-$db->get_top_ten($yesterday);
-$result = $db->result;
-foreach ($result as $entry) {
-
-	$i++;
-	$db->get_user_name($entry[owner_id]);
-	$local_user = $db->result->username;
-	$db->get_user_name($entry[peer_name_id]);
-	$peer_name = $db->result->username;
-	$db->get_server_name($entry[peer_server_id]);
-	$peer_server = $db->result->server_name;
-	$html->set_body('<b>'.$i.'.</b> '.htmlspecialchars($local_user).'@'.XMPP_HOST.'<b> --> </b>'.htmlspecialchars($peer_name).'@'.htmlspecialchars($peer_server).' (<i><b>'.$entry[count].'</b></i>)<br>');
+				// weekly stats
+				$db->get_weekly_stats($last_week,$yesterday,$vhost_active);
+				$result = $db->result;
+				foreach ($result as $entry) {
 	
-}
+					$idx++;
+					$hy[$idx] = $entry[value];
 
-$html->set_body('</td></tr></table>');
+				}
 
-if ($mark1=="0") { 
+				$html->set_body('<table class="ff" cellpadding="0" cellspacing="0" style="display:inline;">
+					<tr>
+					<td style="padding-left: 10px vertical-align: top;">
+					<div id="no_users" style="width:800px;height:200px;"></div><br>
+					<div id="no_messages" style="width:800px;height:200px;"></div><br>
+					<div id="hourly_yesterday" style="width:800px;height:200px;"></div><br>
+					<div id="hourly_week" style="width:800px;height:200px;"></div>
+					</td>
+					</table>
+					<script id="source" language="javascript" type="text/javascript">
+					$(function () {
 
-$html->set_body('
+  					  var d1 = [
 
-<script id="source" language="javascript" type="text/javascript">
-$(function () {
+					');
 
-    var d1 = [
+				$cn=31;
+				for ($z=1;$z<31;$z++) {
 
-');
+					$cn--;
+					$html->set_body("[$f[$cn],$e[$cn]],");
+			
+				}
 
-	$cn=31;
-	for ($z=1;$z<31;$z++) {
-		$cn--;
-		$html->set_body("[$f[$cn],$e[$cn]],");
-	}
-
-$html->set_body('
-
-
-	];
-
-    var d2 = [
-
-');
-	$cn=31;
-	for ($z=1; $z<31; $z++) {
-		$cn--;
-		$html->set_body("[$f[$cn],$d[$cn]],");
-	}
-
-$html->set_body('
+				$html->set_body('
 
 
-	];
+					];
 
-     var d3 = [
+   					 var d2 = [
 
-');
-	for ($z=0;$z<24;$z++) {
-		$html->set_body("[$z,$hs[$z]],");
-	}
+				');
 
-$html->set_body('
+				$cn=31;
+				for ($z=1; $z<31; $z++) {
+		
+					$cn--;
+					$html->set_body("[$f[$cn],$d[$cn]],");
+			
+				}
 
-	];
+				$html->set_body('
 
-     var d4 = [
-');
 
-	$idx=0;
-	for ($z=0;$z<168;$z++) {
-		$idx++;
-		$html->set_body("[$z,$hy[$idx]],");
-	}
+					];
 
-$html->set_body('
+  					var d3 = [
 
-	];
+				');
+	
+				for ($z=0;$z<24;$z++) {
+		
+					$html->set_body("[$z,$hs[$z]],");
+			
+				}
+
+				$html->set_body('
+
+					];
+
+   					var d4 = [
+				');
+
+				$idx=0;
+				for ($z=0;$z<168;$z++) {
+		
+					$idx++;
+					$html->set_body("[$z,$hy[$idx]],");
+				}
+
+				$html->set_body('
+
+					];
     
-    $.plot($("#no_users"),
-    			[d1], {
-				xaxis: { mode: "time" },
-				label: "Users who enabled message archivization - last 30 days",
-				shadowSize: 10,
-				lines: { show: true, fill: true },
-				points: { show: true, fill: true, radius: 3}
-			});
+			 	   $.plot($("#no_users"), [{
 
-    $.plot($("#no_messages"), 
-    			[d2],{ 
-				xaxis: { mode: "time" },
-				label: "Messages logged by server - last 30 days",
-				shadowSize: 10,
-				lines: { show: true, fill: true },
-				points: { show: true, fill: true, radius: 3}
+						xaxis: { 
+							mode: "time" 
+						},
+						color: "#ff0000",
+						label: "'.$stats_graph1[$lang].'", 
+						data: d1,
+						shadowSize: 10,
+						lines: { show: true, fill: true },
+						points: { show: true, fill: true, radius: 3}
+					}]);
+
+				    $.plot($("#no_messages"), [{ 
+
+						xaxis: { mode: "time" },
+						color: "#3480ff",
+						label: "'.$stats_graph2[$lang].'",
+						shadowSize: 10, 
+						data: d2,
+						lines: { show: true, fill: true },
+						points: { show: true, fill: true, radius: 3}
 				
-			});
+					}]);
     
-    $.plot($("#hourly_yesterday"), [
+				    $.plot($("#hourly_yesterday"), [{
 
-		{
-		color: "#ff0000",
-		label: "Hourly Statistics - Yesterday ('.$yesterday.')", shadowSize: 10, data: d3,
-		bars: { show: true }
+						color: "#ff0000",
+						label: "'.$stats_graph3[$lang].' ('.$yesterday.')", shadowSize: 10, data: d3,
+						bars: { show: true }
+					}]);
+				
+				    $.plot($("#hourly_week"), [{
+
+						color: "#3480ff",
+						label: "'.$stats_graph4[$lang].' ('.$last_week.' - '.$yesterday.')", shadowSize: 10, data: d4,
+						bars: { show: true }
+				
+					}]);
+
+					});
+
+					</script>
+
+				');
+
 		}
-
-
-
-	]);
-    $.plot($("#hourly_week"), [
-
-		{
-		color: "#3480ff",
-		label: "Hourly Statistics - Weekly Raport ('.$last_week.' - '.$yesterday.')", shadowSize: 10, data: d4,
-		bars: { show: true }
-		}
-	]);
-
-});
-
-</script>
-
-');
 
 }
 

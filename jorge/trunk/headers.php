@@ -116,9 +116,9 @@ if (!preg_match("/index.php/i",$location)) {
 	else{
 
 		// check if selected host exist in configuration
-		if (array_key_exists($_POST[vhost], $vhosts) === true) {
+		if (array_key_exists($_POST['vhost'], $vhosts) === true) {
 	
-				$rpc_host = check_rpc_server($vhosts["$_POST[vhost]"],$rpc_port);
+				$rpc_host = check_rpc_server($vhosts[$_POST['vhost']],$rpc_port);
 				debug(DEBUG,"Selecting RPC server during login: $rpc_host");
 				if ($rpc_host === false) {
 
@@ -130,7 +130,7 @@ if (!preg_match("/index.php/i",$location)) {
 					}
 					else {
 
-						define(XMPP_HOST,$_POST[vhost]);		
+						define(XMPP_HOST,$_POST['vhost']);		
 						$ejabberd_rpc = new rpc_connector("$rpc_host","$rpc_port",XMPP_HOST);
 						$xmpp_host = str_replace(".","_", XMPP_HOST);
 
@@ -139,11 +139,11 @@ if (!preg_match("/index.php/i",$location)) {
 			}
 			else{
 
-				unset($_POST[inpLogin]);
-				unset($_POST[inpPass]);
+				unset($_POST['inpLogin']);
+				unset($_POST['inpPass']);
 
 				// Try to recreate db object...
-				if ($_GET[act] === "logout") {
+				if ($_GET['act'] === "logout") {
 
 					if ($sess->get('vhost')!="") {
 

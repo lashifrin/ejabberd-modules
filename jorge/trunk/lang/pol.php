@@ -275,6 +275,16 @@ $stats_when[pol] = "Kiedy";
 $stats_personal_count[pol] = "Liczba wiadomości";
 $stats_peer[pol] = "Rozmówca";
 $stats_see[pol] = "Zobacz rozmowę";
+$stats_for[pol] = "Statystyki dla: ";
+$stats_messages[pol] = "Serwer zalogował ";
+$stats_messages_b[pol] = " wiadomości w ";
+$stats_messages_c[pol] = " rozmowach.";
+$stats_graph1[pol] = "Całkowita liczba użytkowników korzystających z archiwizacji (dziennie)";
+$stats_graph2[pol] = "Ilość wiadomości zalogowanych przez serwer (dziennie)";
+$stats_graph3[pol] = "Zalogowane wiadomości (godzinowo)";
+$stats_graph4[pol] = "Zalogowane wiadomości (tygodniowo)";
+$stats_top[pol] = "Najdłuższe rozmowy z ostatnich dni:";
+$stats_not_eno[pol] = "Brak wystarczających danych do narysowania statystyk (<i>minimum 30 dni</i>)";
 $fav_main[pol] = "Ulubione";
 $fav_desc[pol] = "Lista rozmów oznaczonych jako \"Ulubione\"";
 $fav_add[pol] = "Dodaj rozmowę do ulubionych";
@@ -315,5 +325,6 @@ $own_name_desc[pol] = "Opcja ta umożliwia zmianę wyświetlanej nazwy użytkown
 $own_name_enter[pol] = "Podaj swoją nazwę:";
 $own_name_commit[pol] = "Ustaw nazwę";
 $own_name_remove[pol] = "Jeśli nie chcesz korzystać z tej opcji, pozostaw pole puste";
+$stats_vhost_select[pol] = "Wybierz serwer dla którego chcesz oglądać statystyki: ";
 
 ?>

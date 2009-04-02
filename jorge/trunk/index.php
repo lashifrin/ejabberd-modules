@@ -89,7 +89,7 @@ if ($wo_sess || $inpLogin || $inpPass) {
 
 }
 
-if ($_GET[act]==="logout") {
+if ($_GET['act']==="logout") {
 
 		if ($db->get_user_id(TOKEN) === true) {
 		
@@ -307,7 +307,7 @@ $html->set_body('</select>
 		<form action="index.php" method="post">
 		<br><br>
 		<table class="ff" border="0" cellspacing="0" cellpadding="0">
-		<tr><td align="right">'.$login_w[$lang].'&nbsp;</td><td><input name="inpLogin" value="'.$_POST[inpLogin].'" class="log" >
+		<tr><td align="right">'.$login_w[$lang].'&nbsp;</td><td><input name="inpLogin" value="'.$_POST['inpLogin'].'" class="log" >
 		
 		');
 
@@ -322,7 +322,7 @@ if ($vhost_count>1) {
 		while (array_keys($vhosts)) {
 
 			$vhost = key($vhosts);
-			if ($_POST[vhost] == $vhost OR $_COOKIE['fav_host'] == $vhost) {
+			if ($_POST['vhost'] == $vhost OR $_COOKIE['fav_host'] == $vhost) {
 
 					$selected_vhost="selected=\"selected\"";
 

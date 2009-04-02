@@ -274,6 +274,16 @@ $stats_when[eng] = "When";
 $stats_personal_count[eng] = "Messages count";
 $stats_peer[eng] = "Talker";
 $stats_see[eng] = "See this chat";
+$stats_for[eng] = "Stats for: ";
+$stats_messages[eng] = "Messages logged by server: ";
+$stats_messages_b[eng] = " in ";
+$stats_messages_c[eng] = " conversations.";
+$stats_graph1[eng] = "Total number of users using message archiving (daily)";
+$stats_graph2[eng] = "Messages logged by server (daily)";
+$stats_graph3[eng] = "Messages logged (hourly)";
+$stats_graph4[eng] = "Messages logged (weekly)";
+$stats_top[eng] = "Longest conversations from last days:";
+$stats_not_eno[eng] = "Not enought data to plot the graphs (<i>30 days needed</i>)";
 $fav_main[eng] = "Favorites";
 $fav_desc[eng] = "List of chats marked as favorites";
 $fav_add[eng] = "Add conversation to favorites";
@@ -314,6 +324,6 @@ $own_name_desc[eng] = "This option allows to display your name as you wish: f.e.
 $own_name_enter[eng] = "Enter your name:";
 $own_name_commit[eng] = "Set your name";
 $own_name_remove[eng] = "If you dont want to use this option, leave it unchanged";
-
+$stats_vhost_select[eng] = "Select server for viewing its statistics: ";
 
 ?>
