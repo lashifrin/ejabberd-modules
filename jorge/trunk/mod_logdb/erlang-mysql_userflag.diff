@@ -1,16 +1,16 @@
 Index: mysql_conn.erl
 ===================================================================
---- mysql_conn.erl	(revision 853)
+--- mysql_conn.erl	(revision 861)
 +++ mysql_conn.erl	(working copy)
 @@ -64,6 +64,7 @@
  %% External exports
  %%--------------------------------------------------------------------
  -export([start/6,
-+	 start/7,
++         start/7,
  	 start_link/6,
  	 fetch/3,
- 	 fetch/4
-@@ -96,12 +97,14 @@
+ 	 fetch/4,
+@@ -99,12 +100,14 @@
  
  %%--------------------------------------------------------------------
  %% Function: start(Host, Port, User, Password, Database, LogFun)
@@ -25,7 +25,7 @@ Index: mysql_conn.erl
  %%           LogFun   = undefined | function() of arity 3
  %% Descrip.: Starts a mysql_conn process that connects to a MySQL
  %%           server, logs in and chooses a database.
-@@ -109,19 +112,21 @@
+@@ -112,11 +115,13 @@
  %%           Pid    = pid()
  %%           Reason = string()
  %%--------------------------------------------------------------------
@@ -34,17 +34,16 @@ Index: mysql_conn.erl
 +start(Host, Port, User, Password, Database, LogFun) ->
 +    start(Host, Port, User, Password, Database, [], LogFun).
 +start(Host, Port, User, Password, Database, UserFlags, LogFun) when is_list(Host), is_integer(Port), is_list(User),
-+								    is_list(Password), is_list(Database), is_list(UserFlags) ->
++                                                                    is_list(Password), is_list(Database), is_list(UserFlags) ->
      ConnPid = self(),
      Pid = spawn(fun () ->
 -			init(Host, Port, User, Password, Database, LogFun, ConnPid)
-+			init(Host, Port, User, Password, Database, UserFlags, LogFun, ConnPid)
++		        init(Host, Port, User, Password, Database, UserFlags, LogFun, ConnPid)
  		end),
      post_start(Pid, LogFun).
  
- start_link(Host, Port, User, Password, Database, LogFun) when is_list(Host), is_integer(Port), is_list(User),
--							 is_list(Password), is_list(Database) ->
-+                                                              is_list(Password), is_list(Database) ->
+@@ -124,7 +129,7 @@
+ 							 is_list(Password), is_list(Database) ->
      ConnPid = self(),
      Pid = spawn_link(fun () ->
 -			init(Host, Port, User, Password, Database, LogFun, ConnPid)
@@ -52,15 +51,7 @@ Index: mysql_conn.erl
  		end),
      post_start(Pid, LogFun).
  
-@@ -220,13 +225,14 @@
- %%====================================================================
- 
- %%--------------------------------------------------------------------
--%% Function: init(Host, Port, User, Password, Database, LogFun,
-+%% Function: init(Host, Port, User, Password, Database, UserFlags, LogFun,
- %%                Parent)
- %%           Host     = string()
- %%           Port     = integer()
+@@ -243,6 +248,7 @@
  %%           User     = string()
  %%           Password = string()
  %%           Database = string()
@@ -68,7 +59,7 @@ Index: mysql_conn.erl
  %%           LogFun   = undefined | function() of arity 3
  %%           Parent   = pid() of process starting this mysql_conn
  %% Descrip.: Connect to a MySQL server, log in and chooses a database.
-@@ -234,10 +240,10 @@
+@@ -250,10 +256,10 @@
  %%           we were successfull.
  %% Returns : void() | does not return
  %%--------------------------------------------------------------------
@@ -79,9 +70,18 @@ Index: mysql_conn.erl
 -	    case mysql_init(Sock, RecvPid, User, Password, LogFun) of
 +	    case mysql_init(Sock, RecvPid, User, Password, UserFlags, LogFun) of
  		{ok, Version} ->
- 		    case do_query(Sock, RecvPid, LogFun, "use " ++ Database, Version) of
+ 		    case do_query(Sock, RecvPid, LogFun, "use " ++ Database, Version, [{result_type, binary}]) of
  			{error, MySQLRes} ->
-@@ -309,16 +315,16 @@
+@@ -318,7 +324,7 @@
+     end.
+ 
+ %%--------------------------------------------------------------------
+-%% Function: mysql_init(Sock, RecvPid, User, Password, LogFun)
++%% Function: mysql_init(Sock, RecvPid, User, Password, UserFlags, LogFun)
+ %%           Sock     = term(), gen_tcp socket
+ %%           RecvPid  = pid(), mysql_recv process
+ %%           User     = string()
+@@ -328,16 +334,16 @@
  %% Returns : ok | {error, Reason}
  %%           Reason = string()
  %%--------------------------------------------------------------------
@@ -103,7 +103,7 @@ Index: mysql_conn.erl
  		{ok, <<0:8, _Rest/binary>>, _RecvNum} ->
 Index: mysql_auth.erl
 ===================================================================
---- mysql_auth.erl	(revision 853)
+--- mysql_auth.erl	(revision 861)
 +++ mysql_auth.erl	(working copy)
 @@ -17,8 +17,8 @@
  %% External exports (should only be used by the 'mysql_conn' module)
@@ -116,7 +116,7 @@ Index: mysql_auth.erl
  	]).
  
  %%--------------------------------------------------------------------
-@@ -50,9 +50,9 @@
+@@ -51,9 +51,9 @@
  %% Descrip.: Perform old-style MySQL authentication.
  %% Returns : result of mysql_conn:do_recv/3
  %%--------------------------------------------------------------------
@@ -128,7 +128,7 @@ Index: mysql_auth.erl
      do_send(Sock, Packet2, SeqNum, LogFun),
      mysql_conn:do_recv(LogFun, RecvPid, SeqNum).
  
-@@ -70,9 +70,9 @@
+@@ -71,9 +71,9 @@
  %% Descrip.: Perform MySQL authentication.
  %% Returns : result of mysql_conn:do_recv/3
  %%--------------------------------------------------------------------
@@ -140,21 +140,22 @@ Index: mysql_auth.erl
      do_send(Sock, Packet2, SeqNum, LogFun),
      case mysql_conn:do_recv(LogFun, RecvPid, SeqNum) of
  	{ok, Packet3, SeqNum2} ->
-@@ -104,8 +104,11 @@
+@@ -105,9 +105,11 @@
  			     end, L)).
  
  %% part of do_old_auth/4, which is part of mysql_init/4
 -make_auth(User, Password) ->
--    Caps = ?LONG_PASSWORD bor ?LONG_FLAG bor ?TRANSACTIONS,
+-    Caps = ?LONG_PASSWORD bor ?LONG_FLAG
+-	bor ?TRANSACTIONS bor ?FOUND_ROWS,
 +make_auth(User, Password, UserFlags) ->
-+    Flags = lists:append(UserFlags, [?LONG_PASSWORD, ?LONG_FLAG, ?TRANSACTIONS]),
++    Flags = lists:append(UserFlags, [?LONG_PASSWORD, ?LONG_FLAG, ?TRANSACTIONS, ?FOUND_ROWS]),
 +    Caps = lists:foldl(fun(Flag, TCaps) when is_integer(Flag) ->
 +                           TCaps bor Flag
 +                       end, 0, Flags),
      Maxsize = 0,
      UserB = list_to_binary(User),
      PasswordB = Password,
-@@ -113,15 +116,19 @@
+@@ -115,16 +117,18 @@
      PasswordB/binary>>.
  
  %% part of do_new_auth/4, which is part of mysql_init/4
@@ -167,13 +168,13 @@ Index: mysql_auth.erl
  		     ?CONNECT_WITH_DB
  	     end,
 -    Caps = ?LONG_PASSWORD bor ?LONG_FLAG bor ?TRANSACTIONS bor
--	?PROTOCOL_41 bor ?SECURE_CONNECTION bor DBCaps,
+-	?PROTOCOL_41 bor ?SECURE_CONNECTION bor DBCaps
+-	bor ?FOUND_ROWS,
 +
-+    Flags = lists:append(UserFlags, [?LONG_PASSWORD, ?LONG_FLAG, ?TRANSACTIONS, ?PROTOCOL_41, ?SECURE_CONNECTION]),
++    Flags = lists:append(UserFlags, [?LONG_PASSWORD, ?LONG_FLAG, ?TRANSACTIONS, ?PROTOCOL_41, ?SECURE_CONNECTION, DBCaps, ?FOUND_ROWS]),
 +    Caps = lists:foldl(fun(Flag, TCaps) when is_integer(Flag) ->
 +                           TCaps bor Flag
 +                       end, DBCaps, Flags),
-+
      Maxsize = ?MAX_PACKET_SIZE,
      UserB = list_to_binary(User),
      PasswordL = size(Password),
