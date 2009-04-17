@@ -42,22 +42,6 @@ CREATE TABLE `jorge_logger` (
 SET character_set_client = @saved_cs_client;
 
 --
--- Table structure for table `jorge_logger_dict`
---
-
-DROP TABLE IF EXISTS `jorge_logger_dict`;
-SET @saved_cs_client     = @@character_set_client;
-SET character_set_client = utf8;
-CREATE TABLE `jorge_logger_dict` (
-  `id_event` int(11) NOT NULL auto_increment,
-  `event` text,
-  `lang` char(3) default NULL,
-  PRIMARY KEY  (`id_event`),
-  KEY `jorge_logger_dict_idx` (`id_event`,`lang`)
-) ENGINE=MyISAM AUTO_INCREMENT=10 DEFAULT CHARSET=utf8;
-SET character_set_client = @saved_cs_client;
-
---
 -- Table structure for table `jorge_logger_level_dict`
 --
 
@@ -65,11 +49,26 @@ DROP TABLE IF EXISTS `jorge_logger_level_dict`;
 SET @saved_cs_client     = @@character_set_client;
 SET character_set_client = utf8;
 CREATE TABLE `jorge_logger_level_dict` (
-  `id_level` int(11) NOT NULL auto_increment,
+  `id_level` smallint(6) NOT NULL,
   `level` varchar(20) default NULL,
-  `lang` char(3) default NULL,
-  PRIMARY KEY  (`id_level`)
-) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+  `lang` varchar(3) NOT NULL default '',
+  PRIMARY KEY  (`id_level`,`lang`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `jorge_logger_dict`
+--
+
+DROP TABLE IF EXISTS `jorge_logger_dict`;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+CREATE TABLE `jorge_logger_dict` (
+  `id_event` smallint(6) NOT NULL,
+  `event` text,
+  `lang` varchar(3) NOT NULL default 'eng',
+  PRIMARY KEY  (`id_event`,`lang`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 SET character_set_client = @saved_cs_client;
 
 --
