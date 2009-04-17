@@ -173,7 +173,7 @@ if ($offset_start>$nume) {
 		
 	}
 
-$db->logger_get_events($event_id,$level_id, $offset_start);
+$db->logger_get_events($event_id,$level_id, $offset_start,$lang);
 $result = $db->result;
 
 foreach ($result as $results) {

@@ -1168,7 +1168,7 @@ class db_manager {
 
 	}
 
-	public function logger_get_events($event_id = null,$level_id = null, $offset = null) {
+	public function logger_get_events($event_id = null,$level_id = null, $offset = null,$lang = null) {
 
 		$this->id_query = "Q034";
 		$this->vital_check();
@@ -1204,6 +1204,10 @@ class db_manager {
 				id_user='".$this->user_id."' 
 			AND
 				a.vhost='".$this->vhost."'
+			AND
+				b.lang = '$lang'
+			AND
+				c.lang = '$lang'
 
 			$sql_1 
 			$sql_2
