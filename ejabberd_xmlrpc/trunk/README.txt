@@ -31,7 +31,7 @@ of modifying directly the database are:
 	REQUIREMENTS
 	------------
 
-    ejabberd trunk SVN 1635 or newer (ejabberd 2.1.0 and newer, once released)
+    ejabberd trunk SVN 2025 or newer (ejabberd 2.1.0 and newer, once released)
     XMLRPC-Erlang 1.13 with IP, Ruby and Xmerl 1.x patches
     Optional: mod_admin_extra implements many ejabberd commands for general server administration
     Optional: mod_muc_admin implements ejabberd commands for MUC administration
@@ -82,25 +82,21 @@ The listener allow several configurable options:
     Timeout of the connections, expressed in milliseconds.
     Default: 5000
 
-    {access_commands, [ {Access, CommandNames, Arguments} ]}
-    where Access = atom()
-          CommandNames = all | [CommandName]
-          CommandName = atom()
-          Arguments = [{ArgumentName, ArgumentValue}]
-          ArgumentName = atom()
-          ArgumentValue = any()
+    {access_commands, AccessCommands}
     This option allows to define a list of access restrictions.
     If this option is present, then XML-RPC calls must include as
     first argument a struct with a user, server and password of an
     account in ejabberd that has privileges in Access.
     If the option is not present, such struct must not be provided.
-    The default calue is to not define any restriction: []
+    The default value is to not define any restriction: []
     When one or several access restrictions are defined and the
     XML-RPC call provides authentication for an account, each
     restriction is verified until one matches completely:
     the account matches the Access rule,
     the command name is listed in CommandNames,
     and the provided arguments do not contradict Arguments.
+    There is more information about AccessCommands in the ejabberd Guide.
+
 
 Example configuration: XML-RPC calls can execute any command, with any
 argument, and no authentication information must be provided:

@@ -26,7 +26,7 @@
 -include("mod_roster.hrl").
 -include("jlib.hrl").
 
--record(state, {access_commands}).
+-record(state, {access_commands, auth = noauth, get_auth}).
 
 
 %% Test:
@@ -172,11 +172,15 @@ start_listener({Port, Ip}, Opts) ->
     %% get options
     MaxSessions = gen_mod:get_opt(maxsessions, Opts, 10),
     Timeout = gen_mod:get_opt(timeout, Opts, 5000),
-    AccessCommands = gen_mod:get_opt(access_commands, Opts, all),
+    AccessCommands = gen_mod:get_opt(access_commands, Opts, []),
+    GetAuth = case AccessCommands of
+	[] -> false;
+	_ -> true
+    end,
 
     %% start the XML-RPC server
     Handler = {?MODULE, handler},
-    State = #state{access_commands = AccessCommands},
+    State = #state{access_commands = AccessCommands, get_auth = GetAuth},
     xmlrpc:start_link(Ip, Port, MaxSessions, Timeout, Handler, State).
 
 socket_type() ->
@@ -187,27 +191,11 @@ socket_type() ->
 %% Access verification
 %% -----------------------------
 
-%% At least one AccessCommand must be satisfied
-check_access_commands(AccessCommands, AuthList, Method, [{struct,Arguments}]) ->
-    {ok, User, Server} = check_auth(AuthList),
-    AccessCommandsAllowed =
-	lists:filter(
-	  fun({Access, Commands, ArgumentRestrictions}) ->
-		  case check_access(Access, User, Server) of
-		      true ->
-			  check_access_command(Commands, ArgumentRestrictions,
-					       Method, Arguments);
-		      false ->
-			  false
-		  end
-	  end,
-	  AccessCommands),
-    case AccessCommandsAllowed of
-	[] -> throw({error, account_unprivileged});
-	L when is_list(L) -> ok
-    end.
-
-check_auth(AuthList) ->
+%% @spec (AuthList) -> {User, Server, Password}
+%% where 
+%%       AuthList = [{user, string()}, {server, string()}, {password, string()}]
+%% It may throw: {error, missing_auth_arguments, Attr}
+get_auth(AuthList) ->
     %% Check AuthList contains all the required data
     [User, Server, Password] =
 	try get_attrs([user, server, password], AuthList) of
@@ -216,42 +204,7 @@ check_auth(AuthList) ->
 	    exit:{attribute_not_found, Attr, _} ->
 		throw({error, missing_auth_arguments, Attr})
 	end,
-
-    %% Check the account exists and password is valid
-    AccountPass = ejabberd_auth:get_password_s(User, Server),
-    AccountPassMD5 = get_md5(AccountPass),
-    case Password of
-	AccountPass -> {ok, User, Server};
-	AccountPassMD5 -> {ok, User, Server};
-	_ -> throw({error, invalid_account_data})
-    end.
-
-get_md5(AccountPass) ->
-    lists:flatten([io_lib:format("~.16B", [X])
-		   || X <- binary_to_list(crypto:md5(AccountPass))]).
-
-check_access(Access, User, Server) ->
-    %% Check this user has access permission
-    case acl:match_rule(global, Access, jlib:make_jid(User, Server, "")) of
-	allow -> true;
-	deny -> false
-    end.
-
-check_access_command(Commands, ArgumentRestrictions, Method, Arguments) ->
-    case Commands==all orelse lists:member(Method, Commands) of
-	true -> check_access_arguments(ArgumentRestrictions, Arguments);
-	false -> false
-    end.
-
-check_access_arguments(ArgumentRestrictions, Arguments) ->
-    lists:all(
-      fun({ArgName, ArgAllowedValue}) ->
-	      %% If the call uses the argument, check the value is acceptable
-	      case lists:keysearch(ArgName, 1, Arguments) of
-		  {value, {ArgName, ArgValue}} -> ArgValue == ArgAllowedValue;
-		  false -> true
-	      end
-      end, ArgumentRestrictions).
+    {User, Server, Password}.
 
 
 %% -----------------------------
@@ -279,22 +232,16 @@ check_access_arguments(ArgumentRestrictions, Arguments) ->
 %% xmlrpc:call({127, 0, 0, 1}, 4560, "/", {call, echothis, [{struct, [{user, "badlop"}, {server, "localhost"}, {password, "79C1574A43BC995F2B145A299EF97277"}]}, 152]}).
 %% {ok,{response,[152]}}
 
-handler(#state{access_commands = AccessCommands} = State, {call, Method, [{struct, AuthList} | Arguments]})
-  when AccessCommands /= all ->
-    try check_access_commands(AccessCommands, AuthList, Method, Arguments) of
-	ok ->
-	    handler(State#state{access_commands = all}, {call, Method, Arguments})
+handler(#state{get_auth = true, auth = noauth} = State, {call, Method, [{struct, AuthList} | Arguments]}) ->
+    try get_auth(AuthList) of
+	Auth ->
+	    handler(State#state{get_auth = false, auth = Auth}, {call, Method, Arguments})
     catch
 	{error, missing_auth_arguments, Attr} ->
-	    build_fault_response(-101, "Information of account not provided: " ++ atom_to_list(Attr), []);
-	  {error, invalid_account_data} ->
-	    build_fault_response(-102, "Account credentials not valid (account doesn't exist or invalid password)", []);
-	  {error, account_unprivileged} ->
-	    build_fault_response(-103, "Account does not have access privilege", [])
+	    build_fault_response(-101, "Auth information not provided: " ++ atom_to_list(Attr), [])
     end;
 
-handler(#state{access_commands = AccessCommands}, _Payload)
-  when AccessCommands /= all ->
+handler(#state{get_auth = true, auth = noauth}, _Payload) ->
     build_fault_response(-100, "Required authentication!", []);
 
 
@@ -340,12 +287,12 @@ handler(_State, {call, tellme, [A]}) ->
 %% .............................
 %% ejabberd commands
 
-handler(_State, {call, Command, [{struct, AttrL}]} = Payload) ->
+handler(State, {call, Command, [{struct, AttrL}]} = Payload) ->
     case ejabberd_commands:get_command_format(Command) of
 	{error, command_unknown} ->
 	    build_fault_response(-112, "Unknown call: ~p", [Payload]);
 	{ArgsF, ResultF} ->
-	    try_do_command(Command, AttrL, ArgsF, ResultF)
+	    try_do_command(State#state.access_commands, State#state.auth, Command, AttrL, ArgsF, ResultF)
     end;
 
 %% If no other guard matches
@@ -357,17 +304,17 @@ handler(_State, Payload) ->
 %% Command
 %% -----------------------------
 
-try_do_command(Command, AttrL, ArgsF, ResultF) ->
-    try do_command(Command, AttrL, ArgsF, ResultF) of
+try_do_command(AccessCommands, Auth, Command, AttrL, ArgsF, ResultF) ->
+    try do_command(AccessCommands, Auth, Command, AttrL, ArgsF, ResultF) of
 	{command_result, ResultFormatted} ->
 	    {false, {response, [ResultFormatted]}}
     catch
 	exit:{duplicated_attribute, ExitAt, ExitAtL} ->
 	    build_fault_response(-114, "Attribute '~p' duplicated:~n~p", [ExitAt, ExitAtL]);
 	  exit:{attribute_not_found, ExitAt, ExitAtL} ->
-	    build_fault_response(-116, "Required attribute '~p' not found:~n~p", [ExitAt, ExitAtL])%%;
-	    %%A:Why ->
-	    %%  build_fault_response(State, -100, "A problem '~p' occurred executing the command ~p with arguments~n~p~n~p", [A, Command, AttrL, Why])
+	    build_fault_response(-116, "Required attribute '~p' not found:~n~p", [ExitAt, ExitAtL]);
+	    throw:Why ->
+	      build_fault_response(-118, "A problem '~p' occurred executing the command ~p with arguments~n~p", [Why, Command, AttrL])
     end.
 
 build_fault_response(Code, ParseString, ParseArgs) ->
@@ -376,9 +323,9 @@ build_fault_response(Code, ParseString, ParseArgs) ->
     ?WARNING_MSG(FaultString, []), %% Show Warning message in ejabberd log file
     {false, {response, {fault, Code, FaultString}}}.
 
-do_command(Command, AttrL, ArgsF, ResultF) ->
+do_command(AccessCommands, Auth, Command, AttrL, ArgsF, ResultF) ->
     ArgsFormatted = format_args(AttrL, ArgsF),
-    Result = ejabberd_commands:execute_command(Command, ArgsFormatted),
+    Result = ejabberd_commands:execute_command(AccessCommands, Auth, Command, ArgsFormatted),
     ResultFormatted = format_result(Result, ResultF),
     {command_result, ResultFormatted}.
 
@@ -447,6 +394,9 @@ format_arg(Arg, string)
 %% -----------------------------
 %% Result
 %% -----------------------------
+
+format_result({error, Error}, _) ->
+    throw({error, Error});
 
 format_result(Atom, {Name, atom}) ->
     {struct, [{Name, atom_to_list(Atom)}]};

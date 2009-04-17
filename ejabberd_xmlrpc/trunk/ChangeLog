@@ -1,3 +1,8 @@
+2009-04-17  Badlop  <badlop@process-one.net>
+
+	* src/ejabberd_xmlrpc.erl: Change access_commands to use the new
+	AccessCommands feature of ejabberd. Syntax is similar (EJAB-910)
+
 2009-03-02  Badlop  <badlop@process-one.net>
 
 	* src/ejabberd_xmlrpc.erl: Replace the listener option 'access'
