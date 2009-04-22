@@ -31,6 +31,9 @@
 -include("jlib.hrl").
 -include("ejabberd_http.hrl").
 
+%% Duplicated from ejabberd_http_bind.
+%% TODO: move to hrl file.
+-record(http_bind, {id, pid, to, hold, wait, version}).
 
 %%%----------------------------------------------------------------------
 %%% API
@@ -69,6 +72,7 @@ process(_Path, _Request) ->
 %%% BEHAVIOUR CALLBACKS
 %%%----------------------------------------------------------------------
 start(_Host, _Opts) ->
+    setup_database(),
     HTTPBindSupervisor =
         {ejabberd_http_bind_sup,
          {ejabberd_tmp_sup, start_link,
@@ -95,4 +99,20 @@ stop(_Host) ->
             ok;
         {error, Error} ->
             {'EXIT', {terminate_child_error, Error}}
+    end.
+
+setup_database() ->
+    migrate_database(),
+    mnesia:create_table(http_bind,
+			[{ram_copies, [node()]},
+			 {attributes, record_info(fields, http_bind)}]).
+
+migrate_database() ->
+    case catch mnesia:table_info(http_bind, attributes) of
+        [id, pid, to, hold, wait, version] ->
+	    ok;
+        _ ->
+	    %% Since the stored information is not important, instead
+	    %% of actually migrating data, let's just destroy the table
+	    mnesia:delete_table(http_bind)
     end.
