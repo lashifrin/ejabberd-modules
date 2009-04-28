@@ -311,10 +311,12 @@ try_do_command(AccessCommands, Auth, Command, AttrL, ArgsF, ResultF) ->
     catch
 	exit:{duplicated_attribute, ExitAt, ExitAtL} ->
 	    build_fault_response(-114, "Attribute '~p' duplicated:~n~p", [ExitAt, ExitAtL]);
-	  exit:{attribute_not_found, ExitAt, ExitAtL} ->
+        exit:{attribute_not_found, ExitAt, ExitAtL} ->
 	    build_fault_response(-116, "Required attribute '~p' not found:~n~p", [ExitAt, ExitAtL]);
-	    throw:Why ->
-	      build_fault_response(-118, "A problem '~p' occurred executing the command ~p with arguments~n~p", [Why, Command, AttrL])
+        exit:{additional_unused_args, ExitAtL} ->
+	    build_fault_response(-120, "The call provided additional unused arguments:~n~p", [ExitAtL]);
+        throw:Why ->
+            build_fault_response(-118, "A problem '~p' occurred executing the command ~p with arguments~n~p", [Why, Command, AttrL])
     end.
 
 build_fault_response(Code, ParseString, ParseArgs) ->
@@ -362,7 +364,8 @@ get_elem_delete(A, L) ->
 
 
 format_args(Args, ArgsFormat) ->
-    {[], R} = lists:foldl(
+    {ArgsRemaining, R} =
+	lists:foldl(
 		fun({ArgName, ArgFormat}, {Args1, Res}) ->
 			{ArgValue, Args2} = get_elem_delete(ArgName, Args1),
 			Formatted = format_arg(ArgValue, ArgFormat),
@@ -370,7 +373,11 @@ format_args(Args, ArgsFormat) ->
 		end,
 		{Args, []},
 		ArgsFormat),
-    R.
+    case ArgsRemaining of
+	[] -> R;
+	L when is_list(L) ->
+	    exit({additional_unused_args, L})
+    end.
 format_arg({array, [{struct, Elements}]}, {list, {ElementDefName, ElementDefFormat}})
   when is_list(Elements) ->
     lists:map(

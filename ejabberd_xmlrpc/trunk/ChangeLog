@@ -1,3 +1,7 @@
+2009-04-28  Badlop  <badlop@process-one.net>
+
+	* src/ejabberd_xmlrpc.erl: Improve handling of errors in arguments
+
 2009-04-17  Badlop  <badlop@process-one.net>
 
 	* src/ejabberd_xmlrpc.erl: Change access_commands to use the new
