@@ -413,7 +413,6 @@ handle_sync_event({http_get, Rid, Wait, Hold}, From, StateName, StateData) ->
 	    ReqList = StateData#state.req_list,
 	    WaitTimer = erlang:start_timer(Wait * 1000, self(), []),
 	    {next_state, StateName, StateData#state{
-				      input = "",
 				      output = Output,
 				      http_receiver = From,
 				      wait_timer = WaitTimer,
