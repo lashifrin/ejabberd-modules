@@ -1,3 +1,15 @@
+2009-05-02  Badlop  <badlop@process-one.net>
+
+	* src/msgs/wa.mod_webpresence.po: Added Walon translation (thanks
+	to Pablo Saratxaga)
+
+	* src/msgs/es.mod_webpresence.po: Added Spanish translation
+
+	* src/mod_webpresence.erl: Update translatable strings
+	* src/msgs/mod_webpresence.pot: Likewise
+	
+	* src/msgs/: New directory for module translations (EJAB-925) 
+
 2008-11-08  Badlop  <badlop@process-one.net>
 
 	* src/mod_webpresence.erl (escape): Escape also newlines (thanks

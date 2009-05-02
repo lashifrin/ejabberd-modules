@@ -320,10 +320,10 @@ iq_get_register_info(_Host, From, Lang) ->
 		      [{xmlelement, "value", [], [{xmlcdata, "---"}]}]}             
 		    ] ++ available_themes(xdata)
 		   ),
-	   ?XFIELD("boolean", ?T("XML"), "xml", atom_to_list(XML)),
-	   ?XFIELD("boolean", ?T("JavaScript"), "js", atom_to_list(JS)),
-	   ?XFIELD("boolean", ?T("Text"), "text", atom_to_list(Text)),
-	   ?XFIELD("boolean", ?T("Avatar"), "avatar", atom_to_list(Avatar))]}].
+	   ?XFIELD("boolean", "XML", "xml", atom_to_list(XML)),
+	   ?XFIELD("boolean", "JavaScript", "js", atom_to_list(JS)),
+	   ?XFIELD("boolean", "Text", "text", atom_to_list(Text)),
+	   ?XFIELD("boolean", "Avatar", "avatar", atom_to_list(Avatar))]}].
 
 %% TODO: Check if remote users are allowed to reach here: they should not be allowed
 iq_set_register_info(From, {Host, JidUrl, RidUrl, XML, Avatar, JS, Text, Icon, _, Lang} = Opts) ->
@@ -819,7 +819,7 @@ process(LocalPath, Request) ->
 process2([], #request{lang = Lang1}) ->
     Lang = parse_lang(Lang1),
     Title = [?XC("title", ?T("Web Presence"))],
-    Desc = [?XC("p", ?T("To publish your presence in this web you need a Jabber account in this Jabber server.")++" "++
+    Desc = [?XC("p", ?T("To publish your presence using this system you need a Jabber account in this Jabber server.")++" "++
 		?T("Login with a Jabber client, open the Service Discovery and register in Web Presence.")++
 		?T("You will receive a message with further instructions."))],
     Link_themes = [?AC("themes", ?T("Icon Theme"))],
@@ -916,7 +916,7 @@ web_page_host(_, Host,
     Users = get_users(Host),
     Res = [?XCT("h1", "Web Presence"),
 	   css_table(),
-	   ?XCT("h2", "Stats")]
+	   ?XCT("h2", "Statistics")]
 	++ make_stats_options(Users, Lang)
 	++ make_stats_iconthemes(Users, Lang),
     {stop, Res};
@@ -947,8 +947,8 @@ make_users_table(Records, Lang) ->
 		    ?XCT("td", "Jabber ID"),
 		    ?XCT("td", "Random ID"),
 		    ?XCT("td", "Icon Theme"),
-		    ?XCT("td", "XML"),
-		    ?XCT("td", "JS"),
+		    ?XC("td", "XML"),
+		    ?XC("td", "JS"),
 		    ?XCT("td", "Text"),
 		    ?XCT("td", "Avatar")
 		   ])]),
