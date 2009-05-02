@@ -187,8 +187,8 @@ form_new_get(Host, Lang) ->
 				     ?INPUTS("text", "username", "", "20"),
 				     ?BR,
 				     ?XE("ul", [
-						?XC("li", "The JID is case insensitive. The username 'macbeth' is the same that 'MacBeth' and 'Macbeth'."),
-						?XC("li", "The username can NOT contain any of those characters: @ : ' \" < > &")
+						?XCT("li", "This is case insensitive: macbeth is the same that MacBeth and Macbeth."),
+						?XCT("li", "Characters not allowed: @ : ' \" < > &")
 					       ])
 				    ]),
 			  ?XE("li", [
@@ -202,14 +202,12 @@ form_new_get(Host, Lang) ->
 				     ?INPUTS("password", "password", "", "20"),
 				     ?BR,
 				     ?XE("ul", [
-						?XC("li", "This password protects your Jabber account. "
-						    "Don't tell your password to anybody else. "
-						    "Nobody else than you needs your password for anything, "
+						?XCT("li", "Don't tell your password to anybody, "
 						    "not even the administrators of the Jabber server."),
-						?XC("li", "You can later change your password using a Jabber client."),
-						?XC("li", "Some Jabber clients can store your password in your computer. "
+						?XCT("li", "You can later change your password using a Jabber client."),
+						?XCT("li", "Some Jabber clients can store your password in your computer. "
 						    "Use that feature only if you trust your computer is safe."),
-						?XC("li", "Please, memorize your password, or write it in a paper placed in a safe place. " 
+						?XCT("li", "Memorize your password, or write it in a paper placed in a safe place. " 
 						    "In Jabber there isn't an automated way to recover your password if you forget it.")
 					       ])
 				    ]),

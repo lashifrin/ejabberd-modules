@@ -1,5 +1,11 @@
 2009-05-02  Badlop  <badlop@process-one.net>
 
+	* src/msgs/es.mod_register_web.po: Update Spanish translation
+	* src/msgs/es.mod_register_web.msg: Likewise
+
+	* src/mod_register_web.erl: Update translatable strings
+	* src/msgs/mod_register_web.pot: Likewise
+
 	* src/msgs/: New directory for module translations (EJAB-925)
 
 2009-03-30  Badlop  <badlop@process-one.net>

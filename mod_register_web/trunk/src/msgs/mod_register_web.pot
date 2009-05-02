@@ -39,7 +39,7 @@ msgstr ""
 msgid "Register a Jabber account"
 msgstr ""
 
-#: mod_register_web.erl:142 mod_register_web.erl:410 mod_register_web.erl:419
+#: mod_register_web.erl:142 mod_register_web.erl:408 mod_register_web.erl:417
 msgid "Unregister a Jabber account"
 msgstr ""
 
@@ -50,34 +50,65 @@ msgid ""
 "carefully the instructions to fill correctly the fields."
 msgstr ""
 
-#: mod_register_web.erl:185 mod_register_web.erl:301 mod_register_web.erl:426
+#: mod_register_web.erl:185 mod_register_web.erl:299 mod_register_web.erl:424
 msgid "Username:"
 msgstr ""
 
-#: mod_register_web.erl:195 mod_register_web.erl:306 mod_register_web.erl:431
+#: mod_register_web.erl:190
+msgid "This is case insensitive: macbeth is the same that MacBeth and Macbeth."
+msgstr ""
+
+#: mod_register_web.erl:191
+msgid "Characters not allowed: @ : ' \" < > &"
+msgstr ""
+
+#: mod_register_web.erl:195 mod_register_web.erl:304 mod_register_web.erl:429
 msgid "Server:"
 msgstr ""
 
-#: mod_register_web.erl:217 mod_register_web.erl:321
+#: mod_register_web.erl:205
+msgid ""
+"Don't tell your password to anybody, not even the administrators of the "
+"Jabber server."
+msgstr ""
+
+#: mod_register_web.erl:207
+msgid "You can later change your password using a Jabber client."
+msgstr ""
+
+#: mod_register_web.erl:208
+msgid ""
+"Some Jabber clients can store your password in your computer. Use that "
+"feature only if you trust your computer is safe."
+msgstr ""
+
+#: mod_register_web.erl:210
+msgid ""
+"Memorize your password, or write it in a paper placed in a safe place. In "
+"Jabber there isn't an automated way to recover your password if you forget "
+"it."
+msgstr ""
+
+#: mod_register_web.erl:215 mod_register_web.erl:319
 msgid "Password Verification:"
 msgstr ""
 
-#: mod_register_web.erl:234
+#: mod_register_web.erl:232
 msgid "Register"
 msgstr ""
 
-#: mod_register_web.erl:311
+#: mod_register_web.erl:309
 msgid "Old Password:"
 msgstr ""
 
-#: mod_register_web.erl:316
+#: mod_register_web.erl:314
 msgid "New Password:"
 msgstr ""
 
-#: mod_register_web.erl:421
+#: mod_register_web.erl:419
 msgid "This page allows to unregister a Jabber account in this Jabber server."
 msgstr ""
 
-#: mod_register_web.erl:441
+#: mod_register_web.erl:439
 msgid "Unregister"
 msgstr ""
