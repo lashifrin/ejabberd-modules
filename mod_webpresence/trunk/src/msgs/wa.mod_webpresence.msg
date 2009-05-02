@@ -21,11 +21,10 @@
 {"unregistered","disdjîstré"}.
 {"URL Type","Sôre di hårdêye"}.
 {"Use URLs like:","Eployîz des hårdêyes come:"}.
-{"Web Presence: ","Prezince sol waibe: "}.
 {"Web Presence","Prezince sol waibe"}.
 {"What features do you want to enable?","Kénès fonccionålités voloz vs mete en alaedje?"}.
 {"XML","XML"}.
-{"You have registered: ","Vos avoz edjîstré: "}.
+{"You have registered:","Vos avoz edjîstré:"}.
 {"You have unregistered.","Vos vs avoz disdjîstré."}.
 {"You need an x:data capable client to register presence","Vos avoz mezåjhe d' on cliyint ki sopoite x:data po vs edjîstrer al prezince sol waibe"}.
 {"You will receive a message with further instructions.","Vos riçuroz on messaedje avou pus d' instruccions."}.

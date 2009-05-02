@@ -21,11 +21,10 @@
 {"unregistered","desregistrado"}.
 {"URL Type","Tipo de URL"}.
 {"Use URLs like:","Usar URLs como:"}.
-{"Web Presence: ","Presencia Web:"}.
 {"Web Presence","Web Presence"}.
 {"What features do you want to enable?","¿Qué características deseas activar?"}.
 {"XML","XML"}.
-{"You have registered: ","Te has registrado:"}.
+{"You have registered:","Te has registrado:"}.
 {"You have unregistered.","Te has desregistrado."}.
 {"You need an x:data capable client to register presence","Necesitas un cliente que incluya soporte de x:data para poder registrar tu presencia"}.
 {"You will receive a message with further instructions.","Recibirás un mensaje con instrucciones adicionales."}.

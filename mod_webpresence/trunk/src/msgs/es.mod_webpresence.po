@@ -7,10 +7,10 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Language: Spanish (castellano)\n"
 
-#: mod_webpresence.erl:253 mod_webpresence.erl:311 mod_webpresence.erl:438
-#: mod_webpresence.erl:821 mod_webpresence.erl:826 mod_webpresence.erl:831
-#: mod_webpresence.erl:893 mod_webpresence.erl:898 mod_webpresence.erl:909
-#: mod_webpresence.erl:917
+#: mod_webpresence.erl:253 mod_webpresence.erl:311 mod_webpresence.erl:426
+#: mod_webpresence.erl:438 mod_webpresence.erl:821 mod_webpresence.erl:826
+#: mod_webpresence.erl:831 mod_webpresence.erl:893 mod_webpresence.erl:898
+#: mod_webpresence.erl:909 mod_webpresence.erl:917
 msgid "Web Presence"
 msgstr "Web Presence"
 
@@ -78,15 +78,11 @@ msgstr ""
 "nuevo."
 
 #: mod_webpresence.erl:426
-msgid "Web Presence: "
-msgstr "Presencia Web:"
-
-#: mod_webpresence.erl:426
 msgid "registered"
 msgstr "registrado"
 
 #: mod_webpresence.erl:427
-msgid "You have registered: "
+msgid "You have registered:"
 msgstr "Te has registrado:"
 
 #: mod_webpresence.erl:428
@@ -148,6 +144,3 @@ msgstr ""
 #: mod_webpresence.erl:824
 msgid "You will receive a message with further instructions."
 msgstr "Recibirás un mensaje con instrucciones adicionales."
-
-#~ msgid "Stats"
-#~ msgstr "Estadísticas"
