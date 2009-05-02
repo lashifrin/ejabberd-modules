@@ -1,0 +1,87 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: es.mod_register_web\n"
+"Last-Translator: Badlop\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Language: Spanish (castellano)\n"
+
+#: mod_register_web.erl:66
+msgid "Your Jabber account was succesfully created."
+msgstr "Tu cuenta Jabber se ha creado correctamente."
+
+#: mod_register_web.erl:69
+msgid "There was an error creating the account: "
+msgstr "Hubo uno error al crear la cuenta:"
+
+#: mod_register_web.erl:79
+msgid "Your Jabber account was succesfully deleted."
+msgstr "Tu cuenta Jabber se ha borrado correctamente."
+
+#: mod_register_web.erl:82
+msgid "There was an error deleting the account: "
+msgstr "Hubo un error borrando la cuenta."
+
+#: mod_register_web.erl:92
+msgid "The password of your Jabber account was succesfully changed."
+msgstr "La contraseña de tu cuenta Jabber se ha cambiado correctamente."
+
+#: mod_register_web.erl:95
+msgid "There was an error changing the password: "
+msgstr "Hubo un error cambiando la contraseña."
+
+#: mod_register_web.erl:129 mod_register_web.erl:138
+msgid "Jabber Account Registration"
+msgstr "Registro de Cuenta Jabber"
+
+#: mod_register_web.erl:140 mod_register_web.erl:165 mod_register_web.erl:174
+msgid "Register a Jabber account"
+msgstr "Registrar una cuenta Jabber"
+
+#: mod_register_web.erl:142 mod_register_web.erl:410 mod_register_web.erl:419
+msgid "Unregister a Jabber account"
+msgstr "Borrar una cuenta Jabber"
+
+#: mod_register_web.erl:176
+msgid ""
+"This page allows to create a Jabber account in this Jabber server. Your JID "
+"(Jabber IDentifier) will be of the form: username@server. Please read "
+"carefully the instructions to fill correctly the fields."
+msgstr ""
+"Esta página de permite crear una cuenta Jabber este servidor Jabber. Tu JID "
+"(Jabber IDentificador) será de la forma: nombredeusuario@servidor. Por favor "
+"lee detenidamente las instrucciones para rellenar correctamente los campos."
+
+#: mod_register_web.erl:185 mod_register_web.erl:301 mod_register_web.erl:426
+msgid "Username:"
+msgstr "Nombre de usuario:"
+
+#: mod_register_web.erl:195 mod_register_web.erl:306 mod_register_web.erl:431
+msgid "Server:"
+msgstr "Servidor:"
+
+#: mod_register_web.erl:217 mod_register_web.erl:321
+msgid "Password Verification:"
+msgstr "Verificación de contraseña:"
+
+#: mod_register_web.erl:234
+msgid "Register"
+msgstr "Registrar"
+
+#: mod_register_web.erl:311
+msgid "Old Password:"
+msgstr "Contraseña antigua:"
+
+#: mod_register_web.erl:316
+msgid "New Password:"
+msgstr "Contraseña nueva:"
+
+#: mod_register_web.erl:421
+msgid "This page allows to unregister a Jabber account in this Jabber server."
+msgstr ""
+"Esta página te permite borrar tu cuenta Jabber en este servidor Jabber."
+
+#: mod_register_web.erl:441
+msgid "Unregister"
+msgstr "Borrar"

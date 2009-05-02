@@ -1,3 +1,7 @@
+2009-05-02  Badlop  <badlop@process-one.net>
+
+	* src/msgs/: New directory for module translations (EJAB-925)
+
 2009-03-30  Badlop  <badlop@process-one.net>
 
 	* src/mod_register_web.erl: Use captcha in account registration
