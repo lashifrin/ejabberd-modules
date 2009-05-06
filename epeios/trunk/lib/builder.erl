@@ -498,7 +498,7 @@ try_get_config(AppName, Ebin, Dict) ->
 get_config_data({file,F}) ->
     ?report(debug, "get_config_data({file, ~p})~n", [F]),
     case file:consult(F) of
-	{ok, [Terms]} when list(Terms) ->
+	{ok, [Terms]} when is_list(Terms) ->
 	    Terms;
 	{error, Reason} ->
 	    exit({config, {F, Reason}})
@@ -506,7 +506,7 @@ get_config_data({file,F}) ->
 get_config_data({M,F,A}) ->
     ?report(debug, "get_config_data(~p)~n", [{M,F,A}]),
     apply(M,F,A);
-get_config_data(Data) when list(Data) ->
+get_config_data(Data) when is_list(Data) ->
     Data.
 
 
@@ -1026,7 +1026,7 @@ merge_apps(RelApps, AppApps, AppInfo) ->
 			     App;
 			({App,_Vsn}) ->
 			     App;
-			(App) when atom(App) ->
+			(App) when is_atom(App) ->
 			     App
 		     end, RelApps),
     with(Acc0,
@@ -1055,7 +1055,7 @@ app_info(Apps, Dict) ->
     MyVsn = dict:fetch(app_vsn, Dict),
     MyEbin = ebin_dir(Dict),
     Info = lists:map(
-	     fun(A) when atom(A) -> {A,unknown,unknown};
+	     fun(A) when is_atom(A) -> {A,unknown,unknown};
 		({A,V})          -> {A,V,unknown};
 		({A,V,D})        -> {A,V,D}
 	     end, Apps),
@@ -1404,9 +1404,9 @@ app(D) ->
 	_ -> true
     end.
 do_apps([], _Vss) -> [];
-do_apps([App|Apps], Vss) when list(App) -> 
+do_apps([App|Apps], Vss) when is_list(App) -> 
     do_apps([list_to_atom(App)|Apps], Vss);
-do_apps([App|Apps], Vss) when atom(App) ->
+do_apps([App|Apps], Vss) when is_atom(App) ->
     [{App, get_vsn(atom_to_list(App), Vss)}|do_apps(Apps, Vss)].
 
 
@@ -1440,7 +1440,7 @@ read_app_file(Dict) ->
     App = case file:consult(AppF) of
 	      {ok, [{application, _Name, Options}]} ->
 		  app_options(Options);
-	      {ok, [Options]} when list(Options) ->
+	      {ok, [Options]} when is_list(Options) ->
 		  app_options(Options);
 	      {error, enoent} ->
 		  RealAppF = filename:join(ebin_dir(Dict), 
@@ -1588,7 +1588,7 @@ rpt_level(none) -> 0;
 rpt_level(progress) -> 1;
 rpt_level(verbose) -> 2;
 rpt_level(debug) -> 3;
-rpt_level(N) when integer(N), N >= 0 ->
+rpt_level(N) when is_integer(N), N >= 0 ->
     N.
     
 push_report_level(Level, Dict) ->

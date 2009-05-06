@@ -1070,7 +1070,7 @@ cancel_timer(Timer) ->
 	    ok
     end.
 
-hex(Bin) when binary(Bin) -> hex(binary_to_list(Bin));
+hex(Bin) when is_binary(Bin) -> hex(binary_to_list(Bin));
 hex([]) -> "";
 hex([H|T]) -> 
 	[A,B] = if 
