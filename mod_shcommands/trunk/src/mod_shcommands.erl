@@ -22,16 +22,14 @@
 %% gen_mod functions
 %%-------------------
 
-start(Host, _Opts) ->
+start(_Host, _Opts) ->
     ejabberd_hooks:add(webadmin_menu_node, ?MODULE, web_menu_node, 50),
     ejabberd_hooks:add(webadmin_page_node, ?MODULE, web_page_node, 50),
-    ejabberd_hooks:add(webadmin_user, Host, ?MODULE, web_user, 50),
     ok.
 
-stop(Host) ->
+stop(_Host) ->
     ejabberd_hooks:delete(webadmin_menu_node, ?MODULE, web_menu_node, 50),
     ejabberd_hooks:delete(webadmin_page_node, ?MODULE, web_page_node, 50),
-    ejabberd_hooks:delete(webadmin_user, Host, ?MODULE, web_user, 50),
     ok.
 
 %%-------------------
