@@ -37,7 +37,7 @@ if ($location=="footer.php") {
 
 if (!preg_match("/index.php/i",$location)) {
 
-	$html->foot('<div align="right" style="clear: left;"><a href="mailto:zbyszek@jabster.pl">'.$quest1[$lang].'</a></div>');
+	$html->foot('<br><div align="right" style="clear: left;"><a href="http://dev.jabbim.cz/jorge/newticket" target="_blank">'.$quest1[$lang].'</a></div>');
 
 }
 
