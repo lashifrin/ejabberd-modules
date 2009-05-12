@@ -1056,11 +1056,11 @@ get_max_inactivity({Host, _}, Default) ->
 get_max_inactivity(_, Default) ->
     Default.
 
-remove_tag_attr(Attr, {xmlelement, Name, Attrs, Els}) ->
-    Attrs1 = lists:keydelete(Attr, 1, Attrs),
-    {xmlelement, Name, Attrs1, Els};
-remove_tag_attr(Attr, El) ->
-    El.
+%% remove_tag_attr(Attr, {xmlelement, Name, Attrs, Els}) ->
+%%     Attrs1 = lists:keydelete(Attr, 1, Attrs),
+%%     {xmlelement, Name, Attrs1, Els};
+%% remove_tag_attr(Attr, El) ->
+%%     El.
 
 check_default_xmlns({xmlelement, Name, Attrs, Els} = El) ->
     case xml:get_tag_attr_s("xmlns", El) of
