@@ -1,3 +1,9 @@
+2009-05-15  Badlop  <badlop@process-one.net>
+
+	* src/mod_statsdx.erl: Fix error messages when mod_stats2file
+	requests information about hooks, but hooks is not enabled in
+	mod_statsdx
+
 2009-02-02  Badlop  <badlop@process-one.net>
 
 	* src/mod_statsdx.erl: New stats for erlang memory. Show new stats
