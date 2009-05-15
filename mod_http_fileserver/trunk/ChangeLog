@@ -1,3 +1,9 @@
+2009-05-15  Badlop  <badlop@process-one.net>
+
+	* src/web/mod_http_fileserver.erl: New option directory_indices,
+	and improve logging (thanks to Brian Cully)(EJAB-932)
+	* doc/mod_http_fileserver.tex: Document the new option
+
 2009-03-11  Badlop  <badlop@process-one.net>
 
 	* src/web/mod_http_fileserver.erl: Fix capitalization of HTTP

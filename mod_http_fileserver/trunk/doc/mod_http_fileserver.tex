@@ -10,6 +10,11 @@ Options:
   \titem{accesslog} \ind{options!accesslog}
     File to log accesses using an Apache-like format.
     No log will be recorded if this option is not specified.
+  \titem{directory\_indices} \ind{options!directoryindices}
+    Indicate one or more directory index files, similarly to Apache's
+    DirectoryIndex variable. When a web request hits a directory
+    instead of a regular file, those directory indices are looked in
+    order, and the first one found is returned.
 \end{description}
 
 This example configuration will serve the files from 
@@ -22,6 +27,7 @@ To use this module you must enable it:
   ...
   {mod_http_fileserver, [
                          {docroot, "/var/www"}, 
+			 {directory_indices, ["index.html", "main.htm"]},
                          {accesslog, "/var/log/ejabberd/access.log"}
                         ]
   },
