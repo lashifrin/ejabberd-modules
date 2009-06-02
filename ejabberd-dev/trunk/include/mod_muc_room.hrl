@@ -1,6 +1,6 @@
 %%%----------------------------------------------------------------------
 %%%
-%%% ejabberd, Copyright (C) 2002-2008   ProcessOne
+%%% ejabberd, Copyright (C) 2002-2009   ProcessOne
 %%%
 %%% This program is free software; you can redistribute it and/or
 %%% modify it under the terms of the GNU General Public License as
@@ -11,7 +11,7 @@
 %%% but WITHOUT ANY WARRANTY; without even the implied warranty of
 %%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 %%% General Public License for more details.
-%%%                         
+%%%
 %%% You should have received a copy of the GNU General Public License
 %%% along with this program; if not, write to the Free Software
 %%% Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
@@ -37,6 +37,7 @@
 		 public_list = true,
 		 persistent = false,
 		 moderated = true,
+		 captcha_protected = false,
 		 members_by_default = true,
 		 members_only = false,
 		 allow_user_invites = false,
@@ -66,6 +67,7 @@
 		jid,
 		config = #config{},
 		users = ?DICT:new(),
+		robots = ?DICT:new(),
 		affiliations = ?DICT:new(),
 		history,
 		subject = "",

@@ -11,12 +11,12 @@
 %%% under the License.
 %%% 
 %%% The Initial Developer of the Original Code is ProcessOne.
-%%% Portions created by ProcessOne are Copyright 2006-2008, ProcessOne
+%%% Portions created by ProcessOne are Copyright 2006-2009, ProcessOne
 %%% All Rights Reserved.''
-%%% This software is copyright 2006-2008, ProcessOne.
+%%% This software is copyright 2006-2009, ProcessOne.
 %%%
 %%%
-%%% copyright 2006-2008 ProcessOne
+%%% copyright 2006-2009 ProcessOne
 %%%
 %%% This file contains pubsub types definition.
 %%% ====================================================================
@@ -62,7 +62,7 @@
 %%% @type nodeType() = string().
 %%% <p>The <tt>nodeType</tt> is a string containing the name of the PubSub
 %%% plugin to use to manage a given node. For example, it can be
-%%% <tt>"default"</tt>, <tt>"collection"</tt> or <tt>"blog"</tt>.</p>
+%%% <tt>"flat"</tt>, <tt>"hometree"</tt> or <tt>"blog"</tt>.</p>
 
 %%% @type jid() = #jid{
 %%%    user = string(),
@@ -72,45 +72,49 @@
 %%%    lserver = string(),
 %%%    lresource = string()}.
 
-%%% @type usr() = {User::string(), Server::string(), Resource::string()}.
+%%% @type ljid() = {User::string(), Server::string(), Resource::string()}.
 
 %%% @type affiliation() = none | owner | publisher | outcast.
 %%% @type subscription() = none | pending | unconfigured | subscribed.
 
+%%% internal pubsub index table
+-record(pubsub_index, {index, last, free}).
+
 %%% @type pubsubNode() = #pubsub_node{
 %%%    nodeid = {Host::host(), Node::pubsubNode()},
-%%%    parentid = {Host::host(), Node::pubsubNode()},
+%%%    parentid = Node::pubsubNode(),
+%%%    nodeidx = int(). % can be anything you want
 %%%    type = nodeType(),
-%%%    owners = [usr()],
-%%%    options = [nodeOption()]}.
+%%%    options = [nodeOption()]}
 %%% <p>This is the format of the <tt>nodes</tt> table. The type of the table
 %%% is: <tt>set</tt>,<tt>ram/disc</tt>.</p>
 %%% <p>The <tt>parentid</tt> and <tt>type</tt> fields are indexed.</p>
 -record(pubsub_node, {nodeid,
-		      parentid = {},
-		      type = "",
+		      id,
+		      parent,
+		      type = "flat",
 		      owners = [],
 		      options = []
 		     }).
 
 %%% @type pubsubState() = #pubsub_state{
-%%%    stateid = {jid(), {Host::host(), Node::pubsubNode()}},
+%%%    stateid = {ljid(), nodeidx()}},
 %%%    items = [ItemId::string()],
 %%%    affiliation = affiliation(),
-%%%    subscription = subscription()}.
+%%%    subscriptions = [subscription()]}.
 %%% <p>This is the format of the <tt>affiliations</tt> table. The type of the
 %%% table is: <tt>set</tt>,<tt>ram/disc</tt>.</p>
 -record(pubsub_state, {stateid,
 		       items = [],
 		       affiliation = none,
-		       subscription = none
+		       subscriptions = []
 }).
 
-%% @type pubsubItem() = #pubsub_item{
-%%        itemid = {ItemId::string(), {Host::host(),Node::pubsubNode()}},
-%%     creation = {JID::jid(), now()},
-%%     modification = {JID::jid(), now()},
-%%     payload = XMLContent::string()}.
+%%% @type pubsubItem() = #pubsub_item{
+%%%    itemid = {ItemId::string(), nodeidx()}},
+%%%    creation = {now(), ljid()},
+%%%    modification = {now(), ljid()},
+%%%    payload = XMLContent::string()}.
 %%% <p>This is the format of the <tt>published items</tt> table. The type of the
 %%% table is: <tt>set</tt>,<tt>disc</tt>,<tt>fragmented</tt>.</p>
 -record(pubsub_item, {itemid,
@@ -119,3 +123,12 @@
 		      payload = []
 		     }).
 
+
+%% @type pubsubSubscription() = #pubsub_subscription{
+%%     subid     = string(),
+%%     state_key = {ljid(), pubsubNodeId()},
+%%     options   = [{atom(), term()}]
+%% }.
+%% <p>This is the format of the <tt>subscriptions</tt> table. The type of the
+%% table is: <tt>set</tt>,<tt>ram/disc</tt>.</p>
+-record(pubsub_subscription, {subid, options}).
