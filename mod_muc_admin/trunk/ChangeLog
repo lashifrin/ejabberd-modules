@@ -1,3 +1,7 @@
+2009-06-02  Badlop  <badlop@process-one.net>
+
+	* src/mod_muc_admin.erl: Destroy the room before forgetting it.
+
 2008-12-02  Badlop  <badlop@process-one.net>
 
 	* src/mod_muc_admin.erl: Include mod_muc_room.hrl
