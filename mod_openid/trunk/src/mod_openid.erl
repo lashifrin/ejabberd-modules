@@ -20,8 +20,8 @@
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
--include("web/ejabberd_http.hrl").
--include("web/ejabberd_web_admin.hrl").
+-include("ejabberd_http.hrl").
+-include("ejabberd_web_admin.hrl").
 
 -record(profile, {identity, server, lang, jid}).
 
@@ -32,10 +32,10 @@
 %% PART 1 : OpenID
 
 process([Jid],  #request{ q = Query, lang = Lang} = Request) ->
-	?MYDEBUG("Auth Failed ~p ~n", [C]),
+	%%?MYDEBUG("Auth Failed ~p ~n", [C]),
 	%[{server, Server}] = ets:lookup(mod_openid, server)
 	JJid = jlib:string_to_jid(Jid),
-	Server = "http://" ++ JJid#jid.server ++ ":5280/openid" 
+	Server = "http://" ++ JJid#jid.server ++ ":5280/openid",
 	Profile = #profile{ identity = Server  ++"/"++ Jid,
 	                    server = Server ++ "/" ++ Jid,
 	                    lang = Lang, jid= JJid },
