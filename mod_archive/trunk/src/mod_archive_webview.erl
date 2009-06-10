@@ -15,9 +15,8 @@
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
--include("web/ejabberd_http.hrl").
-
--include("web/ejabberd_web_admin.hrl"). %for all the defines
+-include("ejabberd_http.hrl").
+-include("ejabberd_web_admin.hrl"). %for all the defines
 
 -define(LINK(L) , "/archive/" ++ L).
 %-define(P(Els), ?XE("p", Els)).

@@ -59,7 +59,7 @@ For a detailed documentation about this module, please refer to
 http://www.ndl.kiev.ua/typo/articles/2007/11/14/mod_archive_odbc-release
 
 
-	MOD_ARCHIVE_VEBVIEW
+	MOD_ARCHIVE_WEBVIEW
 	===================
 Author: Olivier Goffart
 
@@ -67,7 +67,7 @@ This module woks with the database of mod_archive_odbc
 
 Edit ejabberd.cfg and add the HTTP and module definitions: {["archive"], mod_archive_webview} to the list of request handler
 {listen, [ {5280, ejabberd_http, [     %...
-         {request_handlers, [{["archive"], mod_webarchive}
+         {request_handlers, [{["archive"], mod_archive_webview}
     ]} ]} ]}.
     
 then go on http://your.server.com:5280/archive
