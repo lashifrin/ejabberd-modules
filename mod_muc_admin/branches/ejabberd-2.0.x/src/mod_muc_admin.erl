@@ -35,13 +35,16 @@
 -record(muc_online_room, {name_host, pid}).
 -record(lqueue, {queue, len, max}).
 -record(config, {title = "",
+		 description = "",
 		 allow_change_subj = true,
 		 allow_query_users = true,
 		 allow_private_messages = true,
+		 allow_visitor_status = true,
+		 allow_visitor_nickchange = true,
 		 public = true,
 		 public_list = true,
 		 persistent = false,
-		 moderated = false, % TODO
+		 moderated = true,
 		 members_by_default = true,
 		 members_only = false,
 		 allow_user_invites = false,

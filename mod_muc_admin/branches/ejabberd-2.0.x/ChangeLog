@@ -1,3 +1,8 @@
+2009-06-10  Badlop  <badlop@process-one.net>
+
+	* src/mod_muc_admin.erl: Update records copied from mod_muc to
+	work correctly with ejabberd 2.0.2 or higher
+
 2008-05-16  Badlop  <badlop@process-one.net>
 
 	* src/mod_muc_admin.erl: New exported function
