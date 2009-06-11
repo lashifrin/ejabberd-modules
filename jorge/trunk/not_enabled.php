@@ -61,7 +61,6 @@ if ($action === $activate_m[$lang]) {
 
 								$sess->set('log_status',true);
 								$sess->set('view_type','2');
-								$sess->set('language',$lang_def);
 								$db->set_logger("7","1",$rem_adre);
 						
 							}

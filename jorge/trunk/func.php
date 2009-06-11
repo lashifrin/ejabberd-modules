@@ -509,7 +509,7 @@ function check_rpc_server($rpc_arr,$rpc_port) {
 			return $rpc_host;
 
 		}
-
+	
 	}
 
 	return false;
