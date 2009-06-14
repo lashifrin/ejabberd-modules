@@ -1,3 +1,7 @@
+2009-06-14  Badlop  <badlop@process-one.net>
+
+	* src/mod_muc_log_http.erl: Include mod_muc_room.hrl
+
 2009-03-11  Badlop  <badlop@process-one.net>
 
 	* src/mod_muc_log_http.erl: Fix capitalization of HTTP headers

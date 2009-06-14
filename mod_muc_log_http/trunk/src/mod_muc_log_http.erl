@@ -20,6 +20,7 @@
 -include("ejabberd.hrl").
 -include("jlib.hrl").
 -include("ejabberd_http.hrl").
+-include("mod_muc_room.hrl").
 -include_lib("kernel/include/file.hrl").
 
 -define(PROCNAME, mod_muc_log_http).
@@ -34,31 +35,8 @@
 %  - If chatroom is password protected, ask password
 %  - If chatroom is only for members, ask for username and password
 
-%% TODO: Since ejabberd trunk SVN r1699 the file mod_muc_room.hrl can be included
 %% Copied from mod_muc/mod_muc.erl
 -record(muc_online_room, {name_host, pid}).
-%% Copied from mod_muc/mod_muc_room.erl
--define(MAX_USERS_DEFAULT, 200).
--record(config, {title = "",
-		 description = "",
-		 allow_change_subj = true,
-		 allow_query_users = true,
-		 allow_private_messages = true,
-                 allow_visitor_status = true,
-                 allow_visitor_nickchange = true,
-		 public = true,
-		 public_list = true,
-		 persistent = false,
-		 moderated = true,
-		 members_by_default = true,
-		 members_only = false,
-		 allow_user_invites = false,
-		 password_protected = false,
-		 password = "",
-		 anonymous = true,
-		 max_users = ?MAX_USERS_DEFAULT,
-		 logging = false
-		}).
 
 
 %%%----------------------------------------------------------------------
