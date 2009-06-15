@@ -1,3 +1,8 @@
+2009-06-15  Badlop  <badlop@process-one.net>
+
+	* src/mod_admin_extra.erl: Added command to check the password by
+	providing a MD5 or SHA hash.
+
 2009-02-16  Badlop  <badlop@process-one.net>
 
 	* src/mod_admin_extra.erl: Fix srg_user_add arguments

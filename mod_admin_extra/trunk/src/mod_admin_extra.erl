@@ -38,6 +38,7 @@
 	 export2odbc/2,
 	 %% Accounts
 	 set_password/3,
+	 check_password_hash/4,
 	 delete_old_users/1,
 	 delete_old_users_vhost/2,
 	 ban_account/3,
@@ -174,6 +175,12 @@ commands() ->
 			desc = "Check if a password is correct",
 			module = ejabberd_auth, function = check_password,
 			args = [{user, string}, {host, string}, {password, string}],
+			result = {res, rescode}},
+     #ejabberd_commands{name = check_password_hash, tags = [accounts],
+			desc = "Check if the password hash is correct",
+			longdesc = "Allowed hash methods: md5, sha.",
+			module = ?MODULE, function = check_password_hash,
+			args = [{user, string}, {host, string}, {passwordhash, string}, {hashmethod, string}],
 			result = {res, rescode}},
      #ejabberd_commands{name = change_password, tags = [accounts],
 			desc = "Change the password of an account",
@@ -463,6 +470,26 @@ set_password(User, Host, Password) ->
 	_ ->
 	    error
     end.
+
+%% Copied some code from ejabberd_commands.erl
+check_password_hash(User, Host, PasswordHash, HashMethod) ->
+    AccountPass = ejabberd_auth:get_password_s(User, Host),
+    AccountPassHash = case HashMethod of
+			  "md5" -> get_md5(AccountPass);
+			  "sha" -> get_sha(AccountPass);
+			  _ -> undefined
+		      end,
+    case AccountPassHash of
+	undefined -> error;
+	PasswordHash -> ok;
+	_ -> error
+    end.
+get_md5(AccountPass) ->
+    lists:flatten([io_lib:format("~.16B", [X])
+		   || X <- binary_to_list(crypto:md5(AccountPass))]).
+get_sha(AccountPass) ->
+    lists:flatten([io_lib:format("~.16B", [X])
+		   || X <- binary_to_list(crypto:sha(AccountPass))]).
 
 num_active_users(Host, Days) ->
     list_last_activity(Host, true, Days).
