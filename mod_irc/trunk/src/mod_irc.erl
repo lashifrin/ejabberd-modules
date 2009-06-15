@@ -216,10 +216,13 @@ do_route1(Host, ServerHost, From, To, Packet) ->
 			    Node = xml:get_tag_attr_s("node", SubEl),
 			    case iq_disco(Node, Lang) of
 				[] ->
+				    Res = IQ#iq{type = result,
+						sub_el = [{xmlelement, "query",
+							   [{"xmlns", XMLNS}],
+							   []}]},
 				    ejabberd_router:route(To,
 							  From,
-							  jlib:make_error_reply(
-							    Packet, ?ERR_ITEM_NOT_FOUND));
+							  jlib:iq_to_xml(Res));
 				DiscoInfo ->
 				    Res = IQ#iq{type = result,
 						sub_el = [{xmlelement, "query",
@@ -234,6 +237,18 @@ do_route1(Host, ServerHost, From, To, Packet) ->
 			    Node = xml:get_tag_attr_s("node", SubEl),
 			    case Node of
 				[] ->
+				    ResIQ = IQ#iq{type = result,
+						sub_el = [{xmlelement, "query",
+							   [{"xmlns", XMLNS}],
+							   []}]},
+				    Res = jlib:iq_to_xml(ResIQ);
+				"join" ->
+				    ResIQ = IQ#iq{type = result,
+						sub_el = [{xmlelement, "query",
+							   [{"xmlns", XMLNS}],
+							   []}]},
+				    Res = jlib:iq_to_xml(ResIQ);
+				"register" ->
 				    ResIQ = IQ#iq{type = result,
 						sub_el = [{xmlelement, "query",
 							   [{"xmlns", XMLNS}],
