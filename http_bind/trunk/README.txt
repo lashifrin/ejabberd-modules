@@ -1,4 +1,9 @@
 
+
+IMPORTANT: This module is included in ejabberd SVN since version ejabberd 2.1.0,
+so you don't need to get it from here.
+
+
 INTRODUCTION
 ============
 
