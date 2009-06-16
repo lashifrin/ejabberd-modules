@@ -885,11 +885,12 @@ function message_processor($tslice,$server_name,$start,$nickname,$result_message
 	// Check thread. Work only for calendar view.
 	if ($to_base_next !== NULL) {
 
-		if (substr($ts, 0 , strpos($ts, ":")) == 23) {
+		if (substr($ts, 0 , strpos($ts, ":")) == 23 AND date("Y-n-j") !== $tslice) {
 
 			if ( check_thread($db,$talker,$server,$tslice,$xmpp_host,1) === true) {
 		
 				$html->set_body('<tr><td colspan="6" style="text-align: right; padding-right: 5px;" class="message"><a href="calendar_view.php?a='.$to_base_next.'">'.$lang_pack[9].'</a></td></tr>');
+			
 			}
 		}
 
