@@ -1,3 +1,10 @@
+2009-06-16  Badlop  <badlop@process-one.net>
+
+	* AUTHORS: As mod_webpresence is a rename of mod_presence, Igor
+	Goryachev is the original author and Badlop added new features.
+	* src/mod_webpresence.erl: Likewise
+	* README.txt: Likewise
+
 2009-05-02  Badlop  <badlop@process-one.net>
 
 	* src/mod_webpresence.erl: Minor change in string

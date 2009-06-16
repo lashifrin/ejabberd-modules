@@ -1,7 +1,7 @@
 
 	mod_webpresence - Presence on the Web
 
-	Author: Badlop
+	Authors: Igor Goryachev, Badlop
 	Requires: ejabberd SVN (not possible with 1.1.x)
 	http://www.ejabberd.im/mod_webpresence
 

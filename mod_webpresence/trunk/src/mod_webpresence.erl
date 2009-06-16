@@ -1,13 +1,12 @@
 %%%----------------------------------------------------------------------
 %%% File    : mod_webpresence.erl
-%%% Author  : Badlop <badlop@ono.com>
+%%% Author  : Igor Goryachev <igor@goryachev.org>, Badlop
 %%% Purpose : Allow user to show presence in the web
 %%% Created : 30 Apr 2006 by Igor Goryachev <igor@goryachev.org>
 %%% Id      : $Id$
 %%%----------------------------------------------------------------------
 
 -module(mod_webpresence).
--author('badlop@ono.com').
 
 -behaviour(gen_server).
 -behaviour(gen_mod).
