@@ -3,7 +3,7 @@
 
         Homepage: http://www.ejabberd.im/mod_statsdx
         Author: Badlop
-        Requirements: ejabberd 2.0.x
+        Requirements: ejabberd trunk SVN (ejabberd 2.1.0 or higher, once released)
 
 
 	mod_statsdx
