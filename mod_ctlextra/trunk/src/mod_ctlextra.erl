@@ -340,11 +340,11 @@ ctl_process(_Val, ["push-alltoall", Server, Group]) ->
     end;
 
 ctl_process(_Val, ["load-config", Path]) ->
-    case ejabberd_config:load_file(Path) of
-        {atomic, ok} ->
+    case catch ejabberd_config:load_file(Path) of
+        ok ->
             ?STATUS_SUCCESS;
-        {error, Reason} ->
-            io:format("Can't load config file ~p: ~p~n",
+        {'EXIT', Reason} ->
+            io:format("Problem loading config file ~p: ~p~n",
                       [filename:absname(Path), Reason]),
 	    ?STATUS_ERROR;
         {badrpc, Reason} ->
