@@ -101,6 +101,9 @@ commands_global() ->
      {"muc-unregister-nick nick", "unregister the nick in the muc service"},
      {"muc-create-file file", "create the rooms indicated in file"},
      {"muc-destroy-file file", "destroy the rooms whose JID is indicated in file"},
+     {"muc-create-room room service host", "create room@service in the vhost"},
+     {"muc-change-room-option room service option value", "change a room option value"},
+     {"muc-set-room-affiliation room service jid affiliation", "set in room a jid affiliation (needs patch)"},
      {"muc-unused-list days", "list rooms without activity in last days"},
      {"muc-unused-destroy days", "destroy rooms without activity last days"},
      {"muc-online-rooms", "list existing rooms"}
@@ -129,6 +132,30 @@ ctl_process(_Val, ["muc-create-file", Filename]) ->
 
 ctl_process(_Val, ["muc-destroy-file", Filename]) ->
     muc_destroy_file(Filename),
+    ?STATUS_SUCCESS;
+
+ctl_process(_Val, ["muc-create-room", Room, Service, Host]) ->
+    create_room(Room, Service, Host),
+    ?STATUS_SUCCESS;
+
+ctl_process(_Val, ["muc-change-room-option", Room, Service, Option, Value]) ->
+    change_room_option(Room, Service, Option, Value),
+    ?STATUS_SUCCESS;
+
+%% NOTE: to use this command in ejabberd 2.0.x, you need to apply this patch to ejabberd:
+%% --- src/mod_muc/mod_muc_room.erl
+%% +++ src/mod_muc/mod_muc_room.erl
+%% @@ -695,6 +695,8 @@ handle_sync_event(get_state, _From, StateName, StateData) ->
+%%  handle_sync_event({change_config, Config}, _From, StateName, StateData) ->
+%%      {result, [], NSD} = change_config(Config, StateData),
+%%      {reply, {ok, NSD#state.config}, StateName, NSD};
+%% +handle_sync_event({change_state, NewStateData}, _From, StateName, _StateData) ->
+%% +    {reply, {ok, NewStateData}, StateName, NewStateData};
+%%  handle_sync_event(_Event, _From, StateName, StateData) ->
+%%      Reply = ok,
+%%      {reply, Reply, StateName, StateData}.
+ctl_process(_Val, ["muc-set-room-affiliation", Room, Service, JID, Affiliation]) ->
+    set_affiliation(Room, Service, JID, Affiliation),
     ?STATUS_SUCCESS;
 
 ctl_process(Val, ["muc-unused-list", Days]) ->
@@ -608,11 +635,21 @@ act_on_room(list, _, _) ->
 %% and the value to assign to the new option.
 %% For example:
 %%   change_room_option("testroom", "conference.localhost", title, "Test Room")
-change_room_option(Name, Service, Option, Value) ->
+change_room_option(Name, Service, Option, Value) when is_atom(Option) ->
     Pid = get_room_pid(Name, Service),
     {ok, _} = change_room_option(Pid, Option, Value),
-    ok.
-
+    ok;
+change_room_option(Name, Service, OptionString, ValueString) ->
+    Option = list_to_atom(OptionString),
+    Value = case Option of
+	title -> ValueString;
+	description -> ValueString;
+	password -> ValueString;
+	max_users -> list_to_integer(ValueString);
+	_ -> list_to_atom(ValueString)
+    end,
+    change_room_option(Name, Service, Option, Value).
+ 
 change_room_option(Pid, Option, Value) ->
     Config = get_room_config(Pid),
     Config2 = change_option(Option, Value, Config),
@@ -676,7 +713,8 @@ muc_unregister_nick(Nick) ->
 %% @doc Set the affiliation of JID in the room Name@Service.
 %% If the affiliation is 'none', the action is to remove,
 %% In any other case the action will be to create the affiliation.
-set_affiliation(Name, Service, JID, Affiliation) ->
+set_affiliation(Name, Service, JID, AffiliationString) ->
+    Affiliation = list_to_atom(AffiliationString),
     case mnesia:dirty_read(muc_online_room, {Name, Service}) of
 	[R] ->
 	    %% Get the PID for the online room so we can get the state of the room
