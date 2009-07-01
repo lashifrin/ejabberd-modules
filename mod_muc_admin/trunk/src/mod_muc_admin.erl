@@ -611,11 +611,20 @@ act_on_room(list, _, _) ->
 %% and the value to assign to the new option.
 %% For example:
 %%   change_room_option("testroom", "conference.localhost", "title", "Test Room")
-change_room_option(Name, Service, OptionString, Value) ->
-    Option = list_to_atom(OptionString),
+change_room_option(Name, Service, Option, Value) when is_atom(Option) ->
     Pid = get_room_pid(Name, Service),
     {ok, _} = change_room_option(Pid, Option, Value),
-    ok.
+    ok;
+change_room_option(Name, Service, OptionString, ValueString) ->
+    Option = list_to_atom(OptionString),
+    Value = case Option of
+	title -> ValueString;
+	description -> ValueString;
+	password -> ValueString;
+	max_users -> list_to_integer(ValueString);
+	_ -> list_to_atom(ValueString)
+    end,
+    change_room_option(Name, Service, Option, Value).
 
 change_room_option(Pid, Option, Value) ->
     Config = get_room_config(Pid),
