@@ -154,7 +154,7 @@ handler(_State, {call, check_password, [{struct, AttrL}]}) ->
 handler(_State, {call, change_password, [{struct, AttrL}]}) ->
     [U, H, P] = get_attrs([user, host, newpass], AttrL),
     case ejabberd_auth:set_password(U, H, P) of
-	{atomic, ok} ->
+	ok ->
 	    {false, {response, [0]}};
 	_ ->
 	    {false, {response, [1]}}

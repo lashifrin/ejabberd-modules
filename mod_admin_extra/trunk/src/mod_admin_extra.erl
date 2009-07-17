@@ -465,7 +465,7 @@ export2odbc(Host, Directory) ->
 
 set_password(User, Host, Password) ->
     case ejabberd_auth:set_password(User, Host, Password) of
-	{atomic, ok} ->
+	ok ->
 	    ok;
 	_ ->
 	    error
@@ -649,7 +649,7 @@ build_random_password(Reason) ->
     "BANNED_ACCOUNT--" ++ Date ++ "--" ++ RandomString ++ "--" ++ Reason.
 
 set_password_auth(User, Server, Password) ->
-    {atomic, ok} = ejabberd_auth:set_password(User, Server, Password).
+    ok = ejabberd_auth:set_password(User, Server, Password).
 
 prepare_reason([]) ->
     "Kicked by administrator";
