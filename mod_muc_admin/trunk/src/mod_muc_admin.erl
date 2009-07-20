@@ -111,7 +111,7 @@ commands() ->
 		       result = {res, rescode}},
 
      #ejabberd_commands{name = set_room_affiliation, tags = [muc_room],
-		       desc = "Change an option in a MUC room",
+		       desc = "Change an affiliation in a MUC room",
 		       module = ?MODULE, function = set_room_affiliation,
 		       args = [{name, string}, {service, string},
 			       {jid, string}, {affiliation, string}],
