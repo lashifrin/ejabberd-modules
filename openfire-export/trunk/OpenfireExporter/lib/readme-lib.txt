@@ -8,6 +8,6 @@ msv.jar
 relaxngDatatype.jar
 xsdlib.jar
 
-You can get those files from the original Openfire plugin: importexportplugin.jar
+You can get those files from the original Openfire plugin: userImportExport.jar
 
 ---
