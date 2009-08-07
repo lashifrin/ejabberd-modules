@@ -1,16 +1,16 @@
 
 
-	mod_piefxis - Import/Export Users (XEP-0227)
+	piefxis - Import/Export Users (XEP-0227)
 
-	Module for ejabberd 2.x. Not needed in ejabberd 3.x
+	Modules for ejabberd 2.0.x. Not needed in ejabberd 2.1.x or 3.x
 	Requirements: exmpp
 
 
 	IMPORTANT
 	=========
 
-You only need this code if using ejabberd 2.x.
-ejabberd 3.0.0 and higher will include this feature.
+You only need this code if using ejabberd 2.0.x.
+ejabberd 2.1.0 and higher, 3.0.0 and higher will include this feature.
 
 You need to have the exmpp library installed in the machine
 in order to compile and run this code.
