@@ -41,8 +41,45 @@
 -record(parsing_state, {parser, host, dir}).
 
 -include("ejabberd.hrl").
--include_lib("exmpp/include/exmpp.hrl").
--include_lib("exmpp/include/exmpp_client.hrl").
+
+%%-include_lib("exmpp/include/exmpp.hrl").
+%%-include_lib("exmpp/include/exmpp_client.hrl").
+%% Copied from exmpp header files:
+-define(NS_ROSTER,                   "jabber:iq:roster").
+-define(NS_VCARD,                    "vcard-temp").
+-type(xmlname() :: atom() | string()).
+-record(xmlcdata, {
+	  cdata = <<>>     :: binary()
+	 }).
+-type(xmlcdata() :: #xmlcdata{}).
+-record(xmlattr, {
+	  ns = undefined   :: xmlname() | undefined,
+	  name             :: xmlname(),
+	  value            :: binary()
+	 }).
+-type(xmlattr() :: #xmlattr{}).
+-record(xmlel, {
+	  ns = undefined   :: xmlname() | undefined,
+	  declared_ns = [] :: [{xmlname(), string() | none}],
+	  name             :: xmlname(),
+	  attrs = []       :: [xmlattr()],
+	  children = []    :: [#xmlel{} | xmlcdata()] | undefined
+	 }).
+-record(iq, {
+	  kind    :: request | response,
+	  type    :: get | set | result | error,
+	  id      :: binary() | undefined,
+	  ns      :: xmlname() | undefined,
+	  payload :: #xmlel{} | undefined,
+	  error   :: #xmlel{} | undefined,
+	  lang    :: binary() | undefined,
+	  iq_ns   :: xmlname() | undefined
+	 }).
+-record(xmlendtag, {
+	  ns = undefined   :: xmlname() | undefined,
+	  name             :: xmlname()
+	 }).
+
 
 %% Copied from mod_private.erl
 -record(private_storage, {usns, xml}).
@@ -62,6 +99,7 @@
 %%%% Import file
 
 import_file(FileName) ->
+    _ = #xmlattr{}, %% this stupid line is only to prevent compilation warning about "recod xmlattr is unused"
     import_file(FileName, 2).
 
 import_file(FileName, RootDepth) ->
@@ -496,7 +534,7 @@ extract_user_info(roster, Username, Host) ->
 	    From = To = jlib:make_jid(Username, Host, ""),
 	    SubelGet = {xmlelement, "query", [{"xmlns",?NS_ROSTER}], []},
 	    %%IQGet = #iq{type=get, xmlns=?NS_ROSTER, payload=SubelGet}, % this is for 3.0.0 version
-	    IQGet = {iq, "", get, ?NS_ROSTER, "" , [SubelGet]},
+	    IQGet = {iq, "", get, ?NS_ROSTER, "" , SubelGet},
 	    Res = M:process_local_iq(From, To, IQGet),
 	    %%[El] = Res#iq.payload, % this is for 3.0.0 version
 	    {iq, _, result, _, _, Els} = Res,
@@ -540,7 +578,7 @@ extract_user_info(vcard, Username, Host) ->
 	    From = To = jlib:make_jid(Username, Host, ""),
 	    SubelGet = {xmlelement, "vCard", [{"xmlns",?NS_VCARD}], []},
 	    %%IQGet = #iq{type=get, xmlns=?NS_VCARD, payload=SubelGet}, % this is for 3.0.0 version
-	    IQGet = {iq, "", get, ?NS_VCARD, "" , [SubelGet]},
+	    IQGet = {iq, "", get, ?NS_VCARD, "" , SubelGet},
 	    Res = M:process_sm_iq(From, To, IQGet),
 	    %%[El] = Res#iq.payload, % this is for 3.0.0 version
 	    {iq, _, result, _, _, Els} = Res,

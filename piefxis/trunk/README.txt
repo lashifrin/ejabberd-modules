@@ -13,7 +13,7 @@ You only need this code if using ejabberd 2.0.x.
 ejabberd 2.1.0 and higher, 3.0.0 and higher will include this feature.
 
 You need to have the exmpp library installed in the machine
-in order to compile and run this code.
+in order to run this code.
 
 
 	CONFIGURATION
