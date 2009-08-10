@@ -19,6 +19,7 @@ import org.dom4j.io.SAXReader;
 import org.dom4j.io.XMLWriter;
 import org.jivesoftware.openfire.OfflineMessage;
 import org.jivesoftware.openfire.OfflineMessageStore;
+import org.jivesoftware.openfire.PrivateStorage;
 import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.auth.AuthFactory;
 import org.jivesoftware.openfire.container.Plugin;
@@ -37,33 +38,38 @@ import org.jivesoftware.util.Log;
 import org.xmpp.packet.JID;
 
 /**
- * <p>The user import/export plugin provides a way to import and export Openfire
- * user data via the Admin Console.
- * This plugin is XEP-0227 compliant </p>
- * This plugin can export: 
- * <li>User data</li>
- * <li>vCard</li>
- * <li>Offline messages</li>
- * <br/>
+ * <p>
+ * The user import/export plugin provides a way to import and export Openfire
+ * user data via the Admin Console. This plugin is XEP-0227 compliant
+ * </p>
+ * This plugin can export: <li>User data</li> <li>vCard</li> <li>Offline
+ * messages</li> <br/>
  * <p>
  * <b>See also:</b> {@link List http://xmpp.org/extensions/xep-0227.html}
  * </p>
+ * 
  * @author <a href="mailto:smartinez@process-one.net">Vidal Santiago
  *         Martinez</a>
  */
 public class ExporterXEP227 implements Plugin {
+	
+	private static final String LOAD_ALL_PRIVATE = "SELECT privateData FROM ofPrivate WHERE username=?";
+	
 	private UserManager userManager;
 	private UserProvider provider;
 	private String serverName;
 	private OfflineMessageStore offlineMessagesStore;
 	private VCardManager vCardManager;
+	private PrivateStorage privateStorage;
 
+	
 	public ExporterXEP227() {
 		userManager = XMPPServer.getInstance().getUserManager();
 		offlineMessagesStore = XMPPServer.getInstance()
 				.getOfflineMessageStore();
 		provider = UserManager.getUserProvider();
 		serverName = XMPPServer.getInstance().getServerInfo().getXMPPDomain();
+		privateStorage = XMPPServer.getInstance().getPrivateStorage();
 		vCardManager = VCardManager.getInstance();
 	}
 
@@ -168,7 +174,8 @@ public class ExporterXEP227 implements Plugin {
 	 */
 	public boolean validateImportFile(FileItem file) {
 		try {
-			return new UserSchemaValidator(file, "wildfire-user-schema.xsd").validate();
+			return new UserSchemaValidator(file, "wildfire-user-schema.xsd")
+					.validate();
 		} catch (Exception e) {
 			Log.error(e);
 			return false;
@@ -240,9 +247,12 @@ public class ExporterXEP227 implements Plugin {
 	/**
 	 * Adding offline messages, if there are some.
 	 * 
-	 * @param hostname host name
-	 * @param userElement DOM element
-	 * @param userName user name
+	 * @param hostname
+	 *            host name
+	 * @param userElement
+	 *            DOM element
+	 * @param userName
+	 *            user name
 	 */
 	private void addOfflineMessages(String hostname, Element userElement,
 			String userName) {
@@ -286,14 +296,18 @@ public class ExporterXEP227 implements Plugin {
 
 	/**
 	 * Adding vcard element
-	 * @param userElement DOM element
-	 * @param userName user name
+	 * 
+	 * @param userElement
+	 *            DOM element
+	 * @param userName
+	 *            user name
 	 */
 	@SuppressWarnings("unchecked")
 	private void addVCard(Element userElement, String userName) {
 		Element vCard = vCardManager.getVCard(userName);
 		if (vCard != null) {
-			Element vCardElement = userElement.addElement("vCard", "vcard-temp");
+			Element vCardElement = userElement
+					.addElement("vCard", "vcard-temp");
 			for (Iterator<Element> iterator = vCard.elementIterator(); iterator
 					.hasNext();) {
 				Element element = iterator.next();
@@ -301,6 +315,24 @@ public class ExporterXEP227 implements Plugin {
 						element.getText());
 			}
 		}
+	}
+
+	/**
+	 * Add all the private stored information (XEP-0049)
+	 * <b>Note: this method is not suported in the available openfire releases,
+     * If you want to use it, you will need to change your openfire.jar file to
+     * openfire.jar file in this projects lib folder, remove comment to this
+     * method and recompile the plugin.
+     *  
+	 * </b>  
+	 * @param userName User name
+	 * @param userElement User element
+	 */
+	private void addPrivateStorage(String userName, Element userElement) {
+//		Element result = privateStorage.getAll(userName);
+//		if (result.elements().size() > 0) {
+//			userElement.add(result.createCopy());
+//		}
 	}
 
 	/**
@@ -333,6 +365,8 @@ public class ExporterXEP227 implements Plugin {
 			addVCard(userElement, userName);
 
 			addOfflineMessages(serverName, userElement, userName);
+
+			addPrivateStorage(userName, userElement);
 
 		}
 
