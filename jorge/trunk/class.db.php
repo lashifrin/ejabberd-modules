@@ -716,7 +716,7 @@ class db_manager {
 		$query="SELECT 
 				donotlog_list as donotlog
 			FROM 
-				logdb_settings_".$this->xmpp_host." 
+				`logdb_settings_".$this->xmpp_host."` 
 			WHERE 
 				owner_id = '".$this->user_id."'
 		";
@@ -1158,7 +1158,7 @@ class db_manager {
 		$this->vital_check();
 		$log_list = $this->sql_validate($log_list,"string");
 		$query="UPDATE 
-				logdb_settings_".$this->xmpp_host." 
+				`logdb_settings_".$this->xmpp_host."` 
 			SET 
 				donotlog_list='$log_list' 
 			WHERE 
@@ -2587,7 +2587,7 @@ class db_manager {
 		$query="SELECT
 				at 
 			FROM
-				logdb_stats_".$this->xmpp_host."
+				`logdb_stats_".$this->xmpp_host."`
 			WHERE 
 				owner_id='".$this->user_id."' 
 			AND
