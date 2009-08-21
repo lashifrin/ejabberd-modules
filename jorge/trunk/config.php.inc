@@ -71,6 +71,9 @@ define("CAPTCHA_PUBLIC","");
 // secret key for scrambling URLs. Put here some random data (32 chars):
 define("ENC_KEY","PleaseChangeMe");
 
+// Turn SSL redirection in PHP
+define("SSL_REDIRECT", "false");
+
 // number of chat lines in browser (default: 300)
 $num_lines_bro = "300";
 

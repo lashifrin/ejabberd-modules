@@ -28,7 +28,6 @@ if (__FILE__==$_SERVER['SCRIPT_FILENAME']) {
 
 // turn on buffering
 ob_start();
-
 // send headers
 header("content-type: text/html; charset=utf-8");
 
@@ -42,6 +41,18 @@ require_once("class.db.php"); // db_manager
 require_once("class.roster.php"); // roster
 require_once("class.helper.php"); // helper
 require_once("config.php"); // read configuration
+
+# SSL redirection if set to true in config.
+if (SSL_REDIRECT === "true") {
+
+	if($_SERVER['HTTPS'] != 'on') {
+
+		$url = "https://".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
+	        header('Location: '.$url); 
+		ob_end_flush();
+		exit;
+	}
+}
 
 $sess = new session;
 // Language support. Well thats the hard way...
