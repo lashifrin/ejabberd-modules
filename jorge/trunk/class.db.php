@@ -125,14 +125,22 @@ class db_manager {
 			}
 			elseif($this->is_error === true) {
 
-				throw new Exception("Error before queryID:".$this->id_query,3);
+				if ($this->is_debug === true) {
+					if ($this->is_debug === true) {
+
+						throw new Exception("Error before queryID:".$this->id_query,3);
+					}
+				}
 				return false;
 		}
 
 		if ($result === false ) {
 					
 					$this->is_error = true;
-					throw new Exception("Query error in QueryID:".$this->id_query,2);
+					if ($this->is_debug === true) {
+
+						throw new Exception("Query error in QueryID:".$this->id_query,2);
+					}
 					return false;
 
 				}
@@ -189,7 +197,10 @@ class db_manager {
 					}
 				else {
 						$this->is_error = true;
-						throw new Exception("<br>DB Connection failed!",1);
+						if ($this->is_debug === true) {
+
+							throw new Exception("<br>DB Connection failed!",1);
+						}
 				}
 		}
 	
