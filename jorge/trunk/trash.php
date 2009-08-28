@@ -109,7 +109,7 @@ if ($action==="delete") {
 
 if ($tr_n < 1) {
 	
-		$html->status_message($trash_empty[$lang]);
+		$html->set_body('<p align="center"><b>'.$trash_empty[$lang].'</b></p>' );
 	}
 
 	else
