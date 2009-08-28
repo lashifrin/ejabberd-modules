@@ -77,7 +77,7 @@ class db_manager {
 			}
 		catch(Exception $e) {
 
-        		echo "Exception: ".$e->getMessage();
+        		echo "<br>Exception: ".$e->getMessage();
         		echo ", Code: ".$e->getCode();
 
 		}
@@ -132,7 +132,7 @@ class db_manager {
 		if ($result === false ) {
 					
 					$this->is_error = true;
-					throw new Exception("<br>Query error in QueryID:".$this->id_query,2);
+					throw new Exception("Query error in QueryID:".$this->id_query,2);
 					return false;
 
 				}
@@ -171,7 +171,7 @@ class db_manager {
 			}
 		catch (Exception $e) {
 
-				echo "Exception: ".$e->getMessage();
+				echo "<br>Exception: ".$e->getMessage();
 				echo ", Code: ".$e->getCode();
 				return false;
 		}
@@ -206,7 +206,7 @@ class db_manager {
 				$this->result = $this->db_query($query);
 			}
                 	catch(Exception $e) {
-                        	echo "Exception: ".$e->getMessage();
+                        	echo "<br>Exception: ".$e->getMessage();
                         	echo ", Code: ".$e->getCode();
 			}
 
@@ -251,7 +251,7 @@ class db_manager {
 				$this->result = $this->db_query($query);
 			}
                 	catch(Exception $e) {
-                        	echo "Exception: ".$e->getMessage();
+                        	echo "<br>Exception: ".$e->getMessage();
                         	echo ", Code: ".$e->getCode();
 			}
 
@@ -285,7 +285,7 @@ class db_manager {
 				$this->result = $this->db_query($query);
 			}
                 	catch(Exception $e) {
-                        	echo "Exception: ".$e->getMessage();
+                        	echo "<br>Exception: ".$e->getMessage();
                         	echo ", Code: ".$e->getCode();
 			}
 
@@ -319,7 +319,7 @@ class db_manager {
 				$this->result = $this->db_query($query);
 			}
 			catch(Exception $e) {
-				echo "Exception: ".$e->getMessage();
+				echo "<br>Exception: ".$e->getMessage();
 				echo ", Code: ".$e->getCode();
 			}
 
@@ -351,7 +351,7 @@ class db_manager {
 				$this->result = $this->db_query($query);
 			}
 			catch(Exception $e) {
-				echo "Exception: ".$e->getMessage();
+				echo "<br>Exception: ".$e->getMessage();
 				echo ", Code: ".$e->getCode();
 			}
 
