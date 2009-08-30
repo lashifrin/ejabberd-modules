@@ -171,9 +171,12 @@ ctl_process(_Val, ["remove-node", Node]) ->
     mnesia:del_table_copy(schema, list_to_atom(Node)),
     ?STATUS_SUCCESS;
 
+%% The Display argument can be several groups separated with ,
+%% Example: ejabberdctl srg-create aa localhost Name Desc Display1,Display2,Display3
 ctl_process(_Val, ["srg-create" | Parameters]) ->
 	[Group, Host, Name, Description, Display] = group_parameters(Parameters, "'"),
-    Opts = [{name, Name}, {displayed_groups, [Display]}, {description, Description}],
+    DisplayList = string:tokens(Display, ","),
+    Opts = [{name, Name}, {displayed_groups, DisplayList}, {description, Description}],
     {atomic, ok} = mod_shared_roster:create_group(Host, Group, Opts),
     ?STATUS_SUCCESS;
 
