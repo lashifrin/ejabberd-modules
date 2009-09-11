@@ -168,7 +168,7 @@
 %% Listener interface
 %% -----------------------------
 
-start_listener({Port, Ip}, Opts) ->
+start_listener({Port, Ip, tcp = _TranportProtocol}, Opts) ->
     %% get options
     MaxSessions = gen_mod:get_opt(maxsessions, Opts, 10),
     Timeout = gen_mod:get_opt(timeout, Opts, 5000),

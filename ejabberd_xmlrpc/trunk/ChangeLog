@@ -1,3 +1,7 @@
+2009-09-11  Badlop  <badlop@process-one.net>
+
+	* src/ejabberd_xmlrpc.erl: Update to work with ejabberd 2.1.0
+
 2009-04-28  Badlop  <badlop@process-one.net>
 
 	* src/ejabberd_xmlrpc.erl: Improve handling of errors in arguments

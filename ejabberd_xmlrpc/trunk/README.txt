@@ -31,7 +31,7 @@ of modifying directly the database are:
 	REQUIREMENTS
 	------------
 
-    ejabberd trunk SVN 2025 or newer (ejabberd 2.1.0 and newer, once released)
+    ejabberd 2.1.0 or higher
     XMLRPC-Erlang 1.13 with IP, Ruby and Xmerl 1.x patches
     Optional: mod_admin_extra implements many ejabberd commands for general server administration
     Optional: mod_muc_admin implements ejabberd commands for MUC administration
