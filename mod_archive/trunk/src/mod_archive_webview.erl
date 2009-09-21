@@ -229,7 +229,7 @@ global_config_form({LUser,LServer},Lang) ->
                 " FROM archive_global_prefs"
                 " WHERE us = " ++ get_us_escaped({LUser,LServer}) ) end) of
             {selected, _ , [ Ok ]} -> Ok;
-            {selected, _ , [ ]} -> { -1, -1, -1, -1, -1, -1, -1 }
+            {selected, _ , [ ]} -> { -1, -1, -1 }
         end,
    [?XAE("form",[{"action",?LINK("config/submit/global")}],
          [?XE("label",[?CT("Disable or enable automatic archiving globaly: "), select_element("global_auto_save",
