@@ -1,4 +1,5 @@
-ejabberd-modules is a collaborative development area for ejabberd modules developers and users.
+ejabberd-modules is a collaborative development area for ejabberd
+modules developers and users.
 
 
     For users
@@ -7,10 +8,18 @@ ejabberd-modules is a collaborative development area for ejabberd modules develo
 You need to have Erlang installed.
 
 To use an ejabberd module coming from this repository:
- - Read the module specific README to see if special steps are needed to deploy it.
- - Run "./build.sh" or "build.bat" in the root (usually trunk directory) of the wanted module.
- - Copy generated .beam files from the ebin directory to the directory where your ejabberd .beam files are.
- - Use the configuration file examples provided in the conf dir to update your ejabberd.cfg configuration file.
+
+- Read the module specific README to see if special steps are needed
+  to deploy it.
+
+- Run "./build.sh" or "build.bat" in the root (usually trunk
+  directory) of the wanted module.
+
+- Copy generated .beam files from the ebin directory to the directory
+  where your ejabberd .beam files are.
+
+- Use the configuration file examples provided in the conf dir to
+  update your ejabberd.cfg configuration file.
 
 If during compilation of a module you get an error like:
   {"init terminating in do_boot",{undef,[{make,all,[]},...
@@ -24,14 +33,19 @@ In Debian and other distributions you can try to install packages like:
 
 The following organisation has been set-up for the development:
 
-- Each module has its own SVN structure (trunk/branches/tags) to allow independent versioning.
+- Each module has its own SVN structure (trunk/branches/tags) to allow
+  independent versioning.
 
-- Development and compilation of module should be possible without ejabberd SVN, as long as developers check-out the ejabberd-dev module. This module contains include file to make compilation possible.
+- Development and compilation of module should be possible without
+  ejabberd SVN, as long as developers check-out the ejabberd-dev
+  module. This module contains include file to make compilation
+  possible.
 
 - The module directory structure is usually the following:
  README.txt: Module description
  LICENSE.txt: License for the module
- Emakefile: Erlang makefile to build the module (preferred way, if no dependencies on C code, as build will thus works on Windows)
+ Emakefile: Erlang makefile to build the module (preferred way, if no
+   dependencies on C code, as build will thus works on Windows)
  doc/: Documentation dir
  src/: Source directory
  ebin/: empty (Target directory for the build).
@@ -39,5 +53,7 @@ The following organisation has been set-up for the development:
  build.sh: *nix build script.
  build.bat: Windows build script.
 
-- Module developers should put in the README if the module has requirements or known incompatibilities with other modules (for example, by modifying the same main ejabberd modules).
+- Module developers should put in the README if the module has
+  requirements or known incompatibilities with other modules (for
+  example, by modifying the same main ejabberd modules).
 
