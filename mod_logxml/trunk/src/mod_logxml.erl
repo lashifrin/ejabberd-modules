@@ -140,7 +140,7 @@ loop(Host, IoDevice, Filename, Logdir, CheckRKP, RotateO, PacketC,
 	    {IoDevice3, Filename3, Gregorian_day3, PacketC3} =
 		case filter(FilterO, E) of
 		    {true, OSD} ->
-			Div = PacketC/CheckRKP,
+			Div = calc_div(PacketC, CheckRKP),
 			{IoDevice2, Filename2, Gregorian_day2, PacketC2} =
 			    case Div==round(Div) of
 				true ->
@@ -259,3 +259,8 @@ get_now_iso(Timezone) ->
 		    universal -> calendar:now_to_universal_time(now())
 		end,
     jlib:timestamp_to_iso(TimeStamp).
+
+calc_div(A, B) when is_integer(A) and is_integer(B) and B =/= 0 ->
+    A/B;
+calc_div(_A, _B) ->
+    0.5. %% This ensures that no rotation is performed
