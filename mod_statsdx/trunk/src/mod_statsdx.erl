@@ -6,6 +6,8 @@
 %%% Id      : $Id$
 %%%----------------------------------------------------------------------
 
+%%%% Definitions
+
 -module(mod_statsdx).
 -author('badlop@ono.com').
 
@@ -30,10 +32,8 @@
 %% Copied from ejabberd_s2s.erl Used in function get_s2sconnections/1
 -record(s2s, {fromto, pid, key}).
 
-
-%% -------------------
-%% Module control
-%% -------------------
+%%%==================================
+%%%% Module control
 
 start(Host, Opts) ->
     Hooks = gen_mod:get_opt(hooks, Opts, false),
@@ -63,9 +63,8 @@ stop(Host) ->
     end.
 
 
-%% -------------------
-%% Stats Server
-%% -------------------
+%%%==================================
+%%%% Stats Server
 
 table_name(server) -> gen_mod:get_module_proc("server", mod_statsdx);
 table_name(Host) -> gen_mod:get_module_proc(Host, mod_statsdx).
@@ -188,9 +187,8 @@ finish_stats(Host) ->
     catch ets:delete(Table).
 
 
-%% -------------------
-%% Hooks Handlers
-%% -------------------
+%%%==================================
+%%%% Hooks Handlers
 
 remove_user(_User, Server) ->
     Table = table_name(Server),
@@ -239,9 +237,8 @@ user_receive_packet_traffic(_JID, From, To, FixedPacket) ->
     ets:update_counter(Table, {recv, Host, Type2, Dest}, 1).
 
 
-%% -------------------
-%% get(*
-%% -------------------
+%%%==================================
+%%%% get(*
 
 %%gett(Arg) -> get(node(), [Arg, title]).
 getl(Args) -> get(node(), [Args]).
@@ -472,9 +469,8 @@ get(N, A) ->
     io:format(" ----- node: '~p', A: '~p'~n", [N, A]),
     "666".
 
-%% -------------------
-%% get_*
-%% -------------------
+%%%==================================
+%%%% get_*
 
 get_S2SConns() -> ejabberd_s2s:dirty_get_connections().
 
@@ -675,9 +671,8 @@ calc_avg(Count, TimeMS) ->
     TimeMIN = TimeMS/(1000*60),
     Count/TimeMIN.
 
-%% -------------------
-%% utilities
-%% -------------------
+%%%==================================
+%%%% utilities
 
 get_connectiontype() ->
     C2 = get_connections(5222) -1,
@@ -933,9 +928,8 @@ localtime_to_string({{Y, Mo, D},{H, Mi, S}}) ->
 %%ok.
 
 
-%%-------------------
-%% Web Admin Menu
-%%-------------------
+%%%==================================
+%%%% Web Admin Menu
 
 web_menu_main(Acc, Lang) ->
     Acc ++ [{"statsdx", ?T("Statistics Dx")}].
@@ -946,9 +940,8 @@ web_menu_node(Acc, _Node, Lang) ->
 web_menu_host(Acc, _Host, Lang) ->
     Acc ++ [{"statsdx", ?T("Statistics Dx")}].
 
-%%-------------------
-%% Web Admin Page
-%%-------------------
+%%%==================================
+%%%% Web Admin Page
 
 web_page_main(_, #request{path=["statsdx"], lang = Lang} = _Request) ->
     Res = [?XC("h1", ?T("Statistics")++" Dx"),
@@ -1329,9 +1322,8 @@ web_page_host(_, Host, #request{path=["statsdx" | FilterURL], q = Q,
 web_page_host(Acc, _, _) -> Acc.
 
 
-%%-------------------
-%% Web Admin Utils
-%%-------------------
+%%%==================================
+%%%% Web Admin Utils
 
 do_table_element(Lang, L, StatLink, N) ->
     ?XE("tr", [
@@ -1449,3 +1441,7 @@ pretty_string_int(String) ->
 		    {0, ""},
 		    lists:reverse(String)),
     Result.
+
+%%%==================================
+
+%%% vim: set foldmethod=marker foldmarker=%%%%,%%%=:
