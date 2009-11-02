@@ -366,7 +366,13 @@ process_squery(Log) ->
 process_squery_cols(Log) ->
     receive
 	{pgsql, {data_row, Row}} ->
-	    process_squery_cols([lists:map(fun binary_to_list/1, Row)|Log]);
+	    process_squery_cols(
+	      [lists:map(
+		 fun(null) ->
+			 null;
+		    (R) ->
+			 binary_to_list(R)
+		 end, Row) | Log]);
 	{pgsql, {command_complete, Command}} ->
 	    {ok, Command, lists:reverse(Log)}
     end.

@@ -166,6 +166,8 @@ coldescs(Bin, Descs) ->
 	    TableOID},
     coldescs(Rest, [Desc|Descs]).
 
+datacoldescs(N, <<16#ffffffff:32, Rest/binary>>, Descs) when N >= 0 ->
+    datacoldescs(N-1, Rest, [null|Descs]);
 datacoldescs(N, 
 	     <<Len:32/integer, Data:Len/binary, Rest/binary>>, 
 	     Descs) when N >= 0 ->
