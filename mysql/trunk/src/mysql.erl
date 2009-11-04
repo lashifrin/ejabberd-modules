@@ -79,7 +79,9 @@
 	 asciz_binary/2,
 
 	 connect/7,
-	 stop/0
+	 stop/0,
+
+     gc_each/1
 	]).
 
 %%--------------------------------------------------------------------
@@ -106,7 +108,8 @@
 -include("mysql.hrl").
 -record(state, {
 	  conn_list,	%% list() of mysql_connection record()
-	  log_fun	%% undefined | function for logging,
+	  log_fun,	%% undefined | function for logging,
+      gc_tref   %% undefined | timer:TRef
 	 }).
 
 -record(mysql_connection, {
@@ -170,6 +173,8 @@ start_link(Id, Host, Port, User, Password, Database, LogFun) when is_list(Host),
 stop() ->
     gen_server:call(?SERVER, stop).
 
+gc_each(Millisec) ->
+    gen_server:call(?SERVER, {gc_each, Millisec}).
 
 %%--------------------------------------------------------------------
 %% Function: fetch(Id, Query)
@@ -383,7 +388,8 @@ init([Id, Host, Port, User, Password, Database, LogFun]) ->
 	    case add_mysql_conn(MysqlConn, []) of
 		{ok, ConnList} ->
 		    {ok, #state{log_fun    = LogFun,
-				conn_list = ConnList
+				conn_list = ConnList,
+                gc_tref = undefined
 			       }};
 		error ->
 		    Msg = "mysql: Failed adding first MySQL connection handler to my list, exiting",
@@ -466,6 +472,19 @@ handle_call(get_logfun, _From, State) ->
 handle_call(stop, _From, State) ->
     {stop, normal, State};
 
+handle_call({gc_each, Millisec}, _From, State) ->
+    case State#state.gc_tref of
+        undefined -> ok;
+        TRef ->
+            timer:cancel(TRef)
+    end,
+    case timer:send_interval(Millisec, gc) of
+        {ok, NewTRef} ->
+            {reply, ok, State#state{gc_tref = NewTRef}};
+        {error, Reason} ->
+            {reply, {error, Reason}, State}
+    end;
+
 handle_call(Unknown, _From, State) ->
     log(State#state.log_fun, error, "mysql: Received unknown gen_server call : ~p", [Unknown]),
     {reply, {error, "unknown gen_server call in mysql client"}, State}.
@@ -528,6 +547,12 @@ handle_info({'DOWN', _MonitorRef, process, Pid, Info}, State) ->
 	    log(LogFun, error, "mysql: Received 'DOWN' signal from pid ~p not in my list", [Pid]),
 	    {noreply, State}
     end;
+
+handle_info(gc, #state{conn_list = Connections} = State) ->
+    [erlang:garbage_collect(C#mysql_connection.conn_pid) || C <- Connections],
+    erlang:garbage_collect(self()),
+    {noreply, State};
+
 
 handle_info(Info, State) ->
     log(State#state.log_fun, error, "mysql: Received unknown signal : ~p", [Info]),
