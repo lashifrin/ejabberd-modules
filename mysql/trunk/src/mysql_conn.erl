@@ -215,6 +215,7 @@ wait_fetch_result(TRef, Pid) ->
 stop(Pid) ->
     Pid ! close.
 
+
 %%--------------------------------------------------------------------
 %% Function: do_recv(LogFun, RecvPid, SeqNum)
 %%           LogFun  = undefined | function() with arity 3
@@ -316,6 +317,10 @@ loop(State) ->
 		    %% The query was not sent using gen_server mechanisms
 		    GenSrvFrom ! {fetch_result, Ref, self(), Res};
 		false ->
+		    %% the timer is canceled in wait_fetch_result/2, but we wait on that funtion only if the query 
+		    %% was not sent using the mysql gen_server. So we at least should try to cancel the timer here 
+		    %% (no warranty, the gen_server can still receive timeout messages)
+		    erlang:cancel_timer(Ref),  
 		    gen_server:reply(GenSrvFrom, Res)
 	    end,
 	    loop(State);
