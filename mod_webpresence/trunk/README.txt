@@ -84,6 +84,11 @@ path:
     This informational option is used only when sending a message to the user.
     If you set a different path in the 'listen' section, set this option too.
     Default value: "presence"
+baseurl:
+    This informational option is used only when sending a message to the user
+    and when building the JavaScript code.
+    It is the base part of the URL of the webpresence HTTP content.
+    If the option is not specified, it takes as default value: http://host:port/path/
 
 
 	AUTOMATIC ENABLE
@@ -154,7 +159,8 @@ register and disable output methods, you can use the Access configurable paramet
     {access, local},
     {pixmaps_path, "/path/to/pixmaps"},
     {port, 80},
-    {path, "status"}
+    {path, "status"},
+    {baseurl, "http://www.example.org/status/"}
   ]}
 ]}.
 

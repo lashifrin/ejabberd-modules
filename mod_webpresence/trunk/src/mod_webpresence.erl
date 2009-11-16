@@ -96,7 +96,7 @@ init([Host, Opts]) ->
     Access = gen_mod:get_opt(access, Opts, local),
     Port = gen_mod:get_opt(port, Opts, 5280),
     Path = gen_mod:get_opt(path, Opts, "presence"),
-    BaseURL = io_lib:format("http://~s:~p/~s/",[Host, Port, Path]),
+    BaseURL = gen_mod:get_opt(baseurl, Opts, io_lib:format("http://~s:~p/~s/",[Host, Port, Path])),
     ejabberd_router:register_route(MyHost),
     ejabberd_hooks:add(remove_user, Host, ?MODULE, remove_user, 50),
     ejabberd_hooks:add(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),

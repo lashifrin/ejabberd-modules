@@ -1,3 +1,9 @@
+2009-11-16  Badlop  <badlop@process-one.net>
+
+	* src/mod_webpresence.erl: New option baseurl, allows to specify
+	the exact base url, useful when using a proxy.
+	* README.txt: Likewise
+
 2009-06-16  Badlop  <badlop@process-one.net>
 
 	* AUTHORS: As mod_webpresence is a rename of mod_presence, Igor
