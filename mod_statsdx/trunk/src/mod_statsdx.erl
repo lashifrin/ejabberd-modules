@@ -24,8 +24,8 @@
 -include("ejabberd.hrl").
 -include("jlib.hrl").
 -include("mod_roster.hrl").
--include("ejabberd_http.hrl").
--include("ejabberd_web_admin.hrl").
+-include("web/ejabberd_http.hrl").
+-include("web/ejabberd_web_admin.hrl").
 
 -define(PROCNAME, ejabberd_mod_statsdx).
 

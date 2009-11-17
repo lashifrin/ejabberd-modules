@@ -15,7 +15,7 @@
 -include("jlib.hrl").
 -include("yaws_api.hrl").
 -include("pubsub.hrl").
--include("ejabberd_http.hrl").
+-include("web/ejabberd_http.hrl").
 
 -export([process/2]).
 

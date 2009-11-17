@@ -50,7 +50,7 @@
 -include("jlib.hrl").
 -include_lib("kernel/include/file.hrl").
 
-%%-include("ejabberd_http.hrl").
+%%-include("web/ejabberd_http.hrl").
 %% TODO: When ejabberd-modules SVN gets the new ejabberd_http.hrl, delete this code:
 -record(request, {method,
 		  path,

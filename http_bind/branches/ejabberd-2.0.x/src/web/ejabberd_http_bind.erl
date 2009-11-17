@@ -50,7 +50,7 @@
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
--include("ejabberd_http.hrl").
+-include("web/ejabberd_http.hrl").
 
 -record(http_bind, {id, pid, to, hold, wait, version}).
 

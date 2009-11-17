@@ -15,8 +15,8 @@
 	 start/2, stop/1]).
 
 -include("ejabberd.hrl").
--include("ejabberd_http.hrl").
--include("ejabberd_web_admin.hrl").
+-include("web/ejabberd_http.hrl").
+-include("web/ejabberd_web_admin.hrl").
 
 %%-------------------
 %% gen_mod functions

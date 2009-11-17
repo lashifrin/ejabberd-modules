@@ -47,7 +47,7 @@
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
--include("ejabberd_http.hrl").
+-include("web/ejabberd_http.hrl").
 
 
 %%%----------------------------------------------------------------------

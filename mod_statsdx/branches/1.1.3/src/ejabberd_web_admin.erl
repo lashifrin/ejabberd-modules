@@ -24,7 +24,7 @@
 %% Since that file is different on SVN and 1.1.3
 %% We include here the content of the 1.1.3 version
 %% This module is for now compatible only with ejabberd 1.1.3 and older
-%% -include("ejabberd_http.hrl").
+%% -include("web/ejabberd_http.hrl").
 -record(request, {method,
                   path,
                   q = [],

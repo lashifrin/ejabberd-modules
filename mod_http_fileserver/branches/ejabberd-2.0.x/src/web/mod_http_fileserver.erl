@@ -39,7 +39,7 @@
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
--include("ejabberd_http.hrl").
+-include("web/ejabberd_http.hrl").
 -include("ejabberd_ctl.hrl").
 -include_lib("kernel/include/file.hrl").
 

@@ -7,8 +7,8 @@
 -author('eric@ohmforce.com').
 -include("ejabberd.hrl").
 -include("jlib.hrl").
--include("pubsub.hrl").
--include("ejabberd_http.hrl").
+-include("mod_pubsub/pubsub.hrl").
+-include("web/ejabberd_http.hrl").
 -export([process/2]).
  
 process([Domain,User|_]=LocalPath,  #request{auth = Auth} = Request)->

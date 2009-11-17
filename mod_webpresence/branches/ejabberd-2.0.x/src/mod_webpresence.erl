@@ -26,8 +26,8 @@
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
--include("ejabberd_web_admin.hrl").
--include("ejabberd_http.hrl").
+-include("web/ejabberd_web_admin.hrl").
+-include("web/ejabberd_http.hrl").
 
 -record(webpresence, {us, ridurl = false, jidurl = false, xml = false, avatar = false, js = false, text = false, icon = "---"}).
 -record(state, {host, server_host, base_url, access}).
