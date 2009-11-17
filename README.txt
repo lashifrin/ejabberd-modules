@@ -48,6 +48,7 @@ The following organisation has been set-up for the development:
    dependencies on C code, as build will thus works on Windows)
  doc/: Documentation dir
  src/: Source directory
+ src/msgs/: Directory with translation files (pot, po and msg).
  ebin/: empty (Target directory for the build).
  conf/: Directory containing example configuration for your module.
  build.sh: *nix build script.
