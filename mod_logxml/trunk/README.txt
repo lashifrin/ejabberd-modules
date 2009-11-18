@@ -18,17 +18,8 @@ file rotation rules and intervals.
 This module reuses code from mod_log_forensic, mod_stats2file, mod_muc_log
 
 
-	INSTALL
-	-------
-
- 1 Copy this file to ejabberd/src/mod_logxml.erl
- 2 Recompile ejabberd
- 3 Add to ejabberd.cfg, 'modules' section the basic configuration:
-    {mod_logxml,     []},
-
-
-	CONFIGURABLE PARAMETERS
-	-----------------------
+	CONFIGURATION
+	-------------
 
 stanza: 
     Log packets only when stanza matches
@@ -73,6 +64,8 @@ check_rotate_kpackets:
 
 	EXAMPLE CONFIGURATION
 	---------------------
+
+In ejabberd.cfg, in the modules section, add the module. For example:
 
 {modules, [
   ...
