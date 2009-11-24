@@ -14,14 +14,19 @@
 -behaviour(gen_mod).
 
 -export([start/2, loop/1, stop/1, get_statistic/2,
+	 %% Commands
+	 getstatsdx/1, getstatsdx/2,
+	 %% WebAdmin
 	 web_menu_main/2, web_page_main/2,
 	 web_menu_node/3, web_page_node/5,
 	 web_menu_host/3, web_page_host/3,
+	 %% Hooks
 	 remove_user/2, user_send_packet/3,
          user_send_packet_traffic/3, user_receive_packet_traffic/4,
 	 user_login/1, user_logout/4, user_logout_sm/3]).
 
 -include("ejabberd.hrl").
+-include("ejabberd_commands.hrl").
 -include("jlib.hrl").
 -include("mod_roster.hrl").
 -include("web/ejabberd_http.hrl").
@@ -44,6 +49,8 @@ start(Host, Opts) ->
 	     false -> "disabled"
 	 end,
 
+    ejabberd_commands:register_commands(commands()),
+
     %% If the process that handles statistics for the server is not started yet,
     %% start it now
     case whereis(?PROCNAME) of
@@ -57,6 +64,7 @@ start(Host, Opts) ->
 
 stop(Host) ->
     finish_stats(Host),
+    ejabberd_commands:unregister_commands(commands()),
     case whereis(?PROCNAME) of
 	undefined -> ok;
 	_ -> ?PROCNAME ! {stop, Host}
@@ -1441,6 +1449,29 @@ pretty_string_int(String) ->
 		    {0, ""},
 		    lists:reverse(String)),
     Result.
+
+%%%==================================
+%%%% Commands
+
+commands() ->
+    [
+     #ejabberd_commands{name = getstatsdx, tags = [stats],
+			desc = "Get statistical value.",
+			module = ?MODULE, function = getstatsdx,
+			args = [{name, string}],
+			result = {stat, integer}},
+     #ejabberd_commands{name = getstatsdx_host, tags = [stats],
+			desc = "Get statistical value for this host.",
+			module = ?MODULE, function = getstatsdx,
+			args = [{name, string}, {host, string}],
+			result = {stat, integer}}
+    ].
+
+getstatsdx(Name) ->
+    get_statistic(global, [Name]).
+
+getstatsdx(Name, Host) ->
+    get_statistic(global, [Name, Host]).
 
 %%%==================================
 

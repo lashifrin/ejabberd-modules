@@ -3,14 +3,14 @@
 
         Homepage: http://www.ejabberd.im/mod_statsdx
         Author: Badlop
-        Requirements: ejabberd trunk SVN (ejabberd 2.1.0 or higher, once released)
+        Requirements: ejabberd 2.1.x
 
 
 	mod_statsdx
 	==============
 
-Measures several statistics, and provides a new section in ejabberd
-Web Admin to view them.
+Measures several statistics. It provides a new section in ejabberd
+Web Admin and two ejabberd commands to view the information.
 
 
 	CONFIGURE

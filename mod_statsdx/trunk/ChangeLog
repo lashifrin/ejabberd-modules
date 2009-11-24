@@ -1,3 +1,7 @@
+2009-11-24  Badlop  <badlop@process-one.net>
+
+	* src/mod_statsdx.erl: Add getstatsdx ejabberd commands.
+
 2009-02-04  Badlop  <badlop@process-one.net>
 
 	* src/mod_statsdx.erl: Fix a few stats
