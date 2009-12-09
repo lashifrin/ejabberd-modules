@@ -543,8 +543,6 @@ histogram([], _Integral, _Current, Count, Hist) ->
     end.
 
 
--record(last_activity, {us, timestamp, status}).
-
 delete_old_users(Days) ->
     %% Get the list of registered users
     Users = ejabberd_auth:dirty_get_registered_users(),
@@ -574,10 +572,10 @@ delete_old_users(Days, Users) ->
 		    %% If it isnt
 		    [] ->
 			%% Look for his last_activity
-			case mnesia:dirty_read(last_activity, {LUser, LServer}) of
+			case (get_lastactivity_module(LServer)):get_last_info(LUser, LServer) of
 			    %% If it is
 			    %% existent:
-			    [#last_activity{timestamp = TimeStamp}] ->
+			    {ok, TimeStamp, _Status} ->
 				%% get his age
 				Sec = TimeStamp_now - TimeStamp,
 				%% If he is
@@ -593,7 +591,7 @@ delete_old_users(Days, Users) ->
 					true
 				end;
 			    %% nonexistent:
-			    [] ->
+			    not_found ->
 				%% remove the user
 				ejabberd_auth:remove_user(LUser, LServer),
 				true
@@ -607,6 +605,12 @@ delete_old_users(Days, Users) ->
     %% Apply the function to every user in the list
     Users_removed = lists:filter(F, Users),
     {removed, length(Users_removed), Users_removed}.
+
+get_lastactivity_module(Server) ->
+    case lists:member(mod_last, gen_mod:loaded_modules(Server)) of
+        true -> mod_last;
+        _ -> mod_last_odbc
+    end.
 
 
 %%
