@@ -1017,7 +1017,10 @@ build_iq_roster_push(Item) ->
 %%%
 
 srg_create(Group, Host, Name, Description, Display) ->
-    {ok, DisplayList} = regexp:split(Display, "\\\\n"),
+    {ok, DisplayList} = case Display of
+	[] -> {ok, []};
+	_ -> regexp:split(Display, "\\\\n")
+    end,
     Opts = [{name, Name},
 	    {displayed_groups, DisplayList},
 	    {description, Description}],
