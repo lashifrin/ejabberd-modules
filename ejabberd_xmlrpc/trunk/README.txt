@@ -37,20 +37,20 @@ of modifying directly the database are:
     Optional: mod_muc_admin implements ejabberd commands for MUC administration
 
 
- - Install XMLRPC-Erlang
-
-wget http://www.ejabberd.im/files/contributions/xmlrpc-1.13-ipr2.tgz
-tar -xzvf xmlrpc-1.13-ipr2.tgz
-cd xmlrpc-1.13/src
-make
-cd ../../
-
-
 	CONFIGURE EJABBERD
 	------------------
 
-1. Add an option like this to the ejabberd start script:
-
+1. You need to get and install XMLRPC-Erlang.
+You can download XMLRPC-Erlang binary files from
+  http://www.ejabberd.im/ejabberd_xmlrpc
+or compile it yourself:
+  wget http://www.ejabberd.im/files/contributions/xmlrpc-1.13-ipr2.tgz
+  tar -xzvf xmlrpc-1.13-ipr2.tgz
+  cd xmlrpc-1.13/src
+  make
+  cd ../../
+Then you can copy the *.beam files to ejabberd ebin directory,
+or add an option like this to the ejabberd start script:
 $ erl -pa '/home/jabber/xmlrpc-1.13/ebin' ...
 
 2. Configure ejabberd to start this listener at startup:
@@ -60,7 +60,7 @@ edit ejabberd.cfg and add on the 'listen' section:
     ...
  ]}.
 
-3. Now start ejabberd.
+3. Start ejabberd.
 
 4. Verify that ejabberd is listening in that port:
 $ netstat -n -l | grep 4560
