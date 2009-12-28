@@ -846,6 +846,7 @@ list_elem(clients, full) ->
      {"Gabber", gabber},
      {"BitlBee", bitlbee},
      {"jabber.el", jabberel},
+     {"centerim", centerim},
      {"unknown", unknown}
     ];
 list_elem(conntypes, full) ->
