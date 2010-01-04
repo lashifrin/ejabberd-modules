@@ -272,7 +272,7 @@ commands() ->
      #ejabberd_commands{name = set_vcard2, tags = [vcard],
 			desc = "Set content in a vCard subfield",
 			longdesc = Vcard2FieldsString ++ "\n\n" ++ Vcard1FieldsString ++ "\n" ++ VcardXEP,
-			module = ?MODULE, function = set_vcard2,
+			module = ?MODULE, function = set_vcard,
 			args = [{user, string}, {host, string}, {name, string}, {subname, string}, {content, string}],
 			result = {res, rescode}},
 
