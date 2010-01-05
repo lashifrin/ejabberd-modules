@@ -16,12 +16,13 @@
 -export([start/2, loop/1, stop/1, get_statistic/2,
 	 %% Commands
 	 getstatsdx/1, getstatsdx/2,
+	 get_top_users/2,
 	 %% WebAdmin
 	 web_menu_main/2, web_page_main/2,
 	 web_menu_node/3, web_page_node/5,
 	 web_menu_host/3, web_page_host/3,
 	 %% Hooks
-	 remove_user/2, user_send_packet/3,
+	 register_user/2, remove_user/2, user_send_packet/3,
          user_send_packet_traffic/3, user_receive_packet_traffic/4,
 	 user_login/1, user_logout/4, user_logout_sm/3]).
 
@@ -105,6 +106,7 @@ prepare_stats_server(CD) ->
     ets:new(Table, [named_table, public]),
     ets:insert(Table, {{user_login, server}, CD}),
     ets:insert(Table, {{user_logout, server}, CD}),
+    ets:insert(Table, {{register_user, server}, CD}),
     ets:insert(Table, {{remove_user, server}, CD}),
     lists:foreach(
       fun(E) -> ets:insert(Table, {{client, server, E}, CD}) end,
@@ -128,6 +130,7 @@ prepare_stats_host(Host, Hooks, CD) ->
     ets:new(Table, [named_table, public]),
     ets:insert(Table, {{user_login, Host}, CD}),
     ets:insert(Table, {{user_logout, Host}, CD}),
+    ets:insert(Table, {{register_user, Host}, CD}),
     ets:insert(Table, {{remove_user, Host}, CD}),
     ets:insert(Table, {{send, Host, iq, in}, CD}),
     ets:insert(Table, {{send, Host, iq, out}, CD}),
@@ -155,6 +158,7 @@ prepare_stats_host(Host, Hooks, CD) ->
      ),
     case Hooks of
 	true ->
+	    ejabberd_hooks:add(register_user, Host, ?MODULE, register_user, 90),
 	    ejabberd_hooks:add(remove_user, Host, ?MODULE, remove_user, 90),
 	    ejabberd_hooks:add(user_available_hook, Host, ?MODULE, user_login, 90),
 	    %%ejabberd_hooks:add(unset_presence_hook, Host, ?MODULE, user_logout, 90),
@@ -163,6 +167,7 @@ prepare_stats_host(Host, Hooks, CD) ->
 	traffic ->
 	    ejabberd_hooks:add(user_receive_packet, Host, ?MODULE, user_receive_packet_traffic, 92),
 	    ejabberd_hooks:add(user_send_packet, Host, ?MODULE, user_send_packet_traffic, 92),
+	    ejabberd_hooks:add(register_user, Host, ?MODULE, register_user, 90),
 	    ejabberd_hooks:add(remove_user, Host, ?MODULE, remove_user, 90),
 	    ejabberd_hooks:add(user_available_hook, Host, ?MODULE, user_login, 90),
 	    ejabberd_hooks:add(sm_remove_connection_hook, Host, ?MODULE, user_logout_sm, 90),
@@ -188,6 +193,7 @@ finish_stats(Host) ->
     ejabberd_hooks:delete(user_send_packet, Host, ?MODULE, user_send_packet, 90),
     ejabberd_hooks:delete(user_send_packet, Host, ?MODULE, user_send_packet_traffic, 92),
     ejabberd_hooks:delete(user_receive_packet, Host, ?MODULE, user_receive_packet_traffic, 92),
+    ejabberd_hooks:delete(register_user, Host, ?MODULE, register_user, 90),
     ejabberd_hooks:delete(remove_user, Host, ?MODULE, remove_user, 90),
     ejabberd_hooks:delete(webadmin_menu_host, Host, ?MODULE, web_menu_host, 50),
     ejabberd_hooks:delete(webadmin_page_host, Host, ?MODULE, web_page_host, 50),
@@ -197,6 +203,11 @@ finish_stats(Host) ->
 
 %%%==================================
 %%%% Hooks Handlers
+
+register_user(_User, Server) ->
+    Table = table_name(Server),
+    ets:update_counter(Table, {register_user, Server}, 1),
+    ets:update_counter(Table, {register_user, server}, 1).
 
 remove_user(_User, Server) ->
     Table = table_name(Server),
@@ -341,6 +352,8 @@ get(_, [{"user_login", _}, title]) -> "Logins (per minute)";
 get(_, [{"user_login", I}, Host]) -> get_stat({user_login, Host}, I);
 get(_, [{"user_logout", _}, title]) -> "Logouts (per minute)";
 get(_, [{"user_logout", I}, Host]) -> get_stat({user_logout, Host}, I);
+get(_, [{"register_user", _}, title]) -> "Accounts registered (per minute)";
+get(_, [{"register_user", I}, Host]) -> get_stat({register_user, Host}, I);
 get(_, [{"remove_user", _}, title]) -> "Accounts deleted (per minute)";
 get(_, [{"remove_user", I}, Host]) -> get_stat({remove_user, Host}, I);
 get(_, [{Table, Type, Dest, _}, title]) -> filename:flatten([Table, Type, Dest]);
@@ -350,6 +363,8 @@ get(_, ["user_login", title]) -> "Logins";
 get(_, ["user_login", Host]) -> get_stat({user_login, Host});
 get(_, ["user_logout", title]) -> "Logouts";
 get(_, ["user_logout", Host]) -> get_stat({user_logout, Host});
+get(_, ["register_user", title]) -> "Accounts registered";
+get(_, ["register_user", Host]) -> get_stat({register_user, Host});
 get(_, ["remove_user", title]) -> "Accounts deleted";
 get(_, ["remove_user", Host]) -> get_stat({remove_user, Host});
 get(_, [{Table, Type, Dest}, title]) -> filename:flatten([Table, Type, Dest]);
@@ -964,7 +979,11 @@ web_page_main(_, #request{path=["statsdx"], lang = Lang} = _Request) ->
 	   ?XAE("table", [],
 		[?XE("tbody", [
 			       do_stat(global, Lang, "totalrosteritems"),
-			       do_stat(global, Lang, "meanitemsinroster")
+			       do_stat(global, Lang, "meanitemsinroster"),
+			       ?C("Top rosters"), ?C(" "),
+			       ?ACT("top/roster/30", "30"), ?C(", "),
+			       ?ACT("top/roster/100", "100"), ?C(", "),
+			       ?ACT("top/roster/500", "500")
 			      ])
 		]),
 	   ?XC("h3", "Users"),
@@ -972,6 +991,10 @@ web_page_main(_, #request{path=["statsdx"], lang = Lang} = _Request) ->
 		[?XE("tbody", [
 			       do_stat(global, Lang, "onlineusers"),
 			       do_stat(global, Lang, "offlinemsg"),
+			       ?C("Top offline message queues"), ?C(" "),
+			       ?ACT("top/offlinemsg/30", "30"), ?C(", "),
+			       ?ACT("top/offlinemsg/100", "100"), ?C(", "),
+			       ?ACT("top/offlinemsg/500", "500"),
 			       do_stat(global, Lang, "vcards")
 			      ])
 		]),
@@ -1038,6 +1061,18 @@ web_page_main(_, #request{path=["statsdx"], lang = Lang} = _Request) ->
 		])
 	  ],
     {stop, Res};
+web_page_main(_, #request{path=["statsdx", "top", Topic, Topnumber], q = _Q, lang = Lang} = _Request) ->
+    Res = [?XC("h1", ?T("Statistics")++" Dx"),
+	   ?XC("h2", "Top 30 rosters"), % "Top 30 offline message queues" %+++
+	   ?XE("table",
+	       [?XE("thead", [?XE("tr",
+				  [?XE("td", [?CT("Jabber ID")]),
+				   ?XE("td", [?CT("Value")])]
+				 )]),
+		?XE("tbody", do_top_table(global, Lang, Topic, Topnumber, server))
+	       ])
+	  ],
+    {stop, Res};
 web_page_main(_, #request{path=["statsdx" | FilterURL], q = Q, lang = Lang} = _Request) ->
     Filter = parse_url_filter(FilterURL),
     Sort_query = get_sort_query(Q),
@@ -1051,6 +1086,18 @@ web_page_main(_, #request{path=["statsdx" | FilterURL], q = Q, lang = Lang} = _R
 	  ],
     {stop, Res};
 web_page_main(Acc, _) -> Acc.
+
+do_top_table(_Node, Lang, Topic, TopnumberString, Host) ->
+    List = get_top_users(Host, list_to_integer(TopnumberString), Topic),
+    %% get_top_users(Topnumber, "roster")
+    lists:map(
+      fun({Value, User, Server}) ->
+	    UserJID = User++"@"++Server,
+	    UserJIDUrl = "/admin/server/" ++ Server ++ "/user/" ++ User ++ "/",
+	    do_table_element(Lang, UserJID, {fixed_url, UserJIDUrl}, integer_to_list(Value))
+      end,
+      List
+     ).
 
 %% Code copied from mod_muc_admin.erl
 %% Returns: {normal | reverse, Integer}
@@ -1219,16 +1266,24 @@ web_page_host(_, Host,
 	   ?XC("h3", "Roster"),
 	   ?XAE("table", [],
 		[?XE("tbody", [
-			       do_stat(global, Lang, "totalrosteritems", Host)
+			       do_stat(global, Lang, "totalrosteritems", Host),
 			       %%get_meanitemsinroster2(TotalRosterItems, RegisteredUsers)
+			       ?C("Top rosters"), ?C(" "),
+			       ?ACT("top/roster/30", "30"), ?C(", "),
+			       ?ACT("top/roster/100", "100"), ?C(", "),
+			       ?ACT("top/roster/500", "500")
 			      ])
 		]),
 	   ?XC("h3", "Users"),
 	   ?XAE("table", [],
 		[?XE("tbody", [
-			       do_stat(global, Lang, "onlineusers", Host)
+			       do_stat(global, Lang, "onlineusers", Host),
 			       %%do_stat(global, Lang, "offlinemsg", Host), %% This make take a lot of time
 			       %%do_stat(global, Lang, "vcards", Host) %% This make take a lot of time
+			       ?C("Top offline message queues"), ?C(" "),
+			       ?ACT("top/offlinemsg/30", "30"), ?C(", "),
+			       ?ACT("top/offlinemsg/100", "100"), ?C(", "),
+			       ?ACT("top/offlinemsg/500", "500")
 			      ])
 		]),
 	   ?XC("h3", "Connections"),
@@ -1298,6 +1353,7 @@ web_page_host(_, Host,
 	   	[?XE("tbody", [
 			       do_stat(global, Lang, "user_login", Host),
 			       do_stat(global, Lang, "user_logout", Host),
+			       do_stat(global, Lang, "register_user", Host),
 			       do_stat(global, Lang, "remove_user", Host),
 			       do_stat(global, Lang, {send, iq, in}, Host),
 			       do_stat(global, Lang, {send, iq, out}, Host),
@@ -1313,6 +1369,18 @@ web_page_host(_, Host,
 			       do_stat(global, Lang, {recv, presence, out}, Host)
 	   		      ])
 	   	])
+	  ],
+    {stop, Res};
+web_page_host(_, Host, #request{path=["statsdx", "top", Topic, Topnumber], q = _Q, lang = Lang} = _Request) ->
+    Res = [?XC("h1", ?T("Statistics")++" Dx"),
+	   ?XC("h2", "Top 30 rosters"), % "Top 30 offline message queues" %+++
+	   ?XE("table",
+	       [?XE("thead", [?XE("tr",
+				  [?XE("td", [?CT("Jabber ID")]),
+				   ?XE("td", [?CT("Value")])]
+				 )]),
+		?XE("tbody", do_top_table(global, Lang, Topic, Topnumber, Host))
+	       ])
 	  ],
     {stop, Res};
 web_page_host(_, Host, #request{path=["statsdx" | FilterURL], q = Q,
@@ -1338,6 +1406,7 @@ do_table_element(Lang, L, StatLink, N) ->
     ?XE("tr", [
 	       case StatLink of
 		   no_link -> ?XCT("td", L);
+		   {fixed_url, Fixedurl} -> ?XE("td", [?AC(Fixedurl, L)]);
 		   _ -> ?XE("td", [?AC(make_url(StatLink, L), L)])
                end,
 	       ?XAC("td", [{"class", "alignright"}],
@@ -1456,6 +1525,17 @@ pretty_string_int(String) ->
 
 commands() ->
     [
+     #ejabberd_commands{name = get_top_users, tags = [stats],
+			desc = "Get top X users with larger offlinemsg or roster.",
+			module = ?MODULE, function = get_top_users,
+			args = [{topnumber, integer}, {topic, string}],
+			result = {top, {list,
+					{user, {tuple, [
+							{value, integer},
+							{user, string},
+							{server, string}
+						       ]}}
+				       }}},
      #ejabberd_commands{name = getstatsdx, tags = [stats],
 			desc = "Get statistical value.",
 			module = ?MODULE, function = getstatsdx,
@@ -1473,6 +1553,49 @@ getstatsdx(Name) ->
 
 getstatsdx(Name, Host) ->
     get_statistic(global, [Name, Host]).
+
+get_top_users(Number, Topic) ->
+    get_top_users(server, Number, Topic).
+
+get_top_users(Host, Number, "offlinemsg") ->
+    get_top_users(Host, Number, offline_msg, #offline_msg.us);
+get_top_users(Host, Number, "roster") ->
+    get_top_users(Host, Number, roster, #roster.us).
+
+get_top_users(Host, TopX, Table, RecordUserPos) ->
+    F = fun() ->
+		F2 = fun(R, {H, Dict}) ->
+			     {LUser, LServer} = element(RecordUserPos, R),
+			     case H of
+				 server ->
+				     {Host, dict:update_counter({LUser, LServer}, 1, Dict)};
+				 LServer ->
+				     {Host, dict:update_counter({LUser, LServer}, 1, Dict)};
+				 _ ->
+				     {Host, Dict}
+			     end
+		     end,
+		mnesia:foldl(F2, {Host, dict:new()}, Table)
+	end,
+    {atomic, {Host, DictRes}} = mnesia:transaction(F),
+    {_, _, Result} = dict:fold(
+		       fun({User, Server}, Num, {EntryNumber, Size, TopList}) ->
+			       case {Num > EntryNumber, Size < TopX} of
+				   {false, true} ->
+				       {Num, Size+1, lists:keymerge(1, TopList, [{Num, User, Server}])};
+				   {true, true} ->
+				       {EntryNumber, Size+1, lists:keymerge(1, TopList, [{Num, User, Server}])};
+				   {true, false} ->
+				       [{NewEntryNumber, _, _} | _] = TopList2 = lists:keydelete(EntryNumber, 1, TopList),
+				       {NewEntryNumber, Size, lists:keymerge(1, TopList2, [{Num, User, Server}])};
+				   {false, false} ->
+				       {EntryNumber, Size, TopList}
+			       end
+		       end,
+		       {10000000000000000, 0, []},
+		       DictRes),
+    lists:reverse(Result).
+
 
 %%%==================================
 
