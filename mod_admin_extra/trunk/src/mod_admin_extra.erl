@@ -312,7 +312,7 @@ commands() ->
 			"  USERS = JID[:JID]* | any\n"
 			"  CONTACTS = JID[:JID]* | any\n"
 			"  JID = characters valid in a JID, and can use the "
-			"globs: *, ? and [...]\n"
+			"globs: *, ?, ! and [...]\n"
 			"\n"
 			"This example will list roster items with subscription "
 			"'none', 'from' or 'to' that have any ask property, of "
@@ -1282,5 +1282,7 @@ is_regexp_match(String, RegExp) ->
 	      [RegExp, lists:flatten(regexp:format_error(ErrDesc))]),
 	    false
     end.
+is_glob_match(String, [$! | Glob]) ->
+    not is_regexp_match(String, regexp:sh_to_awk(Glob));
 is_glob_match(String, Glob) ->
     is_regexp_match(String, regexp:sh_to_awk(Glob)).
