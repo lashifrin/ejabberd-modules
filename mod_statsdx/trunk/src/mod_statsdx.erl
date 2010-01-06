@@ -980,7 +980,7 @@ web_page_main(_, #request{path=["statsdx"], lang = Lang} = _Request) ->
 		[?XE("tbody", [
 			       do_stat(global, Lang, "totalrosteritems"),
 			       do_stat(global, Lang, "meanitemsinroster"),
-			       ?C("Top rosters"), ?C(" "),
+			       ?CT("Top rosters"), ?C(" "),
 			       ?ACT("top/roster/30", "30"), ?C(", "),
 			       ?ACT("top/roster/100", "100"), ?C(", "),
 			       ?ACT("top/roster/500", "500")
@@ -991,7 +991,7 @@ web_page_main(_, #request{path=["statsdx"], lang = Lang} = _Request) ->
 		[?XE("tbody", [
 			       do_stat(global, Lang, "onlineusers"),
 			       do_stat(global, Lang, "offlinemsg"),
-			       ?C("Top offline message queues"), ?C(" "),
+			       ?CT("Top offline message queues"), ?C(" "),
 			       ?ACT("top/offlinemsg/30", "30"), ?C(", "),
 			       ?ACT("top/offlinemsg/100", "100"), ?C(", "),
 			       ?ACT("top/offlinemsg/500", "500"),
@@ -1063,7 +1063,10 @@ web_page_main(_, #request{path=["statsdx"], lang = Lang} = _Request) ->
     {stop, Res};
 web_page_main(_, #request{path=["statsdx", "top", Topic, Topnumber], q = _Q, lang = Lang} = _Request) ->
     Res = [?XC("h1", ?T("Statistics")++" Dx"),
-	   ?XC("h2", "Top 30 rosters"), % "Top 30 offline message queues" %+++
+	   case Topic of
+		"offlinemsg" -> ?XCT("h2", "Top offline message queues");
+		"roster" -> ?XCT("h2", "Top rosters")
+	   end,
 	   ?XE("table",
 	       [?XE("thead", [?XE("tr",
 				  [?XE("td", [?CT("Jabber ID")]),
@@ -1373,7 +1376,10 @@ web_page_host(_, Host,
     {stop, Res};
 web_page_host(_, Host, #request{path=["statsdx", "top", Topic, Topnumber], q = _Q, lang = Lang} = _Request) ->
     Res = [?XC("h1", ?T("Statistics")++" Dx"),
-	   ?XC("h2", "Top 30 rosters"), % "Top 30 offline message queues" %+++
+	   case Topic of
+		"offlinemsg" -> ?XCT("h2", "Top offline message queues");
+		"roster" -> ?XCT("h2", "Top rosters")
+	   end,
 	   ?XE("table",
 	       [?XE("thead", [?XE("tr",
 				  [?XE("td", [?CT("Jabber ID")]),
