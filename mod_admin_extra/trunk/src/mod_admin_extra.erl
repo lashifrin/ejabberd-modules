@@ -49,6 +49,7 @@
 	 kick_session/4,
 	 status_num/2, status_num/1,
 	 status_list/2, status_list/1,
+	 connected_users_info/0,
 	 %% Vcard
 	 set_nickname/3,
 	 get_vcard/3,
@@ -244,6 +245,23 @@ commands() ->
 								{status, string}
 							       ]}}
 					 }}},
+     #ejabberd_commands{name = connected_users_info,
+			tags = [session],
+			desc = "List all established sessions and their information",
+			module = ?MODULE, function = connected_users_info,
+			args = [],
+			result = {connected_users_info,
+				  {list,
+				   {sessions, {tuple,
+					       [{jid, string},
+						{connection, string},
+						{ip, string},
+						{port, integer},
+						{priority, integer},
+						{node, string},
+						{uptime, integer}
+					       ]}}
+				  }}},
 
      #ejabberd_commands{name = set_nickname, tags = [vcard],
 			desc = "Set nickname in a user's vcard",
@@ -729,6 +747,29 @@ get_status_list(Host, Status_required) ->
     [{User, Server, Resource, Priority, stringize(Status_text)}
      || {{User, Resource, Status, Status_text}, Server, Priority} <- Sessions4,
 	apply(Fstatus, [Status, Status_required])].
+
+connected_users_info() ->
+    USRIs = dirty_get_sessions_list2(),
+    CurrentSec = calendar:datetime_to_gregorian_seconds({date(), time()}),
+    lists:map(
+      fun([{U, S, R}, {Now, Pid}, Priority, Info]) ->
+	      Conn = proplists:get_value(conn, Info),
+	      {Ip, Port} = proplists:get_value(ip, Info),
+	      IPS = inet_parse:ntoa(Ip),
+	      NodeS = atom_to_list(node(Pid)),
+	      Uptime = CurrentSec - calendar:datetime_to_gregorian_seconds(
+				      calendar:now_to_local_time(Now)),
+	      {[U, $@, S, $/, R], Conn, IPS, Port, Priority, NodeS, Uptime}
+      end,
+      USRIs).
+
+%% Code copied from ejabberd_sm.erl and customized
+dirty_get_sessions_list2() ->
+    mnesia:dirty_select(
+      session,
+      [{#session{usr = '$1', sid = '$2', priority = '$3', info = '$4', _ = '_'},
+	[],
+	[['$1', '$2', '$3', '$4']]}]).
 
 %% Make string more print-friendly
 stringize(String) ->
