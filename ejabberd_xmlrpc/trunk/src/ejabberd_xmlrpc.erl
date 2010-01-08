@@ -173,7 +173,7 @@ start_listener({Port, Ip, tcp = _TranportProtocol}, Opts) ->
     MaxSessions = gen_mod:get_opt(maxsessions, Opts, 10),
     Timeout = gen_mod:get_opt(timeout, Opts, 5000),
     AccessCommands = gen_mod:get_opt(access_commands, Opts, []),
-    GetAuth = case AccessCommands of
+    GetAuth = case [ACom || {Ac, _, _} = ACom <- AccessCommands, Ac /= all] of
 	[] -> false;
 	_ -> true
     end,
@@ -232,17 +232,14 @@ get_auth(AuthList) ->
 %% xmlrpc:call({127, 0, 0, 1}, 4560, "/", {call, echothis, [{struct, [{user, "badlop"}, {server, "localhost"}, {password, "79C1574A43BC995F2B145A299EF97277"}]}, 152]}).
 %% {ok,{response,[152]}}
 
-handler(#state{get_auth = true, auth = noauth} = State, {call, Method, [{struct, AuthList} | Arguments]}) ->
+handler(#state{get_auth = true, auth = noauth} = State, {call, Method, [{struct, AuthList} | Arguments] = AllArgs}) ->
     try get_auth(AuthList) of
 	Auth ->
 	    handler(State#state{get_auth = false, auth = Auth}, {call, Method, Arguments})
     catch
-	{error, missing_auth_arguments, Attr} ->
-	    build_fault_response(-101, "Auth information not provided: " ++ atom_to_list(Attr), [])
+	{error, missing_auth_arguments, _Attr} ->
+	    handler(State#state{get_auth = false, auth = noauth}, {call, Method, AllArgs})
     end;
-
-handler(#state{get_auth = true, auth = noauth}, _Payload) ->
-    build_fault_response(-100, "Required authentication!", []);
 
 
 %% .............................
