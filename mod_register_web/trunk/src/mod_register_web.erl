@@ -154,13 +154,7 @@ index_page(Lang) ->
 %%%----------------------------------------------------------------------
 
 form_new_get(Host, Lang) ->
-    Id = randoms:get_string(),
-    SID = "",
-    From = #jid{user = "", server = "test", resource = ""},
-    To = #jid{user = "", server = "test", resource = ""},
-    Args = [],
-    ejabberd_captcha:create_captcha(Id, SID, From, To, Lang, Args),
-    {_, {CImg, CText, CId, CKey}} = ejabberd_captcha:build_captcha_html(Id, Lang),
+    CaptchaEls = build_captcha_li_list(Lang),
     HeadEls = [
 	       ?XCT("title", "Register a Jabber account"),
 	       ?XA("link",
@@ -215,16 +209,7 @@ form_new_get(Host, Lang) ->
 				     ?CT("Password Verification:"),
 				     ?C(" "),
 				     ?INPUTS("password", "password2", "", "20")
-				    ]),
-			  ?XE("li", [
-				     CText,
-				     ?C(" "),
-				     CId,
-				     CKey,
-				     ?BR,
-				     CImg
-				    ]
-				    ),
+				    ])] ++ CaptchaEls ++ [
 			  %% Nombre</b> (opcional)<b>:</b> <input type="text" size="20" name="name" maxlength="255"> <br /> <br /> -->
 			  %% 
 			  %% Direcci&oacute;n de correo</b> (opcional)<b>:</b> <input type="text" size="20" name="email" maxlength="255"> <br /> <br /> -->
@@ -247,7 +232,7 @@ form_new_get(Host, Lang) ->
 form_new_post(Q, Host) ->
     case catch get_register_parameters(Q) of
 	[Username, Password, Password, Id, Key] ->
-	    form_new_post(Username, Host, Password, Id, Key);
+	    form_new_post(Username, Host, Password, {Id, Key});
 	[_Username, _Password, _Password2, Id, Key] ->
 	    ejabberd_captcha:check_captcha(Id, Key), %% This deletes the captcha
 	    {error, passwords_not_identical};
@@ -258,12 +243,16 @@ form_new_post(Q, Host) ->
 get_register_parameters(Q) ->
     lists:map(
       fun(Key) ->
-	      {value, {_Key, Value}} = lists:keysearch(Key, 1, Q),
-	      Value
+	      case lists:keysearch(Key, 1, Q) of
+		  {value, {_Key, Value}} -> Value;
+		  false -> false
+	      end
       end,
       ["username", "password", "password2", "id", "key"]).
 
-form_new_post(Username, Host, Password, Id, Key) ->
+form_new_post(Username, Host, Password, {false, false}) ->
+    register_account(Username, Host, Password);
+form_new_post(Username, Host, Password, {Id, Key}) ->
     case ejabberd_captcha:check_captcha(Id, Key) of
 	captcha_valid ->
 	    register_account(Username, Host, Password);
@@ -275,6 +264,31 @@ form_new_post(Username, Host, Password, Id, Key) ->
 
 
 
+%%%----------------------------------------------------------------------
+%%% Formulary Captcha support for new GET/POST
+%%%----------------------------------------------------------------------
+
+build_captcha_li_list(Lang) ->
+    case ejabberd_captcha:is_feature_available() of
+	true -> build_captcha_li_list2(Lang);
+	false -> []
+    end.
+
+build_captcha_li_list2(Lang) ->
+    Id = randoms:get_string(),
+    SID = "",
+    From = #jid{user = "", server = "test", resource = ""},
+    To = #jid{user = "", server = "test", resource = ""},
+    Args = [],
+    ejabberd_captcha:create_captcha(Id, SID, From, To, Lang, Args),
+    {_, {CImg,CText,CId,CKey}} = ejabberd_captcha:build_captcha_html(Id, Lang),
+    [?XE("li", [CText,
+		?C(" "),
+		CId,
+		CKey,
+		?BR,
+		CImg]
+	)].
 
 %%%----------------------------------------------------------------------
 %%% Formulary change password GET

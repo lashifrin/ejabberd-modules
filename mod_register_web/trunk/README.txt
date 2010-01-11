@@ -43,6 +43,10 @@ Make sure to include the last / character in the URL.
 Otherwise when you enter a subpage the URL will not be correct, 
 for example: http://localhost:5281/new  --->  404 Not Found
 
+This module supports CAPTCHA image to register a new account.
+To enable this feature, configure the options captcha_cmd and captcha_host.
+See the ejabberd Guide for more information about those options.
+
 
 	FEATURE REQUESTS
 	----------------
@@ -64,8 +68,6 @@ for example: http://localhost:5281/new  --->  404 Not Found
  * Store in a custom mnesia table: timestamp of account register and IP.
  * Use time limiter by IP like mod_register for: register, changepass.
 
- * Optionally require captcha to register.
- 
  * Allow private email during register, and store in custom table.
  * Optionally require private email to register.
  * Optionally require email confirmation to register.
