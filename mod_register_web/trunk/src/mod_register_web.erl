@@ -233,6 +233,8 @@ form_new_post(Q, Host) ->
     case catch get_register_parameters(Q) of
 	[Username, Password, Password, Id, Key] ->
 	    form_new_post(Username, Host, Password, {Id, Key});
+	[_Username, _Password, _Password2, false, false] ->
+	    {error, passwords_not_identical};
 	[_Username, _Password, _Password2, Id, Key] ->
 	    ejabberd_captcha:check_captcha(Id, Key), %% This deletes the captcha
 	    {error, passwords_not_identical};
@@ -261,7 +263,6 @@ form_new_post(Username, Host, Password, {Id, Key}) ->
 	captcha_not_found ->
 	    {error, captcha_non_valid}
     end.
-
 
 
 %%%----------------------------------------------------------------------
