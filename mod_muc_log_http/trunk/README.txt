@@ -41,6 +41,9 @@ on mod_muc_log.
 {modules,
  [
   ...
+  {mod_muc_log,  [
+                  {outdir, "/var/www/ejabberdlogs"}
+                 ]},
   {mod_muc_log_http, []},
   ...
 ]}.
