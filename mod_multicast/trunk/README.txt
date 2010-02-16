@@ -7,6 +7,16 @@
 	Module for ejabberd SVN
 
 
+*****************************************
+**
+**    IMPORTANT!!
+**
+** This code is now hosted and developed in this Git repository and branch:
+** https://git.process-one.net/~badlop/ejabberd/badlop-ejabberd/commits/multicast-2.1.x
+**
+*****************************************
+
+
 	DESCRIPTION
 	-----------
 
