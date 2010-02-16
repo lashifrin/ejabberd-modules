@@ -209,6 +209,9 @@ wait_for_nick({line, #line{command = "NICK", params = Params}}, State) ->
 			    SID = {now(), self()},
 			    ejabberd_sm:open_session(
 			      SID, Nick, Server, "irc", peerip(gen_tcp, State#state.socket)),
+			    ejabberd_sm:set_presence(SID, Nick, Server, "irc",
+						     3, "undefined",
+						     [{'ip', peerip(gen_tcp, State#state.socket)}, {'conn','c2s'}, {'state',"+"}]),
 			    send_text_command("", "001", [Nick, "IRC interface of ejabberd server "++Server], State),
 			    send_reply('RPL_MOTDSTART', [Nick, "- "++Server++" Message of the day - "], State),
 			    send_reply('RPL_MOTD', [Nick, "- This is the IRC interface of the ejabberd server "++Server++"."], State),
@@ -251,6 +254,28 @@ wait_for_cmd({line, #line{command = "JOIN", params = Params}}, State) ->
     Keys = string:tokens(KeysString, ","),
     NewState = join_channels(Channels, Keys, State),
     {next_state, wait_for_cmd, NewState};
+
+%% USERHOST command
+wait_for_cmd({line, #line{command = "USERHOST", params = Params}}, State) ->
+    case Params of
+        [] ->
+	    send_reply('ERR_NEEDMOREPARAMS', ["USERHOST", "Not enough parameters"], State);
+        UserParams ->
+	    Users = lists:sublist(string:tokens(UserParams, " "), 5), %% RFC 1459 specifies 5 items max
+	    lists:foreach(
+	      fun(UserSubList) ->
+		      User = lists:last(UserSubList),
+		      case ejabberd_sm:get_user_info(User, State#state.host, "irc") of
+			  offline ->
+			      send_reply('RPL_USERHOST',[State#state.nick, User++" offline"], State);
+			  [_Node, _Conn, Ip] ->
+			      {_,{{IP1,IP2,IP3,IP4}, _}} = Ip,
+			      send_reply('RPL_USERHOST',[State#state.nick, User ++ "=+" ++ integer_to_list(IP1) ++ "." ++
+							 integer_to_list(IP2) ++ "." ++ integer_to_list(IP3) ++ "." ++ integer_to_list(IP4)], State)
+		      end
+	      end, Users)
+    end,
+    {next_state, wait_for_cmd, State};
 
 wait_for_cmd({line, #line{command = "PART", params = [ChannelsString | MaybeMessage]}}, State) ->
     Message = case MaybeMessage of
