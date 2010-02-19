@@ -50,6 +50,7 @@
 	 status_num/2, status_num/1,
 	 status_list/2, status_list/1,
 	 connected_users_info/0,
+	 set_presence/7,
 	 %% Vcard
 	 set_nickname/3,
 	 get_vcard/3,
@@ -262,6 +263,16 @@ commands() ->
 						{uptime, integer}
 					       ]}}
 				  }}},
+
+     #ejabberd_commands{name = set_presence,
+			tags = [session],
+			desc = "Set presence of a session",
+			module = ?MODULE, function = set_presence,
+			args = [{user, string}, {host, string},
+				{resource, string}, {type, string},
+				{show, string}, {status, string},
+				{priority, string}],
+			result = {res, rescode}},
 
      #ejabberd_commands{name = set_nickname, tags = [vcard],
 			desc = "Set nickname in a user's vcard",
@@ -776,6 +787,17 @@ stringize(String) ->
     %% Replace newline characters with other code
     element(2, regexp:gsub(String, "\n", "\\n")).
 
+set_presence(User, Host, Resource, Type, Show, Status, Priority) ->
+    Pid = ejabberd_sm:get_session_pid(User, Host, Resource),
+    USR = User ++ "@" ++ Host ++ "/" ++ Resource,
+    US = User ++ "@" ++ Host,
+    Message = {route_xmlstreamelement,
+	       {xmlelement, "presence",
+		[{"from", USR}, {"to", US}, {"type", Type}],
+		[{xmlelement, "show", [], [{xmlcdata, Show}]},
+		 {xmlelement, "status", [], [{xmlcdata, Status}]},
+		 {xmlelement, "priority", [], [{xmlcdata, Priority}]}]}},
+    Pid ! Message.
 
 %%%
 %%% Vcard
@@ -935,23 +957,8 @@ unsubscribe(LU, LS, User, Server) ->
 %% -----------------------------
 
 get_roster(User, Server) ->
-    {ok, Roster} = get_roster2(User, Server),
-    make_roster_xmlrpc(Roster).
-
-get_roster2(User, Server) ->
-    Modules = gen_mod:loaded_modules(Server),
-    Roster = case lists:member(mod_roster, Modules) of
-		 true ->
-		     mod_roster:get_user_roster([], {User, Server});
-		 false ->
-		     case lists:member(mod_roster_odbc, Modules) of
-			 true ->
-			     mod_roster_odbc:get_user_roster([], {User, Server});
-			 false ->
-			     {error, "Neither mod_roster or mod_roster_odbc are enabled"}
-		     end
-	     end,
-    {ok, Roster}.
+    Items = ejabberd_hooks:run_fold(roster_get, Server, [], [{User, Server}]),
+    make_roster_xmlrpc(Items).
 
 %% Note: if a contact is in several groups, the contact is returned
 %% several times, each one in a different group.
