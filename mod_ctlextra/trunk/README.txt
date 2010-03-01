@@ -4,7 +4,7 @@
 
 	Homepage: http://www.ejabberd.im/mod_ctlextra
 	Author: Badlop
-	Module for ejabberd 2.0.0 or newer
+	Module for ejabberd 2.0.*
 
 
 	IMPORTANT
@@ -13,8 +13,8 @@
 This module will only receive bugfixes.  All the features provided by
 this module are also provided by the new module mod_admin_extra.
 
-If you are using ejabberd trunk SVN 1635 or newer, you will probably
-prefer to use mod_admin_extra, as it provides generic ejabberd
+If you are using ejabberd 2.1.0 or newer, use mod_admin_extra instead.
+It provides generic ejabberd
 commands that can be executed not only with ejabberdctl, but also with
 other ejabberd-command frontends.
 
