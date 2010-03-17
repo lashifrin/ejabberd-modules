@@ -211,8 +211,9 @@ $ erl
 {ok,{response,[{struct,[{resources,{array,[{struct,[{resource,"Home"}]},
                                            {struct,[{resource,"Psi"}]}]}}]}]}}
 
-5. Note: if ejabberd_xmlrpc has the option 'access_commands' configured, as the example
-   configurations provided above, the XML-RPC must include first an
+5. Note: if ejabberd_xmlrpc has the option 'access_commands'
+   configured with some access restriction (see the example
+   configurations provided above), the XML-RPC must include first an
    argument providing information of a valid account. For example:
 1> xmlrpc:call({127, 0, 0, 1}, 4560, "/", {call, user_resources, [
    {struct, [{user, "testuser"}, {server, "localhost"}, {password, "aeiou"}]},
