@@ -838,7 +838,8 @@ filter_message(Msg) ->
     lists:filter(
       fun(C) ->
 	      if (C < 32) and
-		 (C /= 3) and
+		 %% Add color support, but break XML: (see https://support.process-one.net/browse/EJAB-1097 )
+		 %% (C /= 3) and
 		 (C /= 9) and
 		 (C /= 10) and
 		 (C /= 13) ->
