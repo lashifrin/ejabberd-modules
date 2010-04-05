@@ -76,6 +76,8 @@
 	 %% Stanza
 	 send_message_headline/4,
 	 send_message_chat/3,
+	 send_stanza_c2s/4,
+	 privacy_set/3,
 	 %% Stats
 	 stats/1, stats/2
 	]).
@@ -434,6 +436,16 @@ commands() ->
 			module = ?MODULE, function = send_message_headline,
 			args = [{from, string}, {to, string},
 				{subject, string}, {body, string}],
+			result = {res, rescode}},
+     #ejabberd_commands{name = send_stanza_c2s, tags = [stanza],
+			desc = "Send a stanza as if sent from a c2s session",
+			module = ?MODULE, function = send_stanza_c2s,
+			args = [{user, string}, {host, string}, {resource, string}, {stanza, string}],
+			result = {res, rescode}},
+     #ejabberd_commands{name = privacy_set, tags = [stanza],
+			desc = "Send a IQ set privacy stanza for a local account",
+			module = ?MODULE, function = privacy_set,
+			args = [{user, string}, {host, string}, {stanza, string}],
 			result = {res, rescode}},
 
      #ejabberd_commands{name = stats, tags = [stats],
@@ -1167,6 +1179,24 @@ build_packet(message_headline, [Subject, Body]) ->
       {xmlelement, "body", [], [{xmlcdata, Body}]}
      ]
     }.
+
+send_stanza_c2s(Username, Host, Resource, Stanza) ->
+    C2sPid = ejabberd_sm:get_session_pid(Username, Host, Resource),
+    XmlEl = xml_stream:parse_element(Stanza),
+    p1_fsm:send_event(C2sPid, {xmlstreamelement, XmlEl}).
+
+privacy_set(Username, Host, Stanza) ->
+    From = jlib:string_to_jid(Username ++ "@" ++ Host),
+    To = jlib:string_to_jid(Host),
+    StanzaEl = xml_stream:parse_element(Stanza),
+    IQ = jlib:iq_query_info(StanzaEl),
+    {result, []} = ejabberd_hooks:run_fold(
+		     privacy_iq_set,
+		     "localhost",
+		     {error, ?ERR_FEATURE_NOT_IMPLEMENTED},
+		     [From, To, IQ]
+		    ),
+    ok.
 
 %%%
 %%% Stats
