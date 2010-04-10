@@ -1180,12 +1180,12 @@ send_packet_all_resources(FromJID, ToU, ToS, ToR, Packet) ->
 
 build_packet(message_chat, [Body]) ->
     {xmlelement, "message",
-     [{"type", "chat"}],
+     [{"type", "chat"}, {"id", randoms:get_string()}],
      [{xmlelement, "body", [], [{xmlcdata, Body}]}]
     };
 build_packet(message_headline, [Subject, Body]) ->
     {xmlelement, "message",
-     [{"type", "headline"}],
+     [{"type", "headline"}, {"id", randoms:get_string()}],
      [{xmlelement, "subject", [], [{xmlcdata, Subject}]},
       {xmlelement, "body", [], [{xmlcdata, Body}]}
      ]
