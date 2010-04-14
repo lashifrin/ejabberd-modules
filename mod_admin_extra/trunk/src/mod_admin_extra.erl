@@ -67,7 +67,7 @@
 	 push_roster_all/1,
 	 push_alltoall/2,
 	 %% mod_private
-	 private_get/3,
+	 private_get/4,
 	 private_set/3,
 	 %% mod_shared_roster
 	 srg_create/5,
@@ -393,9 +393,9 @@ commands() ->
 			result = {res, rescode}},
 
      #ejabberd_commands{name = private_get, tags = [private],
-			desc = "Get the user private storage",
+			desc = "Get some information from a user private storage",
 			module = ?MODULE, function = private_get,
-			args = [{user, string}, {host, string}, {element, string}],
+			args = [{user, string}, {host, string}, {element, string}, {ns, string}],
 			result = {res, string}},
      #ejabberd_commands{name = private_set, tags = [private],
 			desc = "Set to the user private storage",
@@ -1102,32 +1102,22 @@ build_iq_roster_push(Item) ->
 %%%
 
 %% Example usage:
-%% $ ejabberdctl private_set badlop localhost "\<aa\ xmlns=\'bb\'\>Cluthu\</aa\>"
-%% $ ejabberdctl private_get badlop localhost "\<aa\ xmlns=\'bb\'/\>"
-%% <aa xmlns='bb'>Cluthu</aa>
+%% $ ejabberdctl private_set badlop localhost "\<aa\ xmlns=\'bb\'\>Cluth\</aa\>"
+%% $ ejabberdctl private_get badlop localhost aa bb
+%% <aa xmlns='bb'>Cluth</aa>
 
-private_get(Username, Host, ElementString) ->
-    case xml_stream:parse_element(ElementString) of
-	{error, Error} ->
-	    io:format("Error found parsing the element:~n  ~p~nError: ~p~n",
-		      [ElementString, Error]),
-	    error;
-	Xml ->
-	    ResIq = private_get2(Username, Host, Xml),
-	    [{xmlelement,"query",
-	      [{"xmlns","jabber:iq:private"}],
-	      [SubEl]}] = ResIq#iq.sub_el,
-	    xml:element_to_string(SubEl)
-    end.
-
-private_get2(Username, Host, Xml) ->
+private_get(Username, Host, Element, Ns) ->
     From = jlib:make_jid(Username, Host, ""),
     To = jlib:make_jid(Username, Host, ""),
     IQ = {iq, "", get, ?NS_PRIVATE, "",
 	  {xmlelement,"query",
 	   [{"xmlns",?NS_PRIVATE}],
-	   [Xml]}},
-    mod_private:process_sm_iq(From, To, IQ).
+	   [{xmlelement, Element, [{"xmlns", Ns}], []}]}},
+    ResIq = mod_private:process_sm_iq(From, To, IQ),
+    [{xmlelement,"query",
+      [{"xmlns","jabber:iq:private"}],
+      [SubEl]}] = ResIq#iq.sub_el,
+    xml:element_to_string(SubEl).
 
 private_set(Username, Host, ElementString) ->
     case xml_stream:parse_element(ElementString) of
