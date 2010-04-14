@@ -216,7 +216,7 @@ $ erl
    configurations provided above), the XML-RPC must include first an
    argument providing information of a valid account. For example:
 1> xmlrpc:call({127, 0, 0, 1}, 4560, "/", {call, user_resources, [
-   {struct, [{user, "testuser"}, {server, "localhost"}, {password, "aeiou"}]},
+   {struct, [{user, "adminuser"}, {server, "localhost"}, {password, "aeiou"}]},
    {struct, [{user, "testuser"}, {host, "localhost"}]} ]}).
 
 
@@ -360,6 +360,23 @@ params["host"] = "localhost"
 params["password"] = "gogo11"
 
 result = server.create_account(params)
+print result
+-------
+
+This Python example shows how to provide authentication in the call, thanks to Muelli:
+-------
+import xmlrpclib
+
+server_url = 'http://127.0.0.1:4560'
+server = xmlrpclib.ServerProxy(server_url)
+
+EJABBERD_XMLRPC_LOGIN = {'user': 'adminuser', 'server': 'localhost', 'password': 'aeiou'}
+
+def ejabberdctl(command, data):
+    fn = getattr(server, command)
+    return fn(EJABBERD_XMLRPC_LOGIN, data)
+
+result = ejabberdctl('register', {'user':'ggeo', 'host':'localhost', 'password':'gogo11'})
 print result
 -------
 
