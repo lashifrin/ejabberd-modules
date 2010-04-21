@@ -18,6 +18,7 @@
 	 create_room/3, destroy_room/3,
 	 create_rooms_file/1, destroy_rooms_file/1,
 	 rooms_unused_list/2, rooms_unused_destroy/2,
+	 get_room_occupants/2,
 	 change_room_option/4,
 	 set_room_affiliation/4,
 	 web_menu_main/2, web_page_main/2, % Web Admin API
@@ -102,6 +103,18 @@ commands() ->
 		       module = ?MODULE, function = rooms_unused_destroy,
 		       args = [{host, string}, {days, integer}],
 		       result = {rooms, {list, {room, string}}}},
+
+     #ejabberd_commands{name = get_room_occupants, tags = [muc_room],
+			desc = "Get the list of occupants of a MUC room",
+			module = ?MODULE, function = get_room_occupants,
+			args = [{name, string}, {service, string}],
+			result = {occupants, {list,
+					      {occupant, {tuple,
+							  [{jid, string},
+							   {nick, string},
+							   {role, string}
+							  ]}}
+					     }}},
 
      #ejabberd_commands{name = change_room_option, tags = [muc_room],
 		       desc = "Change an option in a MUC room",
@@ -603,6 +616,26 @@ act_on_room(list, _, _) ->
 %% Change Room Option
 %%----------------------------
 
+get_room_occupants(Room, Host) ->
+    case get_room_pid(Room, Host) of
+	room_not_found -> throw({error, room_not_found});
+	Pid -> get_room_occupants(Pid)
+    end.
+
+get_room_occupants(Pid) ->
+    S = get_room_state(Pid),
+    lists:map(
+      fun({_LJID, Info}) ->
+	      {jlib:jid_to_string(Info#user.jid),
+	       Info#user.nick,
+	       atom_to_list(Info#user.role)}
+      end,
+      dict:to_list(S#state.users)).
+
+%%----------------------------
+%% Change Room Option
+%%----------------------------
+
 %% @spec(Name::string(), Service::string(), Option::string(), Value) -> ok
 %%       Value = atom() | integer() | string()
 %% @doc Change an option in an existing room.
@@ -631,11 +664,14 @@ change_room_option(Pid, Option, Value) ->
     Config2 = change_option(Option, Value, Config),
     gen_fsm:sync_send_all_state_event(Pid, {change_config, Config2}).
 
-%% @doc Get the Pid of an existing MUC room.
-%% If the room doesn't exist, the function will crash.
+%% @doc Get the Pid of an existing MUC room, or 'room_not_found'.
 get_room_pid(Name, Service) ->
-    [Room] = mnesia:dirty_read(muc_online_room, {Name, Service}),
-    Room#muc_online_room.pid.
+    case mnesia:dirty_read(muc_online_room, {Name, Service}) of
+	[] ->
+	    room_not_found;
+	[Room] ->
+	    Room#muc_online_room.pid
+    end.
 
 %% It is required to put explicitely all the options because
 %% the record elements are replaced at compile time.
