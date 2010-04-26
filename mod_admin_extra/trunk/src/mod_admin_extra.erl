@@ -52,6 +52,7 @@
 	 connected_users_info/0,
 	 connected_users_vhost/1,
 	 set_presence/7,
+	 user_sessions_info/2,
 	 %% Vcard
 	 set_nickname/3,
 	 get_vcard/3,
@@ -275,6 +276,23 @@ commands() ->
                        module = ?MODULE, function = connected_users_vhost,
                        args = [{host, string}],
                        result = {connected_users_vhost, {list, {sessions, string}}}},
+     #ejabberd_commands{name = user_sessions_info,
+			tags = [session],
+			desc = "Get information about all sessions of a user",
+			module = ?MODULE, function = user_sessions_info,
+			args = [{user, string}, {host, string}],
+			result = {sessions_info,
+				  {list,
+				   {session, {tuple,
+					      [{connection, string},
+					       {ip, string},
+					       {port, integer},
+					       {priority, integer},
+					       {node, string},
+					       {uptime, integer},
+					       {resource, string}
+					      ]}}
+				  }}},
 
      #ejabberd_commands{name = set_presence,
 			tags = [session],
@@ -835,6 +853,32 @@ set_presence(User, Host, Resource, Type, Show, Status, Priority) ->
 		 {xmlelement, "status", [], [{xmlcdata, Status}]},
 		 {xmlelement, "priority", [], [{xmlcdata, Priority}]}]}},
     Pid ! Message.
+
+user_sessions_info(User, Host) ->
+    CurrentSec = calendar:datetime_to_gregorian_seconds({date(), time()}),
+    US = {User, Host},
+    Sessions = case catch mnesia:dirty_index_read(session, US, #session.us) of
+		   {'EXIT', _Reason} ->
+		       [];
+		   Ss ->
+		       Ss
+	       end,
+    lists:map(
+      fun(Session) ->
+	      {_U, _S, Resource} = Session#session.usr,
+	      {Now, Pid} = Session#session.sid,
+	      Info = Session#session.info,
+	      Priority = Session#session.priority,
+	      Conn = proplists:get_value(conn, Info),
+	      {Ip, Port} = proplists:get_value(ip, Info),
+	      IPS = inet_parse:ntoa(Ip),
+	      NodeS = atom_to_list(node(Pid)),
+	      Uptime = CurrentSec - calendar:datetime_to_gregorian_seconds(
+				      calendar:now_to_local_time(Now)),
+	      {Conn, IPS, Port, Priority, NodeS, Uptime, Resource}
+      end,
+      Sessions).
+
 
 %%%
 %%% Vcard
