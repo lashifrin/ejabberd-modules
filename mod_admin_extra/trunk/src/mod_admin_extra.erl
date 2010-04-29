@@ -1111,9 +1111,11 @@ push_roster_item(LU, LS, U, S, Action) ->
 		  end, ejabberd_sm:get_user_resources(LU, LS)).
 
 push_roster_item(LU, LS, R, U, S, Action) ->
+    LJID = jlib:make_jid(LU, LS, R),
+    BroadcastEl = build_broadcast(U, S, Action),
+    ejabberd_router:route(LJID, LJID, BroadcastEl),
     Item = build_roster_item(U, S, Action),
     ResIQ = build_iq_roster_push(Item),
-    LJID = jlib:make_jid(LU, LS, R),
     ejabberd_router:route(LJID, LJID, ResIQ).
 
 build_roster_item(U, S, {add, Nick, Subs, Group}) ->
@@ -1140,6 +1142,16 @@ build_iq_roster_push(Item) ->
      ]
     }.
 
+build_broadcast(U, S, {add, _Nick, Subs, _Group}) ->
+    build_broadcast(U, S, list_to_atom(Subs));
+build_broadcast(U, S, remove) ->
+    build_broadcast(U, S, none);
+%% @spec (U::string(), S::string(), Subs::atom()) -> any()
+%% Subs = both | from | to | none
+build_broadcast(U, S, SubsAtom) when is_atom(SubsAtom) ->
+    {xmlelement, "broadcast", [],
+     [{item, {U, S, ""}, SubsAtom}]
+    }.
 
 %%%
 %%% Private Storage
