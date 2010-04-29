@@ -272,7 +272,7 @@ commands() ->
 				  }}},
      #ejabberd_commands{name = connected_users_vhost,
                        tags = [session],
-                       desc = "Get the number of established sessions in a vhost",
+                       desc = "Get the list of established sessions in a vhost",
                        module = ?MODULE, function = connected_users_vhost,
                        args = [{host, string}],
                        result = {connected_users_vhost, {list, {sessions, string}}}},
