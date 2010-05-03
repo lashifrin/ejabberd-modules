@@ -484,7 +484,7 @@ commands() ->
      #ejabberd_commands{name = privacy_set, tags = [stanza],
 			desc = "Send a IQ set privacy stanza for a local account",
 			module = ?MODULE, function = privacy_set,
-			args = [{user, string}, {host, string}, {stanza, string}],
+			args = [{user, string}, {host, string}, {xmlquery, string}],
 			result = {res, rescode}},
 
      #ejabberd_commands{name = stats, tags = [stats],
@@ -1308,10 +1308,11 @@ send_stanza_c2s(Username, Host, Resource, Stanza) ->
     XmlEl = xml_stream:parse_element(Stanza),
     p1_fsm:send_event(C2sPid, {xmlstreamelement, XmlEl}).
 
-privacy_set(Username, Host, Stanza) ->
+privacy_set(Username, Host, QueryS) ->
     From = jlib:string_to_jid(Username ++ "@" ++ Host),
     To = jlib:string_to_jid(Host),
-    StanzaEl = xml_stream:parse_element(Stanza),
+    QueryEl = xml_stream:parse_element(QueryS),
+    StanzaEl = {xmlelement, "iq", [{"type", "set"}], [QueryEl]},
     IQ = jlib:iq_query_info(StanzaEl),
     {result, []} = ejabberd_hooks:run_fold(
 		     privacy_iq_set,
