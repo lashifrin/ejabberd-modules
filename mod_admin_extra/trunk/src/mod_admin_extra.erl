@@ -392,6 +392,8 @@ commands() ->
 			result = {contacts, {list, {contact, {tuple, [
 								      {jid, string},
 								      {nick, string},
+								      {subscription, string},
+								      {ask, string},
 								      {group, string}
 								     ]}}}}},
      #ejabberd_commands{name = push_roster, tags = [roster],
@@ -1048,11 +1050,13 @@ make_roster_xmlrpc(Roster) ->
       fun(Item, Res) ->
 	      JIDS = jlib:jid_to_string(Item#roster.jid),
 	      Nick = Item#roster.name,
+	      Subs = Item#roster.subscription,
+	      Ask = Item#roster.ask,
 	      Groups = case Item#roster.groups of
 			   [] -> [""];
 			   Gs -> Gs
 		       end,
-	      ItemsX = [{JIDS, Nick, Group}
+	      ItemsX = [{JIDS, Nick, Subs, Ask, Group}
 			|| Group <- Groups],
 	      ItemsX ++ Res
       end,
