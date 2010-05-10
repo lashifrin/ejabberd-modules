@@ -980,10 +980,13 @@ web_page_main(_, #request{path=["statsdx"], lang = Lang} = _Request) ->
 		[?XE("tbody", [
 			       do_stat(global, Lang, "totalrosteritems"),
 			       do_stat(global, Lang, "meanitemsinroster"),
-			       ?CT("Top rosters"), ?C(" "),
-			       ?ACT("top/roster/30", "30"), ?C(", "),
-			       ?ACT("top/roster/100", "100"), ?C(", "),
-			       ?ACT("top/roster/500", "500")
+			       ?XE("tr",
+				  [?XE("td", [?CT("Top rosters")]),
+				   ?XE("td", [
+				    ?ACT("top/roster/30", "30"), ?C(", "),
+				    ?ACT("top/roster/100", "100"), ?C(", "),
+				    ?ACT("top/roster/500", "500") ])]
+				 )
 			      ])
 		]),
 	   ?XC("h3", "Users"),
@@ -991,11 +994,22 @@ web_page_main(_, #request{path=["statsdx"], lang = Lang} = _Request) ->
 		[?XE("tbody", [
 			       do_stat(global, Lang, "onlineusers"),
 			       do_stat(global, Lang, "offlinemsg"),
-			       ?CT("Top offline message queues"), ?C(" "),
-			       ?ACT("top/offlinemsg/30", "30"), ?C(", "),
-			       ?ACT("top/offlinemsg/100", "100"), ?C(", "),
-			       ?ACT("top/offlinemsg/500", "500"),
-			       do_stat(global, Lang, "vcards")
+			       ?XE("tr",
+				  [?XE("td", [?CT("Top offline message queues") ]),
+				   ?XE("td", [
+				    ?ACT("top/offlinemsg/30", "30"), ?C(", "),
+				    ?ACT("top/offlinemsg/100", "100"), ?C(", "),
+				    ?ACT("top/offlinemsg/500", "500") ])]
+				 ),
+			       do_stat(global, Lang, "vcards"),
+			       ?XE("tr",
+				  [?XE("td", [?CT("Top vCard sizes") ]),
+				   ?XE("td", [
+				    ?ACT("top/vcard/5", "5"), ?C(", "),
+				    ?ACT("top/vcard/30", "30"), ?C(", "),
+				    ?ACT("top/vcard/100", "100"), ?C(", "),
+				    ?ACT("top/vcard/500", "500") ])]
+				 )
 			      ])
 		]),
 	   ?XC("h3", "MUC"),
@@ -1065,11 +1079,13 @@ web_page_main(_, #request{path=["statsdx", "top", Topic, Topnumber], q = _Q, lan
     Res = [?XC("h1", ?T("Statistics")++" Dx"),
 	   case Topic of
 		"offlinemsg" -> ?XCT("h2", "Top offline message queues");
+		"vcard" -> ?XCT("h2", "Top vCard sizes");
 		"roster" -> ?XCT("h2", "Top rosters")
 	   end,
 	   ?XE("table",
 	       [?XE("thead", [?XE("tr",
-				  [?XE("td", [?CT("Jabber ID")]),
+				  [?XE("td", [?CT("#")]),
+				   ?XE("td", [?CT("Jabber ID")]),
 				   ?XE("td", [?CT("Value")])]
 				 )]),
 		?XE("tbody", do_top_table(global, Lang, Topic, Topnumber, server))
@@ -1093,14 +1109,24 @@ web_page_main(Acc, _) -> Acc.
 do_top_table(_Node, Lang, Topic, TopnumberString, Host) ->
     List = get_top_users(Host, list_to_integer(TopnumberString), Topic),
     %% get_top_users(Topnumber, "roster")
-    lists:map(
-      fun({Value, User, Server}) ->
+    {List2, _} = lists:mapfoldl(
+      fun({Value, User, Server}, Counter) ->
 	    UserJID = User++"@"++Server,
 	    UserJIDUrl = "/admin/server/" ++ Server ++ "/user/" ++ User ++ "/",
-	    do_table_element(Lang, UserJID, {fixed_url, UserJIDUrl}, integer_to_list(Value))
+			ValueString = integer_to_list(Value),
+	    ValueEl = case Topic of
+		"offlinemsg" -> {url, UserJIDUrl++"queue/", ValueString};
+		"vcard" -> {url, UserJIDUrl++"vcard/", ValueString};
+		"roster" -> {url, UserJIDUrl++"roster/", ValueString};
+		_ -> ValueString
+	    end,
+	    {do_table_element(Counter, Lang, UserJID, {fixed_url, UserJIDUrl}, ValueEl),
+		Counter+1}
       end,
+    1,
       List
-     ).
+     ),
+     List2.
 
 %% Code copied from mod_muc_admin.erl
 %% Returns: {normal | reverse, Integer}
@@ -1271,10 +1297,13 @@ web_page_host(_, Host,
 		[?XE("tbody", [
 			       do_stat(global, Lang, "totalrosteritems", Host),
 			       %%get_meanitemsinroster2(TotalRosterItems, RegisteredUsers)
-			       ?C("Top rosters"), ?C(" "),
-			       ?ACT("top/roster/30", "30"), ?C(", "),
-			       ?ACT("top/roster/100", "100"), ?C(", "),
-			       ?ACT("top/roster/500", "500")
+			       ?XE("tr",
+				  [?XE("td", [?C("Top rosters") ]),
+				   ?XE("td", [
+				    ?ACT("top/roster/30", "30"), ?C(", "),
+				    ?ACT("top/roster/100", "100"), ?C(", "),
+				    ?ACT("top/roster/500", "500") ])]
+				 )
 			      ])
 		]),
 	   ?XC("h3", "Users"),
@@ -1283,10 +1312,21 @@ web_page_host(_, Host,
 			       do_stat(global, Lang, "onlineusers", Host),
 			       %%do_stat(global, Lang, "offlinemsg", Host), %% This make take a lot of time
 			       %%do_stat(global, Lang, "vcards", Host) %% This make take a lot of time
-			       ?C("Top offline message queues"), ?C(" "),
-			       ?ACT("top/offlinemsg/30", "30"), ?C(", "),
-			       ?ACT("top/offlinemsg/100", "100"), ?C(", "),
-			       ?ACT("top/offlinemsg/500", "500")
+			       ?XE("tr",
+				  [?XE("td", [?C("Top offline message queues")]),
+				   ?XE("td", [
+				    ?ACT("top/offlinemsg/30", "30"), ?C(", "),
+				    ?ACT("top/offlinemsg/100", "100"), ?C(", "),
+				    ?ACT("top/offlinemsg/500", "500") ])]
+				 ),
+			       ?XE("tr",
+				  [?XE("td", [?C("Top vCard sizes") ]),
+				   ?XE("td", [
+				    ?ACT("top/vcard/5", "5"), ?C(", "),
+				    ?ACT("top/vcard/30", "30"), ?C(", "),
+				    ?ACT("top/vcard/100", "100"), ?C(", "),
+				    ?ACT("top/vcard/500", "500") ])]
+				 )
 			      ])
 		]),
 	   ?XC("h3", "Connections"),
@@ -1378,11 +1418,13 @@ web_page_host(_, Host, #request{path=["statsdx", "top", Topic, Topnumber], q = _
     Res = [?XC("h1", ?T("Statistics")++" Dx"),
 	   case Topic of
 		"offlinemsg" -> ?XCT("h2", "Top offline message queues");
+		"vcard" -> ?XCT("h2", "Top vCard sizes");
 		"roster" -> ?XCT("h2", "Top rosters")
 	   end,
 	   ?XE("table",
 	       [?XE("thead", [?XE("tr",
-				  [?XE("td", [?CT("Jabber ID")]),
+				  [?XE("td", [?CT("#")]),
+				   ?XE("td", [?CT("Jabber ID")]),
 				   ?XE("td", [?CT("Value")])]
 				 )]),
 		?XE("tbody", do_top_table(global, Lang, Topic, Topnumber, Host))
@@ -1409,14 +1451,22 @@ web_page_host(Acc, _, _) -> Acc.
 %%%% Web Admin Utils
 
 do_table_element(Lang, L, StatLink, N) ->
+    do_table_element(no_counter, Lang, L, StatLink, N).
+do_table_element(Counter, Lang, L, StatLink, N) ->
     ?XE("tr", [
+	       case Counter of
+		   no_counter -> ?C("");
+		   _ -> ?XE("td", [?C(integer_to_list(Counter))])
+               end,
 	       case StatLink of
 		   no_link -> ?XCT("td", L);
 		   {fixed_url, Fixedurl} -> ?XE("td", [?AC(Fixedurl, L)]);
 		   _ -> ?XE("td", [?AC(make_url(StatLink, L), L)])
                end,
-	       ?XAC("td", [{"class", "alignright"}],
-		    N)
+	       case N of
+		   {url, NUrl, NName} -> ?XAE("td", [{"class", "alignright"}], [?AC(NUrl, NName)]);
+		   _ -> ?XAC("td", [{"class", "alignright"}], N)
+               end
 	      ]).
 
 make_url(StatLink, L) ->
@@ -1532,7 +1582,7 @@ pretty_string_int(String) ->
 commands() ->
     [
      #ejabberd_commands{name = get_top_users, tags = [stats],
-			desc = "Get top X users with larger offlinemsg or roster.",
+			desc = "Get top X users with larger offlinemsg, vcard or roster.",
 			module = ?MODULE, function = get_top_users,
 			args = [{topnumber, integer}, {topic, string}],
 			result = {top, {list,
@@ -1563,10 +1613,14 @@ getstatsdx(Name, Host) ->
 get_top_users(Number, Topic) ->
     get_top_users(server, Number, Topic).
 
+%% Returns: [{Integer, User, Server}]
+get_top_users(Host, Number, "vcard") ->
+    get_top_users_vcard(Host, Number);
 get_top_users(Host, Number, "offlinemsg") ->
     get_top_users(Host, Number, offline_msg, #offline_msg.us);
 get_top_users(Host, Number, "roster") ->
     get_top_users(Host, Number, roster, #roster.us).
+
 
 get_top_users(Host, TopX, Table, RecordUserPos) ->
     F = fun() ->
@@ -1601,6 +1655,41 @@ get_top_users(Host, TopX, Table, RecordUserPos) ->
 		       {10000000000000000, 0, []},
 		       DictRes),
     lists:reverse(Result).
+
+get_top_users_vcard(Host, Number) ->
+    F = fun() ->
+	B = fun get_users_vcard_fun/2,
+	{_Host, _NumSelects, _MinSize, _Sizes, Selects} = mnesia:foldl(B, {Host, Number, -1, [], []}, vcard), %+++
+	Selects
+    end,
+    {atomic, Result} = mnesia:transaction(F),
+    lists:reverse(Result).
+
+%% Selects = [{Size, Vcard}] sorted from smaller to larger
+get_users_vcard_fun(#vcard{us = {_, Host1}}, {HostReq, NumRemaining, MinSize, Sizes, Selects})
+    when (Host1 /= HostReq) and (HostReq /= server) ->
+    {HostReq, NumRemaining, MinSize, Sizes, Selects};
+get_users_vcard_fun(Vcard, {HostReq, NumRemaining, MinSize, Sizes, Selects}) ->
+    String = lists:flatten(xml:element_to_string(Vcard#vcard.vcard)),
+    Size = length(String),
+    case {Size > MinSize, NumRemaining > 0} of
+	{true, true} ->
+	    {User, Host} = Vcard#vcard.us,
+	    Selects2 = lists:umerge(Selects, [{Size, User, Host}]),
+	    Sizes2 = lists:umerge(Sizes, [Size]),
+	    MinSize2 = lists:min(Sizes2),
+	    {HostReq, NumRemaining-1, MinSize2, Sizes2, Selects2};
+	{true, false} ->
+	    [_ | SelectsReduced] = Selects,
+	    [_ | SizesReduced] = Sizes,
+	    Sizes2 = lists:umerge(SizesReduced, [Size]),
+	    MinSize2 = lists:min(Sizes2),
+	    {User, Host} = Vcard#vcard.us,
+	    Selects2 = lists:umerge(SelectsReduced, [{Size, User, Host}]),
+	    {HostReq, NumRemaining, MinSize2, Sizes2, Selects2};
+	{false, _} ->
+	    {HostReq, NumRemaining, MinSize, Sizes, Selects}
+    end.
 
 
 %%%==================================
