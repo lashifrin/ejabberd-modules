@@ -176,7 +176,7 @@ commands() ->
 			result = {res, restuple}},
 
      #ejabberd_commands{name = check_account, tags = [accounts],
-			desc = "Check if an acount exists or not",
+			desc = "Check if an account exists or not",
 			module = ejabberd_auth, function = is_user_exists,
 			args = [{user, string}, {host, string}],
 			result = {res, rescode}},
@@ -305,7 +305,7 @@ commands() ->
 			result = {res, rescode}},
 
      #ejabberd_commands{name = set_nickname, tags = [vcard],
-			desc = "Set nickname in a user's vcard",
+			desc = "Set nickname in a user's vCard",
 			module = ?MODULE, function = set_nickname,
 			args = [{user, string}, {host, string}, {nickname, string}],
 			result = {res, rescode}},
