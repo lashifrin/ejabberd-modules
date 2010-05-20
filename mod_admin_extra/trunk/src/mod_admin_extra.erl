@@ -290,7 +290,9 @@ commands() ->
 					       {priority, integer},
 					       {node, string},
 					       {uptime, integer},
-					       {resource, string}
+					       {status, string},
+					       {resource, string},
+					       {statustext, string}
 					      ]}}
 				  }}},
 
@@ -869,6 +871,7 @@ user_sessions_info(User, Host) ->
       fun(Session) ->
 	      {_U, _S, Resource} = Session#session.usr,
 	      {Now, Pid} = Session#session.sid,
+	      {_U, _Resource, Status, StatusText} = ejabberd_c2s:get_presence(Pid),
 	      Info = Session#session.info,
 	      Priority = Session#session.priority,
 	      Conn = proplists:get_value(conn, Info),
@@ -877,7 +880,7 @@ user_sessions_info(User, Host) ->
 	      NodeS = atom_to_list(node(Pid)),
 	      Uptime = CurrentSec - calendar:datetime_to_gregorian_seconds(
 				      calendar:now_to_local_time(Now)),
-	      {Conn, IPS, Port, Priority, NodeS, Uptime, Resource}
+	      {Conn, IPS, Port, Priority, NodeS, Uptime, Status, Resource, StatusText}
       end,
       Sessions).
 
