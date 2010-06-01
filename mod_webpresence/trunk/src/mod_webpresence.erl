@@ -630,7 +630,7 @@ make_js(WP, Prs, Show_us, Lang, Q) ->
 			       fun(Pr) ->
 				       Show =  Pr#presence.show,
 				       "{name:'"++Pr#presence.resource++"',\n"
-					   " priority:"++integer_to_list(Pr#presence.priority)++",\n"
+					   " priority:"++intund2string(Pr#presence.priority)++",\n"
 					   " show:'"++Show++"',\n"
 					   " long_show:'"++long_show(Show, Lang)++"',\n"
 					   " status:'"++escape(Pr#presence.status)++"',\n"
@@ -660,6 +660,11 @@ long_show("away", Lang) -> ?T("away");
 long_show("xa", Lang) -> ?T("extended away");
 long_show("dnd", Lang) -> ?T("do not disturb");
 long_show(_, Lang) -> ?T("unavailable").
+
+%% @spec(A) -> string()
+%% where A = integer() | undefined
+intund2string(undefined) -> "undefined";
+intund2string(Int) when is_integer(Int) -> integer_to_list(Int).
 
 escape(S1) ->
     {ok, S2, _} = regexp:gsub(S1, "\'", "\\'"),
@@ -799,7 +804,8 @@ parse_lang(Lang) -> hd(string:tokens(Lang,"-")).
 
 process(LocalPath, Request) ->
     case catch process2(LocalPath, Request) of
-	{'EXIT', _Reason} ->
+	{'EXIT', Reason} ->
+	    ?DEBUG("The call to path ~p in the~nrequest: ~p~ncrashed with error: ~p", [LocalPath, Request, Reason]),
 	    {404, [], make_xhtml([?XC("h1", "Not found")])};
 	Res ->
 	    Res
