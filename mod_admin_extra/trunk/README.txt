@@ -20,6 +20,27 @@ Add the module to your ejabberd.cfg, on the modules section:
   ...
 ]}.
 
+The configurable options are:
+- module_resource:
+  Indicate the resource that the XMPP stanzas must use in the FROM or TO JIDs.
+  This is only useful in the vcard set and get commands.
+  The default value is "mod_admin_extra".
+
+In this example configuration, the users vcards can only be modified
+by executing mod_admin_extra commands.
+Notice that this needs the patch
+ https://support.process-one.net/browse/EJAB-797
+{acl, adminextraresource, {resource, "modadminextraf8x,31ad"}}.
+{access, vcard_set, [
+    {allow, adminextraresource},
+    {deny, all}]
+}.
+{modules, [
+  {mod_admin_extra, [ {module_resource, "modadminextraf8x,31ad"} ]},
+  {mod_vcard,       [ {access_set, vcard_set} ]},
+  ...
+]}.
+
 
 	USAGE
 	=====

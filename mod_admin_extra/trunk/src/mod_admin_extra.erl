@@ -922,9 +922,15 @@ set_vcard(User, Host, Name, Subname, Content) ->
 %%
 %% Internal vcard
 
+get_module_resource(Server) ->
+    case gen_mod:get_module_opt(Server, ?MODULE, module_resource, none) of
+	none -> ?MODULE;
+	R when is_list(R) -> R
+    end.
+
 get_vcard_content(User, Server, Data) ->
     [{_, Module, Function, _Opts}] = ets:lookup(sm_iqtable, {?NS_VCARD, Server}),
-    JID = jlib:make_jid(User, Server, ""),
+    JID = jlib:make_jid(User, Server, get_module_resource(Server)),
     IQ = #iq{type = get, xmlns = ?NS_VCARD},
     IQr = Module:Function(JID, JID, IQ),
     case IQr#iq.sub_el of
@@ -948,7 +954,7 @@ get_vcard([Data], A1) ->
 
 set_vcard_content(User, Server, Data, Content) ->
     [{_, Module, Function, _Opts}] = ets:lookup(sm_iqtable, {?NS_VCARD, Server}),
-    JID = jlib:make_jid(User, Server, ""),
+    JID = jlib:make_jid(User, Server, get_module_resource(Server)),
     IQ = #iq{type = get, xmlns = ?NS_VCARD},
     IQr = Module:Function(JID, JID, IQ),
 
