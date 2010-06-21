@@ -924,7 +924,7 @@ set_vcard(User, Host, Name, Subname, Content) ->
 
 get_module_resource(Server) ->
     case gen_mod:get_module_opt(Server, ?MODULE, module_resource, none) of
-	none -> ?MODULE;
+	none -> atom_to_list(?MODULE);
 	R when is_list(R) -> R
     end.
 
