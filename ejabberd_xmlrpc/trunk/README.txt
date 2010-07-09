@@ -279,6 +279,13 @@ Array
 )
 -------
 
+If you configured the option access_commands, you have to provide authentication
+information by replacing the first lime with something like this:
+-------
+$param_auth=array("user"=>"analloweduser", "server"=>"localhost", "password"=>"MyPasS997");
+$param_comm=array("user"=>"testuser", "host"=>"localhost");
+$param=array($param_auth, $param_comm);
+-------
 
 
  **** WARNING: all the remaining text was written for mod_xmlrpc and
