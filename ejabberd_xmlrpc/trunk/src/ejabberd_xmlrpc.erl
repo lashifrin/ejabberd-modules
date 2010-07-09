@@ -284,6 +284,12 @@ handler(_State, {call, tellme, [A]}) ->
 %% .............................
 %% ejabberd commands
 
+handler(State, {call, Command, []}) ->
+    %% The XMLRPC request may not contain a struct parameter,
+    %% but our internal functions need such struct, even if it's empty
+    %% So let's add it and do a recursive call: 
+    handler(State, {call, Command, [{struct, []}]});
+
 handler(State, {call, Command, [{struct, AttrL}]} = Payload) ->
     case ejabberd_commands:get_command_format(Command) of
 	{error, command_unknown} ->
