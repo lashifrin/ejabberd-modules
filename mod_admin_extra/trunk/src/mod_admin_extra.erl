@@ -1059,8 +1059,8 @@ make_roster_xmlrpc(Roster) ->
       fun(Item, Res) ->
 	      JIDS = jlib:jid_to_string(Item#roster.jid),
 	      Nick = Item#roster.name,
-	      Subs = Item#roster.subscription,
-	      Ask = Item#roster.ask,
+	      Subs = atom_to_list(Item#roster.subscription),
+	      Ask = atom_to_list(Item#roster.ask),
 	      Groups = case Item#roster.groups of
 			   [] -> [""];
 			   Gs -> Gs
