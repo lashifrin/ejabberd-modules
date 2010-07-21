@@ -825,7 +825,7 @@ connected_users_info() ->
 	      NodeS = atom_to_list(node(Pid)),
 	      Uptime = CurrentSec - calendar:datetime_to_gregorian_seconds(
 				      calendar:now_to_local_time(Now)),
-	      {[U, $@, S, $/, R], Conn, IPS, Port, Priority, NodeS, Uptime}
+	      {[U, $@, S, $/, R], atom_to_list(Conn), IPS, Port, Priority, NodeS, Uptime}
       end,
       USRIs).
 
@@ -880,7 +880,7 @@ user_sessions_info(User, Host) ->
 	      NodeS = atom_to_list(node(Pid)),
 	      Uptime = CurrentSec - calendar:datetime_to_gregorian_seconds(
 				      calendar:now_to_local_time(Now)),
-	      {Conn, IPS, Port, Priority, NodeS, Uptime, Status, Resource, StatusText}
+	      {atom_to_list(Conn), IPS, Port, Priority, NodeS, Uptime, Status, Resource, StatusText}
       end,
       Sessions).
 
