@@ -21,6 +21,7 @@
 	 get_room_occupants/2,
 	 change_room_option/4,
 	 set_room_affiliation/4,
+	 get_room_affiliations/2,
 	 web_menu_main/2, web_page_main/2, % Web Admin API
 	 web_menu_host/3, web_page_host/3
 	]).
@@ -128,7 +129,19 @@ commands() ->
 		       module = ?MODULE, function = set_room_affiliation,
 		       args = [{name, string}, {service, string},
 			       {jid, string}, {affiliation, string}],
-		       result = {res, rescode}}
+		       result = {res, rescode}},
+     #ejabberd_commands{name = get_room_affiliations, tags = [muc_room],
+			desc = "Get the list of affiliations of a MUC room",
+			module = ?MODULE, function = get_room_affiliations,
+			args = [{name, string}, {service, string}],
+			result = {affiliations, {list,
+						 {affiliation, {tuple,
+								[{username, string},
+								 {domain, string},
+								 {affiliation, string},
+								 {reason, string}
+								]}}
+						}}}
     ].
 
 
@@ -696,6 +709,30 @@ change_option(Option, Value, Config) ->
 	title -> Config#config{title = Value}
     end.
 
+
+%%----------------------------
+%% Get Room Affiliations
+%%----------------------------
+
+%% @spec(Name::string(), Service::string()) ->
+%%    [{JID::string(), Domain::string(), Role::string(), Reason::string()}]
+%% @doc Get the affiliations of  the room Name@Service.
+get_room_affiliations(Name, Service) ->
+    case mnesia:dirty_read(muc_online_room, {Name, Service}) of
+	[R] ->
+	    %% Get the PID of the online room, then request its state
+	    Pid = R#muc_online_room.pid,
+	    {ok, StateData} = gen_fsm:sync_send_all_state_event(Pid, get_state),
+	    Affiliations = ?DICT:to_list(StateData#state.affiliations),
+	    lists:map(
+	      fun({{Uname, Domain, _Res}, {Aff, Reason}}) when is_atom(Aff)->
+		      {Uname, Domain, Aff, Reason};
+		 ({{Uname, Domain, _Res}, Aff}) when is_atom(Aff)->
+		      {Uname, Domain, Aff, ""}
+	      end, Affiliations);
+	[] ->
+	    throw({error, "The room does not exist."})
+    end.
 
 %%----------------------------
 %% Change Room Affiliation
