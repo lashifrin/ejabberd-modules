@@ -67,6 +67,8 @@
 	 push_roster/3,
 	 push_roster_all/1,
 	 push_alltoall/2,
+	 %% mod_last
+	 set_last/4,
 	 %% mod_private
 	 private_get/4,
 	 private_set/3,
@@ -412,6 +414,14 @@ commands() ->
 			desc = "Add all the users to all the users of Host in Group",
 			module = ?MODULE, function = push_alltoall,
 			args = [{host, string}, {group, string}],
+			result = {res, rescode}},
+
+     #ejabberd_commands{name = set_last, tags = [last],
+			desc = "Set last activity information",
+			longdesc = "Timestamp is the seconds since"
+			"1970-01-01 00:00:00 UTC, for example: date +%s",
+			module = ?MODULE, function = set_last,
+			args = [{user, string}, {host, string}, {timestamp, integer}, {status, string}],
 			result = {res, rescode}},
 
      #ejabberd_commands{name = private_get, tags = [private],
@@ -1165,6 +1175,14 @@ build_broadcast(U, S, SubsAtom) when is_atom(SubsAtom) ->
     {xmlelement, "broadcast", [],
      [{item, {U, S, ""}, SubsAtom}]
     }.
+
+%%%
+%%% Last Activity
+%%%
+
+set_last(User, Server, Timestamp, Status) ->
+    Mod = get_lastactivity_module(Server),
+    Mod:store_last_info(User, Server, Timestamp, Status).
 
 %%%
 %%% Private Storage
