@@ -47,6 +47,9 @@ This module supports CAPTCHA image to register a new account.
 To enable this feature, configure the options captcha_cmd and captcha_host.
 See the ejabberd Guide for more information about those options.
 
+This module supports the option registration_watchers,
+which works similarly to the mod_register option.
+
 
 	FEATURE REQUESTS
 	----------------

@@ -58,11 +58,11 @@ process(["delete"], #request{method = 'GET', lang = Lang, host = Host}) ->
 process(["change_password"], #request{method = 'GET', lang = Lang, host = Host}) ->
     form_changepass_get(Host, Lang);
 
-%% TODO: Currently only the first vhost is usable. The web request record
-%% should include the host where the POST was sent.
-process(["new"], #request{method = 'POST', q = Q, lang = Lang, host = Host}) ->
+process(["new"], #request{method = 'POST', q = Q, ip = {Ip,_Port}, lang = Lang, host = Host} = RR) ->
     case form_new_post(Q, Host) of
-    	{atomic, ok} ->
+    	{success, ok, {Username, Host, _Password}} ->
+	    Jid = jlib:make_jid(Username, Host, ""),
+	    send_registration_notifications(Jid, Ip),
 	    Text = ?T("Your Jabber account was succesfully created."),
 	    {200, [], Text};
 	Error ->
@@ -71,8 +71,6 @@ process(["new"], #request{method = 'POST', q = Q, lang = Lang, host = Host}) ->
 	    {404, [], ErrorText}
     end;
 
-%% TODO: Currently only the first vhost is usable. The web request record
-%% should include the host where the POST was sent.
 process(["delete"], #request{method = 'POST', q = Q, lang = Lang, host = Host}) ->
     case form_del_post(Q, Host) of
     	{atomic, ok} ->
@@ -224,6 +222,42 @@ form_new_get(Host, Lang) ->
       {"Content-Type", "text/html"}],
      ejabberd_web:make_xhtml(HeadEls, Els)}.
 
+%% Copied from mod_register.erl
+send_registration_notifications(UJID, Source) ->
+    Host = UJID#jid.lserver,
+    case gen_mod:get_module_opt(Host, ?MODULE, registration_watchers, []) of
+        [] -> ok;
+        JIDs when is_list(JIDs) ->
+            Body = lists:flatten(
+                     io_lib:format(
+                       "[~s] The account ~s was registered from IP address ~s "
+                       "on node ~w using ~p.",
+                       [get_time_string(), jlib:jid_to_string(UJID),
+                        ip_to_string(Source), node(), ?MODULE])),
+            lists:foreach(
+              fun(S) ->
+                      case jlib:string_to_jid(S) of
+                          error -> ok;
+                          JID ->
+                              ejabberd_router:route(
+                                jlib:make_jid("", Host, ""),
+                                JID,
+                                {xmlelement, "message", [{"type", "chat"}],
+                                 [{xmlelement, "body", [],
+                                   [{xmlcdata, Body}]}]})
+                      end
+              end, JIDs);
+        _ ->
+            ok
+    end.
+ip_to_string(Source) when is_tuple(Source) -> inet_parse:ntoa(Source);
+ip_to_string(undefined) -> "undefined";
+ip_to_string(_) -> "unknown".
+get_time_string() -> write_time(erlang:localtime()).
+%% Function copied from ejabberd_logger_h.erl and customized
+write_time({{Y,Mo,D},{H,Mi,S}}) ->
+    io_lib:format("~w-~.2.0w-~.2.0w ~.2.0w:~.2.0w:~.2.0w",
+                  [Y, Mo, D, H, Mi, S]).
 
 %%%----------------------------------------------------------------------
 %%% Formulary new POST
@@ -461,13 +495,17 @@ form_del_get(Host, Lang) ->
       {"Content-Type", "text/html"}],
      ejabberd_web:make_xhtml(HeadEls, Els)}.
 
-%% @spec(Username, Host, Password) -> {atomic, ok} |
-%%                                    {atomic, exists} |
+%% @spec(Username, Host, Password) -> {success, ok, {Username, Host, Password} |
+%%                                    {success, exists, {Username, Host, Password}} |
 %%                                    {error, not_allowed} |
 %%                                    {error, invalid_jid}
 register_account(Username, Host, Password) ->
-    ejabberd_auth:try_register(Username, Host, Password).
-
+    case ejabberd_auth:try_register(Username, Host, Password) of
+	{atomic, Res} ->
+	    {success, Res, {Username, Host, Password}};
+	Other ->
+	    Other
+    end.
 
 %%%----------------------------------------------------------------------
 %%% Formulary delete POST
