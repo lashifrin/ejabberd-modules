@@ -3,7 +3,7 @@
 
 	Homepage: http://www.ejabberd.im/mod_register_web
 	Author: Badlop
-	Requirements: ejabberd trunk SVN r2001 or newer (future ejabberd 2.1.x)
+	Requirements: ejabberd ejabberd 2.1.0 or higher
 
 
 	DESCRIPTION
@@ -54,9 +54,6 @@ which works similarly to the mod_register option.
 	FEATURE REQUESTS
 	----------------
 
- * In the pages, hide the password characters: replace with ***
-
- * The request record should include Host, Port and BasePath of request.
  * Allow configuration of the hardcoded "register" path in URL.
  * Enforce configurable ACL+ACCESS to register
 
@@ -67,7 +64,6 @@ which works similarly to the mod_register option.
  
  * Option to select which subpages are available
 
- * The request record should include IP of client.
  * Store in a custom mnesia table: timestamp of account register and IP.
  * Use time limiter by IP like mod_register for: register, changepass.
 
@@ -76,6 +72,6 @@ which works similarly to the mod_register option.
  * Optionally require email confirmation to register.
  
  * Allow to set a private email address anytime.
- * Allow to recover password using the private email to confim (see mod_passrecover).
+ * Allow to recover password using the private email to confirm (see mod_passrecover).
 
  * Optionally require invitation

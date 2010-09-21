@@ -58,7 +58,7 @@ process(["delete"], #request{method = 'GET', lang = Lang, host = Host}) ->
 process(["change_password"], #request{method = 'GET', lang = Lang, host = Host}) ->
     form_changepass_get(Host, Lang);
 
-process(["new"], #request{method = 'POST', q = Q, ip = {Ip,_Port}, lang = Lang, host = Host} = RR) ->
+process(["new"], #request{method = 'POST', q = Q, ip = {Ip,_Port}, lang = Lang, host = Host}) ->
     case form_new_post(Q, Host) of
     	{success, ok, {Username, Host, _Password}} ->
 	    Jid = jlib:make_jid(Username, Host, ""),
