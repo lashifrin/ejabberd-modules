@@ -57,6 +57,7 @@
 	 set_nickname/3,
 	 get_vcard/3,
 	 get_vcard/4,
+	 get_vcard_multi/4,
 	 set_vcard/4,
 	 set_vcard/5,
 	 %% Roster
@@ -326,6 +327,13 @@ commands() ->
 			module = ?MODULE, function = get_vcard,
 			args = [{user, string}, {host, string}, {name, string}, {subname, string}],
 			result = {content, string}},
+     #ejabberd_commands{name = get_vcard2_multi, tags = [vcard],
+			desc = "Get multiple contents from a vCard field (requires exmpp installed)",
+			longdesc = Vcard2FieldsString ++ "\n\n" ++ Vcard1FieldsString ++ "\n" ++ VcardXEP,
+			module = ?MODULE, function = get_vcard_multi,
+			args = [{user, string}, {host, string}, {name, string}, {subname, string}],
+			result = {contents, {list, {content, string}}}},
+
      #ejabberd_commands{name = set_vcard, tags = [vcard],
 			desc = "Set content in a vCard field",
 			longdesc = Vcard1FieldsString ++ "\n" ++ Vcard2FieldsString ++ "\n\n" ++ VcardXEP,
@@ -337,6 +345,12 @@ commands() ->
 			longdesc = Vcard2FieldsString ++ "\n\n" ++ Vcard1FieldsString ++ "\n" ++ VcardXEP,
 			module = ?MODULE, function = set_vcard,
 			args = [{user, string}, {host, string}, {name, string}, {subname, string}, {content, string}],
+			result = {res, rescode}},
+     #ejabberd_commands{name = set_vcard2_multi, tags = [vcard],
+			desc = "Set multiple contents in a vCard subfield",
+			longdesc = Vcard2FieldsString ++ "\n\n" ++ Vcard1FieldsString ++ "\n" ++ VcardXEP,
+			module = ?MODULE, function = set_vcard,
+			args = [{user, string}, {host, string}, {name, string}, {subname, string}, {contents, {list, {content, string}}}],
 			result = {res, rescode}},
 
      #ejabberd_commands{name = add_rosteritem, tags = [roster],
@@ -917,16 +931,21 @@ set_nickname(User, Host, Nickname) ->
     end.
 
 get_vcard(User, Host, Name) ->
-    get_vcard_content(User, Host, [Name]).
+    [Res | _] = get_vcard_content(User, Host, [Name]),
+    Res.
 
 get_vcard(User, Host, Name, Subname) ->
+    [Res | _] = get_vcard_content(User, Host, [Name, Subname]),
+    Res.
+
+get_vcard_multi(User, Host, Name, Subname) ->
     get_vcard_content(User, Host, [Name, Subname]).
 
-set_vcard(User, Host, Name, Content) ->
-    set_vcard_content(User, Host, [Name], Content).
+set_vcard(User, Host, Name, SomeContent) ->
+    set_vcard_content(User, Host, [Name], SomeContent).
 
-set_vcard(User, Host, Name, Subname, Content) ->
-    set_vcard_content(User, Host, [Name, Subname], Content).
+set_vcard(User, Host, Name, Subname, SomeContent) ->
+    set_vcard_content(User, Host, [Name, Subname], SomeContent).
 
 
 %%
@@ -947,22 +966,42 @@ get_vcard_content(User, Server, Data) ->
 	[A1] ->
 	    case get_vcard(Data, A1) of
 		false -> "Error: no_value";
-		Elem -> xml:get_tag_cdata(Elem)
+		ElemList -> [xml:get_tag_cdata(Elem) || Elem <- ElemList]
 	    end;
 	[] ->
 	    "Error: no_vcard"
     end.
 
 get_vcard([Data1, Data2], A1) ->
-    case xml:get_subtag(A1, Data1) of
+    case get_subtag(A1, Data1) of
     	false -> false;
-	A2 -> get_vcard([Data2], A2)
+	A2List -> lists:flatten([get_vcard([Data2], A2) || A2 <- A2List])
     end;
 
 get_vcard([Data], A1) ->
-    xml:get_subtag(A1, Data).
+    get_subtag(A1, Data).
 
-set_vcard_content(User, Server, Data, Content) ->
+get_subtag(Xmlelement, Name) ->
+    case code:ensure_loaded(exmpp_xml) of
+	{error, _} ->
+	    get_subtag_xml(Xmlelement, Name);
+	{module, exmpp_xml} ->
+	    get_subtag_exmpp(Xmlelement, Name)
+    end.
+
+get_subtag_xml(Xmlelement, Name) ->
+    xml:get_subtag(Xmlelement, Name).
+
+get_subtag_exmpp(Xmlelement, Name) ->
+    Xmlel = exmpp_xml:xmlelement_to_xmlel(Xmlelement),
+    XmlelList = exmpp_xml:get_elements(Xmlel, Name),
+    [exmpp_xml:xmlel_to_xmlelement(Xmlel2) || Xmlel2 <- XmlelList].
+
+set_vcard_content(User, Server, Data, SomeContent) ->
+    ContentList = case SomeContent of
+	[Char | _] when not is_list(Char) -> [SomeContent];
+	[Char | _] when is_list(Char) -> SomeContent
+    end,
     [{_, Module, Function, _Opts}] = ets:lookup(sm_iqtable, {?NS_VCARD, Server}),
     JID = jlib:make_jid(User, Server, get_module_resource(Server)),
     IQ = #iq{type = get, xmlns = ?NS_VCARD},
@@ -972,9 +1011,9 @@ set_vcard_content(User, Server, Data, Content) ->
     A4 = case IQr#iq.sub_el of
 	     [A1] ->
 		 {_, _, _, A2} = A1,
-		 update_vcard_els(Data, Content, A2);
+		 update_vcard_els(Data, ContentList, A2);
 	     [] ->
-		 update_vcard_els(Data, Content, [])
+		 update_vcard_els(Data, ContentList, [])
 	 end,
 
     %% Build new vcard
@@ -984,21 +1023,21 @@ set_vcard_content(User, Server, Data, Content) ->
     Module:Function(JID, JID, IQ2),
     ok.
 
-update_vcard_els(Data, Content, Els1) ->
+update_vcard_els(Data, ContentList, Els1) ->
     Els2 = lists:keysort(2, Els1),
     [Data1 | Data2] = Data,
     NewEl = case Data2 of
 		[] ->
-		    {xmlelement, Data1, [], [{xmlcdata,Content}]};
+		    [{xmlelement, Data1, [], [{xmlcdata,Content}]} || Content <- ContentList];
 		[D2] ->
 		    OldEl = case lists:keysearch(Data1, 2, Els2) of
 				{value, A} -> A;
 				false -> {xmlelement, Data1, [], []}
 			    end,
 		    {xmlelement, _, _, ContentOld1} = OldEl,
-		    Content2 = [{xmlelement, D2, [], [{xmlcdata,Content}]}],
-		    ContentOld2 = lists:keysort(2, ContentOld1),
-		    ContentOld3 = lists:keydelete(D2, 2, ContentOld2),
+		    Content2 = [{xmlelement, D2, [], [{xmlcdata,Content}]} || Content <- ContentList],
+		    ContentOld2 = [A || {_, X, _, _} = A <- ContentOld1, X/=D2],
+		    ContentOld3 = lists:keysort(2, ContentOld2),
 		    ContentNew = lists:keymerge(2, Content2, ContentOld3),
 		    {xmlelement, Data1, [], ContentNew}
 	    end,
