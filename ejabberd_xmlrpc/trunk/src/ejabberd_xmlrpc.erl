@@ -393,6 +393,9 @@ format_arg({array, [{struct, Elements}]}, {tuple, ElementsDef})
   when is_list(Elements) ->
     FormattedList = format_args(Elements, ElementsDef),
     list_to_tuple(FormattedList);
+format_arg({array, Elements}, {list, ElementsDef})
+  when is_list(Elements) and is_atom(ElementsDef) ->
+    [format_arg(Element, ElementsDef) || Element <- Elements];
 format_arg(Arg, integer)
   when is_integer(Arg) ->
     Arg;
@@ -407,6 +410,9 @@ format_arg(Arg, string)
 
 format_result({error, Error}, _) ->
     throw({error, Error});
+
+format_result(String, string) ->
+    lists:flatten(String);
 
 format_result(Atom, {Name, atom}) ->
     {struct, [{Name, atom_to_list(Atom)}]};
