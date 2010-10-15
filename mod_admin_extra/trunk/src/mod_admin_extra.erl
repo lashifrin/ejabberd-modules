@@ -332,7 +332,7 @@ commands() ->
 			longdesc = Vcard2FieldsString ++ "\n\n" ++ Vcard1FieldsString ++ "\n" ++ VcardXEP,
 			module = ?MODULE, function = get_vcard_multi,
 			args = [{user, string}, {host, string}, {name, string}, {subname, string}],
-			result = {contents, {list, {content, string}}}},
+			result = {contents, {list, string}}},
 
      #ejabberd_commands{name = set_vcard, tags = [vcard],
 			desc = "Set content in a vCard field",
@@ -350,7 +350,7 @@ commands() ->
 			desc = "Set multiple contents in a vCard subfield",
 			longdesc = Vcard2FieldsString ++ "\n\n" ++ Vcard1FieldsString ++ "\n" ++ VcardXEP,
 			module = ?MODULE, function = set_vcard,
-			args = [{user, string}, {host, string}, {name, string}, {subname, string}, {contents, {list, {content, string}}}],
+			args = [{user, string}, {host, string}, {name, string}, {subname, string}, {contents, {list, string}}],
 			result = {res, rescode}},
 
      #ejabberd_commands{name = add_rosteritem, tags = [roster],
